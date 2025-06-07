@@ -100,12 +100,17 @@
     let chatMessagesContainer: HTMLDivElement | null = null
 </script>
 
+<svelte:head>
+	<title>Serene Pub - {chat?.name}</title>
+	<meta name="description" content="Serene Pub" />
+</svelte:head>
+
 <div class="flex h-full w-full flex-col px-2">
     <div class="chat-messages flex-1" bind:this={chatMessagesContainer}>
         {#if !chat || chat.chatMessages.length === 0}
             <div class="text-muted mt-8 text-center">No messages yet.</div>
         {:else}
-            <ul class="flex flex-col gap-3 p-4">
+            <ul class="flex flex-col gap-3 py-2">
                 {#each chat.chatMessages as msg}
                     {@const character = getMessageCharacter(msg)}
                     <li class="bg-primary-50-950 flex flex-col rounded-lg p-4">
@@ -121,7 +126,7 @@
                                         <Icons.User size={36} />
                                     </Avatar>
                                 </span>
-                                <span>{character?.name || "Unknown"}</span>
+                                <span class="font-bold funnel-display text-[1.1em]">{character?.name || "Unknown"}</span>
                             </div>
                             <div class="flex gap-2">
                                 <div class="flex gap-6">

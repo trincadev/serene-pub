@@ -16,7 +16,7 @@
 </script>
 
 <svelte:head>
-	<title>Home</title>
+	<title>Serene Pub - Home</title>
 	<meta name="description" content="Serene Pub" />
 </svelte:head>
 

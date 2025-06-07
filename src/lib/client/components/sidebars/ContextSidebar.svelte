@@ -189,6 +189,7 @@
                     type="text"
                     bind:value={contextConfig.name}
                     class="input input-sm w-full"
+                    disabled={contextConfig.isImmutable}
                 />
             </div>
             <div class="flex flex-col gap-1">
