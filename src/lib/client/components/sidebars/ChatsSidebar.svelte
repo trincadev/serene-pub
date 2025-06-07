@@ -5,6 +5,7 @@
     import * as Icons from "@lucide/svelte"
     import { Avatar } from "@skeletonlabs/skeleton-svelte"
     import { goto } from "$app/navigation"
+    import { toaster } from "$lib/client/utils/toaster"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -53,6 +54,12 @@
         event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }
     ) {
         isCreating = true
+    }
+
+    function handleEditClick(chatId: number) {
+        toaster.warning({
+            title: "Action not implemented"
+        })
     }
 
     function handleChatClick(chat: any) {
@@ -105,15 +112,23 @@
                             <!-- First character avatar -->
                             {#if chat && chat.chatCharacters}
                                 {#each chat.chatCharacters as cc}
-                                    <Avatar src={cc.character.avatar || ""} size="w-[4em] h-[4em]" name={cc.character.name}>
+                                    <Avatar
+                                        src={cc.character.avatar || ""}
+                                        size="w-[4em] h-[4em]"
+                                        name={cc.character.name}
+                                    >
                                         <Icons.User size={36} />
                                     </Avatar>
                                 {/each}
                             {/if}
                             <!-- First persona avatar -->
-                             {#if chat && chat.chatPersonas}
+                            {#if chat && chat.chatPersonas}
                                 {#each chat.chatPersonas as cp}
-                                    <Avatar src={cp.persona.avatar || ""} size="w-[4em] h-[4em]" name={cp.persona.name}>
+                                    <Avatar
+                                        src={cp.persona.avatar || ""}
+                                        size="w-[4em] h-[4em]"
+                                        name={cp.persona.name}
+                                    >
                                         <Icons.User size={36} />
                                     </Avatar>
                                 {/each}
@@ -138,6 +153,27 @@
                                             .join(", ")}
                                     {/if}
                                 </div>
+                            </div>
+                            <div class="flex gap-4 ml-auto">
+                                <button
+                                    class="btn btn-xs text-primary-500 px-0"
+                                    onclick={() => {
+                                        handleEditClick(chat.id!)
+                                    }}
+                                    title="Edit Character"
+                                >
+                                    <Icons.Edit size={16} />
+                                </button>
+                                <button
+                                    class="btn btn-xs text-error-500 px-0"
+                                    onclick={(e) => {
+                                        e.stopPropagation()
+                                        handleDeleteClick(chat.id!)
+                                    }}
+                                    title="Delete Character"
+                                >
+                                    <Icons.Trash2 size={16} />
+                                </button>
                             </div>
                         </li>
                     {/each}

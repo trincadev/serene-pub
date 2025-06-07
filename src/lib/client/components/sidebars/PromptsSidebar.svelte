@@ -4,6 +4,7 @@
     import * as Icons from "@lucide/svelte"
     import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
     import PromptConfigUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"
+    import NewNameModal from '../modals/NewNameModal.svelte'
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -24,8 +25,7 @@
         {} as Sockets.PromptConfig.Response["promptConfig"]
     )
     let unsavedChanges = $derived(JSON.stringify(promptConfig) !== JSON.stringify(originalData))
-    let showNamePrompt = $state(false)
-    let newPromptName = $state("")
+    let showNewNameModal = $state(false)
     let showUnsavedChangesModal = $state(false)
     let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 
@@ -63,18 +63,19 @@
     }
 
     function handleNew() {
-        showNamePrompt = true
-        newPromptName = ""
+        showNewNameModal = true
     }
 
-    function confirmClone() {
-        if (!newPromptName.trim()) return
-        const newPromptConfig = { ...promptConfig, name: newPromptName, isImmutable: false }
+    function handleNewNameConfirm(name: string) {
+        if (!name.trim()) return
+        const newPromptConfig = { ...promptConfig, name: name.trim(), isImmutable: false }
         delete newPromptConfig.id
-        socket.emit("createPromptConfig", {
-            promptConfig: newPromptConfig
-        })
-        showNamePrompt = false
+        socket.emit("createPromptConfig", { promptConfig: newPromptConfig })
+        showNewNameModal = false
+    }
+
+    function handleNewNameCancel() {
+        showNewNameModal = false
     }
 
     async function handleOnClose() {
@@ -158,28 +159,6 @@
             {/each}
         </select>
     </div>
-    {#if showNamePrompt}
-        <div class="modal">
-            <div class="modal-content">
-                <label for="newPromptNameInput">Enter name for new prompt config:</label>
-                <input
-                    id="newPromptNameInput"
-                    class="input input-sm w-full"
-                    bind:value={newPromptName}
-                />
-                <div class="mt-2 flex justify-end gap-2">
-                    <button class="btn btn-sm" onclick={() => (showNamePrompt = false)}
-                        >Cancel</button
-                    >
-                    <button
-                        class="btn btn-sm preset-filled-primary-500"
-                        onclick={confirmClone}
-                        disabled={!newPromptName.trim()}>Clone</button
-                    >
-                </div>
-            </div>
-        </div>
-    {/if}
     {#if promptConfig}
         <div class="mt-4 mb-4 flex w-full justify-end gap-2">
             <button
@@ -217,4 +196,10 @@
     onOpenChange={handleUnsavedChangesModalOpenChange}
     onConfirm={handleUnsavedChangesModalConfirm}
     onCancel={handleUnsavedChangesModalCancel}
+/>
+<NewNameModal
+    open={showNewNameModal}
+    onOpenChange={(e) => (showNewNameModal = e.open)}
+    onConfirm={handleNewNameConfirm}
+    onCancel={handleNewNameCancel}
 />

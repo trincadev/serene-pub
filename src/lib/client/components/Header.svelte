@@ -17,8 +17,8 @@
 
 		<!-- Desktop left nav -->
 		<div class="hidden md:flex flex-1 justify-start gap-2">
-			{#each panelsCtx.leftNav as item}
-				<button class="btn-ghost" title={item.title} onclick={() => panelsCtx.openPanel({panel: 'left', which: item.key})}>
+			{#each Object.entries(panelsCtx.leftNav) as [key, item]}
+				<button class="btn-ghost" title={item.title} onclick={() => panelsCtx.openPanel(key)}>
 					<svelte:component this={item.icon} class="w-5 h-5 text-foreground" />
 				</button>
 			{/each}
@@ -31,8 +31,8 @@
 
 		<!-- Desktop right nav -->
 		<div class="hidden md:flex flex-1 justify-end gap-2">
-			{#each panelsCtx.rightNav as item}
-				<button class="btn-ghost" title={item.title} onclick={() => panelsCtx.openPanel({panel: 'right', which: item.key})}>
+			{#each Object.entries(panelsCtx.rightNav) as [key, item]}
+				<button class="btn-ghost" title={item.title} onclick={() => panelsCtx.openPanel(key)}>
 					<svelte:component this={item.icon} class="w-5 h-5 text-foreground" />
 				</button>
 			{/each}
@@ -49,12 +49,12 @@
 				</button>
 			</div>
 			<div class="flex flex-col gap-2 p-4">
-				{#each panelsCtx.leftNav as item}
+				{#each Object.entries(panelsCtx.leftNav) as [key, item]}
 					<button
 						class="btn-ghost flex items-center gap-2"
 						title={item.title}
 						onclick={() => {
-							panelsCtx.openPanel({panel: 'left', which: item.key})
+							panelsCtx.openPanel(key)
 							panelsCtx.isMobileMenuOpen = false
 						}}
 					>
@@ -62,12 +62,12 @@
 						<span>{item.title}</span>
 					</button>
 				{/each}
-				{#each panelsCtx.rightNav as item}
+				{#each Object.entries(panelsCtx.rightNav) as [key, item]}
 					<button
 						class="btn-ghost flex items-center gap-2"
 						title={item.title}
 						onclick={() => {
-							panelsCtx.openPanel({panel: 'right', which: item.key})
+							panelsCtx.openPanel(key)
 							panelsCtx.isMobileMenuOpen = false
 						}}
 					>

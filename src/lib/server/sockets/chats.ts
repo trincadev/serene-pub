@@ -43,21 +43,46 @@ export async function createChat(
         ...message.chat,
         userId
     }
-    const [chat] = await db.insert(schema.chats).values(chatData).returning()
+    const [newChat] = await db.insert(schema.chats).values(chatData).returning()
     message.personaIds.forEach(async (personaId: number) => {
         await db.insert(schema.chatPersonas).values({
-            chatId: chat.id,
+            chatId: newChat.id,
             personaId
         })
     })
     message.characterIds.forEach(async (characterId: number) => {
         await db.insert(schema.chatCharacters).values({
-            chatId: chat.id,
+            chatId: newChat.id,
             characterId
         })
     })
-    const resChats = await db.query.chats.findMany({
-        where: (c, { eq }) => eq(c.id, chat.id),
+
+    // TODO, update to handle multiple characters
+    // Insert first message if character has a first message
+    console.log("Creating first message for chat:", newChat.id, "with characterIds:", message.characterIds)
+    const firstCharacter = await db.query.characters.findFirst({
+        where: (c, { eq }) => eq(c.id, message.characterIds[0]),
+    })
+    console.log("First character found:", firstCharacter)
+
+    const firstMessageContent = (firstCharacter!.firstMessage || "").trim()
+    console.log("First message content:", firstMessageContent)
+    if (firstMessageContent) {
+        const newMessage: InsertChatMessage = {
+            userId,
+            chatId: newChat.id,
+            personaId: null,
+            characterId: firstCharacter!.id,
+            role: "assistant",
+            content: firstMessageContent,
+            createdAt: new Date().toString(),
+            isGenerating: false // This is not a generating message
+        }
+        await db.insert(schema.chatMessages).values(newMessage)
+    }
+
+    const resChat = await db.query.chats.findFirst({
+        where: (c, { eq }) => eq(c.id, newChat.id),
         with: {
             chatCharacters: {
                 with: {
@@ -72,7 +97,7 @@ export async function createChat(
             chatMessages: true
         }
     })
-    const resChat = resChats[0]
+
     const res: Sockets.CreateChat.Response = { chat: resChat }
     await chatsList(socket, res, emitToUser)
 }
@@ -209,49 +234,6 @@ export async function sendPersonaMessage(socket: any, message: Sockets.SendPerso
     }
 
     await getChat(socket, { id: chatId }, emitToUser)
-}
-
-export async function characterCardImport(
-    socket: any,
-    message: { file?: string },
-    emitToUser: (event: string, data: any) => void
-) {
-    const userId = 1
-    let charaData: CharaImportMetadata
-    let base64 = message.file!
-    if (base64.startsWith("data:")) base64 = base64.split(",")[1]
-    const buffer = Buffer.from(base64, "base64")
-
-    const chunks = extractChunks(buffer)
-
-    for (const chunk of chunks) {
-        if (chunk.name === "tEXt") {
-            const { keyword, text } = decodeText(chunk.data)
-            if (keyword.toLocaleLowerCase() === "chara") {
-                charaData = JSON.parse(
-                    Buffer.from(text, "base64").toString("utf8")
-                ) as CharaImportMetadata
-            }
-        }
-    }
-
-    const data: InsertCharacter = {
-        userId,
-        name: charaData!.data.name || "Imported Character",
-        description: charaData!.data.description || "",
-        personality: charaData!.data.personality || "",
-        scenario: charaData!.data.scenario || "",
-        firstMessage: charaData!.data.first_mes || "",
-        exampleDialogues: charaData!.data.mes_example || "",
-    }
-
-    const [character] = await db.insert(schema.characters).values(data).returning()
-    await handleCharacterAvatarUpload({
-        character,
-        avatarFile: buffer
-    })
-    emitToUser("createCharacter", { character })
-    await charactersList(socket, {}, emitToUser)
 }
 
 export async function deleteChatMessage(

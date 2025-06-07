@@ -110,6 +110,7 @@ export async function updateWeights(
         .set(message.weights)
         .where(eq(schema.weights.id, id))
         .returning()
+    await weightsList(socket, {}, emitToUser)
     await weights(socket, { id }, emitToUser)
     const res: Sockets.UpdateWeights.Response = { weights: updatedWeights }
     emitToUser("updateWeights", res)

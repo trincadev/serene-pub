@@ -155,7 +155,7 @@
     })
 </script>
 
-<div class="border-primary bg-background animate-fade-in h-full rounded-lg border p-4 shadow-lg">
+<div class="border-primary bg-background animate-fade-in min-h-full rounded-lg border p-4 shadow-lg">
     <h2 class="mb-4 text-lg font-bold">
         {mode === "edit" ? `Edit: ${character.name}` : "Create Character"}
     </h2>
@@ -232,7 +232,7 @@
             </button>
             {#if expanded.description}
                 <textarea
-                    rows="3"
+                    rows="8"
                     bind:value={editCharacterData.description}
                     class="input input-sm bg-background border-muted w-full rounded border"
                     placeholder="Description..."
@@ -250,7 +250,7 @@
             </button>
             {#if expanded.personality}
                 <textarea
-                    rows="3"
+                    rows="8"
                     bind:value={editCharacterData.personality}
                     class="input input-sm bg-background border-muted w-full rounded border"
                     placeholder="Personality..."
@@ -268,7 +268,7 @@
             </button>
             {#if expanded.scenario}
                 <textarea
-                    rows="2"
+                    rows="8"
                     bind:value={editCharacterData.scenario}
                     class="input input-sm bg-background border-muted w-full rounded border"
                     placeholder="Scenario..."
@@ -286,7 +286,7 @@
             </button>
             {#if expanded.firstMessage}
                 <textarea
-                    rows="2"
+                    rows="8"
                     bind:value={editCharacterData.firstMessage}
                     class="input input-sm bg-background border-muted w-full rounded border"
                     placeholder="First message..."
@@ -304,7 +304,7 @@
             </button>
             {#if expanded.exampleDialogues}
                 <textarea
-                    rows="2"
+                    rows="8"
                     bind:value={editCharacterData.exampleDialogues}
                     class="input input-sm bg-background border-muted w-full rounded border"
                     placeholder="Example dialogues..."

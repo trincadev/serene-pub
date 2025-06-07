@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Header from './Header.svelte'
+	import Header from '../lib/client/components/Header.svelte'
 	import '../app.css'
 	import * as Icons from "@lucide/svelte"
 	import { fly, fade } from 'svelte/transition'
@@ -14,6 +14,8 @@
 	import PromptsSidebar from '../lib/client/components/sidebars/PromptsSidebar.svelte'
 	import TagsSidebar from '../lib/client/components/sidebars/TagsSidebar.svelte'
     import skio from 'sveltekit-io'
+    import { Toaster } from '@skeletonlabs/skeleton-svelte';
+    import { toaster } from '$lib/client/utils/toaster'
 
     interface Props {
 		children?: import('svelte').Snippet;
@@ -34,19 +36,19 @@
         onLeftPanelClose: undefined,
         onRightPanelClose: undefined,
         onMobilePanelClose: undefined,
-        leftNav: [
-            { key: 'weights', icon: Icons.SlidersHorizontal, title: 'Weights' },
-            { key: 'connections', icon: Icons.Cable, title: 'Connections' },
-            { key: 'contexts', icon: Icons.BookOpenText, title: 'Contexts' },
-            { key: 'prompts', icon: Icons.MessageCircle, title: 'Prompts' },
-        ],
-	    rightNav: [
-            { key: 'personas', icon: Icons.UserCog, title: 'Personas' },
-            { key: 'characters', icon: Icons.Users, title: 'Characters' },
-            { key: 'lorebooks', icon: Icons.BookMarked, title: 'Lorebooks' },
-            { key: 'tags', icon: Icons.Tag, title: 'Tags' },
-            { key: 'chats', icon: Icons.MessageSquare, title: 'Chats' },
-        ]
+        leftNav: {
+            weights: { icon: Icons.SlidersHorizontal, title: 'Weights' },
+            connections: { icon: Icons.Cable, title: 'Connections' },
+            contexts: { icon: Icons.BookOpenText, title: 'Contexts' },
+            prompts: { icon: Icons.MessageCircle, title: 'Prompts' },
+        },
+        rightNav: {
+            personas: { icon: Icons.UserCog, title: 'Personas' },
+            characters: { icon: Icons.Users, title: 'Characters' },
+            lorebooks: { icon: Icons.BookMarked, title: 'Lorebooks' },
+            tags: { icon: Icons.Tag, title: 'Tags' },
+            chats: { icon: Icons.MessageSquare, title: 'Chats' },
+        }
     })
 
     socket.on('user', (message) => {
@@ -55,51 +57,52 @@
 
     socket.emit('user', {})
 
-	function openPanel({panel, which}: {panel: 'left'|'right'|'mobile', which: string}) {
-	    if (window.innerWidth < 768) {
-	        if (panelsCtx.mobilePanel === which) {
-	            closePanel({panel: 'mobile'})
-	        } else if (panelsCtx.mobilePanel) {
-	            closePanel({panel: 'mobile'}).then((res) => {
-	                if (res) {
-	                    panelsCtx.mobilePanel = which
-	                    panelsCtx.leftPanel = null
-	                    panelsCtx.rightPanel = null
-	                }
-	            })
-	        } else {
-	            panelsCtx.mobilePanel = which
-	            panelsCtx.leftPanel = null
-	            panelsCtx.rightPanel = null
-	        }
-	    } else {
-	        // Determine which side to open based on nav config
-	        if (panelsCtx.leftNav.some((item) => item.key === which)) {
-	            if (panelsCtx.leftPanel === which) {
-	                closePanel({panel: 'left'})
-	            } else if (panelsCtx.leftPanel) {
-	                closePanel({panel: 'left'}).then((res) => {
-	                    if (res) {
-	                        panelsCtx.leftPanel = which
-	                    }
-	                })
-	            } else {
-	                panelsCtx.leftPanel = which
-	            }
-	        } else if (panelsCtx.rightNav.some((item) => item.key === which)) {
-	            if (panelsCtx.rightPanel === which) {
-	                closePanel({panel: 'right'})
-	            } else if (panelsCtx.rightPanel) {
-	                closePanel({panel: 'right'}).then((res) => {
-                        if (res) {
-                            panelsCtx.rightPanel = which
-                        }
-                    })
-	            } else {
-	                panelsCtx.rightPanel = which
-	            }
-	        }
-	    }
+	function openPanel(which: string) {
+        // Determine which nav the key belongs to
+        const isLeft = Object.prototype.hasOwnProperty.call(panelsCtx.leftNav, which)
+        const isRight = Object.prototype.hasOwnProperty.call(panelsCtx.rightNav, which)
+        const isMobile = window.innerWidth < 768
+        if (isMobile) {
+            if (panelsCtx.mobilePanel === which) {
+                closePanel({panel: 'mobile'})
+            } else if (panelsCtx.mobilePanel) {
+                closePanel({panel: 'mobile'}).then((res) => {
+                    if (res) {
+                        panelsCtx.mobilePanel = which
+                        panelsCtx.leftPanel = null
+                        panelsCtx.rightPanel = null
+                    }
+                })
+            } else {
+                panelsCtx.mobilePanel = which
+                panelsCtx.leftPanel = null
+                panelsCtx.rightPanel = null
+            }
+        } else if (isLeft) {
+            if (panelsCtx.leftPanel === which) {
+                closePanel({panel: 'left'})
+            } else if (panelsCtx.leftPanel) {
+                closePanel({panel: 'left'}).then((res) => {
+                    if (res) {
+                        panelsCtx.leftPanel = which
+                    }
+                })
+            } else {
+                panelsCtx.leftPanel = which
+            }
+        } else if (isRight) {
+            if (panelsCtx.rightPanel === which) {
+                closePanel({panel: 'right'})
+            } else if (panelsCtx.rightPanel) {
+                closePanel({panel: 'right'}).then((res) => {
+                    if (res) {
+                        panelsCtx.rightPanel = which
+                    }
+                })
+            } else {
+                panelsCtx.rightPanel = which
+            }
+        }
     }
 	
 	async function closePanel({panel}:{panel: 'left'|'right'|'mobile'}) {
@@ -232,6 +235,8 @@
         {/if}
     </div>
 {/if}
+
+<Toaster {toaster}></Toaster>
 
 <style>
 </style>

@@ -1,38 +1,56 @@
 import { db } from "$lib/server/db"
-import { connectionsList, connection, updateConnection, deleteConnection, setUserActiveConnection, testConnection, refreshOllamaModels, createConnection } from "./connections"
-import { weights, weightsList, setUserActiveWeights, createWeights, deleteWeights, updateWeights } from "./weights"
 import {
-  charactersList,
-  character,
-  createCharacter,
-  updateCharacter,
-  deleteCharacter
-} from './characters'
+    connectionsList,
+    connection,
+    updateConnection,
+    deleteConnection,
+    setUserActiveConnection,
+    testConnection,
+    refreshOllamaModels,
+    createConnection
+} from "./connections"
 import {
-  personasList,
-  persona,
-  createPersona,
-  updatePersona,
-  deletePersona
-} from './personas'
+    weights,
+    weightsList,
+    setUserActiveWeights,
+    createWeights,
+    deleteWeights,
+    updateWeights
+} from "./weights"
 import {
-  contextConfigsList,
-  contextConfig,
-  createContextConfig,
-  updateContextConfig,
-  deleteContextConfig,
-  setUserActiveContextConfig
-} from './contextConfigs'
-import { characterCardImport, chat, chatsList, createChat, deleteChatMessage, sendPersonaMessage, updateChatMessage } from "./chats"
+    charactersList,
+    character,
+    createCharacter,
+    updateCharacter,
+    deleteCharacter,
+    characterCardImport
+} from "./characters"
+import { personasList, persona, createPersona, updatePersona, deletePersona } from "./personas"
 import {
-  promptConfigsList,
-  promptConfig,
-  createPromptConfig,
-  updatePromptConfig,
-  deletePromptConfig,
-  setUserActivePromptConfig
-} from './promptConfigs'
-import { user } from './users'
+    contextConfigsList,
+    contextConfig,
+    createContextConfig,
+    updateContextConfig,
+    deleteContextConfig,
+    setUserActiveContextConfig
+} from "./contextConfigs"
+import {
+    chat,
+    chatsList,
+    createChat,
+    deleteChatMessage,
+    sendPersonaMessage,
+    updateChatMessage
+} from "./chats"
+import {
+    promptConfigsList,
+    promptConfig,
+    createPromptConfig,
+    updatePromptConfig,
+    deletePromptConfig,
+    setUserActivePromptConfig
+} from "./promptConfigs"
+import { user } from "./users"
 
 const userId = 1 // Replace with actual user id
 
@@ -125,5 +143,3 @@ function register(
         }
     })
 }
-
-

@@ -6,6 +6,7 @@
     import OllamaForm from "$lib/client/connectionForms/OllamaForm.svelte"
     import ChatGPTForm from "$lib/client/connectionForms/ChatGPTForm.svelte"
     import { CONNECTION_TYPES } from "$lib/shared/constants/ConnectionTypes"
+    import NewNameModal from '../modals/NewNameModal.svelte'
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -30,6 +31,7 @@
     let refreshModelsResult: { models?: any[]; error?: string } | null = $state(null)
     let ollamaFields = $state({})
     let availableOllamaModels = $state([])
+    let showNewNameModal = $state(false)
 
     // Helper: parse extraJson to fields
     function parseExtraJson(json: string | null | undefined) {
@@ -101,11 +103,17 @@
         socket.emit("setUserActiveConnection", { id: +(e.target as HTMLSelectElement).value })
     }
     function handleNew() {
-        const name = prompt("Enter name for new connection:")
+        showNewNameModal = true
+    }
+    function handleNewNameConfirm(name: string) {
         if (!name) return
         const newConn = { ...connection, name, type: "ollama", enabled: true }
         delete newConn.id
         socket.emit("createConnection", { connection: newConn })
+        showNewNameModal = false
+    }
+    function handleNewNameCancel() {
+        showNewNameModal = false
     }
     function handleUpdate() {
         socket.emit("updateConnection", { connection })
@@ -262,4 +270,10 @@
             >
         </footer>
     </Modal>
+    <NewNameModal
+        open={showNewNameModal}
+        onOpenChange={(e) => (showNewNameModal = e.open)}
+        onConfirm={handleNewNameConfirm}
+        onCancel={handleNewNameCancel}
+    />
 </div>

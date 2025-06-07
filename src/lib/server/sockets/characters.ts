@@ -3,6 +3,8 @@ import { and, eq } from "drizzle-orm"
 import * as schema from "$lib/server/db/schema"
 import * as fsPromises from "fs/promises"
 import { getCharacterDataDir, handleCharacterAvatarUpload } from "../utils"
+import extractChunks from 'png-chunks-extract';
+import {decode as decodeText} from 'png-chunk-text';
 
 export async function charactersList(
     socket: any,
@@ -122,4 +124,47 @@ export async function deleteCharacter(
     // Emit the delete event
     const res: Sockets.DeleteCharacter.Response = { id: message.characterId }
     emitToUser("deleteCharacter", res)
+}
+
+export async function characterCardImport(
+    socket: any,
+    message: { file?: string },
+    emitToUser: (event: string, data: any) => void
+) {
+    const userId = 1
+    let charaData: CharaImportMetadata
+    let base64 = message.file!
+    if (base64.startsWith("data:")) base64 = base64.split(",")[1]
+    const buffer = Buffer.from(base64, "base64")
+
+    const chunks = extractChunks(buffer)
+
+    for (const chunk of chunks) {
+        if (chunk.name === "tEXt") {
+            const { keyword, text } = decodeText(chunk.data)
+            if (keyword.toLocaleLowerCase() === "chara") {
+                charaData = JSON.parse(
+                    Buffer.from(text, "base64").toString("utf8")
+                ) as CharaImportMetadata
+            }
+        }
+    }
+
+    const data: InsertCharacter = {
+        userId,
+        name: charaData!.data.name || "Imported Character",
+        description: charaData!.data.description || "",
+        personality: charaData!.data.personality || "",
+        scenario: charaData!.data.scenario || "",
+        firstMessage: charaData!.data.first_mes || "",
+        exampleDialogues: charaData!.data.mes_example || "",
+    }
+
+    const [character] = await db.insert(schema.characters).values(data).returning()
+    await handleCharacterAvatarUpload({
+        character,
+        avatarFile: buffer
+    })
+    emitToUser("createCharacter", { character })
+    await charactersList(socket, {}, emitToUser)
 }
