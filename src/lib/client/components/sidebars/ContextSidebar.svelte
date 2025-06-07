@@ -3,6 +3,7 @@
     import { getContext, onMount } from "svelte"
     import * as Icons from "@lucide/svelte"
     import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
+    import NewNameModal from '../modals/NewNameModal.svelte'
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -23,8 +24,7 @@
         {} as Sockets.ContextConfig.Response["contextConfig"]
     )
     let unsavedChanges = $derived(JSON.stringify(contextConfig) !== JSON.stringify(originalData))
-    let showNamePrompt = $state(false)
-    let newConfigName = $state("")
+    let showNewNameModal = $state(false)
     let showUnsavedChangesModal = $state(false)
     let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 
@@ -64,16 +64,19 @@
     }
 
     function handleNew() {
-        showNamePrompt = true
-        newConfigName = ""
+        showNewNameModal = true
     }
 
-    function confirmClone() {
-        if (!newConfigName.trim()) return
-        const newContextConfig = { ...contextConfig, name: newConfigName, isImmutable: false }
-        socket.emit("createContextConfig", {
-            contextConfig: newContextConfig
-        })
+    function handleNewNameConfirm(name: string) {
+        if (!name.trim()) return
+        const newContextConfig = { ...contextConfig, name: name.trim(), isImmutable: false }
+        delete newContextConfig.id
+        socket.emit("createContextConfig", { contextConfig: newContextConfig })
+        showNewNameModal = false
+    }
+
+    function handleNewNameCancel() {
+        showNewNameModal = false
     }
 
     async function handleOnClose() {
@@ -151,28 +154,6 @@
             {/each}
         </select>
     </div>
-    {#if showNamePrompt}
-        <div class="modal">
-            <div class="modal-content">
-                <label for="newConfigNameInput">Enter name for new config:</label>
-                <input
-                    id="newConfigNameInput"
-                    class="input input-sm w-full"
-                    bind:value={newConfigName}
-                />
-                <div class="mt-2 flex justify-end gap-2">
-                    <button class="btn btn-sm" onclick={() => (showNamePrompt = false)}
-                        >Cancel</button
-                    >
-                    <button
-                        class="btn btn-sm preset-filled-primary-500"
-                        onclick={confirmClone}
-                        disabled={!newConfigName.trim()}>Clone</button
-                    >
-                </div>
-            </div>
-        </div>
-    {/if}
     {#if contextConfig}
         <div class="mt-4 mb-4 flex w-full justify-end gap-2">
             <button
@@ -254,4 +235,11 @@
     onOpenChange={handleUnsavedChangesModalOpenChange}
     onConfirm={handleUnsavedChangesModalConfirm}
     onCancel={handleUnsavedChangesModalCancel}
+/>
+
+<NewNameModal
+    open={showNewNameModal}
+    onOpenChange={(e) => (showNewNameModal = e.open)}
+    onConfirm={handleNewNameConfirm}
+    onCancel={handleNewNameCancel}
 />

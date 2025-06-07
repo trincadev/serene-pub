@@ -141,6 +141,12 @@
             </button>
         </div>
     </div>
+
+    <div class="p-4 card preset-filled-primary-500 m-4">
+        <p class="mb-2"><b>Not Implemented</b></p>
+        <p>Group chats are not yet implemented.</p>
+        <!-- Add lorebook management UI here -->
+    </div>
 {/if}
 
 <!-- <CharacterUnsavedChangesModal

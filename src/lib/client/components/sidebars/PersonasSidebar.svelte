@@ -5,6 +5,7 @@
     import * as Icons from "@lucide/svelte"
     import PersonaForm from "../personaForms/PersonaForm.svelte"
     import PersonaUnsavedChangesModal from "../modals/PersonaUnsavedChangesModal.svelte"
+    import { toaster } from "$lib/client/utils/toaster"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -101,6 +102,12 @@
             if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
         }
     }
+
+    function handlePersonaClick(persona: Sockets.PersonasList.Response["personasList"][0]) {
+        toaster.warning({
+            title: "Action not implemented"
+        })
+    }
 </script>
 
 <div class="text-foreground h-full p-4">
@@ -135,8 +142,11 @@
                 <div class="text-muted-foreground py-8 text-center">No personas found.</div>
             {:else}
                 {#each filteredPersonas as p}
+                    <!-- svelte-ignore a11y_click_events_have_key_events -->
+                    <!-- svelte-ignore a11y_no_static_element_interactions -->
                     <div
-                        class="hover:bg-surface-800 flex cursor-pointer items-center gap-2 rounded-lg p-2 transition" 
+                        class="hover:bg-surface-800 flex cursor-pointer items-center gap-2 rounded-lg p-2 transition"
+                        onclick={() => handlePersonaClick(p)} 
                     >
                         <span class="w-[2.5em] text-xs text-muted-foreground">
                             #{p.id}

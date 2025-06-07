@@ -3,6 +3,7 @@
     import { getContext, onMount, tick } from "svelte"
     import * as Icons from "@lucide/svelte"
     import WeightsUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"
+    import NewNameModal from '../modals/NewNameModal.svelte'
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -23,6 +24,7 @@
     })
     let showSelectWeights = $state(false)
     let showUnsavedChangesModal = $state(false)
+    let showNewNameModal = $state(false)
     let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
     let editingField: string | null = $state(null)
 
@@ -194,15 +196,18 @@
     }
 
     function handleNew() {
-        // Get new name
+        showNewNameModal = true
+    }
+    function handleNewNameConfirm(name: string) {
         const newWeights = { ...weights }
         delete newWeights.id
         delete newWeights.isImmutable
-        const name = prompt("Enter name for new weights:")
-        if (name?.trim()) {
-            newWeights.name = name.trim()
-            socket.emit("createWeights", { weights: newWeights })
-        }
+        newWeights.name = name.trim()
+        socket.emit("createWeights", { weights: newWeights })
+        showNewNameModal = false
+    }
+    function handleNewNameCancel() {
+        showNewNameModal = false
     }
 
     function handleUpdate() {
@@ -469,4 +474,10 @@
     onOpenChange={handleUnsavedChangesModalOpenChange}
     onConfirm={handleUnsavedChangesModalConfirm}
     onCancel={handleUnsavedChangesModalCancel}
+/>
+<NewNameModal
+    open={showNewNameModal}
+    onOpenChange={(e) => (showNewNameModal = e.open)}
+    onConfirm={handleNewNameConfirm}
+    onCancel={handleNewNameCancel}
 />

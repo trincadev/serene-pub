@@ -195,7 +195,7 @@ export const promptConfigsRelations = relations(promptConfigs, () => ({}))
 
 export const lorebooks = sqliteTable('lorebooks', {
     id: integer('id').primaryKey(),
-    userId: integer('user_id').notNull().references(() => users.id), // FK to users.id
+    userId: integer('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}), // FK to users.id
     name: text('name').notNull(), // Lorebook name
     description: text('description'), // Lorebook description
     tags: text('tags'), // JSON array of tags
@@ -215,7 +215,7 @@ export const lorebooksRelations = relations(lorebooks, ({ many, one }) => ({
 
 export const lorebookEntries = sqliteTable('lorebook_entries', {
     id: integer('id').primaryKey(),
-    lorebookId: integer('lorebook_id').notNull().references(() => lorebooks.id), // FK to lorebooks.id
+    lorebookId: integer('lorebook_id').notNull().references(() => lorebooks.id, {onDelete: 'cascade'}), // FK to lorebooks.id
     key: text('key'), // JSON array of keys
     keySecondary: text('key_secondary'), // JSON array of secondary keys
     comment: text('comment'),
@@ -267,8 +267,8 @@ export const tagsRelations = relations(tags, ({ many }) => ({
 }))
 
 export const characterTags = sqliteTable('character_tags', {
-    characterId: integer('character_id').notNull().references(() => characters.id), // FK to characters.id
-    tagId: integer('tag_id').notNull().references(() => tags.id), // FK to tags.id
+    characterId: integer('character_id').notNull().references(() => characters.id, {onDelete: 'cascade'}), // FK to characters.id
+    tagId: integer('tag_id').notNull().references(() => tags.id, {onDelete: 'cascade'}), // FK to tags.id
 })
 
 export const characterTagsRelations = relations(characterTags, ({ one }) => ({
@@ -284,7 +284,7 @@ export const characterTagsRelations = relations(characterTags, ({ one }) => ({
 
 export const characters = sqliteTable('characters', {
     id: integer('id').primaryKey(),
-    userId: integer('user_id').notNull().references(() => users.id), // FK to users.id
+    userId: integer('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}), // FK to users.id
     name: text('name').notNull(),
     description: text('description'),
     personality: text('personality'), // Persona field
@@ -295,7 +295,7 @@ export const characters = sqliteTable('characters', {
     avatar: text('avatar'), // Path or URL to avatar image
     createdAt: text('created_at'),
     updatedAt: text('updated_at'),
-	lorebookId: integer('lorebook_id').references(() => lorebooks.id), // Optional FK to lorebooks.id
+	lorebookId: integer('lorebook_id').references(() => lorebooks.id, {onDelete: 'set null'}), // Optional FK to lorebooks.id
 	isFavorite: integer('is_favorite', {mode: "boolean"}).default(false), // 1 if favorite, 0 otherwise
 })
 
@@ -313,7 +313,7 @@ export const charactersRelations = relations(characters, ({ many, one }) => ({
 
 export const personas = sqliteTable('personas', {
     id: integer('id').primaryKey(),
-    userId: integer('user_id').notNull().references(() => users.id), // FK to users.id
+    userId: integer('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}), // FK to users.id
 	isDefault: integer('is_default', {mode: "boolean"}).default(false), // Is this the default persona for the user?
     avatar: text('avatar'), // e.g. 'user-default.png', '1747379438925-Ryvn.png'
     name: text('name').notNull(), // e.g. 'Warren', 'Master Desir'
@@ -336,7 +336,7 @@ export const chats = sqliteTable('chats', {
     id: integer('id').primaryKey(),
     name: text('name'), // Optional chat/group name
     isGroup: integer('is_group').default(0), // 1 for group chat, 0 for 1:1
-    userId: integer('user_id').notNull().references(() => users.id),
+    userId: integer('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
     createdAt: text('created_at'),
     updatedAt: text('updated_at'),
     metadata: text('metadata'), // JSON for extra settings
@@ -355,10 +355,10 @@ export const chatsRelations = relations(chats, ({ one, many }) => ({
 // Chat messages
 export const chatMessages = sqliteTable('chat_messages', {
     id: integer('id').primaryKey(),
-    chatId: integer('chat_id').notNull().references(() => chats.id),
-    userId: integer('user_id').notNull().references(() => users.id), // nullable for system/character messages
-    characterId: integer('character_id').references(() => characters.id), // nullable
-    personaId: integer('persona_id').references(() => personas.id), // nullable
+    chatId: integer('chat_id').notNull().references(() => chats.id, {onDelete: 'cascade'}),
+    userId: integer('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}), // nullable for system/character messages
+    characterId: integer('character_id').references(() => characters.id, {onDelete: 'set null'}), // nullable
+    personaId: integer('persona_id').references(() => personas.id, {onDelete: 'set null'}), // nullable
     role: text('role'), // 'user', 'character', 'system', etc
     content: text('content').notNull(),
     createdAt: text('created_at'),
@@ -395,8 +395,8 @@ export const GroupReplyStrategies = {
 
 // Many-to-many: chats <-> personas
 export const chatPersonas = sqliteTable('chat_personas', {
-    chatId: integer('chat_id').notNull().references(() => chats.id),
-    personaId: integer('persona_id').notNull().references(() => personas.id),
+    chatId: integer('chat_id').notNull().references(() => chats.id, {onDelete: 'cascade'}),
+    personaId: integer('persona_id').notNull().references(() => personas.id, {onDelete: 'cascade'}),
 	position: integer('position').default(0), // Position in the chat
 	group_reply_strategy: text('group_reply_strategy').default(GroupReplyStrategies.ORDERED), // How to handle group replies
 })
@@ -414,8 +414,8 @@ export const chatPersonasRelations = relations(chatPersonas, ({ one }) => ({
 
 // Many-to-many: chats <-> characters
 export const chatCharacters = sqliteTable('chat_characters', {
-    chatId: integer('chat_id').notNull().references(() => chats.id),
-    characterId: integer('character_id').notNull().references(() => characters.id),
+    chatId: integer('chat_id').notNull().references(() => chats.id, {onDelete: 'cascade'}),
+    characterId: integer('character_id').notNull().references(() => characters.id, {onDelete: 'cascade'}),
 	position: integer('position').default(0), // Position in the chat
 	isActive: integer('is_active', {mode: "boolean"}).default(false), // 1 if active in chat, 0 if not
 })

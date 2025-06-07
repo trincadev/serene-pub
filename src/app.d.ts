@@ -22,13 +22,13 @@ declare global {
         rightPanel: string | null
         mobilePanel: string | null
         isMobileMenuOpen: boolean
-        openPanel: (args: { panel: "left" | "right" | "mobile"; which: string }) => void
+        openPanel: (key: string) => void
         closePanel: (args: { panel: "left" | "right" | "mobile" }) => Promise<boolean>
         onLeftPanelClose?: () => Promise<boolean>
         onRightPanelClose?: () => Promise<boolean>
         onMobilePanelClose?: () => Promise<boolean>
-        leftNav: { key: string; icon: Component<Icons.IconProps, {}, "">; title: string }[]
-        rightNav: { key: string; icon: Component<Icons.IconProps, {}, "">; title: string }[]
+        leftNav: Record<string, { icon: Component<Icons.IconProps, {}, "">; title: string }>
+        rightNav: Record<string, { icon: Component<Icons.IconProps, {}, "">; title: string }>
     }
 
     // Model select and insert
