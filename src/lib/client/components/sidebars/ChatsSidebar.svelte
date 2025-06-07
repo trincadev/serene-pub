@@ -96,8 +96,10 @@
             {:else}
                 <ul class="flex flex-col gap-2">
                     {#each filteredChats as chat}
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                         <li
-                            class="hover:bg-muted flex cursor-pointer items-center gap-3 rounded p-2"
+                            class="hover:bg-surface-800 flex cursor-pointer items-center gap-2 rounded-lg p-2 transition"
                             onclick={() => handleChatClick(chat)}
                         >
                             <!-- First character avatar -->

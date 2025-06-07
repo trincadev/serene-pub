@@ -145,7 +145,7 @@
                             <Icons.User size={36} />
                         </Avatar>
                         <div class="min-w-0 flex-1">
-                            <div class="truncate font-semibold">{p.name ?? "Unnamed"}</div>
+                            <div class="truncate">{p.name ?? "Unnamed"}</div>
                             {#if p.description}
                                 <div class="text-muted-foreground truncate text-xs">
                                     {p.description}
@@ -156,7 +156,7 @@
                         <button
                             class="btn btn-xs text-primary-500 px-0"
                             onclick={() => {
-                                handleEditClick(c.id)
+                                handleEditClick(p.id)
                             }}
                             title="Edit Persona"
                         >

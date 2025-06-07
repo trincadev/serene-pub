@@ -196,13 +196,14 @@
                     type="text"
                     bind:value={promptConfig.name}
                     class="input input-sm w-full"
+                    disabled={promptConfig.isImmutable}
                 />
             </div>
             <div class="flex flex-col gap-1">
                 <label class="font-semibold" for="systemPrompt">System Prompt</label>
                 <textarea
                     id="systemPrompt"
-                    rows="8"
+                    rows="15"
                     bind:value={promptConfig.systemPrompt}
                     class="input input-sm w-full"
                 ></textarea>

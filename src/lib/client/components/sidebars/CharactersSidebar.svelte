@@ -26,7 +26,7 @@
     let showImportModal = $state(false)
 
     let unsavedChanges = $derived.by(() => {
-        return !isSafeToCloseCharacterForm
+        return !isCreating && !characterId ? false : !isSafeToCloseCharacterForm
     })
 
     $effect(() => {
