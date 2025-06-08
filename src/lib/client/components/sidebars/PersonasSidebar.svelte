@@ -190,17 +190,24 @@
     {/if}
 </div>
 
-<Modal open={showDeleteModal} onclose={cancelDelete}>
-    <div class="p-6">
-        <h2 class="mb-2 text-lg font-bold">Delete Persona?</h2>
-        <p class="mb-4">
-            Are you sure you want to delete this persona? This action cannot be undone.
-        </p>
-        <div class="flex justify-end gap-2">
-            <button class="btn btn-sm" onclick={cancelDelete}>Cancel</button>
-            <button class="btn btn-sm btn-error" onclick={confirmDelete}>Delete</button>
+<Modal
+    open={showDeleteModal}
+    onOpenChange={(e) => (showDeleteModal = e.open)}
+    contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+    backdropClasses="backdrop-blur-sm"
+>
+    {#snippet content()}
+        <div class="p-6">
+            <h2 class="mb-2 text-lg font-bold">Delete Persona?</h2>
+            <p class="mb-4">
+                Are you sure you want to delete this character? This action cannot be undone.
+            </p>
+            <div class="flex justify-end gap-2">
+                <button class="btn preset-filled-surface-500" onclick={cancelDelete}>Cancel</button>
+                <button class="btn preset-filled-error-500" onclick={confirmDelete}>Delete</button>
+            </div>
         </div>
-    </div>
+    {/snippet}
 </Modal>
 <PersonaUnsavedChangesModal
     open={showUnsavedChangesModal}

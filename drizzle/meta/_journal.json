@@ -15,6 +15,13 @@
       "when": 1749322133957,
       "tag": "0001_safe_drax",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1749364347921,
+      "tag": "0002_nasty_risque",
+      "breakpoints": true
     }
   ]
 }

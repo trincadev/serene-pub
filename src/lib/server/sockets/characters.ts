@@ -64,7 +64,7 @@ export async function createCharacter(
         emitToUser("createCharacter", res)
     } catch (e: any) {
         console.error("Error creating character:", e)
-        emitToUser("createCharacterError", { error: e.message || String(e) })
+        emitToUser("error", { error: e.message || String(e) })
         return
     }
 }

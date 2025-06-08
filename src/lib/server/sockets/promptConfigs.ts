@@ -99,7 +99,10 @@ export async function setUserActivePromptConfig(
     const user = await db.query.users.findFirst({ where: (u, { eq }) => eq(u.id, userId) })
     await loadUser(socket, {}, emitToUser) // Emit updated user info
     await promptConfig(socket, { id: message.id! }, emitToUser)
-    if (!user) return // Optionally emit an error here
+    if (!user) {
+        emitToUser("error", { error: "User not found." })
+        return
+    }
     const res: Sockets.SetUserActivePromptConfig.Response = { user }
     emitToUser("setUserActivePromptConfig", res)
 }

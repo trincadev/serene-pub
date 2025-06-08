@@ -44,13 +44,24 @@
         selectedConfigId = msg.contextConfig.id
     })
 
-    $effect(() => {})
-
     function handleSave() {
-        socket.emit("saveContextConfig", {
+        socket.emit("updateContextConfig", {
             contextConfig
         })
+        // After saving, reload the config from the server
+        // socket.emit("contextConfig", { id: selectedConfigId })
     }
+
+    $effect(() => {
+        // When selectedConfigId changes, load the config from the server
+        if (selectedConfigId) {
+            socket.emit("contextConfig", { id: selectedConfigId })
+        }
+    })
+
+    $effect(() => {
+        console.log("Context config changed:", $state.snapshot(contextConfig))
+    })
 
     function handleDelete() {
         if (contextConfig.isImmutable) {
@@ -213,17 +224,30 @@
             </div>
             <div class="flex flex-row flex-wrap gap-4">
                 <label class="flex items-center gap-2">
-                    <input type="checkbox" bind:checked={contextConfig.useStopStrings} /> Use Stop Strings
+                    <input type="checkbox"
+                        checked={contextConfig.useStopStrings}
+                        onchange={e => contextConfig = { ...contextConfig, useStopStrings: e.target.checked }}
+                    /> Use Stop Strings
                 </label>
                 <label class="flex items-center gap-2">
-                    <input type="checkbox" bind:checked={contextConfig.alwaysForceName} /> Always Force
-                    Name
+                    <input type="checkbox"
+                        checked={contextConfig.alwaysForceName}
+                        onchange={e => contextConfig = { ...contextConfig, alwaysForceName: e.target.checked }}
+                    /> Always Force Name
                 </label>
-                <label class="flex items-center gap-2">
-                    <input type="checkbox" bind:checked={contextConfig.trimSentences} /> Trim Sentences
+                <label class="flex items-center gap-2 disabled">
+                    <input type="checkbox"
+                        checked={contextConfig.trimSentences}
+                        disabled
+                        onchange={e => contextConfig = { ...contextConfig, trimSentences: e.target.checked }}
+                    /> Trim Sentences
                 </label>
-                <label class="flex items-center gap-2">
-                    <input type="checkbox" bind:checked={contextConfig.singleLine} /> Single Line
+                <label class="flex items-center gap-2 disabled">
+                    <input type="checkbox"
+                        checked={contextConfig.singleLine}
+                        disabled
+                        onchange={e => contextConfig = { ...contextConfig, singleLine: e.target.checked }}
+                    /> Single Line
                 </label>
             </div>
         </div>

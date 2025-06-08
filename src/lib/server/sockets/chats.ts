@@ -263,4 +263,30 @@ export async function updateChatMessage(
         .where(and(eq(schema.chatMessages.id, message.id), eq(schema.chatMessages.userId, userId)))
         .returning()
     emitToUser("updateChatMessage", { chatMessage: updated })
+    await getChat(socket, { id: updated.chatId }, emitToUser)
+}
+
+export async function deleteChat(
+    socket: any,
+    message: { id: number },
+    emitToUser: (event: string, data: any) => void
+) {
+    try {
+        console.log("Deleting chat with ID:", message.id)
+        const userId = 1 // Replace with actual user id
+        // Delete chat messages
+        // await db.delete(schema.chatMessages).where(eq(schema.chatMessages.chatId, message.id))
+        // // Delete chat characters
+        // await db.delete(schema.chatCharacters).where(eq(schema.chatCharacters.chatId, message.id))
+        // // Delete chat personas
+        // await db.delete(schema.chatPersonas).where(eq(schema.chatPersonas.chatId, message.id))
+        // // Delete the chat itself
+        await db.delete(schema.chats).where(and(eq(schema.chats.id, message.id), eq(schema.chats.userId, userId)))
+        // Emit updated chat list
+        await chatsList(socket, {}, emitToUser)
+        emitToUser("deleteChat", { id: message.id })
+    } catch (error) {
+        console.error("Error deleting chat:", error)
+        emitToUser("error", { error: "Failed to delete chat." })
+    }
 }
