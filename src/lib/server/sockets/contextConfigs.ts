@@ -55,6 +55,7 @@ export async function updateContextConfig(
     const id = message.contextConfig.id
     const updateData = { ...message.contextConfig }
     delete updateData.id
+    console.log("Updating context config with ID:", id, "Data:", updateData)
     const [contextConfig] = await db
         .update(schema.contextConfigs)
         .set(updateData)

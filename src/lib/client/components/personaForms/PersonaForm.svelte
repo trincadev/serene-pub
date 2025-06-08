@@ -42,12 +42,14 @@
 
     socket.on("createPersona", (res) => {
         if (!res.error) {
+            isSafeToClose = true
             closeForm()
         }
     })
 
     socket.on("updatePersona", (res) => {
         if (!res.error) {
+            isSafeToClose = true
             closeForm()
         }
     })

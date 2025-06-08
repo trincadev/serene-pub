@@ -1,6 +1,25 @@
-// Helper: Replace {{var}} with contextData[var] (SillyTavern-style)
-function replaceVars(str: string, data: Record<string, string>): string {
-    return str.replace(/{{\s*([\w.]+)\s*}}/g, (_, key) => data[key] ?? "")
+import Handlebars from "handlebars"
+
+function chatmlBlock(role: string, content: string, includeClose = true): string {
+  return `<|im_start|>${role}\n${content}\n${includeClose? "<|im_end|>\n" : ""}`;
+}
+
+export function stripCharacterName(response: string): string {
+    // Match: start of string, any non-colon chars, colon, optional spaces
+    // E.g., "Alice: Hello", "Bob : Hi", "Narrator: The story begins"
+    return response.replace(/^[^:]+:\s*/, "");
+}
+
+export function applyStopStrings(response: string, stopStrings: string[]): string {
+    let earliestIndex = response.length;
+    for (const stop of stopStrings) {
+        const regex = new RegExp(stop, "m"); // multiline for ^/$ support
+        const match = response.match(regex);
+        if (match && match.index !== undefined && match.index < earliestIndex) {
+            earliestIndex = match.index;
+        }
+    }
+    return response.slice(0, earliestIndex);
 }
 
 export class OllamaAdapter {
@@ -37,72 +56,47 @@ export class OllamaAdapter {
         this.chat = chat
     }
 
-    applyNameReplacements(str: string, characterName: string, personaName: string): string {
-        return str
-            .replace(/{{\s*char\s*}}/g, characterName)
-            .replace(/{{\s*user\s*}}/g, personaName)
-            .replace(/{{\s*character\s*}}/g, characterName)
-            .replace(/{{\s*persona\s*}}/g, personaName)
-    }
-
     contextBuildCharacterDescription(
         character: any,
-        characterName: string,
-        personaName: string
-    ): string {
-        const desc = character?.description
-            ? `${character.name || ""}'s description: \n ${character.description} \n\n\u200B`
-            : ""
-        return this.applyNameReplacements(desc, characterName, personaName)
+    ): string | undefined {
+        if (!character.description) return undefined
+        return "**Assistant character {{char}}'s description:**\n\n" + character.description + "\n\n"
     }
 
     contextBuildCharacterPersonality(
         character: any,
-        characterName: string,
-        personaName: string
-    ): string {
-        const pers = character?.personality
-            ? `${character.name || ""}'s personality: \n ${character.personality} \n\n\u200B`
-            : ""
-        return this.applyNameReplacements(pers, characterName, personaName)
+    ): string | undefined {
+        if (!character.personality) return undefined
+        return "**Assistant character {{char}}'s personality:**\n\n" + character.personality + "\n\n"
     }
 
     contextBuildCharacterScenario(
         character: any,
-        characterName: string,
-        personaName: string
-    ): string {
-        const scen = "" // character?.scenario ? `Scenario: ${character.scenario}` : '';
-        return this.applyNameReplacements(scen, characterName, personaName)
+    ): string | undefined {
+        if (!character.scenario) return undefined
+        return "**Assistant character {{char}}'s scenario:**\n\n" + character.scenario + "\n\n"
     }
 
     contextBuildCharacterWiBefore(
-        character: any,
-        characterName: string,
-        personaName: string
-    ): string {
-        const wi = "" // character?.wiBefore ? String(character.wiBefore) : '';
-        return this.applyNameReplacements(wi, characterName, personaName)
+    ): string | undefined {
+        return undefined // character?.wiBefore ? String(character.wiBefore) : '';
     }
 
     contextBuildCharacterWiAfter(
-        character: any,
-        characterName: string,
-        personaName: string
-    ): string {
-        const wi = "" // character?.wiAfter ? String(character.wiAfter) : '';
-        return this.applyNameReplacements(wi, characterName, personaName)
+    ): string | undefined {
+        return undefined // character?.wiAfter ? String(character.wiAfter) : '';
     }
 
     contextBuildPersonaDescription(
         persona: any,
-        characterName: string,
-        personaName: string
-    ): string {
-        const desc = persona?.description
-            ? `${persona.name || ""}'s description: \n ${persona.description} \n\u200B`
-            : ""
-        return this.applyNameReplacements(desc, characterName, personaName)
+    ): string | undefined {
+        if (!persona.description) return undefined
+        return `**User character {{user}}'s description:**\n\n` + persona.description + "\n\n"
+    }
+
+    contextBuildSystemPrompt() {
+        if (!this.promptConfig.systemPrompt) return undefined
+        return `**Instructions:**\n\n${this.promptConfig.systemPrompt}\n\n`
     }
 
     async testConnection(): Promise<{ ok: boolean; error?: string; models?: any[] }> {
@@ -137,109 +131,94 @@ export class OllamaAdapter {
         }
     }
 
-    compilePrompt(): [string, string] {
+    buildOllamaMessages(): Array<{ role: string; content: string }> {
+        // Convert chatMessages to Ollama's expected format
+        return (this.chat.chatMessages || []).map((msg: any) => ({
+            role: OllamaAdapter.mapRole(msg.role),
+            content: msg.content
+        }))
+    }
+
+    compilePrompt(): string {
         // Determine character and persona names (use first if multiple)
         const characterName = this.chat.chatCharacters?.[0]?.character?.name || "assistant"
         const persona = this.chat.chatPersonas?.[0]?.persona
         const personaName = persona?.name || "user"
         const character = this.chat.chatCharacters?.[0]?.character
 
-        // Parse {{#if ...}} blocks in contextConfig.template, supporting nested/complex keys
-        let contextTemplate = this.contextConfig?.template || ""
-        // Only use context builders for non-disabled fields
-        const contextBuilders: Record<string, (arg: any) => string> = {
-            description: (c) =>
-                this.contextBuildCharacterDescription(c, characterName, personaName),
-            personality: (c) =>
-                this.contextBuildCharacterPersonality(c, characterName, personaName),
-            // scenario, wiBefore, wiAfter intentionally left as empty string builders
-            persona: (p) => this.contextBuildPersonaDescription(p, characterName, personaName)
-        }
-        // Build up contextData with all context fields (including disabled ones as empty string)
-        const personaDesc = contextBuilders.persona(persona)
-        const contextData: Record<string, string> = {
+        // Build up contextData with all context fields
+        const systemCtxData: Record<string, string | undefined> = {
             char: characterName,
             character: characterName,
-            persona: personaDesc, // persona now resolves to description
-            personaDescription: personaDesc, // also for personaDescription
-            description: contextBuilders.description(character),
-            personality: contextBuilders.personality(character),
-            scenario: this.contextBuildCharacterScenario(character, characterName, personaName),
-            wiBefore: this.contextBuildCharacterWiBefore(character, characterName, personaName),
-            wiAfter: this.contextBuildCharacterWiAfter(character, characterName, personaName)
+            user: personaName,
+            persona: this.contextBuildPersonaDescription(persona),
+            personaDescription: this.contextBuildPersonaDescription(persona),
+            description: this.contextBuildCharacterDescription(character),
+            personality: this.contextBuildCharacterPersonality(character),
+            scenario: this.contextBuildCharacterScenario(character),
+            wiBefore: this.contextBuildCharacterWiBefore(),
+            wiAfter: this.contextBuildCharacterWiAfter(),
+            system: this.contextBuildSystemPrompt(),
         }
-        // Replace {{#if key}}...{{/if}} blocks
-        contextTemplate = contextTemplate.replace(
-            /{{#if ([\w.]+)}}([\s\S]*?){{\/if}}/g,
-            (match: string, key: string, inner: string) => {
-                // Use contextData for all lookups
-                const value = contextData[key]
-                if (typeof value === "string" && value.trim() !== "") {
-                    // Replace variables in the inner block
-                    return inner.replace(/{{\s*([\w.]+)\s*}}/g, (_, varKey: string) => {
-                        return contextData[varKey] ?? ""
-                    })
-                }
-                return ""
-            }
-        )
 
-        // Build message lines
-        const messageLines = this.chat.chatMessages.map((msg: SelectChatMessage) => {
-            let displayName = ""
-            if (msg.role === "assistant" || msg.role === "bot") {
-                displayName = characterName
-            } else if (msg.role === "user") {
-                displayName = personaName
-            } else {
-                displayName = msg.role || "user"
-            }
-            return `${displayName}: ${msg.content}`
-        })
+        // console.log("[OllamaAdapter.compilePrompt] Context data:\n", systemCtxData)
 
-        // Layer together all parts
-        const promptLayers = [
-            this.promptConfig?.systemPrompt
-                ? "**Instructions:** \n " + this.promptConfig?.systemPrompt + " \n --- "
-                : "",
-            "**Context:** \n " + contextTemplate + " \n --- ",
-            "**Message history (from oldest to newest):**",
-            messageLines.join(" \n ")
+        // Render the full context template for the system block
+        const systemTemplate = this.contextConfig.template || "{{system}}";
+        const renderedSystemBlock = Handlebars.compile(systemTemplate)(systemCtxData);
+        const systemBlock = chatmlBlock("system", renderedSystemBlock);
+
+        // Build message lines for chat history
+        const messageBlock = this.chat.chatMessages.map((msg: SelectChatMessage) => {
+            return chatmlBlock(msg.role! || "assistant",`{{${msg.role === "user" ? "user" : msg.role === "assistant" ? "char" : msg.role === "system" ? "system" : "system"}}}:\n${msg.content}`)
+        }).join("")
+        
+        const promptBlocks = [
+            systemBlock, 
+            messageBlock, 
         ]
 
-        // Replace template tags in the final prompt
-        let prompt = promptLayers.filter(Boolean).join(" \n ")
-        prompt = replaceVars(prompt, contextData).replace(/{{[^}]+}}/g, "") // Remove any other template tags
-        return [prompt.trim(), personaName] // Return both prompt and character name
+        if (this.contextConfig.alwaysForceName) {
+            promptBlocks.push(chatmlBlock("assistant", "{{char}}:", false))
+        }
+
+        const prompt = Handlebars.compile(promptBlocks.join("\n\n"))(systemCtxData)
+        // console.log("[OllamaAdapter.compilePrompt] Compiled prompt:\n\n", prompt, "\n\n")
+        return prompt.trim()
     }
 
     async sendText({
-        prompt,
         model,
         options = {}
     }: {
-        prompt: string
         model?: string
         options?: Record<string, any>
     }): Promise<Response> {
-        // Send a completion request to Ollama
+        // Send a completion request to Ollama using a single prompt
         const url = this.connection.baseUrl?.endsWith("/")
             ? this.connection.baseUrl
             : this.connection.baseUrl + "/"
-        // Use OllamaWeightsMapper to build weightsForApi
         const weights = this.weights || {}
         const weightsForApi = OllamaWeightsMapper.toOllama(weights)
-        const body = {
+        const { stream, ...filteredWeights } = weightsForApi
+        const { stream: streamOpt, ...filteredOptions } = options
+        const prompt = this.compilePrompt()
+        const body: Record<string, any> = {
             model: model || this.connection.model,
             prompt,
-            stream: weights.streamingEnabled ? weights.streaming : false,
-            ...weightsForApi,
-            ...options
+            stream: stream || false,
+            options: {
+                ...filteredWeights,
+                ...filteredOptions
+            }
         }
         console.log("[OllamaAdapter.sendText] Request body:", body)
         return fetch(url + "api/generate", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "timeout": "300000" // 5 minutes in milliseconds
+            },
             body: JSON.stringify(body)
         })
     }
@@ -315,92 +294,38 @@ export class OllamaAdapter {
      * This replaces the old getCompletion signature.
      */
     async getCompletion(): Promise<string> {
-        let [prompt, charName] = this.compilePrompt()
-        console.log("OllamaAdapter getCompletion prompt:", prompt)
-
+        // Use Ollama's chat API with template and messages
         const response = await this.sendText({
-            prompt,
             model: this.connection!.model!
-        });
+        })
         if (response.ok) {
-
-            // Send a completion request to Ollama
-            const url = this.connection.baseUrl?.endsWith("/")
-                ? this.connection.baseUrl
-                : this.connection.baseUrl + "/"
-            const weights = this.weights || {}
-            const weightsForApi: Record<string, any> = {}
-            for (const [key, value] of Object.entries(weights)) {
-                if (key.endsWith("Enabled") && value === true) {
-                    const baseKey = key.replace(/Enabled$/, "")
-                    const weightsAny = weights as Record<string, any>
-                    if (
-                        baseKey in weightsAny &&
-                        weightsAny[baseKey] !== undefined &&
-                        weightsAny[baseKey] !== null
-                    ) {
-                        weightsForApi[baseKey] = weightsAny[baseKey]
+            const raw = await response.text();
+            // console.log("[OllamaAdapter.getCompletion] Raw Ollama response:", raw);
+            // Try to parse as a single JSON object first
+            try {
+                const data = JSON.parse(raw);
+                return data?.response || ""
+            } catch (err) {
+                // If not, try to parse as NDJSON (streamed JSON lines)
+                let content = "";
+                let lastDone = false;
+                raw.split(/\r?\n/).forEach(line => {
+                    if (!line.trim()) return;
+                    try {
+                        const obj = JSON.parse(line);
+                        if (obj.response) content += obj.response;
+                        if (obj.done) lastDone = true;
+                    } catch (e) {
+                        console.error("OllamaAdapter.getCompletion: Failed to parse line as JSON:", line, e);
                     }
+                });
+                if (this.contextConfig.useStopStrings) {
+                    content = applyStopStrings(content, JSON.parse(this.contextConfig.stoppingStrings || "[]"));
                 }
+                if (content && lastDone) return stripCharacterName(content);
+                console.error("OllamaAdapter.getCompletion: Failed to parse JSON or NDJSON. Raw response:", raw)
+                return "FAILURE: Ollama returned non-JSON/NDJSON response. See server logs."
             }
-            const body = {
-                model: this.connection.model,
-                prompt,
-                stream: weights.streamingEnabled ? weights.streaming : false,
-                ...weightsForApi
-                // ...options
-            }
-            const response = await fetch(url + "api/generate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
-            })
-            let result = ""
-            if (!response.body) return result
-            const reader = response.body.getReader()
-            const decoder = new TextDecoder()
-            let done = false
-            let buffer = ""
-            while (!done) {
-                const { value, done: doneReading } = await reader.read()
-                done = doneReading
-                if (value) {
-                    buffer += decoder.decode(value, { stream: true })
-                    let lines = buffer.split("\n")
-                    buffer = lines.pop() || ""
-                    for (const line of lines) {
-                        if (!line.trim()) continue
-                        try {
-                            const json = JSON.parse(line)
-                            if (json.response) result += json.response
-                        } catch (e) {
-                            // Ignore parse errors for incomplete lines
-                        }
-                    }
-                }
-            }
-            if (buffer) {
-                try {
-                    const json = JSON.parse(buffer)
-                    if (json.response) result += json.response
-                } catch {}
-            }
-            // Try to extract character name from the prompt if not provided
-            if (!charName) {
-                // Heuristic: look for '**Context:**' or similar, then find the first 'X:' in the message history
-                const match = prompt.match(/\n([A-Za-z0-9_\- ]+): /)
-                if (match) charName = match[1]
-            }
-            if (charName) {
-                // Remove all leading lines that start with the character name and a colon (case-insensitive, multiline)
-                const regex = new RegExp(
-                    `^${charName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:\\s*`,
-                    "i"
-                )
-                // Remove prefix at the start of the result, and also after any newlines (for multi-line responses)
-                result = result.replace(new RegExp(`(^|\n)${charName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:\\s*`, "gi"), "$1")
-            }
-            return result
         }
         return "FAILURE: " + response.statusText
     }

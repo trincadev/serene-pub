@@ -173,10 +173,10 @@ export const contextConfigs = sqliteTable('context_configs', {
     isImmutable: integer('is_immutable', {mode: "boolean"}).default(true),
     name: text('name').notNull(),
     template: text('template'), // Sillytavern storyString
-    stoppingStrings: text('stopping_strings'), // JSON array of custom stopping strings
+    stoppingStrings: text('stopping_strings').default("[]"), // JSON array of custom stopping strings
     exampleSeparator: text('example_separator'), // Separator for examples
     chatStart: text('chat_start'), // Chat start string
-    useStopStrings: integer('use_stop_strings', {mode: 'boolean'}).default(false), // Use stop strings
+    useStopStrings: integer('use_stop_strings', {mode: 'boolean'}).default(true), // Use stop strings
     alwaysForceName: integer('always_force_name', {mode: 'boolean'}).default(false), // Always force name2
     trimSentences: integer('trim_sentences', {mode: 'boolean'}).default(false), // Trim sentences
     singleLine: integer('single_line', {mode: 'boolean'}).default(false), // Single line mode

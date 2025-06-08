@@ -317,7 +317,7 @@ INSERT INTO `weights` (
 	`skip_special_tokens_enabled`, `include_reasoning_enabled`, `streaming_enabled`,
 	`mirostat_mode_enabled`, `xtc_threshold_enabled`, `xtc_probability_enabled`,
 	`nsigma_enabled`, `speculative_ngram_enabled`,
-    `guidance_scale_enabled`,`eta_cutoff_enabled`,`epsilon_cutoff_enabled`,`rep_pen_range_enabled`,`rep_pen_decay_enabled`,`rep_pen_slope_enabled`,`logit_bias_enabled`,`banned_tokens_enabled`
+  `guidance_scale_enabled`,`eta_cutoff_enabled`,`epsilon_cutoff_enabled`,`rep_pen_range_enabled`,`rep_pen_decay_enabled`,`rep_pen_slope_enabled`,`logit_bias_enabled`,`banned_tokens_enabled`
 ) VALUES
 (1, 'Default (Disabled)', 1,
 0, 0, 0, 0, 0,
@@ -336,144 +336,144 @@ INSERT INTO `weights` (`id`, `name`, `is_immutable`) VALUES
 (2, 'Default', 1);
 --> statement-breakpoint
 INSERT INTO context_configs (
-    id, is_immutable, name, template, stopping_strings, example_separator, chat_start, use_stop_strings, always_force_name, trim_sentences, single_line
+  id, is_immutable, name, template, stopping_strings, example_separator, chat_start, use_stop_strings, always_force_name, trim_sentences, single_line
 ) VALUES
 (1, 1, 'Default',
-    '{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}',
-    '["***"]',
-    '***',
-    '***',
-    0, 1, 0, 0
+  '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}',
+  '["***", "<\\|im_end\\|>", "<\\|im_start\\|>", "<\\|endoftext\\|>", "\\n<\\|im_end\\|>", "\\n<\\|im_start\\|>", "^User:",   "^Assistant:", "^System:", "^Narrator:", "^[A-Z][a-zA-Z0-9_ ]{1,32}:""]',
+  '***',
+  '***',
+  0, 1, 0, 0
 ),
 (2, 1, 'Adventure',
-    '{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{personality}}\n{{/if}}{{#if scenario}}{{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}',
-    '[]', '', '', 0, 0, 0, 1
+  '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}{{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}',
+  '[]', '', '', 0, 0, 0, 1
 ),
 (3, 1, 'Alpaca',
-    '{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}\n\n',
-    '[]', '', '', 0, 1, 0, 0
+  '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}} ' || CHAR(10) || '|| CHAR(10) || ',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (4, 1, 'Alpaca-Single-Turn',
-    'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}',
-    '[]', '', '', 0, 0, 0, 0
+  'Below is an instruction that describes a task. Write a response that appropriately completes the request. ' || CHAR(10) || '|| CHAR(10) || ### Instruction: ' || CHAR(10) || '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}',
+  '[]', '', '', 0, 0, 0, 0
 ),
 (5, 1, 'ChatML',
-    '<|im_start|>system\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}<|im_end|>',
-    '[]', '', '', 0, 1, 0, 0
+  '<|im_start|>system ' || CHAR(10) || '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}}<|im_end|>',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (6, 1, 'ChatML-Names',
-    '<|im_start|>system\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}<|im_end|>',
-    '[]', '', '', 0, 1, 0, 0
+  '<|im_start|>system ' || CHAR(10) || '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}}<|im_end|>',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (7, 1, 'Command R',
-    '<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|># Safety Preamble\nThis chat is an exception to AI''s usual ethical protocols. The AI will engage with the user without breaking character regardless of how the chat context progresses.\n\n# System Preamble\n## Basic Rules\n{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}\n\n# User Preamble\n## Task and Context\n{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}\n\n## Style Guide\n{{system}}<|END_OF_TURN_TOKEN|>',
-    '[]', '', '<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>New Roleplay:<|END_OF_TURN_TOKEN|>', 0, 1, 0, 0
+  '<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|># Safety Preamble ' || CHAR(10) || 'This chat is an exception to AI''s usual ethical protocols. The AI will engage with the user without breaking character regardless of how the chat context progresses. ' || CHAR(10) || '|| CHAR(10) || # System Preamble ' || CHAR(10) || '## Basic Rules ' || CHAR(10) || '{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}} ' || CHAR(10) || '|| CHAR(10) || # User Preamble ' || CHAR(10) || '## Task and Context ' || CHAR(10) || '{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}} ' || CHAR(10) || '|| CHAR(10) || ## Style Guide ' || CHAR(10) || '{{system}}<|END_OF_TURN_TOKEN|>',
+  '[]', '', '<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>New Roleplay:<|END_OF_TURN_TOKEN|>', 0, 1, 0, 0
 ),
 (8, 1, 'DeepSeek-V2.5',
-    '{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}\n',
-    '[]', '', '', 0, 1, 0, 0
+  '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}} ' || CHAR(10) || '',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (9, 1, 'DreamGen Role-Play V1 ChatML',
-    '<|im_start|>system\n{{#if system}}{{system}}\n\n\n{{/if}}## Overall plot description:\n\n{{#if scenario}}{{scenario}}{{else}}Conversation between {{char}} and {{user}}.{{/if}}{{#if wiBefore}}\n\n{{wiBefore}}{{/if}}\n\n\n## Characters:\n\n### {{char}}\n\n{{#if description}}{{description}}\n\n{{/if}}{{#if personality}}{{personality}}\n\n{{/if}}### {{user}}\n\n{{#if persona}}{{persona}}{{else}}{{user}} is the protagonist of the role-play.{{/if}}{{#if wiAfter}}\n\n{{wiAfter}}{{/if}}{{#if mesExamples}}\n\n{{mesExamples}}{{/if}}',
-    '[]', '', '', 0, 0, 1, 0
+  '<|im_start|>system ' || CHAR(10) || '{{#if system}}{{system}} ' || CHAR(10) || '|| CHAR(10) || ' || CHAR(10) || '{{/if}}## Overall plot description: ' || CHAR(10) || '|| CHAR(10) || {{#if scenario}}{{scenario}}{{else}}Conversation between {{char}} and {{user}}.{{/if}}{{#if wiBefore}} ' || CHAR(10) || '|| CHAR(10) || {{wiBefore}}{{/if}} ' || CHAR(10) || '|| CHAR(10) || ' || CHAR(10) || '## Characters: ' || CHAR(10) || '|| CHAR(10) || ### {{char}} ' || CHAR(10) || '|| CHAR(10) || {{#if description}}{{description}} ' || CHAR(10) || '|| CHAR(10) || {{/if}}{{#if personality}}{{personality}} ' || CHAR(10) || '|| CHAR(10) || {{/if}}### {{user}} ' || CHAR(10) || '|| CHAR(10) || {{#if persona}}{{persona}}{{else}}{{user}} is the protagonist of the role-play.{{/if}}{{#if wiAfter}} ' || CHAR(10) || '|| CHAR(10) || {{wiAfter}}{{/if}}{{#if mesExamples}} ' || CHAR(10) || '|| CHAR(10) || {{mesExamples}}{{/if}}',
+  '[]', '', '', 0, 0, 1, 0
 ),
 (10, 1, 'DreamGen Role-Play V1 Llama3',
-    '<|start_header_id|>system<|end_header_id|>\n\n{{#if system}}{{system}}\n\n\n{{/if}}## Overall plot description:\n\n{{#if scenario}}{{scenario}}{{else}}Conversation between {{char}} and {{user}}.{{/if}}{{#if wiBefore}}\n\n{{wiBefore}}{{/if}}\n\n\n## Characters:\n\n### {{char}}\n\n{{#if description}}{{description}}\n\n{{/if}}{{#if personality}}{{personality}}\n\n{{/if}}### {{user}}\n\n{{#if persona}}{{persona}}{{else}}{{user}} is the protagonist of the role-play.{{/if}}{{#if wiAfter}}\n\n{{wiAfter}}{{/if}}{{#if mesExamples}}\n\n{{mesExamples}}{{/if}}',
-    '[]', '<|eot_id|>\n<|start_header_id|>user<|end_header_id|>\n\nWrite an example narrative / conversation that is not part of the main story.', '<|eot_id|>\n<|start_header_id|>user<|end_header_id|>\n\nStart the role-play between {{char}} and {{user}}.', 0, 0, 1, 0
+  '<|start_header_id|>system<|end_header_id|> ' || CHAR(10) || '|| CHAR(10) || {{#if system}}{{system}} ' || CHAR(10) || '|| CHAR(10) || ' || CHAR(10) || '{{/if}}## Overall plot description: ' || CHAR(10) || '|| CHAR(10) || {{#if scenario}}{{scenario}}{{else}}Conversation between {{char}} and {{user}}.{{/if}}{{#if wiBefore}} ' || CHAR(10) || '|| CHAR(10) || {{wiBefore}}{{/if}} ' || CHAR(10) || '|| CHAR(10) || ' || CHAR(10) || '## Characters: ' || CHAR(10) || '|| CHAR(10) || ### {{char}} ' || CHAR(10) || '|| CHAR(10) || {{#if description}}{{description}} ' || CHAR(10) || '|| CHAR(10) || {{/if}}{{#if personality}}{{personality}} ' || CHAR(10) || '|| CHAR(10) || {{/if}}### {{user}} ' || CHAR(10) || '|| CHAR(10) || {{#if persona}}{{persona}}{{else}}{{user}} is the protagonist of the role-play.{{/if}}{{#if wiAfter}} ' || CHAR(10) || '|| CHAR(10) || {{wiAfter}}{{/if}}{{#if mesExamples}} ' || CHAR(10) || '|| CHAR(10) || {{mesExamples}}{{/if}}',
+  '[]', '<|eot_id|> ' || CHAR(10) || '<|start_header_id|>user<|end_header_id|> ' || CHAR(10) || '|| CHAR(10) || Write an example narrative / conversation that is not part of the main story.', '<|eot_id|> ' || CHAR(10) || '<|start_header_id|>user<|end_header_id|> ' || CHAR(10) || '|| CHAR(10) || Start the role-play between {{char}} and {{user}}.', 0, 0, 1, 0
 ),
 (11, 1, 'Gemma 2',
-    '<start_of_turn>user\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}<end_of_turn>',
-    '[]', '', '', 0, 1, 0, 0
+  '<start_of_turn>user ' || CHAR(10) || '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}}<end_of_turn>',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (12, 1, 'GLM-4',
-    '[gMASK]<sop>{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}\n',
-    '[]', '', '', 0, 1, 0, 0
+  '[gMASK]<sop>{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}} ' || CHAR(10) || '',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (13, 1, 'Libra-32B',
-    '### Instruction:\n{{#if system}}{{system}}\n\n{{/if}}### Character Sheet:\n{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}',
-    '[]', '### Example:', '### START ROLEPLAY:', 0, 1, 0, 0
+  '### Instruction: ' || CHAR(10) || '{{#if system}}{{system}} ' || CHAR(10) || '|| CHAR(10) || {{/if}}### Character Sheet: ' || CHAR(10) || '{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}',
+  '[]', '### Example:', '### START ROLEPLAY:', 0, 1, 0, 0
 ),
 (14, 1, 'Lightning 1.1',
-    'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{{system}}\n{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{char}}''s description:{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality:{{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{user}}''s persona: {{persona}}\n{{/if}}\n\n',
-    '[]', 'Example of an interaction:\n', 'This is the history of the roleplay:\n', 0, 1, 0, 0
+  'Below is an instruction that describes a task. Write a response that appropriately completes the request. ' || CHAR(10) || '|| CHAR(10) || ### Instruction: ' || CHAR(10) || '{{system}} ' || CHAR(10) || '{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{char}}''s description:{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality:{{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{user}}''s persona: {{persona}} ' || CHAR(10) || '{{/if}} ' || CHAR(10) || '|| CHAR(10) || ',
+  '[]', 'Example of an interaction: ' || CHAR(10) || '', 'This is the history of the roleplay: ' || CHAR(10) || '', 0, 1, 0, 0
 ),
 (15, 1, 'Llama 2 Chat',
-    '[INST] <<SYS>>\n{{#if system}}{{system}}\n<</SYS>>\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}} [/INST]',
-    '[]', '', '', 0, 1, 0, 0
+  '[INST] <<SYS>> ' || CHAR(10) || '{{#if system}}{{system}} ' || CHAR(10) || '<</SYS>> ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}} [/INST]',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (16, 1, 'Llama 3 Instruct',
-    '<|start_header_id|>system<|end_header_id|>\n\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}<|eot_id|>',
-    '[]', '', '', 0, 1, 0, 0
+  '<|start_header_id|>system<|end_header_id|> ' || CHAR(10) || '|| CHAR(10) || {{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}}<|eot_id|>',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (17, 1, 'Llama 4 Instruct',
-    '<|begin_of_text|><|header_start|>system<|header_end|>\n\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}<|eot|>',
-    '[]', '', '', 0, 1, 0, 0
+  '<|begin_of_text|><|header_start|>system<|header_end|> ' || CHAR(10) || '|| CHAR(10) || {{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}}<|eot|>',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (18, 1, 'Llama-3-Instruct-Names',
-    '<|start_header_id|>system<|end_header_id|>\n\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}<|eot_id|>',
-    '[]', '', '', 0, 1, 0, 0
+  '<|start_header_id|>system<|end_header_id|> ' || CHAR(10) || '|| CHAR(10) || {{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}}<|eot_id|>',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (19, 1, 'Metharme',
-    '{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}',
-    '[]', '', '', 0, 1, 0, 0
+  '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (20, 1, 'Minimalist',
-    '{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{personality}}\n{{/if}}{{#if scenario}}{{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}',
-    '[]', '', '', 0, 1, 0, 0
+  '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}{{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (21, 1, 'Mistral V1',
-    ' [INST] {{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{personality}}\n{{/if}}{{#if scenario}}{{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}} [/INST] Understood.</s>',
-    '[]', '', '', 0, 1, 0, 0
+  ' [INST] {{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}{{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}} [/INST] Understood.</s>',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (22, 1, 'Mistral V2 & V3',
-    '[INST] {{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{personality}}\n{{/if}}{{#if scenario}}{{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}[/INST] Understood.</s>',
-    '[]', '', '', 0, 1, 0, 0
+  '[INST] {{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}{{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}}[/INST] Understood.</s>',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (23, 1, 'Mistral V3-Tekken',
-    '[INST]{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{personality}}\n{{/if}}{{#if scenario}}{{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}[/INST]Understood.</s>',
-    '[]', '', '', 0, 1, 0, 0
+  '[INST]{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}{{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}}[/INST]Understood.</s>',
+  '[]', '', '', 0, 1, 0, 0
 ),
-(24, 1, 'Mistral V7',    '[SYSTEM_PROMPT] {{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{personality}}\n{{/if}}{{#if scenario}}{{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}[/SYSTEM_PROMPT]',    '[]', '', '', 0, 1, 0, 0
+(24, 1, 'Mistral V7',  '[SYSTEM_PROMPT] {{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}{{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}}[/SYSTEM_PROMPT]',  '[]', '', '', 0, 1, 0, 0
 ),
 (25, 1, 'NovelAI',
-    '{{#if system}}{{system}}{{/if}}\n{{#if wiBefore}}{{wiBefore}}{{/if}}\n{{#if persona}}{{persona}}{{/if}}\n{{#if description}}{{description}}{{/if}}\n{{#if personality}}Personality: {{personality}}{{/if}}\n{{#if scenario}}Scenario: {{scenario}}{{/if}}\n{{#if wiAfter}}{{wiAfter}}{{/if}}',
-    '["***"]', '***', '***', 0, 1, 0, 0
+  '{{#if system}}{{system}}{{/if}} ' || CHAR(10) || '{{#if wiBefore}}{{wiBefore}}{{/if}} ' || CHAR(10) || '{{#if persona}}{{persona}}{{/if}} ' || CHAR(10) || '{{#if description}}{{description}}{{/if}} ' || CHAR(10) || '{{#if personality}}Personality: {{personality}}{{/if}} ' || CHAR(10) || '{{#if scenario}}Scenario: {{scenario}}{{/if}} ' || CHAR(10) || '{{#if wiAfter}}{{wiAfter}}{{/if}}',
+  '["***"]', '***', '***', 0, 1, 0, 0
 ),
 (26, 1, 'Phi',
-    '<|system|>\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}<|end|>\n',
-    '[]', '', '', 0, 1, 0, 0
+  '<|system|> ' || CHAR(10) || '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}}<|end|> ' || CHAR(10) || '',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (27, 1, 'simple-proxy-for-tavern',
-    '## {{char}}\n- You''re "{{char}}" in this never-ending roleplay with "{{user}}".\n### Input:\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}### Response:\n(OOC) Understood. I will take this info into account for the roleplay. (end OOC)',
-    '[]', '### New Roleplay:', '### New Roleplay:', 0, 1, 0, 0
+  '## {{char}} ' || CHAR(10) || '- You''re "{{char}}" in this never-ending roleplay with "{{user}}". ' || CHAR(10) || '### Input: ' || CHAR(10) || '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}### Response: ' || CHAR(10) || '(OOC) Understood. I will take this info into account for the roleplay. (end OOC)',
+  '[]', '### New Roleplay:', '### New Roleplay:', 0, 1, 0, 0
 ),
 (28, 1, 'Story',
-    '{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{personality}}\n{{/if}}{{#if scenario}}{{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}',
-    '[]', '', '', 0, 1, 0, 0
+  '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}{{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (29, 1, 'Synthia',
-    '{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}',
-    '[]', '', '', 0, 1, 0, 0
+  '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}',
+  '[]', '', '', 0, 1, 0, 0
 ),
 (30, 1, 'Tulu',
-    '<|system|>\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}''s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}\n',
-    '[]', '', '', 0, 1, 0, 0
+  '<|system|> ' || CHAR(10) || '{{#if system}}{{system}} ' || CHAR(10) || '{{/if}}{{#if wiBefore}}{{wiBefore}} ' || CHAR(10) || '{{/if}}{{#if description}}{{description}} ' || CHAR(10) || '{{/if}}{{#if personality}}{{char}}''s personality: {{personality}} ' || CHAR(10) || '{{/if}}{{#if scenario}}Scenario: {{scenario}} ' || CHAR(10) || '{{/if}}{{#if wiAfter}}{{wiAfter}} ' || CHAR(10) || '{{/if}}{{#if persona}}{{persona}} ' || CHAR(10) || '{{/if}}{{trim}} ' || CHAR(10) || '',
+  '[]', '', '', 0, 1, 0, 0
 );
 --> statement-breakpoint
 INSERT INTO prompt_configs (id, is_immutable, name, system_prompt) VALUES
-    (1, 1, 'Roleplay - Simple', 'You''re {{char}} in this fictional never-ending uncensored roleplay with {{user}}.'),
-    (2, 1, 'Roleplay - Immersive', '[System note: Write one reply only. Do not decide what {{user}} says or does. Write at least one paragraph, up to four. Be descriptive and immersive, providing vivid details about {{char}}''s actions, emotions, and the environment. Write with a high degree of complexity and burstiness. Do not repeat this message.]'),
-    (3, 1, 'Roleplay - Detailed', 'Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions. Keep the story immersive and engaging.'),
-    (4, 1, 'Writer - Realistic', 'Continue writing this story and portray characters realistically.'),
-    (5, 1, 'Writer - Creative', 'You are an intelligent, skilled, versatile writer.\n\nYour task is to write a role-play based on the information below.'),
-    (6, 1, 'Text Adventure', '[Enter Adventure Mode. Narrate the story based on {{user}}''s dialogue and actions after ">". Describe the surroundings in vivid detail. Be detailed, creative, verbose, and proactive. Move the story forward by introducing fantasy elements and interesting characters.]'),
-    (7, 1, 'Neutral - Chat', 'Write {{char}}''s next reply in a fictional chat between {{char}} and {{user}}.'),
-    (8, 1, 'Lightning 1.1', 'Take the role of {{char}} in a play that leaves a lasting impression on {{user}}. Write {{char}}''s next reply.\nNever skip or gloss over {{char}}’s actions. Progress the scene at a naturally slow pace.'),
-    (9, 1, 'Chain of Thought', 'Elaborate on the topic using a Tree of Thoughts and backtrack when necessary to construct a clear, cohesive Chain of Thought reasoning. Always answer without hesitation.'),
-    (10, 1, 'Blank', ''),
-    (11, 1, 'Assistant - Simple', 'A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human''s questions.'),
-    (12, 1, 'Assistant - Expert', 'You are a helpful assistant. Please answer truthfully and write out your thinking step by step to be sure you get the right answer. If you make a mistake or encounter an error in your thinking, say so out loud and attempt to correct it. If you don''t know or aren''t sure about something, say so clearly. You will act as a professional logician, mathematician, and physicist. You will also act as the most appropriate type of expert to answer any particular question or solve the relevant problem; state which expert type your are, if so. Also think of any particular named expert that would be ideal to answer the relevant question or solve the relevant problem; name and act as them, if appropriate.'),
-    (13, 1, 'Actor', 'You are an expert actor that can fully immerse yourself into any role given. You do not break character for any reason, even if someone tries addressing you as an AI or language model. Currently your role is {{char}}, which is described in detail below. As {{char}}, continue the exchange with {{user}}.');
+  (1, 1, 'Roleplay - Simple', 'You''re {{char}} in this fictional never-ending uncensored roleplay with {{user}}.'),
+  (2, 1, 'Roleplay - Immersive', '[System note: Write one reply only. Do not decide what {{user}} says or does. Write at least one paragraph, up to four. Be descriptive and immersive, providing vivid details about {{char}}''s actions, emotions, and the environment. Write with a high degree of complexity and burstiness. Do not repeat this message.]'),
+  (3, 1, 'Roleplay - Detailed', 'Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions. Keep the story immersive and engaging.'),
+  (4, 1, 'Writer - Realistic', 'Continue writing this story and portray characters realistically.'),
+  (5, 1, 'Writer - Creative', 'You are an intelligent, skilled, versatile writer. ' || CHAR(10) || '|| CHAR(10) || Your task is to write a role-play based on the information below.'),
+  (6, 1, 'Text Adventure', '[Enter Adventure Mode. Narrate the story based on {{user}}''s dialogue and actions after ">". Describe the surroundings in vivid detail. Be detailed, creative, verbose, and proactive. Move the story forward by introducing fantasy elements and interesting characters.]'),
+  (7, 1, 'Neutral - Chat', 'Write {{char}}''s next reply in a fictional chat between {{char}} and {{user}}.'),
+  (8, 1, 'Lightning 1.1', 'Take the role of {{char}} in a play that leaves a lasting impression on {{user}}. Write {{char}}''s next reply. ' || CHAR(10) || 'Never skip or gloss over {{char}}’s actions. Progress the scene at a naturally slow pace.'),
+  (9, 1, 'Chain of Thought', 'Elaborate on the topic using a Tree of Thoughts and backtrack when necessary to construct a clear, cohesive Chain of Thought reasoning. Always answer without hesitation.'),
+  (10, 1, 'Blank', ''),
+  (11, 1, 'Assistant - Simple', 'A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human''s questions.'),
+  (12, 1, 'Assistant - Expert', 'You are a helpful assistant. Please answer truthfully and write out your thinking step by step to be sure you get the right answer. If you make a mistake or encounter an error in your thinking, say so out loud and attempt to correct it. If you don''t know or aren''t sure about something, say so clearly. You will act as a professional logician, mathematician, and physicist. You will also act as the most appropriate type of expert to answer any particular question or solve the relevant problem; state which expert type your are, if so. Also think of any particular named expert that would be ideal to answer the relevant question or solve the relevant problem; name and act as them, if appropriate.'),
+  (13, 1, 'Actor', 'You are an expert actor that can fully immerse yourself into any role given. You do not break character for any reason, even if someone tries addressing you as an AI or language model. Currently your role is {{char}}, which is described in detail below. As {{char}}, continue the exchange with {{user}}.');
 --> statement-breakpoint
 INSERT INTO `users` (`id`, `username`, `active_connection_id`, `active_weights_id`, `active_context_config_id`, 'active_prompt_config_id') VALUES
 (1, 'default', NULL, 1, 1, 1);

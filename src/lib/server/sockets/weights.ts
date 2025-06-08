@@ -40,7 +40,7 @@ export async function setUserActiveWeights(
         where: (u, { eq }) => eq(u.id, 1)
     })
     if (!currentUser) {
-        emitToUser("setUserActiveWeightsError", { error: "User not found." })
+        emitToUser("error", { error: "User not found." })
         return
     }
     const updatedUser = await db
@@ -75,7 +75,7 @@ export async function deleteWeights(
         where: (w, { eq }) => eq(w.id, message.id)
     })
     if (currentWeights!.isImmutable) {
-        emitToUser("deleteWeightsError", { error: "Cannot delete immutable weights." })
+        emitToUser("error", { error: "Cannot delete immutable weights." })
         return
     }
     const currentUser = await db.query.users.findFirst({
@@ -102,7 +102,7 @@ export async function updateWeights(
         where: (w, { eq }) => eq(w.id, id)
     })
     if (currentWeights!.isImmutable) {
-        emitToUser("updateWeightsError", { error: "Cannot update immutable weights." })
+        emitToUser("error", { error: "Cannot update immutable weights." })
         return
     }
     const updatedWeights = await db

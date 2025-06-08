@@ -30,7 +30,7 @@ export async function connection(
         where: (c, { eq }) => eq(c.id, message.id)
     })
     if (!connection) {
-        emitToUser("connectionError", { error: "Connection not found." })
+        emitToUser("error", { error: "Connection not found." })
         return
     }
     const res: Sockets.Connection.Response = { connection }
@@ -92,7 +92,7 @@ export async function setUserActiveConnection(
         where: (u, { eq }) => eq(u.id, 1)
     })
     if (!currentUser) {
-        emitToUser("setUserActiveConnectionError", { error: "User not found." })
+        emitToUser("error", { error: "User not found." })
         return
     }
     const updatedUser = await db
