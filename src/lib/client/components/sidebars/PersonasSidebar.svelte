@@ -165,7 +165,8 @@
                         <div class="flex gap-4">
                         <button
                             class="btn btn-xs text-primary-500 px-0"
-                            onclick={() => {
+                            onclick={(e) => {
+                                e.stopPropagation();
                                 handleEditClick(p.id)
                             }}
                             title="Edit Persona"
