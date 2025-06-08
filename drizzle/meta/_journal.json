@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1749247842375,
-      "tag": "0000_windy_layla_miller",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1749322133957,
-      "tag": "0001_safe_drax",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1749364347921,
-      "tag": "0002_nasty_risque",
+      "when": 1749404032306,
+      "tag": "0000_wooden_diamondback",
       "breakpoints": true
     }
   ]

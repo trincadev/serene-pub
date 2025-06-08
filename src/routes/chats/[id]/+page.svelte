@@ -470,4 +470,29 @@
         right: 15%;
         animation-delay: 0.3s;
     }
+    /* --- Markdown custom styles --- */
+    :global(.markdown-body) {
+        white-space: pre-line;
+    }
+    :global(.markdown-body blockquote) {
+        color: #7dd3fc; /* sky-300 */
+        border-left: 4px solid #38bdf8; /* sky-400 */
+        background: rgba(56,189,248,0.08);
+        padding-left: 1em;
+        margin-left: 0;
+    }
+    :global(.markdown-body em),
+    :global(.markdown-body i) {
+        color: #f472b6; /* pink-400 */
+        font-style: italic;
+        background: rgba(244,114,182,0.08);
+        border-radius: 0.2em;
+        padding: 0 0.15em;
+    }
+    /* Preserve blank lines between paragraphs */
+    :global(.markdown-body p) {
+        margin-top: 1em;
+        margin-bottom: 1em;
+        min-height: 1.5em;
+    }
 </style>

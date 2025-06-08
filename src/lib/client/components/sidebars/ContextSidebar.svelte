@@ -3,7 +3,8 @@
     import { getContext, onMount } from "svelte"
     import * as Icons from "@lucide/svelte"
     import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
-    import NewNameModal from '../modals/NewNameModal.svelte'
+    import NewNameModal from "../modals/NewNameModal.svelte"
+    import { FormatNames } from "$lib/shared/constants/FormatNames"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -27,6 +28,7 @@
     let showNewNameModal = $state(false)
     let showUnsavedChangesModal = $state(false)
     let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
+    let showAdvanced = $state(false)
 
     socket.on("contextConfigsList", (msg: Sockets.ContextConfigsList.Response) => {
         configsList = msg.contextConfigsList
@@ -185,71 +187,72 @@
                 />
             </div>
             <div class="flex flex-col gap-1">
-                <label class="font-semibold" for="contextTemplate">Template</label>
-                <textarea
-                    id="template"
-                    rows="8"
-                    bind:value={contextConfig.template}
+                <label class="font-semibold" for="contextFormat">Prompt Format</label>
+                <select
+                    id="contextFormat"
                     class="input input-sm w-full"
-                ></textarea>
-            </div>
-            <div class="flex flex-col gap-1">
-                <label class="font-semibold" for="exampleSeparator">Example Separator</label>
-                <input
-                    id="exampleSeparator"
-                    type="text"
-                    bind:value={contextConfig.exampleSeparator}
-                    class="input input-sm w-full"
-                />
-            </div>
-            <div class="flex flex-col gap-1">
-                <label class="font-semibold" for="chatStart">Chat Start</label>
-                <input
-                    id="chatStart"
-                    type="text"
-                    bind:value={contextConfig.chatStart}
-                    class="input input-sm w-full"
-                />
-            </div>
-            <div class="flex flex-col gap-1">
-                <label class="font-semibold" for="stoppingStrings"
-                    >Stopping Strings (JSON array)</label
+                    bind:value={contextConfig.format}
                 >
-                <input
-                    id="stoppingStrings"
-                    type="text"
-                    bind:value={contextConfig.stoppingStrings}
-                    class="input input-sm w-full"
-                />
+                    {#each Object.entries(FormatNames.options) as [label, fmt]}
+                        <option value={fmt}>{label}</option>
+                    {/each}
+                </select>
             </div>
-            <div class="flex flex-row flex-wrap gap-4">
-                <label class="flex items-center gap-2">
-                    <input type="checkbox"
-                        checked={contextConfig.useStopStrings}
-                        onchange={e => contextConfig = { ...contextConfig, useStopStrings: e.target.checked }}
-                    /> Use Stop Strings
-                </label>
-                <label class="flex items-center gap-2">
-                    <input type="checkbox"
-                        checked={contextConfig.alwaysForceName}
-                        onchange={e => contextConfig = { ...contextConfig, alwaysForceName: e.target.checked }}
-                    /> Always Force Name
-                </label>
-                <label class="flex items-center gap-2 disabled">
-                    <input type="checkbox"
-                        checked={contextConfig.trimSentences}
-                        disabled
-                        onchange={e => contextConfig = { ...contextConfig, trimSentences: e.target.checked }}
-                    /> Trim Sentences
-                </label>
-                <label class="flex items-center gap-2 disabled">
-                    <input type="checkbox"
-                        checked={contextConfig.singleLine}
-                        disabled
-                        onchange={e => contextConfig = { ...contextConfig, singleLine: e.target.checked }}
-                    /> Single Line
-                </label>
-            </div>
+            <button
+                type="button"
+                class="btn btn-xs preset-filled-surface-500 mt-2 mb-2 w-full"
+                onclick={() => (showAdvanced = !showAdvanced)}
+            >
+                {showAdvanced ? "Hide Advanced" : "Show Advanced"}
+            </button>
+            {#if showAdvanced}
+                <div class="flex flex-col gap-1">
+                    <label class="font-semibold" for="contextTemplate">Template</label>
+                    <textarea
+                        id="template"
+                        rows="8"
+                        bind:value={contextConfig.template}
+                        class="input input-sm w-full"
+                    ></textarea>
+                </div>
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-semibold" for="stoppingStrings"
+                            >Stopping Strings (JSON array)</label
+                        >
+                        <input
+                            id="stoppingStrings"
+                            type="text"
+                            bind:value={contextConfig.stoppingStrings}
+                            class="input input-sm w-full"
+                        />
+                    </div>
+                    <div class="flex flex-row flex-wrap gap-4">
+                        <label class="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={contextConfig.useStopStrings}
+                                onchange={(e) =>
+                                    (contextConfig = {
+                                        ...contextConfig,
+                                        useStopStrings: e.target.checked
+                                    })}
+                            /> Use Stop Strings
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={contextConfig.alwaysForceName}
+                                onchange={(e) =>
+                                    (contextConfig = {
+                                        ...contextConfig,
+                                        alwaysForceName: e.target.checked
+                                    })}
+                            /> Append Name to Prompt
+                        </label>
+                    </div>
+                </div>
+            {/if}
         </div>
     {/if}
 </div>
