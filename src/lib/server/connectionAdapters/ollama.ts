@@ -28,10 +28,16 @@ export class GenerateBlock {
     }
 }
 
-export function applyStopStrings(response: string, stopStrings: string[]): string {
+export function applyStopStrings(response: string, stopStrings: string[], context?: Record<string, string>): string {
     let earliestIndex = response.length;
     for (const stop of stopStrings) {
-        const regex = new RegExp(stop, "m"); // multiline for ^/$ support
+        let stopStr = stop;
+        if (context && stopStr.includes("{{")) {
+            // Use Handlebars to render stop string with context
+            stopStr = Handlebars.compile(stopStr)(context);
+        }
+        // Escape for regex if needed
+        const regex = new RegExp(stopStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "m");
         const match = response.match(regex);
         if (match && match.index !== undefined && match.index < earliestIndex) {
             earliestIndex = match.index;
@@ -352,9 +358,14 @@ export class OllamaAdapter {
                         console.error("OllamaAdapter.getCompletion: Failed to parse line as JSON:", line, e);
                     }
                 });
-                if (this.contextConfig.useStopStrings) {
-                    content = applyStopStrings(content, JSON.parse(this.contextConfig.stoppingStrings || "[]"));
-                }
+                // Use StopStrings for the current format and context
+                const stopStrings = StopStrings.get(this.contextConfig.format || "chatml");
+                // Only pass defined values for Handlebars context
+                const systemCtxData: Record<string, string> = {
+                    char: this.chat.chatCharacters?.[0]?.character?.name || "assistant",
+                    user: this.chat.chatPersonas?.[0]?.persona?.name || "user"
+                };
+                content = applyStopStrings(content, stopStrings, systemCtxData);
                 if (content && lastDone) return content;
                 console.error("OllamaAdapter.getCompletion: Failed to parse JSON or NDJSON. Raw response:", raw)
                 return "FAILURE: Ollama returned non-JSON/NDJSON response. See server logs."
@@ -470,5 +481,56 @@ export class OllamaWeightsMapper {
             }
         }
         return result
+    }
+}
+
+export class StopStrings {
+    static get(format: typeof FormatNames.OPTION): string[] {
+        switch (format) {
+            case FormatNames.ChatML:
+                // <|im_end|> is the explicit stop string for ChatML, plus block starters and template markers
+                return [
+                    "<|im_end|>",
+                    "<|im_start|>",
+                    "user:",
+                    "char:",
+                    "assistant:",
+                    "{{user}}:",
+                    "{{char}}:"
+                ];
+            case FormatNames.Basic:
+                // Block starters for Basic, plus template markers
+                return [
+                    "*** user",
+                    "*** char",
+                    "*** assistant",
+                    "*** system",
+                    "{{user}}:",
+                    "{{char}}:"
+                ];
+            case FormatNames.Vicuna:
+                // Block starters for Vicuna, plus </s> and template markers
+                return [
+                    "</s>",
+                    "### User:",
+                    "### Char:",
+                    "### Assistant:",
+                    "### System:",
+                    "{{user}}:",
+                    "{{char}}:"
+                ];
+            case FormatNames.OpenAI:
+                // Block starters for OpenAI, plus template markers
+                return [
+                    "<|user|>",
+                    "<|char|>",
+                    "<|assistant|>",
+                    "<|system|>",
+                    "{{user}}:",
+                    "{{char}}:"
+                ];
+            default:
+                return ["<|im_end|>"];
+        }
     }
 }

@@ -217,28 +217,6 @@
                 </div>
                 <div class="flex flex-col gap-4">
                     <div class="flex flex-col gap-1">
-                        <label class="font-semibold" for="stoppingStrings"
-                            >Stopping Strings (JSON array)</label
-                        >
-                        <input
-                            id="stoppingStrings"
-                            type="text"
-                            bind:value={contextConfig.stoppingStrings}
-                            class="input input-sm w-full"
-                        />
-                    </div>
-                    <div class="flex flex-row flex-wrap gap-4">
-                        <label class="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                checked={contextConfig.useStopStrings}
-                                onchange={(e) =>
-                                    (contextConfig = {
-                                        ...contextConfig,
-                                        useStopStrings: e.target.checked
-                                    })}
-                            /> Use Stop Strings
-                        </label>
                         <label class="flex items-center gap-2">
                             <input
                                 type="checkbox"
