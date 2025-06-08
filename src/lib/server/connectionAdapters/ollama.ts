@@ -1,19 +1,43 @@
 import Handlebars from "handlebars"
+import { FormatNames } from "$lib/shared/constants/FormatNames";
+import _ from "lodash";
 
-function chatmlBlock(role: string, content: string, includeClose = true): string {
-  return `<|im_start|>${role}\n${content}\n${includeClose? "<|im_end|>\n" : ""}`;
+export class GenerateBlock {
+    static chatmlOpen(role: string) { return `<|im_start|>${role}\n\n`; }
+    static chatmlClose = "<|im_end|>\n";
+    static basicOpen(role: string) { return `*** ${role}\n\n`; }
+    static basicClose = "\n\n";
+    static vicunaOpen(role: string) { return `### ${_.capitalize(role)}:\n\n`; }
+    static vicunaClose = "\n";
+    static openaiOpen(role: string) { return `<|${role}|>\n\n`; }
+    static openaiClose = "\n";
+
+    static makeBlock({ format, role, content, includeClose = true }: { format: typeof FormatNames.OPTION, role: string, content: string, includeClose?: boolean }) {
+        switch (format) {
+            case FormatNames.ChatML:
+                return this.chatmlOpen(role) + content + (includeClose ? this.chatmlClose : "");
+            case FormatNames.Basic:
+                return this.basicOpen(role) + content + (includeClose ? this.basicClose : "");
+            case FormatNames.Vicuna:
+                return this.vicunaOpen(role) + content + (includeClose ? this.vicunaClose : "");
+            case FormatNames.OpenAI:
+                return this.openaiOpen(role) + content + (includeClose ? this.openaiClose : "");
+            default:
+                return this.chatmlOpen(role) + content + (includeClose ? this.chatmlClose : "");
+        }
+    }
 }
 
-export function stripCharacterName(response: string): string {
-    // Match: start of string, any non-colon chars, colon, optional spaces
-    // E.g., "Alice: Hello", "Bob : Hi", "Narrator: The story begins"
-    return response.replace(/^[^:]+:\s*/, "");
-}
-
-export function applyStopStrings(response: string, stopStrings: string[]): string {
+export function applyStopStrings(response: string, stopStrings: string[], context?: Record<string, string>): string {
     let earliestIndex = response.length;
     for (const stop of stopStrings) {
-        const regex = new RegExp(stop, "m"); // multiline for ^/$ support
+        let stopStr = stop;
+        if (context && stopStr.includes("{{")) {
+            // Use Handlebars to render stop string with context
+            stopStr = Handlebars.compile(stopStr)(context);
+        }
+        // Escape for regex if needed
+        const regex = new RegExp(stopStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "m");
         const match = response.match(regex);
         if (match && match.index !== undefined && match.index < earliestIndex) {
             earliestIndex = match.index;
@@ -166,11 +190,11 @@ export class OllamaAdapter {
         // Render the full context template for the system block
         const systemTemplate = this.contextConfig.template || "{{system}}";
         const renderedSystemBlock = Handlebars.compile(systemTemplate)(systemCtxData);
-        const systemBlock = chatmlBlock("system", renderedSystemBlock);
+        const systemBlock = GenerateBlock.makeBlock({ format: this.contextConfig.format || "chatml", role: "system", content: renderedSystemBlock });
 
         // Build message lines for chat history
         const messageBlock = this.chat.chatMessages.map((msg: SelectChatMessage) => {
-            return chatmlBlock(msg.role! || "assistant",`{{${msg.role === "user" ? "user" : msg.role === "assistant" ? "char" : msg.role === "system" ? "system" : "system"}}}:\n${msg.content}`)
+            return GenerateBlock.makeBlock({ format: this.contextConfig.format || "chatml", role: msg.role! || "assistant", content: `{{${msg.role === "user" ? "user" : msg.role === "assistant" ? "char" : msg.role === "system" ? "system" : "system"}}}:\n${msg.content}` })
         }).join("")
         
         const promptBlocks = [
@@ -179,7 +203,7 @@ export class OllamaAdapter {
         ]
 
         if (this.contextConfig.alwaysForceName) {
-            promptBlocks.push(chatmlBlock("assistant", "{{char}}:", false))
+            promptBlocks.push(GenerateBlock.makeBlock({ format: this.contextConfig.format || "chatml", role: "assistant", content: "{{char}}:", includeClose: false }))
         }
 
         const prompt = Handlebars.compile(promptBlocks.join("\n\n"))(systemCtxData)
@@ -213,14 +237,29 @@ export class OllamaAdapter {
             }
         }
         console.log("[OllamaAdapter.sendText] Request body:", body)
-        return fetch(url + "api/generate", {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "timeout": "300000" // 5 minutes in milliseconds
-            },
-            body: JSON.stringify(body)
-        })
+        // Timeout/abort logic
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300_000); // 5 minutes
+        try {
+            const response = await fetch(url + "api/generate", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(body),
+                signal: controller.signal
+            })
+            return response;
+        } catch (err: any) {
+            if (err.name === "AbortError") {
+                console.error("OllamaAdapter.sendText: Request timed out");
+            } else {
+                console.error("OllamaAdapter.sendText: Fetch failed:", err);
+            }
+            throw err;
+        } finally {
+            clearTimeout(timeoutId);
+        }
     }
 
     /**
@@ -319,10 +358,15 @@ export class OllamaAdapter {
                         console.error("OllamaAdapter.getCompletion: Failed to parse line as JSON:", line, e);
                     }
                 });
-                if (this.contextConfig.useStopStrings) {
-                    content = applyStopStrings(content, JSON.parse(this.contextConfig.stoppingStrings || "[]"));
-                }
-                if (content && lastDone) return stripCharacterName(content);
+                // Use StopStrings for the current format and context
+                const stopStrings = StopStrings.get(this.contextConfig.format || "chatml");
+                // Only pass defined values for Handlebars context
+                const systemCtxData: Record<string, string> = {
+                    char: this.chat.chatCharacters?.[0]?.character?.name || "assistant",
+                    user: this.chat.chatPersonas?.[0]?.persona?.name || "user"
+                };
+                content = applyStopStrings(content, stopStrings, systemCtxData);
+                if (content && lastDone) return content;
                 console.error("OllamaAdapter.getCompletion: Failed to parse JSON or NDJSON. Raw response:", raw)
                 return "FAILURE: Ollama returned non-JSON/NDJSON response. See server logs."
             }
@@ -437,5 +481,56 @@ export class OllamaWeightsMapper {
             }
         }
         return result
+    }
+}
+
+export class StopStrings {
+    static get(format: typeof FormatNames.OPTION): string[] {
+        switch (format) {
+            case FormatNames.ChatML:
+                // <|im_end|> is the explicit stop string for ChatML, plus block starters and template markers
+                return [
+                    "<|im_end|>",
+                    "<|im_start|>",
+                    "user:",
+                    "char:",
+                    "assistant:",
+                    "{{user}}:",
+                    "{{char}}:"
+                ];
+            case FormatNames.Basic:
+                // Block starters for Basic, plus template markers
+                return [
+                    "*** user",
+                    "*** char",
+                    "*** assistant",
+                    "*** system",
+                    "{{user}}:",
+                    "{{char}}:"
+                ];
+            case FormatNames.Vicuna:
+                // Block starters for Vicuna, plus </s> and template markers
+                return [
+                    "</s>",
+                    "### User:",
+                    "### Char:",
+                    "### Assistant:",
+                    "### System:",
+                    "{{user}}:",
+                    "{{char}}:"
+                ];
+            case FormatNames.OpenAI:
+                // Block starters for OpenAI, plus template markers
+                return [
+                    "<|user|>",
+                    "<|char|>",
+                    "<|assistant|>",
+                    "<|system|>",
+                    "{{user}}:",
+                    "{{char}}:"
+                ];
+            default:
+                return ["<|im_end|>"];
+        }
     }
 }

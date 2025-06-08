@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "07ea2f95-f88d-4906-a630-39d212d55004",
-  "prevId": "3d855bbf-ae3b-48b3-b568-9c27291b6272",
+  "id": "5f45b0b1-8863-40d1-9bd7-2ad375c96bc0",
+  "prevId": "fc6d83e7-b2e7-467f-b973-1a500f346804",
   "tables": {
     "character_tags": {
       "name": "character_tags",
@@ -632,20 +632,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "stopping_strings": {
-          "name": "stopping_strings",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "example_separator": {
-          "name": "example_separator",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "chat_start": {
           "name": "chat_start",
           "type": "text",
@@ -653,37 +639,21 @@
           "notNull": false,
           "autoincrement": false
         },
-        "use_stop_strings": {
-          "name": "use_stop_strings",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
-        },
         "always_force_name": {
           "name": "always_force_name",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": false
+          "default": true
         },
-        "trim_sentences": {
-          "name": "trim_sentences",
-          "type": "integer",
+        "format": {
+          "name": "format",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": false
-        },
-        "single_line": {
-          "name": "single_line",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
+          "default": "'chatml'"
         }
       },
       "indexes": {},

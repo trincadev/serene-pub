@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "3d855bbf-ae3b-48b3-b568-9c27291b6272",
+  "id": "fc6d83e7-b2e7-467f-b973-1a500f346804",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "character_tags": {
@@ -34,7 +34,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "character_tags_tag_id_tags_id_fk": {
@@ -47,7 +47,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -170,7 +170,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "characters_lorebook_id_lorebooks_id_fk": {
@@ -183,7 +183,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -237,7 +237,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "chat_characters_character_id_characters_id_fk": {
@@ -250,7 +250,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -360,7 +360,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "chat_messages_user_id_users_id_fk": {
@@ -373,7 +373,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "chat_messages_character_id_characters_id_fk": {
@@ -386,7 +386,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
         "chat_messages_persona_id_personas_id_fk": {
@@ -399,7 +399,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -453,7 +453,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "chat_personas_persona_id_personas_id_fk": {
@@ -466,7 +466,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -540,7 +540,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -637,14 +637,8 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
-        },
-        "example_separator": {
-          "name": "example_separator",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "'[]'"
         },
         "chat_start": {
           "name": "chat_start",
@@ -659,7 +653,7 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": false
+          "default": true
         },
         "always_force_name": {
           "name": "always_force_name",
@@ -667,23 +661,15 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": false
+          "default": true
         },
-        "trim_sentences": {
-          "name": "trim_sentences",
-          "type": "integer",
+        "format": {
+          "name": "format",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": false
-        },
-        "single_line": {
-          "name": "single_line",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
+          "default": "'chatml'"
         }
       },
       "indexes": {},
@@ -941,7 +927,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -1028,7 +1014,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -1124,7 +1110,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

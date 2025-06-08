@@ -72,6 +72,8 @@ The following features are functional, mostly functional, in progress or pending
 4. Chat/lore vectorization
 5. User/per chat backgrounds
 6. Day/night mode toggle and theme selection
+7. Story narration
+8. Screen reader support
 
 ## Software Stack
 
@@ -127,15 +129,15 @@ Download & install from [here.](https://bun.sh/)
 
 By default the data will automatically be saved to the following directory, based on your operating system:
 
-**macOS:** `~/Library/Application Support/SerenePub`
-**Windows:** `%LOCALAPPDATA%\SerenePub`
-**Linux:** `~/.local/share/SerenePub`
+- **macOS:** `~/Library/Application Support/SerenePub`
+- **Windows:** `%LOCALAPPDATA%\SerenePub`
+- **Linux:** `~/.local/share/SerenePub`
 
 The following files will be located inside:
 
-**Database:** `./data/main.db`
-**Character avatar:** `./data/users/[userId]/characters/[characterId]/avatar.png`
-**Persona avatar:** `./data/users/[userId]/personas/[personaId]/avatar.png`
+- **Database:** `./data/main.db`
+- **Character avatar:** `./data/users/[userId]/characters/[characterId]/avatar.png`
+- **Persona avatar:** `./data/users/[userId]/personas/[personaId]/avatar.png`
 
 Avatars are linked via the database. Manually placing an avatar in the directory will not work, it should be uploaded through the edit character form.
 
