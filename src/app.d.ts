@@ -392,6 +392,14 @@ declare global {
                 chatMessage: SelectChatMessage
             }
         }
+        namespace DeleteChat {
+            interface Call {
+                id: number
+            }
+            interface Response {
+                id: number
+            }
+        }
     }
 
     export interface CharaImportMetadata {
