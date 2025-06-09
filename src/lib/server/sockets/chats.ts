@@ -426,3 +426,70 @@ export async function regenerateChatMessage(
         generatingMessage: { ...chatMessage, isGenerating: true, content: "" }
     })
 }
+
+// --- New endpoint: tokenCount ---
+export async function promptTokenCount(
+    socket: any,
+    message: { chatId: number; content?: string; role?: string; personaId?: number },
+    emitToUser: (event: string, data: any) => void
+) {
+    const userId = 1 // Replace with actual user id
+    // Fetch chat and user config
+    const chat = await db.query.chats.findFirst({
+        where: (c, { eq }) => eq(c.id, message.chatId),
+        with: {
+            chatCharacters: { with: { character: true } },
+            chatPersonas: { with: { persona: true } },
+            chatMessages: true
+        }
+    })
+    const user = await db.query.users.findFirst({
+        where: (u, { eq }) => eq(u.id, userId),
+        with: {
+            activeConnection: true,
+            activeSamplingConfig: true,
+            activeContextConfig: true,
+            activePromptConfig: true
+        }
+    })
+    if (!chat || !user || !user.activeConnection || !user.activeSamplingConfig || !user.activeContextConfig || !user.activePromptConfig) {
+        emitToUser("error", { error: "Missing chat or user config" })
+        return
+    }
+    // Optionally append a temporary message for token estimation
+    let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
+    if (message.content && message.role) {
+        chatForPrompt.chatMessages.push({
+            id: -1, // temp id
+            chatId: chat.id,
+            userId: userId,
+            personaId: message.personaId ?? null,
+            characterId: null,
+            role: message.role,
+            content: message.content,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isEdited: 0,
+            metadata: null,
+            isGenerating: false
+        })
+    }
+    // Use OllamaAdapter to generate the prompt
+    const { OllamaAdapter } = await import("../connectionAdapters/ollama")
+    const adapter = new OllamaAdapter({
+        chat: chatForPrompt,
+        connection: user.activeConnection,
+        sampling: user.activeSamplingConfig,
+        contextConfig: user.activeContextConfig,
+        promptConfig: user.activePromptConfig
+    })
+    const prompt = adapter.compilePrompt()
+    // Use TokenCounters to get the token count
+    const { TokenCounters } = await import("../utils/TokenCounterManager")
+    const tokenCounter = new TokenCounters(user.activeConnection.tokenCounter)
+    const tokenCount = await tokenCounter.countTokens(prompt)
+    // Get tokenLimit from sampling config
+    const sampling = user.activeSamplingConfig
+    const tokenLimit = sampling.contextTokensEnabled ? sampling.contextTokens : null
+    emitToUser("promptTokenCount", { tokenCount, tokenLimit })
+}
