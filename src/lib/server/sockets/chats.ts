@@ -6,6 +6,10 @@ import { OllamaAdapter } from "../connectionAdapters/ollama"
 // import { handleCharacterAvatarUpload } from "../utils"
 // import { charactersList } from "./characters"
 import { and, eq } from "drizzle-orm"
+import { v4 as uuidv4 } from 'uuid';
+
+// --- Global map for active adapters ---
+const activeAdapters = new Map<string, OllamaAdapter>();
 
 // List all chats for the current user
 export async function chatsList(
@@ -233,31 +237,23 @@ async function generateResponse({
     userId: number
     generatingMessage: SelectChatMessage
 }) {
-    if (!generatingMessage.isGenerating || generatingMessage.content) {
-        await db
-            .update(schema.chatMessages)
-            .set({ isGenerating: true, content: "" })
-            .where(eq(schema.chatMessages.id, generatingMessage.id))
-        await getChat(socket, { id: chatId }, emitToUser)
-    }
+    // Generate a UUID for this adapter instance
+    const adapterId = uuidv4();
+    // Save the adapterId to the chatMessage (set isGenerating true, content empty, and adapterId)
+    await db
+        .update(schema.chatMessages)
+        .set({ isGenerating: true, content: "", adapterId })
+        .where(eq(schema.chatMessages.id, generatingMessage.id))
+    await getChat(socket, { id: chatId }, emitToUser)
 
     const chat = await db.query.chats.findFirst({
         where: (c, { eq }) => eq(c.id, chatId),
         with: {
-            chatCharacters: {
-                with: {
-                    character: true
-                }
-            },
-            chatPersonas: {
-                with: {
-                    persona: true
-                }
-            },
+            chatCharacters: { with: { character: true } },
+            chatPersonas: { with: { persona: true } },
             chatMessages: true
         }
     })
-
     const user = await db.query.users.findFirst({
         where: (u, { eq }) => eq(u.id, userId),
         with: {
@@ -267,7 +263,6 @@ async function generateResponse({
             activePromptConfig: true
         }
     })
-
     const adapter = new OllamaAdapter({
         chat,
         connection: user!.activeConnection!,
@@ -275,55 +270,45 @@ async function generateResponse({
         contextConfig: user!.activeContextConfig!,
         promptConfig: user!.activePromptConfig!
     })
+    // Store adapter in global map
+    activeAdapters.set(adapterId, adapter)
 
-    // For now, always stream. You can add a config flag if needed.
     const completionResult = adapter.generate()
-
-    if (typeof completionResult === "function") {
-        // Streaming mode: progressively update the message
-        let content = ""
-        await completionResult(async (chunk: string) => {
-            content += chunk
+    let content = ""
+    try {
+        if (typeof completionResult === "function") {
+            await completionResult(async (chunk: string) => {
+                content += chunk
+                await db
+                    .update(schema.chatMessages)
+                    .set({ content, isGenerating: true })
+                    .where(eq(schema.chatMessages.id, generatingMessage.id))
+                await getChat(socket, { id: chatId }, emitToUser)
+            })
+            // Final update: mark as not generating, clear adapterId
             await db
                 .update(schema.chatMessages)
-                .set({ content, isGenerating: true })
+                .set({ content, isGenerating: false, adapterId: null })
                 .where(eq(schema.chatMessages.id, generatingMessage.id))
-            await getChat(socket, { id: chatId }, emitToUser)
-        })
-        // Final update: mark as not generating
-        await db
-            .update(schema.chatMessages)
-            .set({ content, isGenerating: false })
-            .where(eq(schema.chatMessages.id, generatingMessage.id))
-        // Fetch the updated message for the response
-        const updatedMsg = await db.query.chatMessages.findFirst({
-            where: (cm, { eq }) => eq(cm.id, generatingMessage.id)
-        })
-        const response: Sockets.SendPersonaMessage.Response = {
-            chatMessage: updatedMsg!
+        } else {
+            content = await completionResult
+            await db
+                .update(schema.chatMessages)
+                .set({ content, isGenerating: false, adapterId: null })
+                .where(eq(schema.chatMessages.id, generatingMessage.id))
         }
-        socket.io.to("user_" + userId).emit("personaMessageReceived", response)
-        await getChat(socket, { id: chatId }, emitToUser)
-    } else {
-        // Completed text mode
-        const content = await completionResult
-        await db
-            .update(schema.chatMessages)
-            .set({
-                content,
-                isGenerating: false
-            })
-            .where(eq(schema.chatMessages.id, generatingMessage.id))
-        // Fetch the updated message for the response
-        const updatedMsg = await db.query.chatMessages.findFirst({
-            where: (cm, { eq }) => eq(cm.id, generatingMessage.id)
-        })
-        const response: Sockets.SendPersonaMessage.Response = {
-            chatMessage: updatedMsg!
-        }
-        socket.io.to("user_" + userId).emit("personaMessageReceived", response)
-        await getChat(socket, { id: chatId }, emitToUser)
+    } finally {
+        // Remove adapter from global map
+        activeAdapters.delete(adapterId)
     }
+    // Fetch the updated message for the response
+    const updatedMsg = await db.query.chatMessages.findFirst({
+        where: (cm, { eq }) => eq(cm.id, generatingMessage.id)
+    })
+    const response: Sockets.SendPersonaMessage.Response = {
+        chatMessage: updatedMsg!
+    }
+    socket.io.to("user_" + userId).emit("personaMessageReceived", response)
     await getChat(socket, { id: chatId }, emitToUser)
 }
 
@@ -425,4 +410,106 @@ export async function regenerateChatMessage(
         userId,
         generatingMessage: { ...chatMessage, isGenerating: true, content: "" }
     })
+}
+
+// --- New endpoint: tokenCount ---
+export async function promptTokenCount(
+    socket: any,
+    message: { chatId: number; content?: string; role?: string; personaId?: number },
+    emitToUser: (event: string, data: any) => void
+) {
+    const userId = 1 // Replace with actual user id
+    // Fetch chat and user config
+    const chat = await db.query.chats.findFirst({
+        where: (c, { eq }) => eq(c.id, message.chatId),
+        with: {
+            chatCharacters: { with: { character: true } },
+            chatPersonas: { with: { persona: true } },
+            chatMessages: true
+        }
+    })
+    const user = await db.query.users.findFirst({
+        where: (u, { eq }) => eq(u.id, userId),
+        with: {
+            activeConnection: true,
+            activeSamplingConfig: true,
+            activeContextConfig: true,
+            activePromptConfig: true
+        }
+    })
+    if (!chat || !user || !user.activeConnection || !user.activeSamplingConfig || !user.activeContextConfig || !user.activePromptConfig) {
+        emitToUser("error", { error: "Missing chat or user config" })
+        return
+    }
+    // Optionally append a temporary message for token estimation
+    let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
+    if (message.content && message.role) {
+        chatForPrompt.chatMessages.push({
+            id: -1, // temp id
+            chatId: chat.id,
+            userId: userId,
+            personaId: message.personaId ?? null,
+            characterId: null,
+            role: message.role,
+            content: message.content,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isEdited: 0,
+            metadata: null,
+            isGenerating: false
+        })
+    }
+    // Use OllamaAdapter to generate the prompt
+    const { OllamaAdapter } = await import("../connectionAdapters/ollama")
+    const adapter = new OllamaAdapter({
+        chat: chatForPrompt,
+        connection: user.activeConnection,
+        sampling: user.activeSamplingConfig,
+        contextConfig: user.activeContextConfig,
+        promptConfig: user.activePromptConfig
+    })
+    const prompt = adapter.compilePrompt()
+    // Use TokenCounters to get the token count
+    const { TokenCounters } = await import("../utils/TokenCounterManager")
+    const tokenCounter = new TokenCounters(user.activeConnection.tokenCounter)
+    const tokenCount = await tokenCounter.countTokens(prompt)
+    // Get tokenLimit from sampling config
+    const sampling = user.activeSamplingConfig
+    const tokenLimit = sampling.contextTokensEnabled ? sampling.contextTokens : null
+    emitToUser("promptTokenCount", { tokenCount, tokenLimit })
+}
+
+export async function abortChatMessage(
+    socket: any,
+    message: { id: number }, // chat message id
+    emitToUser: (event: string, data: any) => void
+) {
+    // Find the chat message
+    const chatMessage = await db.query.chatMessages.findFirst({
+        where: (cm, { eq }) => eq(cm.id, message.id)
+    })
+    if (!chatMessage) {
+        emitToUser("abortChatMessageError", { error: "Message not found." })
+        return
+    }
+    const adapterId = chatMessage.adapterId
+    if (!adapterId) {
+        emitToUser("abortChatMessageError", { error: "No adapterId for this message." })
+        return
+    }
+    const adapter = activeAdapters.get(adapterId)
+    if (!adapter) {
+        // If no adapter, forcibly mark as not generating and clear adapterId
+        await db.update(schema.chatMessages)
+            .set({ isGenerating: false, adapterId: null })
+            .where(eq(schema.chatMessages.id, message.id))
+        emitToUser("error", { id: message.id, success: true, info: "No active adapter, forcibly cleared." })
+        return
+    }
+    try {
+        adapter.abort()
+        emitToUser("error", { id: message.id, success: true })
+    } catch (e: any) {
+        emitToUser("error", { error: e?.message || String(e) })
+    }
 }

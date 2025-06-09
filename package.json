@@ -63,6 +63,7 @@
 		"marked": "^15.0.12",
 		"mistral-tokenizer-js": "^1.0.0",
 		"ollama": "^0.5.16",
-		"sveltekit-io": "^1.0.12"
+		"sveltekit-io": "^1.0.12",
+		"uuid": "^11.1.0"
 	}
 }

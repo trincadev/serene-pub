@@ -279,6 +279,7 @@ export const chatMessages = sqliteTable('chat_messages', {
 	isEdited: integer('is_edited').default(0), // 1 if edited, 0 otherwise
     metadata: text('metadata'), // JSON for extra info
     isGenerating: integer('is_generating', {mode: "boolean"}).default(false), // 1 if processing, 0 otherwise
+    adapterId: text('adapter_id'), // UUID for in-flight adapter instance, nullable
 })
 
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({

@@ -13,6 +13,10 @@
     let editChatMessage: SelectChatMessage | undefined = $state()
     let newMessageGroup: "compose" | "preview" = $state("compose")
     let editMessageGroup: "compose" | "preview" = $state("compose")
+    let tokenCounts: { tokenCount: number; tokenLimit: number | null } = $state({
+        tokenCount: 0,
+        tokenLimit: null
+    })
 
     // Get chat id from route params
     let chatId: number = $derived.by(() => Number(page.params.id))
@@ -22,6 +26,11 @@
         if (chatMessagesContainer) {
             chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight
         }
+    })
+
+    socket.on("promptTokenCount", (msg: Sockets.PromptTokenCount.Response) => {
+        console.log("Received token counts:", msg)
+        tokenCounts = msg
     })
 
     let lastMessage: SelectChatMessage | undefined = $derived.by(() => {
@@ -50,7 +59,6 @@
             const persona = chat?.chatPersonas?.find(
                 (p: SelectChatPersona) => p.personaId === msg.personaId
             )?.persona
-            console.log("Found persona:", persona)
             return persona
         } else if (msg.characterId) {
             const character = chat?.chatCharacters?.find(
@@ -112,25 +120,37 @@
         }
     })
 
+    $effect(() => {
+        if (!chatId || !lastMessage || lastMessage.isGenerating || !!editChatMessage) return
+        socket.emit("promptTokenCount", { 
+            chatId,
+            content: newMessage,
+            personaId: chat?.chatPersonas?.[0]?.personaId || undefined,
+            role: "user"
+         })
+    })
+
     let chatMessagesContainer: HTMLDivElement | null = null
 
-    
-function markQuotedText(md: string): string {
-    return md.replaceAll('“', '"').replaceAll('”', '"').replaceAll(/"([^"\n]+)"/g, '[[QT]]"$1"[[/QT]]');
-}
+    function markQuotedText(md: string): string {
+        return md
+            .replaceAll("“", '"')
+            .replaceAll("”", '"')
+            .replaceAll(/"([^"\n]+)"/g, '[[QT]]"$1"[[/QT]]')
+    }
 
-export function replaceQuotedTextMarkers(html: string): string {
-    return html
-        .replaceAll('[[QT]]', '<span class="quoted-text">')
-        .replaceAll('[[/QT]]', '</span>');
-}
+    export function replaceQuotedTextMarkers(html: string): string {
+        return html
+            .replaceAll("[[QT]]", '<span class="quoted-text">')
+            .replaceAll("[[/QT]]", "</span>")
+    }
 
-export function renderMarkdownWithQuotedText(md: string): string {
-    const markedMd = markQuotedText(md);
-    let html = marked.parse(markedMd) as string;
-    html = replaceQuotedTextMarkers(html);
-    return html;
-}
+    export function renderMarkdownWithQuotedText(md: string): string {
+        const markedMd = markQuotedText(md)
+        let html = marked.parse(markedMd) as string
+        html = replaceQuotedTextMarkers(html)
+        return html
+    }
 </script>
 
 <svelte:head>
@@ -203,10 +223,22 @@ export function renderMarkdownWithQuotedText(md: string): string {
                                         title="Regenerate Response"
                                         onclick={(e) => {
                                             e.stopPropagation()
-                                            socket.emit('regenerateChatMessage', { id: msg.id })
+                                            socket.emit("regenerateChatMessage", { id: msg.id })
                                         }}
                                     >
                                         <Icons.RefreshCw size={16} />
+                                    </button>
+                                {/if}
+                                {#if msg.isGenerating}
+                                    <button
+                                        class="btn btn-sm preset-filled-error-500 h-min w-min px-2 opacity-80 hover:opacity-100"
+                                        title="Stop Generation"
+                                        onclick={(e) => {
+                                            e.stopPropagation()
+                                            socket.emit("abortChatMessage", { id: msg.id })
+                                        }}
+                                    >
+                                        <Icons.Square size={16} />
                                     </button>
                                 {/if}
                             </div>
@@ -333,6 +365,16 @@ export function renderMarkdownWithQuotedText(md: string): string {
                 <Tabs.Control value="preview"
                     ><span title="Preview"><Icons.Eye size="0.75em" /></span></Tabs.Control
                 >
+                <Tabs.Control value="tokenCount" classes="w-full text-right" disabled>
+                    <span title="Token Count" class="text-xs">
+                        {tokenCounts.tokenCount} /
+                        {#if tokenCounts.tokenLimit}
+                            {tokenCounts.tokenLimit}
+                        {:else}
+                            No token limit set
+                        {/if}
+                    </span>
+                </Tabs.Control>
             {/snippet}
             {#snippet content()}
                 <div class="flex gap-4">
