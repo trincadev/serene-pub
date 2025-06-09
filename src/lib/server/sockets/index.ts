@@ -33,7 +33,16 @@ import {
     deleteContextConfig,
     setUserActiveContextConfig
 } from "./contextConfigs"
-import {chat, chatsList, createChat, deleteChatMessage, sendPersonaMessage, updateChatMessage, deleteChat} from './chats';
+import {
+    chat,
+    chatsList,
+    createChat,
+    deleteChatMessage,
+    sendPersonaMessage,
+    updateChatMessage,
+    deleteChat,
+    regenerateChatMessage
+} from "./chats"
 import {
     promptConfigsList,
     promptConfig,
@@ -113,6 +122,7 @@ export function connectSockets(io: {
         register(socket, deleteChatMessage, emitToUser)
         register(socket, updateChatMessage, emitToUser)
         register(socket, deleteChat, emitToUser)
+        register(socket, regenerateChatMessage, emitToUser)
     })
 }
 

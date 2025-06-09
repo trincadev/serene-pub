@@ -1,8 +1,10 @@
 import Handlebars from "handlebars"
 import _ from "lodash"
-import { BlockGenerator } from "../utils/BlockGenerator"
+import { PromptBlockFormatter } from "../utils/PromptBlockFormatter"
 import { StopStrings } from "../utils/StopStrings"
 import { Ollama } from "ollama"
+import { PromptFormats } from "$lib/shared/constants/PromptFormats"
+import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
 
 export class OllamaAdapter {
     connection: SelectConnection
@@ -42,6 +44,8 @@ export class OllamaAdapter {
     // --- Default Ollama connection config ---
     static connectionDefaults = {
         baseUrl: "http://localhost:11434/",
+        promptFormat: PromptFormats.VICUNA,
+        tokenCounter: TokenCounterOptions.ESTIMATE,
         extraJson: {
             stream: true,
             think: false,
@@ -151,27 +155,6 @@ export class OllamaAdapter {
         return result
     }
 
-    // --- Stop string application ---
-    applyStopStrings(
-        response: string,
-        stopStrings: string[],
-        context?: Record<string, string>
-    ): string {
-        let earliestIndex = response.length
-        for (const stop of stopStrings) {
-            let stopStr = stop
-            if (context && stopStr.includes("{{")) {
-                stopStr = Handlebars.compile(stopStr)(context)
-            }
-            const regex = new RegExp(stopStr.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "m")
-            const match = response.match(regex)
-            if (match && match.index !== undefined && match.index < earliestIndex) {
-                earliestIndex = match.index
-            }
-        }
-        return response.slice(0, earliestIndex)
-    }
-
     // --- API helpers ---
     static async testConnection(connection: SelectConnection): Promise<{ ok: boolean; error?: string }> {
         try {
@@ -230,15 +213,15 @@ export class OllamaAdapter {
         }
         const systemTemplate = this.contextConfig.template || "{{system}}"
         const renderedSystemBlock = Handlebars.compile(systemTemplate)(systemCtxData)
-        const systemBlock = BlockGenerator.makeBlock({
-            format: this.contextConfig.format || "chatml",
+        const systemBlock = PromptBlockFormatter.makeBlock({
+            format: this.connection.promptFormat || "chatml",
             role: "system",
             content: renderedSystemBlock
         })
         const messageBlock = this.chat.chatMessages
             .map((msg: SelectChatMessage) => {
-                return BlockGenerator.makeBlock({
-                    format: this.contextConfig.format || "chatml",
+                return PromptBlockFormatter.makeBlock({
+                    format: this.connection.promptFormat || "chatml",
                     role: msg.role! || "assistant",
                     content: `{{${msg.role === "user" ? "user" : msg.role === "assistant" ? "char" : msg.role === "system" ? "system" : "system"}}}:\n${msg.content}`
                 })
@@ -247,8 +230,8 @@ export class OllamaAdapter {
         const promptBlocks = [systemBlock, messageBlock]
         if (this.contextConfig.alwaysForceName) {
             promptBlocks.push(
-                BlockGenerator.makeBlock({
-                    format: this.contextConfig.format || "chatml",
+                PromptBlockFormatter.makeBlock({
+                    format: this.connection.promptFormat || "chatml",
                     role: "assistant",
                     content: "{{char}}:",
                     includeClose: false
@@ -278,6 +261,14 @@ export class OllamaAdapter {
         const keep_alive = this.connection!.extraJson?.keepAlive || "300ms"
         const raw = this.connection!.extraJson?.raw || false
         if (typeof model !== "string") throw new Error("OllamaAdapter: model must be a string")
+
+        // Prepare stop strings for Ollama
+        const stopStrings = StopStrings.get(this.connection.promptFormat || "chatml")
+        const characterName = this.chat.chatCharacters?.[0]?.character?.name || "assistant"
+        const personaName = this.chat.chatPersonas?.[0]?.persona?.name || "user"
+        const stopContext: Record<string, string> = { char: characterName, user: personaName }
+        const stop = stopStrings.map(str => Handlebars.compile(str)(stopContext))
+
         const req = {
             model,
             prompt: this.compilePrompt(),
@@ -286,7 +277,8 @@ export class OllamaAdapter {
             raw,
             keep_alive,
             options: {
-                ...this.mapSamplingConfig()
+                ...this.mapSamplingConfig(),
+                stop
             }
         }
         if (stream) {
@@ -301,15 +293,7 @@ export class OllamaAdapter {
                             cb(part.response)
                         }
                     }
-                    const stopStrings = StopStrings.get(this.contextConfig.format || "chatml")
-                    const systemCtxData: Record<string, string> = {
-                        char: this.chat.chatCharacters?.[0]?.character?.name || "assistant",
-                        user: this.chat.chatPersonas?.[0]?.persona?.name || "user"
-                    }
-                    const trimmed = this.applyStopStrings(content, stopStrings, systemCtxData)
-                    if (trimmed !== content) {
-                        cb(trimmed.slice(content.length))
-                    }
+                    // No need to apply stop strings here, Ollama will handle it
                 } catch (e: any) {
                     cb("FAILURE: " + (e.message || String(e)))
                 }
@@ -322,12 +306,8 @@ export class OllamaAdapter {
                     const result = await ollama.generate({ ...req, stream: false })
                     if (result && typeof result === "object" && "response" in result) {
                         content = result.response || ""
-                        const stopStrings = StopStrings.get(this.contextConfig.format || "chatml")
-                        const systemCtxData: Record<string, string> = {
-                            char: this.chat.chatCharacters?.[0]?.character?.name || "assistant",
-                            user: this.chat.chatPersonas?.[0]?.persona?.name || "user"
-                        }
-                        return this.applyStopStrings(content, stopStrings, systemCtxData)
+                        // No need to apply stop strings here, Ollama will handle it
+                        return content
                     } else {
                         return "FAILURE: Unexpected Ollama result type"
                     }
