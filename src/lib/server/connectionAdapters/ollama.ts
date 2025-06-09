@@ -329,49 +329,84 @@ export class OllamaAdapter {
     }
 
     /**
-     * Send a prompt to Ollama, get the response, and remove the character name prefix if present.
-     * This replaces the old getCompletion signature.
+     * getCompletion: returns a Promise<string> for normal completion,
+     * or a handler function for streaming mode (handler(cb) => void).
+     * Streaming is determined by this.weights.streaming (if enabled), otherwise false.
      */
-    async getCompletion(): Promise<string> {
-        // Use Ollama's chat API with template and messages
-        const response = await this.sendText({
-            model: this.connection!.model!
-        })
-        if (response.ok) {
-            const raw = await response.text();
-            // console.log("[OllamaAdapter.getCompletion] Raw Ollama response:", raw);
-            // Try to parse as a single JSON object first
-            try {
-                const data = JSON.parse(raw);
-                return data?.response || ""
-            } catch (err) {
-                // If not, try to parse as NDJSON (streamed JSON lines)
-                let content = "";
-                let lastDone = false;
-                raw.split(/\r?\n/).forEach(line => {
-                    if (!line.trim()) return;
-                    try {
-                        const obj = JSON.parse(line);
-                        if (obj.response) content += obj.response;
-                        if (obj.done) lastDone = true;
-                    } catch (e) {
-                        console.error("OllamaAdapter.getCompletion: Failed to parse line as JSON:", line, e);
-                    }
-                });
-                // Use StopStrings for the current format and context
-                const stopStrings = StopStrings.get(this.contextConfig.format || "chatml");
-                // Only pass defined values for Handlebars context
-                const systemCtxData: Record<string, string> = {
-                    char: this.chat.chatCharacters?.[0]?.character?.name || "assistant",
-                    user: this.chat.chatPersonas?.[0]?.persona?.name || "user"
-                };
-                content = applyStopStrings(content, stopStrings, systemCtxData);
-                if (content && lastDone) return content;
-                console.error("OllamaAdapter.getCompletion: Failed to parse JSON or NDJSON. Raw response:", raw)
-                return "FAILURE: Ollama returned non-JSON/NDJSON response. See server logs."
+    getCompletion(): Promise<string> | ((cb: (chunk: string) => void) => Promise<void>) {
+        // Determine streaming from weights
+        let stream = false;
+        if (this.weights && typeof this.weights.streaming !== "undefined") {
+            // Only use streaming if the streamingEnabled flag is not false (or missing)
+            if (this.weights.streamingEnabled === false) {
+                stream = false;
+            } else {
+                stream = !!this.weights.streaming;
             }
         }
-        return "FAILURE: " + response.statusText
+        if (stream) {
+            // Return a handler function that takes a callback
+            return async (cb: (chunk: string) => void) => {
+                let content = "";
+                const result = await this.streamCompletion({
+                    prompt: this.compilePrompt(),
+                    model: this.connection!.model!,
+                    options: {},
+                    onData: (chunk) => {
+                        content += chunk;
+                        cb(chunk);
+                    }
+                });
+                if (result.ok) {
+                    const stopStrings = StopStrings.get(this.contextConfig.format || "chatml");
+                    const systemCtxData: Record<string, string> = {
+                        char: this.chat.chatCharacters?.[0]?.character?.name || "assistant",
+                        user: this.chat.chatPersonas?.[0]?.persona?.name || "user"
+                    };
+                    // Final callback with the full, stop-string-trimmed content
+                    cb(applyStopStrings(content, stopStrings, systemCtxData));
+                } else {
+                    cb("FAILURE: " + (result.error || "Unknown error"));
+                }
+            }
+        } else {
+            // Return a Promise<string> as before
+            return (async () => {
+                const response = await this.sendText({
+                    model: this.connection!.model!
+                })
+                if (response.ok) {
+                    const raw = await response.text();
+                    try {
+                        const data = JSON.parse(raw);
+                        return data?.response || ""
+                    } catch (err) {
+                        let content = "";
+                        let lastDone = false;
+                        raw.split(/\r?\n/).forEach(line => {
+                            if (!line.trim()) return;
+                            try {
+                                const obj = JSON.parse(line);
+                                if (obj.response) content += obj.response;
+                                if (obj.done) lastDone = true;
+                            } catch (e) {
+                                console.error("OllamaAdapter.getCompletion: Failed to parse line as JSON:", line, e);
+                            }
+                        });
+                        const stopStrings = StopStrings.get(this.contextConfig.format || "chatml");
+                        const systemCtxData: Record<string, string> = {
+                            char: this.chat.chatCharacters?.[0]?.character?.name || "assistant",
+                            user: this.chat.chatPersonas?.[0]?.persona?.name || "user"
+                        };
+                        content = applyStopStrings(content, stopStrings, systemCtxData);
+                        if (content && lastDone) return content;
+                        console.error("OllamaAdapter.getCompletion: Failed to parse JSON or NDJSON. Raw response:", raw)
+                        return "FAILURE: Ollama returned non-JSON/NDJSON response. See server logs."
+                    }
+                }
+                return "FAILURE: " + response.statusText
+            })();
+        }
     }
 
     // Parse Ollama's streaming response (SillyTavern-style)

@@ -217,20 +217,54 @@ export async function sendPersonaMessage(socket: any, message: Sockets.SendPerso
             weights: user!.activeWeights!,
             contextConfig: user!.activeContextConfig!,
             promptConfig: user!.activePromptConfig!
-        })
+        });
 
-        const content = await adapter.getCompletion()
-        await db
-            .update(schema.chatMessages)
-            .set({
-                content,
-                isGenerating: false
-            })
-            .where(eq(schema.chatMessages.id, generatingMessage.id))
-        const response: Sockets.SendPersonaMessage.Response = {
-            chatMessage: assistantMessage
+        // For now, always stream. You can add a config flag if needed.
+        const completionResult = adapter.getCompletion();
+
+        if (typeof completionResult === "function") {
+            // Streaming mode: progressively update the message
+            let content = "";
+            await completionResult(async (chunk: string) => {
+                content += chunk;
+                await db.update(schema.chatMessages)
+                    .set({ content, isGenerating: true })
+                    .where(eq(schema.chatMessages.id, generatingMessage.id));
+                await getChat(socket, { id: chatId }, emitToUser);
+            });
+            // Final update: mark as not generating
+            await db.update(schema.chatMessages)
+                .set({ content, isGenerating: false })
+                .where(eq(schema.chatMessages.id, generatingMessage.id));
+            // Fetch the updated message for the response
+            const updatedMsg = await db.query.chatMessages.findFirst({
+                where: (cm, { eq }) => eq(cm.id, generatingMessage.id),
+            });
+            const response: Sockets.SendPersonaMessage.Response = {
+                chatMessage: updatedMsg!
+            };
+            socket.io.to("user_" + userId).emit("personaMessageReceived", response);
+            await getChat(socket, { id: chatId }, emitToUser);
+        } else {
+            // Completed text mode
+            const content = await completionResult;
+            await db
+                .update(schema.chatMessages)
+                .set({
+                    content,
+                    isGenerating: false
+                })
+                .where(eq(schema.chatMessages.id, generatingMessage.id));
+            // Fetch the updated message for the response
+            const updatedMsg = await db.query.chatMessages.findFirst({
+                where: (cm, { eq }) => eq(cm.id, generatingMessage.id),
+            });
+            const response: Sockets.SendPersonaMessage.Response = {
+                chatMessage: updatedMsg!
+            };
+            socket.io.to("user_" + userId).emit("personaMessageReceived", response);
+            await getChat(socket, { id: chatId }, emitToUser);
         }
-        socket.io.to("user_" + userId).emit("personaMessageReceived", response)
     }
 
     await getChat(socket, { id: chatId }, emitToUser)

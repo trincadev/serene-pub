@@ -6,14 +6,13 @@
     import OllamaForm from "$lib/client/connectionForms/OllamaForm.svelte"
     import ChatGPTForm from "$lib/client/connectionForms/ChatGPTForm.svelte"
     import { CONNECTION_TYPES } from "$lib/shared/constants/ConnectionTypes"
-    import NewNameModal from '../modals/NewNameModal.svelte'
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
     }
 
     let { onclose = $bindable() }: Props = $props()
-    let userCtx = getContext("user")
+    let userCtx: UserCtx = getContext("user")
     const socket = skio.get()
 
     // --- State ---
@@ -31,7 +30,9 @@
     let refreshModelsResult: { models?: any[]; error?: string } | null = $state(null)
     let ollamaFields = $state({})
     let availableOllamaModels = $state([])
-    let showNewNameModal = $state(false)
+    let showNewConnectionModal = $state(false)
+    let newConnectionName = $state("")
+    let newConnectionType = $state(CONNECTION_TYPES[0].value)
 
     // Helper: parse extraJson to fields
     function parseExtraJson(json: string | null | undefined) {
@@ -74,7 +75,7 @@
     // On load, if ollama and no models, fetch models
     onMount(() => {
         socket.emit("connectionsList", {})
-        if (userCtx.user.activeConnectionId) {
+        if (userCtx.user?.activeConnectionId) {
             socket.emit("connection", { id: userCtx.user.activeConnectionId })
         }
         onclose = handleOnClose
@@ -103,17 +104,22 @@
         socket.emit("setUserActiveConnection", { id: +(e.target as HTMLSelectElement).value })
     }
     function handleNew() {
-        showNewNameModal = true
+        newConnectionName = ""
+        newConnectionType = CONNECTION_TYPES[0].value
+        showNewConnectionModal = true
     }
-    function handleNewNameConfirm(name: string) {
-        if (!name) return
-        const newConn = { ...connection, name, type: "ollama", enabled: true }
-        delete newConn.id
+    function handleNewConnectionConfirm() {
+        if (!newConnectionName.trim()) return
+        const newConn = {
+            name: newConnectionName.trim(),
+            type: newConnectionType,
+            enabled: true
+        }
         socket.emit("createConnection", { connection: newConn })
-        showNewNameModal = false
+        showNewConnectionModal = false
     }
-    function handleNewNameCancel() {
-        showNewNameModal = false
+    function handleNewConnectionCancel() {
+        showNewConnectionModal = false
     }
     function handleUpdate() {
         socket.emit("updateConnection", { connection })
@@ -213,12 +219,13 @@
             />
         </div>
         <div class="mt-2 flex flex-col gap-1">
-            <label class="font-semibold" for="type">Type</label>
+            <label class="font-semibold" for="type" disabled>Type</label>
             <select
                 id="type"
                 bind:value={connection.type}
                 onchange={handleTypeChange}
                 class="input input-sm bg-background border-muted w-full rounded border"
+                disabled
             >
                 {#each CONNECTION_TYPES as t}
                     <option value={t.value}>{t.label}</option>
@@ -226,9 +233,9 @@
             </select>
         </div>
         {#if connection.type === "ollama"}
-            <OllamaForm {connection} />
+            <OllamaForm bind:connection {ollamaFields} {handleOllamaFieldChange} />
         {:else if connection.type === "chatgpt"}
-            <ChatGPTForm {connection} />
+            <ChatGPTForm bind:connection />
         {/if}
         <div class="mt-4 flex flex-col gap-2">
             {#if connection.type === "ollama"}
@@ -249,12 +256,15 @@
             No connections found. Create a new connection to get started.
         </div>
     {/if}
-    <Modal
-        open={showConfirmModal}
-        onOpenChange={(e) => (showConfirmModal = e.open)}
-        contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
-        backdropClasses="backdrop-blur-sm"
-    >
+</div>
+
+<Modal
+    open={showConfirmModal}
+    onOpenChange={(e) => (showConfirmModal = e.open)}
+    contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+    backdropClasses="backdrop-blur-sm"
+>
+    {#snippet content()}
         <header class="flex justify-between">
             <h2 class="h2">Confirm</h2>
         </header>
@@ -269,11 +279,52 @@
             <button class="btn preset-filled-error-500" onclick={handleModalDiscard}>Discard</button
             >
         </footer>
-    </Modal>
-    <NewNameModal
-        open={showNewNameModal}
-        onOpenChange={(e) => (showNewNameModal = e.open)}
-        onConfirm={handleNewNameConfirm}
-        onCancel={handleNewNameCancel}
-    />
-</div>
+    {/snippet}
+</Modal>
+<Modal
+    open={showNewConnectionModal}
+    onOpenChange={(e) => (showNewConnectionModal = e.open)}
+    contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+    backdropClasses="backdrop-blur-sm"
+>
+    {#snippet content()}
+        <header class="flex justify-between">
+            <h2 class="h2">Create New Connection</h2>
+        </header>
+        <article class="flex flex-col gap-4">
+            <div>
+                <label class="font-semibold" for="newConnName">Name</label>
+                <input
+                    id="newConnName"
+                    type="text"
+                    class="input w-full"
+                    bind:value={newConnectionName}
+                    placeholder="Enter a name..."
+                    onkeydown={(e) => {
+                        if (e.key === "Enter" && newConnectionName.trim()) {
+                            handleNewConnectionConfirm()
+                        }
+                    }}
+                />
+            </div>
+            <div>
+                <label class="font-semibold" for="newConnType">Type</label>
+                <select id="newConnType" class="input w-full" bind:value={newConnectionType}>
+                    {#each CONNECTION_TYPES as t}
+                        <option value={t.value}>{t.label}</option>
+                    {/each}
+                </select>
+            </div>
+        </article>
+        <footer class="mt-4 flex justify-end gap-4">
+            <button class="btn preset-filled-surface-500" onclick={handleNewConnectionCancel}
+                >Cancel</button
+            >
+            <button
+                class="btn preset-filled-primary-500"
+                onclick={handleNewConnectionConfirm}
+                disabled={!newConnectionName.trim()}>Create</button
+            >
+        </footer>
+    {/snippet}
+</Modal>

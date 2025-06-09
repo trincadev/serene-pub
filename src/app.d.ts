@@ -2,6 +2,7 @@
 
 import type { Component } from "@lucide/svelte"
 import * as schema from "$lib/server/db/schema"
+import type { Schema } from "inspector/promises"
 
 // for information about these interfaces
 declare global {
@@ -29,6 +30,10 @@ declare global {
         onMobilePanelClose?: () => Promise<boolean>
         leftNav: Record<string, { icon: Component<Icons.IconProps, {}, "">; title: string }>
         rightNav: Record<string, { icon: Component<Icons.IconProps, {}, "">; title: string }>
+    }
+
+    interface UserCtx {
+        user: SelectUser | undefined
     }
 
     // Model select and insert

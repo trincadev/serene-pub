@@ -1,64 +1,15 @@
 <script lang="ts">
     import skio from "sveltekit-io"
 
-    let { connection } = $props()
+    interface Props {
+        connection: SelectConnection
+        ollamaFields: Record<string, any>
+        handleOllamaFieldChange: (key: string, value: any) => void
+    }
 
-    let ollamaFields = $state({})
+    let { connection = $bindable(), ollamaFields, handleOllamaFieldChange } = $props()
     let availableOllamaModels = $state([])
-
     const socket = skio.get()
-
-    // Parse and sync extraJson
-    function parseExtraJson(json) {
-        if (!json) return {}
-        try {
-            return JSON.parse(json)
-        } catch {
-            return {}
-        }
-    }
-    function toExtraJson(fields) {
-        try {
-            return JSON.stringify(fields)
-        } catch {
-            return "{}"
-        }
-    }
-
-    if (connection && !connection.baseUrl) {
-        connection.baseUrl = "http://localhost:11434/"
-    }
-    
-    handleRefreshModels()
-
-    $effect(() => {
-        if (connection && connection.type === "ollama") {
-            ollamaFields = parseExtraJson(connection.extraJson)
-            // Set default prompt to connection name for new connections
-            if (!ollamaFields.prompt && connection.name) {
-                ollamaFields = { ...ollamaFields, prompt: connection.name }
-            }
-        }
-    })
-
-    $effect(() => {
-        if (connection && connection.type === "ollama") {
-            connection.extraJson = toExtraJson(ollamaFields)
-        }
-    })
-
-    // Set the name as the default for the "new" prompt
-    $effect(() => {
-        if (
-            connection &&
-            connection.type === "ollama" &&
-            (!ollamaFields.prompt || ollamaFields.prompt === "") &&
-            connection.name &&
-            connection.id === undefined // likely a new connection
-        ) {
-            ollamaFields = { ...ollamaFields, prompt: connection.name }
-        }
-    })
 
     function handleRefresh(msg) {
         if (msg.models) availableOllamaModels = msg.models
@@ -69,8 +20,10 @@
     function handleRefreshModels() {
         socket.emit("refreshOllamaModels", { baseUrl: connection.baseUrl })
     }
-    function handleOllamaFieldChange(key, value) {
-        ollamaFields = { ...ollamaFields, [key]: value }
+    function onOllamaFieldChange(key, value) {
+        const updated = { ...ollamaFields, [key]: value }
+        ollamaFields = updated
+        handleOllamaFieldChange(key, value)
     }
 
     let testResult: { ok: boolean; error?: string; models?: any[] } | null = $state(null)
@@ -131,7 +84,7 @@
             id="ollamaApiKey"
             type="text"
             bind:value={ollamaFields.apiKey}
-            oninput={(e) => handleOllamaFieldChange("apiKey", e.target.value)}
+            oninput={(e) => onOllamaFieldChange("apiKey", e.target.value)}
             class="input input-sm bg-background border-muted w-full rounded border"
             disabled
         />
@@ -141,7 +94,7 @@
         <textarea
             id="ollamaCustomHeaders"
             bind:value={ollamaFields.customHeaders}
-            oninput={(e) => handleOllamaFieldChange("customHeaders", e.target.value)}
+            oninput={(e) => onOllamaFieldChange("customHeaders", e.target.value)}
             class="input input-sm bg-background border-muted w-full rounded border"
             rows="2"
             disabled
