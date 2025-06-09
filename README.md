@@ -49,11 +49,9 @@ The following features are functional, mostly functional, in progress or pending
     - Still finalizing 
 2. Manage context settings
     - Recommend using the default option with a ChatML compatible model.
-    - Not all fields are enabled/supported yet.
-    - The included templates and configuration are subject to change in the future, (currently using SillyTavern default options.)
 3. Chats
-    - Not implemented: Manually continue/trigger response, regenerate response, swipe next response, swipe initial message, hide message, edit/rename chat, streaming.
-    - Implemented: Create & delete chat, send persona message, generate character response, edit and delete messages.
+    - Not implemented: Manually continue/trigger response, regenerate response, swipe next response, swipe initial message, hide message, edit/rename chat.
+    - Implemented: Create & delete chat, send persona message, generate character response, edit and delete messages, streaming.
 
 ### Pending
 
