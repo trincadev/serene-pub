@@ -15,6 +15,13 @@
       "when": 1749494959433,
       "tag": "0001_striped_dakota_north",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1749508702953,
+      "tag": "0002_bouncy_proemial_gods",
+      "breakpoints": true
     }
   ]
 }

@@ -229,6 +229,18 @@
                                         <Icons.RefreshCw size={16} />
                                     </button>
                                 {/if}
+                                {#if msg.isGenerating}
+                                    <button
+                                        class="btn btn-sm preset-filled-error-500 h-min w-min px-2 opacity-80 hover:opacity-100"
+                                        title="Stop Generation"
+                                        onclick={(e) => {
+                                            e.stopPropagation()
+                                            socket.emit("abortChatMessage", { id: msg.id })
+                                        }}
+                                    >
+                                        <Icons.Square size={16} />
+                                    </button>
+                                {/if}
                             </div>
                         </div>
                         <div class="flex h-fit rounded p-2 text-left">

@@ -42,7 +42,8 @@ import {
     updateChatMessage,
     deleteChat,
     regenerateChatMessage,
-    promptTokenCount
+    promptTokenCount,
+    abortChatMessage
 } from "./chats"
 import {
     promptConfigsList,
@@ -125,6 +126,8 @@ export function connectSockets(io: {
         register(socket, deleteChat, emitToUser)
         register(socket, regenerateChatMessage, emitToUser)
         register(socket, promptTokenCount, emitToUser)
+        register(socket, abortChatMessage, emitToUser)
+        console.log(`Socket connected: ${socket.id} for user ${userId}`)
     })
 }
 

@@ -17,6 +17,8 @@ export class OllamaAdapter {
         chatMessages: SelectChatMessage[]
     }
 
+    private _client?: Ollama;
+
     constructor({
         connection,
         sampling,
@@ -244,8 +246,11 @@ export class OllamaAdapter {
 
     // --- Ollama client instance ---
     getClient() {
-        const host = this.connection.baseUrl || OllamaAdapter.connectionDefaults.baseUrl
-        return new Ollama({ host })
+        if (!this._client) {
+            const host = this.connection.baseUrl || OllamaAdapter.connectionDefaults.baseUrl;
+            this._client = new Ollama({ host });
+        }
+        return this._client;
     }
 
     static mapRole(role: string): string {
@@ -315,6 +320,14 @@ export class OllamaAdapter {
                     return "FAILURE: " + (e.message || String(e))
                 }
             })()
+        }
+    }
+
+    // --- Abort in-flight Ollama request ---
+    abort() {
+        const client = this.getClient();
+        if (typeof client.abort === 'function') {
+            client.abort();
         }
     }
 }
