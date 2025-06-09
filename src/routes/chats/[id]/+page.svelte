@@ -1,13 +1,10 @@
 <script lang="ts">
     import { page } from "$app/state"
     import { Avatar, Modal, Tabs } from "@skeletonlabs/skeleton-svelte"
-    import Markdown from "svelte-exmarkdown"
     import * as skio from "sveltekit-io"
     import * as Icons from "@lucide/svelte"
-    import { Carta, MarkdownEditor } from "carta-md"
+    import { marked } from "marked"
 
-    // @ts-ignore
-    const carta = new Carta({ disableIcons: ["code", "link"] })
     let chat: any = $state(null)
     let newMessage = $state("")
     const socket = skio.get()
@@ -116,6 +113,24 @@
     })
 
     let chatMessagesContainer: HTMLDivElement | null = null
+
+    
+function markQuotedText(md: string): string {
+    return md.replaceAll('“', '"').replaceAll('”', '"').replaceAll(/"([^"\n]+)"/g, '[[QT]]"$1"[[/QT]]');
+}
+
+export function replaceQuotedTextMarkers(html: string): string {
+    return html
+        .replaceAll('[[QT]]', '<span class="quoted-text">')
+        .replaceAll('[[/QT]]', '</span>');
+}
+
+export function renderMarkdownWithQuotedText(md: string): string {
+    const markedMd = markQuotedText(md);
+    let html = marked.parse(markedMd) as string;
+    html = replaceQuotedTextMarkers(html);
+    return html;
+}
 </script>
 
 <svelte:head>
@@ -182,6 +197,18 @@
                                 >
                                     <Icons.Trash2 size={16} />
                                 </button>
+                                {#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
+                                    <button
+                                        class="btn btn-sm preset-tonal-surface hover:preset-tonal-primary h-min w-min px-2 opacity-80 hover:opacity-100"
+                                        title="Regenerate Response"
+                                        onclick={(e) => {
+                                            e.stopPropagation()
+                                            socket.emit('regenerateChatMessage', { id: msg.id })
+                                        }}
+                                    >
+                                        <Icons.RefreshCw size={16} />
+                                    </button>
+                                {/if}
                             </div>
                         </div>
                         <div class="flex h-fit rounded p-2 text-left">
@@ -203,7 +230,7 @@
                                 <div class="text-red-500">Error loading message</div>
                             {:else if editChatMessage && editChatMessage.id === msg.id}
                                 <form
-                                    class="chat-input-bar bg-surface-100-900 gap-4 p-2 pb-6 align-middle w-full rounded-xl"
+                                    class="chat-input-bar bg-surface-100-900 w-full gap-4 rounded-xl p-2 pb-6 align-middle"
                                     onsubmit={(e) => {
                                         e.preventDefault()
                                         handleMessageUpdate(e)
@@ -243,38 +270,42 @@
                                                         <div
                                                             class="card bg-surface-100-900 min-h-[5em] w-full rounded-lg p-2"
                                                         >
-                                                            <Markdown md={editChatMessage!.content} />
+                                                            <div class="chatMessageContent">
+                                                                {@html renderMarkdownWithQuotedText(
+                                                                    editChatMessage!.content
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </Tabs.Panel>
                                                 </div>
                                                 <div class="flex flex-col gap-4">
-                                                <button
-                                                    class="btn preset-filled-success-500 h-auto w-fit"
-                                                    type="submit"
-                                                    disabled={!editChatMessage!.content.trim()}
-                                                    title="Save"
-                                                >
-                                                    <Icons.Send size={24} />
-                                                </button>
-                                                <button
-                                                    class="btn preset-filled-surface-500 h-auto w-fit"
-                                                    type="button"
-                                                    title="Save"
-                                                    onclick={(e) => {
-                                                        e.stopPropagation()
-                                                        editChatMessage = undefined
-                                                    }}
-                                                >
-                                                    <Icons.X size={24} />
-                                                </button>
+                                                    <button
+                                                        class="btn preset-filled-success-500 h-auto w-fit"
+                                                        type="submit"
+                                                        disabled={!editChatMessage!.content.trim()}
+                                                        title="Save"
+                                                    >
+                                                        <Icons.Send size={24} />
+                                                    </button>
+                                                    <button
+                                                        class="btn preset-filled-surface-500 h-auto w-fit"
+                                                        type="button"
+                                                        title="Save"
+                                                        onclick={(e) => {
+                                                            e.stopPropagation()
+                                                            editChatMessage = undefined
+                                                        }}
+                                                    >
+                                                        <Icons.X size={24} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         {/snippet}
                                     </Tabs>
                                 </form>
                             {:else}
-                                <div>
-                                    <Markdown md={msg.content} />
+                                <div class="rendered-chat-message-content">
+                                    {@html renderMarkdownWithQuotedText(msg.content)}
                                 </div>
                             {/if}
                         </div>
@@ -335,7 +366,9 @@
                         </Tabs.Panel>
                         <Tabs.Panel value="preview">
                             <div class="card bg-surface-100-900 min-h-[4em] w-full rounded-lg p-2">
-                                <Markdown md={newMessage} />
+                                <div class="rendered-chat-message-content">
+                                    {@html renderMarkdownWithQuotedText(newMessage)}
+                                </div>
                             </div>
                         </Tabs.Panel>
                     </div>
@@ -477,7 +510,7 @@
     :global(.markdown-body blockquote) {
         color: #7dd3fc; /* sky-300 */
         border-left: 4px solid #38bdf8; /* sky-400 */
-        background: rgba(56,189,248,0.08);
+        background: rgba(56, 189, 248, 0.08);
         padding-left: 1em;
         margin-left: 0;
     }
@@ -485,7 +518,7 @@
     :global(.markdown-body i) {
         color: #f472b6; /* pink-400 */
         font-style: italic;
-        background: rgba(244,114,182,0.08);
+        background: rgba(244, 114, 182, 0.08);
         border-radius: 0.2em;
         padding: 0 0.15em;
     }

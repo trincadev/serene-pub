@@ -14,3 +14,15 @@
     font-optical-sizing: auto;
     font-style: normal;
 }
+
+.rendered-chat-message-content p + p {
+    margin-top: 1em;
+}
+
+.rendered-chat-message-content em {
+    @apply text-surface-700-300;
+}
+
+.rendered-chat-message-content span.quoted-text {
+    @apply text-tertiary-900-100;
+}

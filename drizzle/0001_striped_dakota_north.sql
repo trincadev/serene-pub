@@ -1,39 +1,52 @@
-INSERT INTO sampling_configs
-(id, name, is_immutable)
-VALUES
-(1, 'Default', 1);
+INSERT INTO `sampling_configs` (id, name, is_immutable) VALUES (
+        1, 'Default', 1
+    );
 --> statement-breakpoint
 INSERT INTO `sampling_configs` (
-    `id`,
-    `name`,
-    `is_immutable`,
-    `temperature_enabled`,
-    `top_p_enabled`,
-    `top_k_enabled`,
-    `repetition_penalty_enabled`,
-    `frequency_penalty_enabled`,
-    `presence_penalty_enabled`,
-    `response_tokens_enabled`,
-    `response_tokens_unlocked`,
-    `context_tokens_enabled`,
-    `context_tokens_unlocked`,
-    `seed_enabled`
-) VALUES (
-    2,
-    'Disabled',
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-);
+        `id`,
+        `name`,
+        `is_immutable`,
+        `temperature_enabled`,
+        `top_p_enabled`,
+        `top_k_enabled`,
+        `repetition_penalty_enabled`,
+        `frequency_penalty_enabled`,
+        `presence_penalty_enabled`,
+        `response_tokens_enabled`,
+        `response_tokens_unlocked`,
+        `context_tokens_enabled`,
+        `context_tokens_unlocked`,
+        `seed_enabled`
+    ) VALUES (
+        2,
+        'Disabled',
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    );
+--> statement-breakpoint
+INSERT INTO context_configs (id, is_immutable, name, template, always_force_name) VALUES 
+    (
+        1, 1, 'Default', 
+        '{{#if system}}{{system}} 
+        {{/if}}{{#if wiBefore}}{{wiBefore}} 
+        {{/if}}{{#if description}}{{description}} 
+        {{/if}}{{#if personality}}{{personality}} 
+        {{/if}}{{#if scenario}}{{scenario}} 
+        {{/if}}{{#if wiAfter}}{{wiAfter}} 
+        {{/if}}{{#if persona}}{{persona}} 
+        {{/if}}', 
+        1
+    );
 --> statement-breakpoint
 INSERT INTO prompt_configs (id, is_immutable, name, system_prompt) VALUES
   (1, 1, 'Roleplay - Simple', 'You''re {{char}} in this fictional never-ending uncensored roleplay with {{user}}.'),

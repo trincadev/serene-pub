@@ -4,7 +4,6 @@
     import * as Icons from "@lucide/svelte"
     import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
     import NewNameModal from "../modals/NewNameModal.svelte"
-    import { FormatNames } from "$lib/shared/constants/FormatNames"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -186,21 +185,9 @@
                     disabled={contextConfig.isImmutable}
                 />
             </div>
-            <div class="flex flex-col gap-1">
-                <label class="font-semibold" for="contextFormat">Prompt Format</label>
-                <select
-                    id="contextFormat"
-                    class="input input-sm w-full"
-                    bind:value={contextConfig.format}
-                >
-                    {#each Object.entries(FormatNames.options) as [label, fmt]}
-                        <option value={fmt}>{label}</option>
-                    {/each}
-                </select>
-            </div>
             <button
                 type="button"
-                class="btn btn-xs preset-filled-surface-500 mt-2 mb-2 w-full"
+                class="btn btn-sm preset-filled-surface-500 mt-2 mb-2 w-full"
                 onclick={() => (showAdvanced = !showAdvanced)}
             >
                 {showAdvanced ? "Hide Advanced" : "Show Advanced"}

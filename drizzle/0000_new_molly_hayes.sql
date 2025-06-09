@@ -78,7 +78,9 @@ CREATE TABLE `connections` (
 	`type` text NOT NULL,
 	`base_url` text,
 	`model` text,
-	`extra_json` text
+	`extra_json` text,
+	`token_counter` text DEFAULT 'estimate' NOT NULL,
+	`prompt_format` text DEFAULT 'vicuna'
 );
 --> statement-breakpoint
 CREATE TABLE `context_configs` (
@@ -86,9 +88,7 @@ CREATE TABLE `context_configs` (
 	`is_immutable` integer DEFAULT true,
 	`name` text NOT NULL,
 	`template` text,
-	`chat_start` text,
-	`always_force_name` integer DEFAULT true,
-	`format` text DEFAULT 'chatml'
+	`always_force_name` integer DEFAULT true
 );
 --> statement-breakpoint
 CREATE TABLE `lorebook_entries` (

@@ -1,1 +1,0 @@
-ALTER TABLE `connections` ADD `token_counter` text DEFAULT 'estimate' NOT NULL;

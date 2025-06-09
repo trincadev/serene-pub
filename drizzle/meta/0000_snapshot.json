@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6fe9ae28-7b20-45ff-acb6-db14f5ca4c48",
+  "id": "2efc905f-4661-4d73-a74f-78914ee69f0b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "character_tags": {
@@ -592,6 +592,22 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "token_counter": {
+          "name": "token_counter",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'estimate'"
+        },
+        "prompt_format": {
+          "name": "prompt_format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'vicuna'"
         }
       },
       "indexes": {},
@@ -632,13 +648,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "chat_start": {
-          "name": "chat_start",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "always_force_name": {
           "name": "always_force_name",
           "type": "integer",
@@ -646,14 +655,6 @@
           "notNull": false,
           "autoincrement": false,
           "default": true
-        },
-        "format": {
-          "name": "format",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'chatml'"
         }
       },
       "indexes": {},

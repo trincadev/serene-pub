@@ -5,6 +5,7 @@ import { countTokens as countGpt4oTokens } from 'gpt-tokenizer/encoding/o200k_ba
 import llamaTokenizer from 'llama-tokenizer-js'
 import llama3Tokenizer from 'llama3-tokenizer-js'
 import mistralTokenizer from 'mistral-tokenizer-js'
+import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
 
 export interface TokenCounter {
     countTokens(text: string): Promise<number> | number
@@ -81,76 +82,72 @@ export type TokenCounterDescriptor = {
     counter: TokenCounter
 }
 
-export class TokenCounterManager {
-    static counters: Record<string, TokenCounterDescriptor> = {
-        estimate: {
-            label: "Estimate",
+export class TokenCounters {
+    static counters: Record<string, TokenCounterDescriptor> = Object.fromEntries([
+        [TokenCounterOptions.ESTIMATE, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.ESTIMATE)!.label,
             counter: new EstimateTokenCounter()
-        },
-        "openai-gpt2": {
-            label: "OpenAI GPT-2/3",
+        }],
+        [TokenCounterOptions.OPENAI_GPT2, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.OPENAI_GPT2)!.label,
             counter: new OpenAIGPT2TokenCounter()
-        },
-        "openai-gpt3.5": {
-            label: "OpenAI GPT-3.5 Turbo",
+        }],
+        [TokenCounterOptions.OPENAI_GPT35, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.OPENAI_GPT35)!.label,
             counter: new OpenAIGPT35TokenCounter()
-        },
-        "openai-gpt4": {
-            label: "OpenAI GPT-4",
+        }],
+        [TokenCounterOptions.OPENAI_GPT4, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.OPENAI_GPT4)!.label,
             counter: new OpenAIGPT4TokenCounter()
-        },
-        "openai-gpt4o": {
-            label: "OpenAI GPT-4o",
+        }],
+        [TokenCounterOptions.OPENAI_GPT4O, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.OPENAI_GPT4O)!.label,
             counter: new OpenAIGPT4oTokenCounter()
-        },
-        llama: {
-            label: "Llama",
+        }],
+        [TokenCounterOptions.LLAMA, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.LLAMA)!.label,
             counter: new LlamaTokenCounter()
-        },
-        llama3: {
-            label: "Llama 3",
-            counter: new LlamaTokenCounter()
-        },
-        mistral: {
-            label: "Mistral/Mixtral",
+        }],
+        [TokenCounterOptions.LLAMA3, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.LLAMA3)!.label,
+            counter: new Llama3TokenCounter()
+        }],
+        [TokenCounterOptions.MISTRAL, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.MISTRAL)!.label,
             counter: new MistralTokenCounter()
-        },
-        "anthropic-claude": {
-            label: "Anthropic Claude",
+        }],
+        [TokenCounterOptions.ANTHROPIC_CLAUDE, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.ANTHROPIC_CLAUDE)!.label,
             counter: new AnthropicClaudeTokenCounter()
-        },
-        cohere: {
-            label: "Cohere",
+        }],
+        [TokenCounterOptions.COHERE, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.COHERE)!.label,
             counter: new CohereTokenCounter()
-        },
-        gemini: {
-            label: "Google Gemini/PaLM",
+        }],
+        [TokenCounterOptions.GEMINI, {
+            label: TokenCounterOptions.options.find(o => o.value === TokenCounterOptions.GEMINI)!.label,
             counter: new GeminiTokenCounter()
-        }
-    }
+        }],
+    ])
 
     private active: string
 
     constructor(strategy: string = "estimate") {
-        if (!(strategy in TokenCounterManager.counters)) {
+        if (!(strategy in TokenCounters.counters)) {
             throw new Error(`Unknown strategy: ${strategy}`)
         }
         this.active = strategy
     }
 
     countTokens(text: string): number | Promise<number> {
-        return TokenCounterManager.counters[this.active].counter.countTokens(text)
+        return TokenCounters.counters[this.active].counter.countTokens(text)
     }
 
     static availableStrategies(): Record<string, string> {
         const map: Record<string, string> = {}
-        for (const key in TokenCounterManager.counters) {
-            map[key] = TokenCounterManager.counters[key].label
+        for (const key in TokenCounters.counters) {
+            map[key] = TokenCounters.counters[key].label
         }
         return map
     }
 }
-
-// Example Usage:
-// const manager = new TokenCounterManager("mistral");
-// const tokens = manager.countTokens("Some text here");

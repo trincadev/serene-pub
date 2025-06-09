@@ -1,20 +1,22 @@
 <script lang="ts">
+    import { PromptFormats } from "$lib/shared/constants/PromptFormats"
+    import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
     import { onMount } from "svelte"
     import skio from "sveltekit-io"
 
     interface ExtraFieldData {
-        stream: boolean;
-        raw: boolean;
-        think: boolean;
-        keepAliveNumber: number;
-        keepAliveUnit: string;
+        stream: boolean
+        raw: boolean
+        think: boolean
+        keepAliveNumber: number
+        keepAliveUnit: string
     }
 
     interface ExtraJson {
-        stream?: boolean;
-        raw?: boolean;
-        think?: boolean;
-        keepAlive?: string;
+        stream?: boolean
+        raw?: boolean
+        think?: boolean
+        keepAlive?: string
     }
 
     interface Props {
@@ -25,15 +27,14 @@
 
     const socket = skio.get()
     const defaultExtraJson = {
-            stream: false,
-            raw: false,
-            think: false,
-            keepAlive: "300ms",
-        }
+        stream: false,
+        raw: false,
+        think: false,
+        keepAlive: "300ms"
+    }
 
     let availableOllamaModels: Sockets.RefreshModels.Response["models"] = $state([])
     let ollamaFields: ExtraFieldData | undefined = $state()
-    let tokenCounterOptions: Sockets.TokenCounterOptions.Response["tokenCounterOptions"] = $state()
 
     socket.on("refreshModels", (msg: Sockets.RefreshModels.Response) => {
         if (msg.models) availableOllamaModels = msg.models
@@ -41,10 +42,6 @@
 
     socket.on("testConnection", (msg: Sockets.TestConnection.Response) => {
         testResult = msg
-    })
-
-    socket.on("tokenCounterOptions", (msg: Sockets.TokenCounterOptions.Response) => {
-            tokenCounterOptions = msg.options
     })
 
     function handleRefreshModels() {
@@ -59,12 +56,7 @@
     }
 
     let isValid = $derived.by(() => {
-        return (
-            connection &&
-            connection.type === "ollama" &&
-            connection.baseUrl &&
-            connection.model
-        )
+        return connection && connection.type === "ollama" && connection.baseUrl && connection.model
     })
 
     function extraJsonToExtraFields(extraJson: ExtraJson): ExtraFieldData {
@@ -73,7 +65,7 @@
             raw: extraJson.raw || false,
             think: extraJson.think || false,
             keepAliveNumber: extraJson.keepAlive ? parseInt(extraJson.keepAlive) || 300 : 300,
-            keepAliveUnit: extraJson.keepAlive ? extraJson.keepAlive.replace(/^[0-9]+/, "") : "ms",
+            keepAliveUnit: extraJson.keepAlive ? extraJson.keepAlive.replace(/^[0-9]+/, "") : "ms"
         }
     }
 
@@ -82,7 +74,7 @@
             stream: fields.stream,
             raw: fields.raw,
             think: fields.think,
-            keepAlive: `${fields.keepAliveNumber}${fields.keepAliveUnit}`,
+            keepAlive: `${fields.keepAliveNumber}${fields.keepAliveUnit}`
         }
     }
 
@@ -101,7 +93,6 @@
             ollamaFields = extraJsonToExtraFields(defaultExtraJson)
         }
         handleRefreshModels()
-        socket.emit("tokenCounterOptions", {})
     })
 </script>
 
@@ -119,11 +110,19 @@
             {/each}
         </select>
     </div>
-    <div class="flex gap-2 mt-4">
-        <button type="button" class="btn btn-sm preset-tonal-primary w-full" onclick={handleRefreshModels}>
+    <div class="mt-4 flex gap-2">
+        <button
+            type="button"
+            class="btn btn-sm preset-tonal-primary w-full"
+            onclick={handleRefreshModels}
+        >
             Refresh Models
         </button>
-        <button type="button" class="btn preset-tonal-success btn-sm w-full" onclick={handleTestConnection}>
+        <button
+            type="button"
+            class="btn preset-tonal-success btn-sm w-full"
+            onclick={handleTestConnection}
+        >
             {#if testResult?.ok === true}
                 Test: Okay!
             {:else if testResult?.ok === false}
@@ -134,17 +133,29 @@
         </button>
     </div>
     <div class="mt-2 flex flex-col gap-1">
-            <label class="font-semibold" for="tokenCounter">Token Counter</label>
-            <select
-                id="tokenCounter"
-                bind:value={connection.tokenCounter}
-                class="input input-sm bg-background border-muted w-full rounded border"
-            >
-                {#each tokenCounterOptions as t}
-                    <option value={t.value}>{t.label}</option>
-                {/each}
-            </select>
-        </div>
+        <label class="font-semibold" for="promptFormat">Prompt Format</label>
+        <select
+            id="promptFormat"
+            class="input input-sm bg-background border-muted w-full rounded border"
+            bind:value={connection.promptFormat}
+        >
+            {#each PromptFormats.options as option}
+                <option value={option.value}>{option.label}</option>
+            {/each}
+        </select>
+    </div>
+    <div class="mt-2 flex flex-col gap-1">
+        <label class="font-semibold" for="tokenCounter">Token Counter</label>
+        <select
+            id="tokenCounter"
+            bind:value={connection.tokenCounter}
+            class="input input-sm bg-background border-muted w-full rounded border"
+        >
+            {#each TokenCounterOptions.options as t}
+                <option value={t.value}>{t.label}</option>
+            {/each}
+        </select>
+    </div>
     <details class="mt-4">
         <summary class="cursor-pointer font-semibold">Advanced Settings</summary>
         <div class="mt-2 flex flex-col gap-1">
@@ -159,61 +170,61 @@
             />
         </div>
         {#if ollamaFields}
-        <div class="mt-2 flex flex-col gap-1">
-            <label class="font-semibold" for="stream">Stream</label>
-            <input
-                id="stream"
-                type="checkbox"
-                bind:checked={ollamaFields.stream}
-                class="input input-sm bg-background border-muted w-6 h-6 rounded border"
-            />
-        </div>
-        {/if}
-        {#if ollamaFields}
-        <div class="mt-2 flex flex-col gap-1">
-            <label class="font-semibold" for="raw">Raw</label>
-            <input
-                id="raw"
-                type="checkbox"
-                bind:checked={ollamaFields.raw}
-                class="input input-sm bg-background border-muted w-6 h-6 rounded border"
-            />
-        </div>
-        {/if}
-        {#if ollamaFields}
-        <div class="mt-2 flex flex-col gap-1">
-            <label class="font-semibold" for="think">Think</label>
-            <input
-                id="think"
-                type="checkbox"
-                bind:checked={ollamaFields.think}
-                class="input input-sm bg-background border-muted w-6 h-6 rounded border"
-            />
-        </div>
-        {/if}
-        {#if ollamaFields}
-        <div class="mt-2 flex flex-col gap-1">
-            <label class="font-semibold" for="keepAlive">Keep Alive</label>
-            <div class="flex gap-2 items-center">
+            <div class="mt-2 flex flex-col gap-1">
+                <label class="font-semibold" for="stream">Stream</label>
                 <input
-                    id="keepAliveNumber"
-                    type="number"
-                    min="0"
-                    bind:value={ollamaFields.keepAliveNumber}
-                    class="input input-sm bg-background border-muted w-20 rounded border"
+                    id="stream"
+                    type="checkbox"
+                    bind:checked={ollamaFields.stream}
+                    class="input input-sm bg-background border-muted h-6 w-6 rounded border"
                 />
-                <select
-                    id="keepAliveUnit"
-                    bind:value={ollamaFields.keepAliveUnit}
-                    class="input input-sm bg-background border-muted w-16 rounded border"
-                >
-                    <option value="ms">ms</option>
-                    <option value="s">s</option>
-                    <option value="m">m</option>
-                    <option value="h">h</option>
-                </select>
             </div>
-        </div>
+        {/if}
+        {#if ollamaFields}
+            <div class="mt-2 flex flex-col gap-1">
+                <label class="font-semibold" for="raw">Raw</label>
+                <input
+                    id="raw"
+                    type="checkbox"
+                    bind:checked={ollamaFields.raw}
+                    class="input input-sm bg-background border-muted h-6 w-6 rounded border"
+                />
+            </div>
+        {/if}
+        {#if ollamaFields}
+            <div class="mt-2 flex flex-col gap-1">
+                <label class="font-semibold" for="think">Think</label>
+                <input
+                    id="think"
+                    type="checkbox"
+                    bind:checked={ollamaFields.think}
+                    class="input input-sm bg-background border-muted h-6 w-6 rounded border"
+                />
+            </div>
+        {/if}
+        {#if ollamaFields}
+            <div class="mt-2 flex flex-col gap-1">
+                <label class="font-semibold" for="keepAlive">Keep Alive</label>
+                <div class="flex items-center gap-2">
+                    <input
+                        id="keepAliveNumber"
+                        type="number"
+                        min="0"
+                        bind:value={ollamaFields.keepAliveNumber}
+                        class="input input-sm bg-background border-muted w-20 rounded border"
+                    />
+                    <select
+                        id="keepAliveUnit"
+                        bind:value={ollamaFields.keepAliveUnit}
+                        class="input input-sm bg-background border-muted w-16 rounded border"
+                    >
+                        <option value="ms">ms</option>
+                        <option value="s">s</option>
+                        <option value="m">m</option>
+                        <option value="h">h</option>
+                    </select>
+                </div>
+            </div>
         {/if}
     </details>
 {/if}

@@ -1,9 +1,9 @@
-import { FormatNames } from "$lib/shared/constants/FormatNames";
+import { PromptFormats } from "$lib/shared/constants/PromptFormats";
 
 export class StopStrings {
-    static get(format: typeof FormatNames.OPTION): string[] {
+    static get(format: typeof PromptFormats.keys[0]): string[] {
         switch (format) {
-            case FormatNames.ChatML:
+            case PromptFormats.CHATML:
                 // <|im_end|> is the explicit stop string for ChatML, plus block starters and template markers
                 return [
                     "<|im_end|>",
@@ -14,7 +14,7 @@ export class StopStrings {
                     "{{user}}:",
                     "{{char}}:"
                 ];
-            case FormatNames.Basic:
+            case PromptFormats.BASIC:
                 // Block starters for Basic, plus template markers
                 return [
                     "*** user",
@@ -24,7 +24,7 @@ export class StopStrings {
                     "{{user}}:",
                     "{{char}}:"
                 ];
-            case FormatNames.Vicuna:
+            case PromptFormats.VICUNA:
                 // Block starters for Vicuna, plus </s> and template markers
                 return [
                     "</s>",
@@ -35,7 +35,7 @@ export class StopStrings {
                     "{{user}}:",
                     "{{char}}:"
                 ];
-            case FormatNames.OpenAI:
+            case PromptFormats.OPENAI:
                 // Block starters for OpenAI, plus template markers
                 return [
                     "<|user|>",

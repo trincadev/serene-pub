@@ -1,11 +1,12 @@
 <script lang="ts">
     import skio from "sveltekit-io"
-    import { getContext, onMount, tick } from "svelte"
+    import { getContext, onMount } from "svelte"
     import * as Icons from "@lucide/svelte"
     import { Modal } from "@skeletonlabs/skeleton-svelte"
     import OllamaForm from "$lib/client/connectionForms/OllamaForm.svelte"
     import ChatGPTForm from "$lib/client/connectionForms/ChatGPTForm.svelte"
     import { CONNECTION_TYPES } from "$lib/shared/constants/ConnectionTypes"
+    import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined

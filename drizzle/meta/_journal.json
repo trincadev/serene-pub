@@ -5,22 +5,15 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1749446396113,
-      "tag": "0000_lethal_liz_osborn",
+      "when": 1749494950165,
+      "tag": "0000_new_molly_hayes",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1749446398153,
-      "tag": "0001_acoustic_tinkerer",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1749456358258,
-      "tag": "0002_special_rawhide_kid",
+      "when": 1749494959433,
+      "tag": "0001_striped_dakota_north",
       "breakpoints": true
     }
   ]
