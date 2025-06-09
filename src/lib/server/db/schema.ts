@@ -5,18 +5,18 @@ import { sqliteTable, integer, text, numeric, real, blob, SQLiteBoolean } from '
 export const users = sqliteTable('users', {
     id: integer('id').primaryKey(),
     username: text('username').notNull(),
-    activeConnectionId: integer('active_connection_id').references(() => connections.id),
-    activeWeightsId: integer('active_weights_id').references(() => weights.id),
-    activeContextConfigId: integer('active_context_config_id').references(() => contextConfigs.id),
-    activePromptConfigId: integer('active_prompt_config_id').references(() => promptConfigs.id),
+    activeConnectionId: integer('active_connection_id').references(() => connections.id, {onDelete: 'set null'}),
+    activeSamplingConfigId: integer('active_sampling_id').references(() => samplingConfigs.id, {onDelete: 'set null'}),
+    activeContextConfigId: integer('active_context_config_id').references(() => contextConfigs.id, {onDelete: 'set null'}),
+    activePromptConfigId: integer('active_prompt_config_id').references(() => promptConfigs.id, {onDelete: 'set null'}),
 })
 
 export const userRelations = relations(users, ({ many, one }) => ({
     lorebooks: many(lorebooks),
     characters: many(characters),
-    activeWeights: one(weights, {
-        fields: [users.activeWeightsId],
-        references: [weights.id]
+    activeSamplingConfig: one(samplingConfigs, {
+        fields: [users.activeSamplingConfigId],
+        references: [samplingConfigs.id]
     }),
     activeConnection: one(connections, {
         fields: [users.activeConnectionId],
@@ -33,128 +33,44 @@ export const userRelations = relations(users, ({ many, one }) => ({
     personas: many(personas),
 }))
 
-export const weights = sqliteTable('weights', {
+export const samplingConfigs = sqliteTable('sampling_configs', {
     id: integer('id').primaryKey(),
-	name: text('name').notNull(), // Name for this weights config (for selection)
-	isImmutable: integer('is_immutable', {mode: 'boolean'}).default(0), // Is this the built-in config? Then we don't want to allow mutation/deletion
-    // Common LLM options (enabled by default)
-    temperature: real('temperature').default(0.7),
+    name: text('name').notNull(), // Name for this sampling config (for selection)
+    isImmutable: integer('is_immutable', {mode: 'boolean'}).default(0), // Is this the built-in config? Then we don't want to allow mutation/deletion
+
+    // Tuned defaults for roleplay:
+    // More creative and less repetitive
+    temperature: real('temperature').default(0.7), // Higher = more creative
     temperatureEnabled: integer('temperature_enabled', {mode: 'boolean'}).default(true),
-    topP: real('top_p').default(0.95),
+
+    topP: real('top_p').default(0.92), // Lower than 1, encourages diversity but not too random
     topPEnabled: integer('top_p_enabled', {mode: 'boolean'}).default(true),
-    topK: integer('top_k').default(40),
+
+    topK: integer('top_k').default(80), // Allows more token options for creative replies
     topKEnabled: integer('top_k_enabled', {mode: 'boolean'}).default(true),
-    repetitionPenalty: real('repetition_penalty').default(1.2),
+
+    repetitionPenalty: real('repetition_penalty').default(1.15), // Slightly encourages less repetition but not too harsh
     repetitionPenaltyEnabled: integer('repetition_penalty_enabled', {mode: 'boolean'}).default(true),
-    // Less common options (disabled by default)
-    minP: real('min_p').default(0),
-    minPEnabled: integer('min_p_enabled', {mode: 'boolean'}).default(false),
-    tfs: real('tfs').default(0),
-    tfsEnabled: integer('tfs_enabled', {mode: 'boolean'}).default(false),
-    typicalP: real('typical_p').default(0),
-    typicalPEnabled: integer('typical_p_enabled', {mode: 'boolean'}).default(false),
-    mirostat: integer('mirostat').default(0),
-    mirostatEnabled: integer('mirostat_enabled', {mode: 'boolean'}).default(false),
-    mirostatTau: real('mirostat_tau').default(0),
-    mirostatTauEnabled: integer('mirostat_tau_enabled', {mode: 'boolean'}).default(false),
-    mirostatEta: real('mirostat_eta').default(0),
-    mirostatEtaEnabled: integer('mirostat_eta_enabled', {mode: 'boolean'}).default(false),
-    penaltyAlpha: real('penalty_alpha').default(0),
-    penaltyAlphaEnabled: integer('penalty_alpha_enabled', {mode: 'boolean'}).default(false),
-    frequencyPenalty: real('frequency_penalty').default(0),
-    frequencyPenaltyEnabled: integer('frequency_penalty_enabled', {mode: 'boolean'}).default(false),
-    presencePenalty: real('presence_penalty').default(0),
-    presencePenaltyEnabled: integer('presence_penalty_enabled', {mode: 'boolean'}).default(false),
-    responseTokens: integer('response_tokens').default(256),
+
+    frequencyPenalty: real('frequency_penalty').default(0.2), // Mild penalty for repetitive phrases
+    frequencyPenaltyEnabled: integer('frequency_penalty_enabled', {mode: 'boolean'}).default(true),
+
+    presencePenalty: real('presence_penalty').default(0.6), // Encourage new topics and freshness
+    presencePenaltyEnabled: integer('presence_penalty_enabled', {mode: 'boolean'}).default(true),
+
+    responseTokens: integer('response_tokens').default(512), // Allow longer, richer replies
     responseTokensEnabled: integer('response_tokens_enabled', {mode: 'boolean'}).default(true),
-    responseTokensUnlocked: integer('response_tokens_unlocked', {mode: 'boolean'}).default(false), // Is this response tokens unlocked? (e.g. for dynamic response)
-    contextTokens: integer('context_tokens').default(2048),
+    responseTokensUnlocked: integer('response_tokens_unlocked', {mode: 'boolean'}).default(false), // Dynamic length allowed
+
+    contextTokens: integer('context_tokens').default(4096), // Keep more conversation in memory/context
     contextTokensEnabled: integer('context_tokens_enabled', {mode: 'boolean'}).default(true),
-	contextTokensUnlocked: integer('context_tokens_unlocked', {mode: 'boolean'}).default(false), // Is this context tokens unlocked? (e.g. for dynamic context)
-    // Add more as needed for future LLMs
-    noRepeatNgramSize: integer('no_repeat_ngram_size').default(0),
-    noRepeatNgramSizeEnabled: integer('no_repeat_ngram_size_enabled', {mode: 'boolean'}).default(false),
-    numBeams: integer('num_beams').default(1),
-    numBeamsEnabled: integer('num_beams_enabled', {mode: 'boolean'}).default(false),
-    lengthPenalty: real('length_penalty').default(1),
-    lengthPenaltyEnabled: integer('length_penalty_enabled', {mode: 'boolean'}).default(false),
-    minLength: integer('min_length').default(0),
-    minLengthEnabled: integer('min_length_enabled', {mode: 'boolean'}).default(false),
-    encoderRepetitionPenalty: real('encoder_repetition_penalty').default(1),
-    encoderRepetitionPenaltyEnabled: integer('encoder_repetition_penalty_enabled', {mode: 'boolean'}).default(false),
-    freqPen: real('freq_pen').default(0),
-    freqPenEnabled: integer('freq_pen_enabled', {mode: 'boolean'}).default(false),
-    presencePen: real('presence_pen').default(0),
-    presencePenEnabled: integer('presence_pen_enabled', {mode: 'boolean'}).default(false),
-    skew: real('skew').default(0),
-    skewEnabled: integer('skew_enabled', {mode: 'boolean'}).default(false),
-    doSample: integer('do_sample').default(1),
-    doSampleEnabled: integer('do_sample_enabled', {mode: 'boolean'}).default(false),
-    earlyStopping: integer('early_stopping').default(0),
-    earlyStoppingEnabled: integer('early_stopping_enabled', {mode: 'boolean'}).default(false),
-    dynatemp: integer('dynatemp').default(0),
-    dynatempEnabled: integer('dynatemp_enabled', {mode: 'boolean'}).default(false),
-    minTemp: real('min_temp').default(0),
-    minTempEnabled: integer('min_temp_enabled', {mode: 'boolean'}).default(false),
-    maxTemp: real('max_temp').default(2.0),
-    maxTempEnabled: integer('max_temp_enabled', {mode: 'boolean'}).default(false),
-    dynatempExponent: real('dynatemp_exponent').default(1.0),
-    dynatempExponentEnabled: integer('dynatemp_exponent_enabled', {mode: 'boolean'}).default(false),
-    smoothingFactor: real('smoothing_factor').default(0),
-    smoothingFactorEnabled: integer('smoothing_factor_enabled', {mode: 'boolean'}).default(false),
-    smoothingCurve: real('smoothing_curve').default(1),
-    smoothingCurveEnabled: integer('smoothing_curve_enabled', {mode: 'boolean'}).default(false),
-    dryAllowedLength: integer('dry_allowed_length').default(2),
-    dryAllowedLengthEnabled: integer('dry_allowed_length_enabled', {mode: 'boolean'}).default(false),
-    dryMultiplier: real('dry_multiplier').default(0),
-    dryMultiplierEnabled: integer('dry_multiplier_enabled', {mode: 'boolean'}).default(false),
-    dryBase: real('dry_base').default(1.75),
-    dryBaseEnabled: integer('dry_base_enabled', {mode: 'boolean'}).default(false),
-    dryPenaltyLastN: integer('dry_penalty_last_n').default(0),
-    dryPenaltyLastNEnabled: integer('dry_penalty_last_n_enabled', {mode: 'boolean'}).default(false),
-    maxTokensSecond: integer('max_tokens_second').default(0),
-    maxTokensSecondEnabled: integer('max_tokens_second_enabled', {mode: 'boolean'}).default(false),
-    seed: integer('seed').default(-1),
+    contextTokensUnlocked: integer('context_tokens_unlocked', {mode: 'boolean'}).default(false), // Allow for context window expansion
+
+    seed: integer('seed').default(-1), // -1 for random, can be used for deterministic sampling
     seedEnabled: integer('seed_enabled', {mode: 'boolean'}).default(false),
-    addBosToken: integer('add_bos_token').default(1),
-    addBosTokenEnabled: integer('add_bos_token_enabled', {mode: 'boolean'}).default(false),
-    banEosToken: integer('ban_eos_token').default(0),
-    banEosTokenEnabled: integer('ban_eos_token_enabled', {mode: 'boolean'}).default(false),
-    skipSpecialTokens: integer('skip_special_tokens').default(1),
-    skipSpecialTokensEnabled: integer('skip_special_tokens_enabled', {mode: 'boolean'}).default(false),
-    includeReasoning: integer('include_reasoning').default(1),
-    includeReasoningEnabled: integer('include_reasoning_enabled', {mode: 'boolean'}).default(false),
-    streaming: integer('streaming', {mode: 'boolean'}).default(true),
-    streamingEnabled: integer('streaming_enabled', {mode: 'boolean'}).default(true),
-    mirostatMode: integer('mirostat_mode').default(0),
-    mirostatModeEnabled: integer('mirostat_mode_enabled', {mode: 'boolean'}).default(false),
-    xtcThreshold: real('xtc_threshold').default(0.1),
-    xtcThresholdEnabled: integer('xtc_threshold_enabled', {mode: 'boolean'}).default(false),
-    xtcProbability: real('xtc_probability').default(0),
-    xtcProbabilityEnabled: integer('xtc_probability_enabled', {mode: 'boolean'}).default(false),
-    nsigma: real('nsigma').default(0),
-    nsigmaEnabled: integer('nsigma_enabled', {mode: 'boolean'}).default(false),
-    speculativeNgram: integer('speculative_ngram').default(0),
-    speculativeNgramEnabled: integer('speculative_ngram_enabled', {mode: 'boolean'}).default(false),
-    guidanceScale: real('guidance_scale').default(1),
-    guidanceScaleEnabled: integer('guidance_scale_enabled', {mode: 'boolean'}).default(false),
-    etaCutoff: real('eta_cutoff').default(0),
-    etaCutoffEnabled: integer('eta_cutoff_enabled', {mode: 'boolean'}).default(false),
-    epsilonCutoff: real('epsilon_cutoff').default(0),
-    epsilonCutoffEnabled: integer('epsilon_cutoff_enabled', {mode: 'boolean'}).default(false),
-    repPenRange: integer('rep_pen_range').default(0),
-    repPenRangeEnabled: integer('rep_pen_range_enabled', {mode: 'boolean'}).default(false),
-    repPenDecay: real('rep_pen_decay').default(0),
-    repPenDecayEnabled: integer('rep_pen_decay_enabled', {mode: 'boolean'}).default(false),
-    repPenSlope: real('rep_pen_slope').default(1),
-    repPenSlopeEnabled: integer('rep_pen_slope_enabled', {mode: 'boolean'}).default(false),
-    logitBias: text('logit_bias'),
-    logitBiasEnabled: integer('logit_bias_enabled', {mode: 'boolean'}).default(false),
-    bannedTokens: text('banned_tokens'),
-    bannedTokensEnabled: integer('banned_tokens_enabled', {mode: 'boolean'}).default(false),
 })
 
-export const weightsRelations = relations(weights, () => ({}))
+export const samplingRelations = relations(samplingConfigs, () => ({}))
 
 export const connections = sqliteTable('connections', {
     id: integer('id').primaryKey(),
@@ -163,7 +79,7 @@ export const connections = sqliteTable('connections', {
     baseUrl: text('base_url'), // Base URL or endpoint for API
     model: text('model'), // Model name or identifier
     // Ollama-specific options
-    extraJson: text('extra_json'), // Additional JSON options for the connections, api keys, etc.
+    extraJson: text('extra_json', { mode: 'json' }).$type<Record<string, any>>(), // Additional JSON options for the connections, api keys, etc.
 })
 
 export const connectionsRelations = relations(connections, () => ({}))

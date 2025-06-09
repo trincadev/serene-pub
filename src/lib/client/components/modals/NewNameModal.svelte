@@ -6,9 +6,18 @@
         onOpenChange: (e: OpenChangeDetails) => void
         onConfirm: (name: string) => void
         onCancel: () => void
+        title?: string
+        description?: string
     }
 
-    let { open = $bindable(), onOpenChange, onConfirm, onCancel }: Props = $props()
+    let {
+        open = $bindable(),
+        onOpenChange,
+        onConfirm,
+        onCancel,
+        title,
+        description
+    }: Props = $props()
 
     let name = $state("")
     let inputRef: HTMLInputElement | null = null
@@ -26,9 +35,12 @@
 >
     {#snippet content()}
         <header class="flex justify-between">
-            <h2 class="h2">Create new</h2>
+            <h2 class="h2">{title ? title : "Create new"}</h2>
         </header>
         <article>
+            {#if description}
+                <p class="text-muted-foreground mb-2">{description}</p>
+            {/if}
             <input
                 bind:this={inputRef}
                 bind:value={name}

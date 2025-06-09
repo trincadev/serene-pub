@@ -29,7 +29,7 @@ The following features are functional, mostly functional, in progress or pending
 
 ### Functional
 
-1. Manage weights and context limits
+1. Manage sampling and context limits
     - Any setting can be individually disabled/enabled, great for relying on API defaults.
 2. Manage roleplay/system prompt instructions
 

@@ -4,7 +4,7 @@
     import * as Icons from "@lucide/svelte"
     import { fly, fade } from "svelte/transition"
     import { setContext } from "svelte"
-    import WeightsSidebar from "../lib/client/components/sidebars/WeightsSidebar.svelte"
+    import SamplingSidebar from "../lib/client/components/sidebars/SamplingSidebar.svelte"
     import ConnectionsSidebar from "../lib/client/components/sidebars/ConnectionsSidebar.svelte"
     import ContextSidebar from "../lib/client/components/sidebars/ContextSidebar.svelte"
     import LorebooksSidebar from "../lib/client/components/sidebars/LorebooksSidebar.svelte"
@@ -38,7 +38,7 @@
         onRightPanelClose: undefined,
         onMobilePanelClose: undefined,
         leftNav: {
-            weights: { icon: Icons.SlidersHorizontal, title: "Weights" },
+            sampling: { icon: Icons.SlidersHorizontal, title: "SamplingConfig" },
             connections: { icon: Icons.Cable, title: "Connections" },
             contexts: { icon: Icons.BookOpenText, title: "Contexts" },
             prompts: { icon: Icons.MessageCircle, title: "Prompts" },
@@ -154,8 +154,8 @@
                             >
                         </div>
                         <div class="flex-1 overflow-y-auto">
-                            {#if panelsCtx.leftPanel === "weights"}
-                                <WeightsSidebar bind:onclose={panelsCtx.onLeftPanelClose} />
+                            {#if panelsCtx.leftPanel === "sampling"}
+                                <SamplingSidebar bind:onclose={panelsCtx.onLeftPanelClose} />
                             {:else if panelsCtx.leftPanel === "connections"}
                                 <ConnectionsSidebar bind:onclose={panelsCtx.onLeftPanelClose} />
                             {:else if panelsCtx.leftPanel === "contexts"}
@@ -225,8 +225,8 @@
                     </button>
                 </div>
                 <div class="flex-1 overflow-y-auto">
-                    {#if panelsCtx.mobilePanel === "weights"}
-                        <WeightsSidebar bind:onclose={panelsCtx.onMobilePanelClose} />
+                    {#if panelsCtx.mobilePanel === "sampling"}
+                        <SamplingConfigSidebar bind:onclose={panelsCtx.onMobilePanelClose} />
                     {:else if panelsCtx.mobilePanel === "connections"}
                         <ConnectionsSidebar bind:onclose={panelsCtx.onMobilePanelClose} />
                     {:else if panelsCtx.mobilePanel === "contexts"}

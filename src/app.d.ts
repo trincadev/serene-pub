@@ -2,6 +2,7 @@
 
 import type { Component } from "@lucide/svelte"
 import * as schema from "$lib/server/db/schema"
+import type { Schema } from "inspector/promises"
 
 // for information about these interfaces
 declare global {
@@ -31,11 +32,15 @@ declare global {
         rightNav: Record<string, { icon: Component<Icons.IconProps, {}, "">; title: string }>
     }
 
+    interface UserCtx {
+        user: SelectUser | undefined
+    }
+
     // Model select and insert
     type SelectUser = typeof schema.users.$inferSelect
     type InsertUser = typeof schema.users.$inferInsert
-    type SelectWeights = typeof schema.weights.$inferSelect
-    type InsertWeights = typeof schema.weights.$inferInsert
+    type SelectSamplingConfig = typeof schema.samplingConfigs.$inferSelect
+    type InsertSamplingConfig = typeof schema.samplingConfigs.$inferInsert
     type SelectConnection = typeof schema.connections.$inferSelect
     type InsertConnection = typeof schema.connections.$inferInsert
     type SelectContextConfig = typeof schema.contextConfigs.$inferSelect
@@ -64,18 +69,18 @@ declare global {
     type InsertChatCharacter = typeof schema.chatCharacters.$inferInsert
 
     namespace Sockets {
-        namespace Weights {
+        namespace SamplingConfig {
             interface Call {
                 id: number
             }
             interface Response {
-                weights: SelectWeights
+                sampling: SelectSamplingConfig
             }
         }
-        namespace WeightsList {
+        namespace SamplingConfigList {
             interface Call {}
             interface Response {
-                weightsList: Partial<SelectWeights>[]
+                samplingConfigsList: Partial<SelectSamplingConfig>[]
             }
         }
         namespace ContextConfigsList {
@@ -246,7 +251,7 @@ declare global {
             }
         }
         // --- WEIGHTS ---
-        namespace DeleteWeights {
+        namespace DeleteSamplingConfig {
             interface Call {
                 id: number
             }
@@ -254,15 +259,15 @@ declare global {
                 id: number
             }
         }
-        namespace UpdateWeights {
+        namespace UpdateSamplingConfig {
             interface Call {
-                weights: any
+                samplingConfig: Partial<InsertSamplingConfig> & { id: number }
             }
             interface Response {
-                weights: any
+                samplingConfig: SelectSamplingConfig
             }
         }
-        namespace SetUserActiveWeights {
+        namespace SetUserActiveSamplingConfig {
             interface Call {
                 id: number | null
             }
@@ -289,9 +294,9 @@ declare global {
                 models: any[]
             }
         }
-        namespace RefreshOllamaModels {
+        namespace RefreshModels {
             interface Call {
-                baseUrl: string
+                connection: SelectConnection
             }
             interface Response {
                 models: any[]

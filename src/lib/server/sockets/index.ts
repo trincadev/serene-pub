@@ -1,4 +1,3 @@
-import { db } from "$lib/server/db"
 import {
     connectionsList,
     connection,
@@ -6,17 +5,17 @@ import {
     deleteConnection,
     setUserActiveConnection,
     testConnection,
-    refreshOllamaModels,
+    refreshModels,
     createConnection
 } from "./connections"
 import {
-    weights,
-    weightsList,
-    setUserActiveWeights,
-    createWeights,
-    deleteWeights,
-    updateWeights
-} from "./weights"
+    sampling,
+    samplingConfigsList,
+    setUserActiveSamplingConfig,
+    createSamplingConfig,
+    deleteSamplingConfig,
+    updateSamplingConfig
+} from "./samplingConfigs"
 import {
     charactersList,
     character,
@@ -63,13 +62,13 @@ export function connectSockets(io: {
 
         // Users
         register(socket, user, emitToUser)
-        // Weights
-        register(socket, weights, emitToUser)
-        register(socket, weightsList, emitToUser)
-        register(socket, setUserActiveWeights, emitToUser)
-        register(socket, createWeights, emitToUser)
-        register(socket, deleteWeights, emitToUser)
-        register(socket, updateWeights, emitToUser)
+        // SamplingConfig
+        register(socket, sampling, emitToUser)
+        register(socket, samplingConfigsList, emitToUser)
+        register(socket, setUserActiveSamplingConfig, emitToUser)
+        register(socket, createSamplingConfig, emitToUser)
+        register(socket, deleteSamplingConfig, emitToUser)
+        register(socket, updateSamplingConfig, emitToUser)
         // Connections
         register(socket, connectionsList, emitToUser)
         register(socket, connection, emitToUser)
@@ -78,7 +77,7 @@ export function connectSockets(io: {
         register(socket, deleteConnection, emitToUser)
         register(socket, setUserActiveConnection, emitToUser)
         register(socket, testConnection, emitToUser)
-        register(socket, refreshOllamaModels, emitToUser)
+        register(socket, refreshModels, emitToUser)
         // Characters
         register(socket, charactersList, emitToUser)
         register(socket, character, emitToUser)

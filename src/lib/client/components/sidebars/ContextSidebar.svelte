@@ -247,4 +247,6 @@
     onOpenChange={(e) => (showNewNameModal = e.open)}
     onConfirm={handleNewNameConfirm}
     onCancel={handleNewNameCancel}
+    title="New Context Config"
+    description="Your current settings will be copied."
 />
