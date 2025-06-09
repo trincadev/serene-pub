@@ -40,18 +40,19 @@ The following features are functional, mostly functional, in progress or pending
     - Export is not yet implemented.
 2. Create, manage, import & export your personas
      - Import and export are not yet implemented.
+3. Chats
+    - Not implemented: Manually continue/trigger response, swipe next response, swipe initial message, hide message, edit/rename chat.
+    - Implemented: Create & delete chat, send persona message, generate character response, edit and delete messages, streaming, regenerate last message.
+4. Manage prompt instructions, i.e. role-play style
   
 ### In Progress (some functionality)
 
 1. Connect to your favorite API
     - Only Ollama is currently supported
-    - ChatML special tokens are currently hardcoded in prompt building
-    - Still finalizing 
+    - Select the prompt format strategy
 2. Manage context settings
-    - Recommend using the default option with a ChatML compatible model.
-3. Chats
-    - Not implemented: Manually continue/trigger response, regenerate response, swipe next response, swipe initial message, hide message, edit/rename chat.
-    - Implemented: Create & delete chat, send persona message, generate character response, edit and delete messages, streaming.
+    - Only one default option is provided right now, but you can add your own.
+    - No support for Instruct yet
 
 ### Pending
 
