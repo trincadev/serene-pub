@@ -1,13 +1,4 @@
-import {
-    connectionsList,
-    connection,
-    updateConnection,
-    deleteConnection,
-    setUserActiveConnection,
-    testConnection,
-    refreshModels,
-    createConnection
-} from "./connections"
+import {connectionsList, connection, updateConnection, deleteConnection, setUserActiveConnection, testConnection, refreshModels, createConnection, tokenCounterOptions} from './connections';
 import {
     sampling,
     samplingConfigsList,
@@ -78,6 +69,7 @@ export function connectSockets(io: {
         register(socket, setUserActiveConnection, emitToUser)
         register(socket, testConnection, emitToUser)
         register(socket, refreshModels, emitToUser)
+        register(socket, tokenCounterOptions, emitToUser)
         // Characters
         register(socket, charactersList, emitToUser)
         register(socket, character, emitToUser)

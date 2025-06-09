@@ -1,6 +1,7 @@
 import { updated } from '$app/state';
 import { relations } from 'drizzle-orm';
 import { sqliteTable, integer, text, numeric, real, blob, SQLiteBoolean } from 'drizzle-orm/sqlite-core';
+import { TokenCounterManager } from '../utils/TokenCounterManager';
 
 export const users = sqliteTable('users', {
     id: integer('id').primaryKey(),
@@ -80,6 +81,7 @@ export const connections = sqliteTable('connections', {
     model: text('model'), // Model name or identifier
     // Ollama-specific options
     extraJson: text('extra_json', { mode: 'json' }).$type<Record<string, any>>(), // Additional JSON options for the connections, api keys, etc.
+    tokenCounter: text('token_counter').notNull().default("estimate")
 })
 
 export const connectionsRelations = relations(connections, () => ({}))

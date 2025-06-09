@@ -42,6 +42,7 @@ export class OllamaAdapter {
     // --- Default Ollama connection config ---
     static connectionDefaults = {
         baseUrl: "http://localhost:11434/",
+        tokenCounter: "estimate",
         extraJson: {
             stream: true,
             think: false,

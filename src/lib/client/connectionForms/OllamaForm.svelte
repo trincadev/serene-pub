@@ -33,6 +33,7 @@
 
     let availableOllamaModels: Sockets.RefreshModels.Response["models"] = $state([])
     let ollamaFields: ExtraFieldData | undefined = $state()
+    let tokenCounterOptions: Sockets.TokenCounterOptions.Response["tokenCounterOptions"] = $state()
 
     socket.on("refreshModels", (msg: Sockets.RefreshModels.Response) => {
         if (msg.models) availableOllamaModels = msg.models
@@ -40,6 +41,10 @@
 
     socket.on("testConnection", (msg: Sockets.TestConnection.Response) => {
         testResult = msg
+    })
+
+    socket.on("tokenCounterOptions", (msg: Sockets.TokenCounterOptions.Response) => {
+            tokenCounterOptions = msg.options
     })
 
     function handleRefreshModels() {
@@ -96,6 +101,7 @@
             ollamaFields = extraJsonToExtraFields(defaultExtraJson)
         }
         handleRefreshModels()
+        socket.emit("tokenCounterOptions", {})
     })
 </script>
 
@@ -127,6 +133,18 @@
             {/if}
         </button>
     </div>
+    <div class="mt-2 flex flex-col gap-1">
+            <label class="font-semibold" for="tokenCounter">Token Counter</label>
+            <select
+                id="tokenCounter"
+                bind:value={connection.tokenCounter}
+                class="input input-sm bg-background border-muted w-full rounded border"
+            >
+                {#each tokenCounterOptions as t}
+                    <option value={t.value}>{t.label}</option>
+                {/each}
+            </select>
+        </div>
     <details class="mt-4">
         <summary class="cursor-pointer font-semibold">Advanced Settings</summary>
         <div class="mt-2 flex flex-col gap-1">

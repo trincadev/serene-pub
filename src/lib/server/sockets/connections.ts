@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm"
 import * as schema from "$lib/server/db/schema"
 import { user as loadUser } from "./users"
 import { OllamaAdapter } from "../connectionAdapters/ollama"
+import { TokenCounterManager } from "$lib/server/utils/TokenCounterManager"
 
 // --- CONNECTIONS SOCKET HANDLERS ---
 
@@ -176,4 +177,16 @@ export async function refreshModels(
         console.error("Refresh models error:", error)
         emitToUser("refreshModels", { ok: false, error: "Failed to refresh models." })
     }
+}
+
+export async function tokenCounterOptions(
+    socket: any,
+    message: {},
+    emitToUser: (event: string, data: any) => void
+) {
+    const options = Object.entries(TokenCounterManager.counters).map(([key, desc]) => ({
+        value: key,
+        label: desc.label
+    }))
+    emitToUser("tokenCounterOptions", { options })
 }
