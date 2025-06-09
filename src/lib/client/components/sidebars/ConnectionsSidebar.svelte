@@ -17,8 +17,8 @@
 
     // --- State ---
     let connectionsList = $state([])
-    let connection = $state(undefined)
-    let originalConnection = $state(undefined)
+    let connection: Sockets.Connection.Response["connection"] | undefined = $state()
+    let originalConnection = $state()
     let unsavedChanges = $derived.by(() => {
         if (!connection || !originalConnection) return false
         return JSON.stringify(connection) !== JSON.stringify(originalConnection)
@@ -28,49 +28,9 @@
     let confirmResolve: ((v: boolean) => void) | null = null
     let testResult: { ok: boolean; error?: string; models?: any[] } | null = $state(null)
     let refreshModelsResult: { models?: any[]; error?: string } | null = $state(null)
-    let ollamaFields = $state({})
-    let availableOllamaModels = $state([])
     let showNewConnectionModal = $state(false)
     let newConnectionName = $state("")
     let newConnectionType = $state(CONNECTION_TYPES[0].value)
-
-    // Helper: parse extraJson to fields
-    function parseExtraJson(json: string | null | undefined) {
-        if (!json) return {}
-        try {
-            return JSON.parse(json)
-        } catch {
-            return {}
-        }
-    }
-
-    function toExtraJson(fields: Record<string, any>) {
-        try {
-            return JSON.stringify(fields)
-        } catch {
-            return "{}"
-        }
-    }
-
-    // When connection changes, sync ollamaFields
-    $effect(() => {
-        if (connection && connection.type === "ollama") {
-            ollamaFields = parseExtraJson(connection.extraJson)
-            // If we have models from refresh/test, update availableOllamaModels
-            if (refreshModelsResult?.models) {
-                availableOllamaModels = refreshModelsResult.models
-            } else if (testResult?.models) {
-                availableOllamaModels = testResult.models
-            }
-        }
-    })
-
-    // When ollamaFields change, update connection.extraJson
-    $effect(() => {
-        if (connection && connection.type === "ollama") {
-            connection.extraJson = toExtraJson(ollamaFields)
-        }
-    })
 
     // On load, if ollama and no models, fetch models
     onMount(() => {
@@ -96,7 +56,7 @@
     socket.on("testConnection", (msg) => {
         testResult = msg
     })
-    socket.on("refreshOllamaModels", (msg) => {
+    socket.on("refreshModels", (msg) => {
         refreshModelsResult = msg.models || []
     })
 
@@ -153,14 +113,10 @@
     }
     function handleRefreshModels() {
         refreshModelsResult = null
-        socket.emit("refreshOllamaModels", { baseUrl: connection.baseUrl })
+        socket.emit("refreshModels", { baseUrl: connection?.baseUrl })
     }
     function handleFieldChange(key: string, value: any) {
         connection = { ...connection, [key]: value }
-    }
-
-    function handleOllamaFieldChange(key: string, value: any) {
-        ollamaFields = { ...ollamaFields, [key]: value }
     }
 </script>
 
@@ -218,22 +174,8 @@
                 class="input input-sm bg-background border-muted w-full rounded border"
             />
         </div>
-        <div class="mt-2 flex flex-col gap-1">
-            <label class="font-semibold" for="type" disabled>Type</label>
-            <select
-                id="type"
-                bind:value={connection.type}
-                onchange={handleTypeChange}
-                class="input input-sm bg-background border-muted w-full rounded border"
-                disabled
-            >
-                {#each CONNECTION_TYPES as t}
-                    <option value={t.value}>{t.label}</option>
-                {/each}
-            </select>
-        </div>
         {#if connection.type === "ollama"}
-            <OllamaForm bind:connection {ollamaFields} {handleOllamaFieldChange} />
+            <OllamaForm bind:connection />
         {:else if connection.type === "chatgpt"}
             <ChatGPTForm bind:connection />
         {/if}

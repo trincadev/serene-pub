@@ -2,6 +2,7 @@ import { db } from "$lib/server/db"
 import { and, eq } from "drizzle-orm"
 import * as schema from "$lib/server/db/schema"
 import { user as loadUser } from "./users"
+import { OllamaAdapter } from "../connectionAdapters/ollama"
 
 // --- CONNECTIONS SOCKET HANDLERS ---
 
@@ -42,7 +43,25 @@ export async function createConnection(
     message: Sockets.CreateConnection.Call,
     emitToUser: (event: string, data: any) => void
 ) {
-    const [conn] = await db.insert(schema.connections).values(message.connection).returning()
+
+    let data = {...message.connection }
+    if (data.type === "ollama") {
+        data = {...OllamaAdapter.connectionDefaults, ...data }
+        try {
+            const modelsRes = await OllamaAdapter.listModels(data)
+            if (!modelsRes.models || modelsRes.models.length === 0) {
+                emitToUser("error", { error: "No models found for this connection." })
+            } else {
+                data.model = modelsRes.models[0].model
+            }
+        } catch (error: any) {
+            console.error("Error fetching models:", error)
+            emitToUser("error", { error: "Failed to fetch models for this connection." })
+            return
+        }
+    }
+
+    const [conn] = await db.insert(schema.connections).values(data).returning()
     await setUserActiveConnection(socket, { id: conn.id }, emitToUser)
     await connectionsList(socket, {}, emitToUser)
     const res: Sockets.CreateConnection.Response = { connection: conn }
@@ -114,45 +133,47 @@ export async function testConnection(
     message: Sockets.TestConnection.Call,
     emitToUser: (event: string, data: any) => void
 ) {
-    // For now, just try a fetch to the Ollama baseUrl + '/api/tags' or similar endpoint
-    const { baseUrl, extraJson } = message.connection
-    let ok = false,
-        error = null,
-        models = []
-    try {
-        const url = baseUrl?.endsWith("/") ? baseUrl : baseUrl + "/"
-        const resp = await fetch(url + "api/tags", { method: "GET" })
-        ok = resp.ok
-        if (ok) {
-            const data = await resp.json()
-            models = data.models || []
-        }
-    } catch (e: any) {
-        error = e.message || String(e)
+    let AdapterClass
+    if (message.connection.type === "ollama") {
+        AdapterClass = OllamaAdapter
+    } else {
+        // TODO
     }
-    const res: Sockets.TestConnection.Response = { ok, error, models }
-    emitToUser("testConnection", res)
+
+    try {
+        const res = await AdapterClass!.testConnection(message.connection)
+        if (res.ok) {
+            emitToUser("testConnection", { ok: true, message: "Connection successful." })
+        } else {
+            emitToUser("testConnection", { ok: false, message: "Connection failed." })
+        }
+    } catch (error: any) {
+        console.error("Connection test error:", error)
+        emitToUser("testConnection", { ok: false, error: "Connection failed"})
+    }
 }
 
-export async function refreshOllamaModels(
+export async function refreshModels(
     socket: any,
-    message: Sockets.RefreshOllamaModels.Call,
+    message: Sockets.RefreshModels.Call,
     emitToUser: (event: string, data: any) => void
 ) {
-    let models = [],
-        error = null
-    try {
-        const url = message.baseUrl.endsWith("/") ? message.baseUrl : message.baseUrl + "/"
-        const resp = await fetch(url + "api/tags", { method: "GET" })
-        if (resp.ok) {
-            const data = await resp.json()
-            models = data.models || []
-        } else {
-            error = "Failed to fetch models: " + resp.status
-        }
-    } catch (e: any) {
-        error = e.message || String(e)
+    let AdapterClass
+    if (message.connection.type === "ollama") {
+        AdapterClass = OllamaAdapter
+    } else {
+        // TODO
     }
-    const res: Sockets.RefreshOllamaModels.Response = { models, error }
-    emitToUser("refreshOllamaModels", res)
+
+    try {
+        const res = await AdapterClass!.listModels(message.connection)
+        if (!res.models) {
+            emitToUser("refreshModels", { ok: false, error: "Failed to refresh models." })
+            return
+        }
+        emitToUser("refreshModels", { ok: true, models: res.models })
+    } catch (error: any) {
+        console.error("Refresh models error:", error)
+        emitToUser("refreshModels", { ok: false, error: "Failed to refresh models." })
+    }
 }

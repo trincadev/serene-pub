@@ -28,7 +28,7 @@
         </header>
         <article>
             <p class="opacity-60">
-                Your weights have unsaved changes. Are you sure you want to discard them?
+                Your sampling have unsaved changes. Are you sure you want to discard them?
             </p>
         </article>
         <footer class="flex justify-end gap-4">

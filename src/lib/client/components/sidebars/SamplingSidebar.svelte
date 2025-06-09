@@ -2,7 +2,7 @@
     import skio from "sveltekit-io"
     import { getContext, onMount, tick } from "svelte"
     import * as Icons from "@lucide/svelte"
-    import WeightsUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"
+    import SamplingConfigUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"
     import NewNameModal from '../modals/NewNameModal.svelte'
 
     interface Props {
@@ -15,164 +15,93 @@
 
     const socket = skio.get()
 
-    let weights: SelectWeights | undefined = $state()
-    let originalWeights: SelectWeights | undefined = $state()
+    let sampling: SelectSamplingConfig | undefined = $state()
+    let originalSamplingConfig: SelectSamplingConfig | undefined = $state()
     let unsavedChanges = $derived.by(() => {
-        if (!weights || !originalWeights) return false
-        // Compare current weights with original to detect changes
-        return JSON.stringify(weights) !== JSON.stringify(originalWeights)
+        if (!sampling || !originalSamplingConfig) return false
+        // Compare current sampling with original to detect changes
+        return JSON.stringify(sampling) !== JSON.stringify(originalSamplingConfig)
     })
-    let showSelectWeights = $state(false)
+    let showSelectSamplingConfig = $state(false)
     let showUnsavedChangesModal = $state(false)
     let showNewNameModal = $state(false)
     let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
     let editingField: string | null = $state(null)
 
-    socket.on("weights", (message: Sockets.Weights.Response) => {
-        weights = { ...message.weights }
-        originalWeights = { ...message.weights }
+    socket.on("sampling", (message: Sockets.SamplingConfig.Response) => {
+        sampling = { ...message.sampling }
+        originalSamplingConfig = { ...message.sampling }
     })
 
-    socket.on("weightsList", (message: Sockets.WeightsList.Response) => {
-        weightsList = message.weightsList
+    socket.on("samplingConfigsList", (message: Sockets.SamplingConfigList.Response) => {
+        samplingConfigsList = message.samplingConfigsList
     })
 
-    socket.emit("weights", { id: userCtx.user.activeWeightsId })
-    socket.emit("weightsList", {})
+    socket.emit("sampling", { id: userCtx.user.activeSamplingConfigId })
+    socket.emit("samplingConfigsList", {})
 
     type FieldType = "number" | "boolean" | "string"
 
     const fieldMeta: Record<
-        string,
-        {
-            label: string
-            type: FieldType
-            min?: number
-            max?: number
-            step?: number
-            unlockedMax?: number
-            default?: number
-        }
-    > = {
-        responseTokens: {
-            label: "Response Tokens",
-            type: "number",
-            min: 1,
-            max: 4096,
-            step: 1,
-            unlockedMax: 65536
-        }, // Unlocked max for response tokens
-        contextTokens: {
-            label: "Context Tokens",
-            type: "number",
-            min: 1,
-            max: 32768,
-            step: 1,
-            unlockedMax: 524288
-        }, // Unlocked max for context tokens
-        temperature: { label: "Temperature", type: "number", min: 0, max: 2, step: 0.01 },
-        topP: { label: "Top P", type: "number", min: 0, max: 1, step: 0.01 },
-        topK: { label: "Top K", type: "number", min: 0, max: 200, step: 1 },
-        repetitionPenalty: {
-            label: "Repetition Penalty",
-            type: "number",
-            min: 0.5,
-            max: 2,
-            step: 0.01
-        },
-        minP: { label: "Min P", type: "number", min: 0, max: 1, step: 0.01 },
-        tfs: { label: "TFS", type: "number", min: 0, max: 1, step: 0.01 },
-        typicalP: { label: "Typical P", type: "number", min: 0, max: 1, step: 0.01 },
-        mirostat: { label: "Mirostat", type: "number", min: 0, max: 2, step: 1 },
-        mirostatTau: { label: "Mirostat Tau", type: "number", min: 0, max: 10, step: 0.01 },
-        mirostatEta: { label: "Mirostat Eta", type: "number", min: 0, max: 1, step: 0.01 },
-        penaltyAlpha: { label: "Penalty Alpha", type: "number", min: 0, max: 2, step: 0.01 },
-        frequencyPenalty: {
-            label: "Frequency Penalty",
-            type: "number",
-            min: 0,
-            max: 2,
-            step: 0.01
-        },
-        presencePenalty: { label: "Presence Penalty", type: "number", min: 0, max: 2, step: 0.01 },
-        noRepeatNgramSize: {
-            label: "No Repeat Ngram Size",
-            type: "number",
-            min: 0,
-            max: 10,
-            step: 1
-        },
-        numBeams: { label: "Num Beams", type: "number", min: 1, max: 10, step: 1 },
-        lengthPenalty: { label: "Length Penalty", type: "number", min: 0, max: 2, step: 0.01 },
-        minLength: { label: "Min Length", type: "number", min: 0, max: 1024, step: 1 },
-        encoderRepetitionPenalty: {
-            label: "Encoder Repetition Penalty",
-            type: "number",
-            min: 0,
-            max: 2,
-            step: 0.01
-        },
-        freqPen: { label: "Freq Pen", type: "number", min: 0, max: 2, step: 0.01 },
-        presencePen: { label: "Presence Pen", type: "number", min: 0, max: 2, step: 0.01 },
-        skew: { label: "Skew", type: "number", min: -2, max: 2, step: 0.01 },
-        minTemp: { label: "Min Temp", type: "number", min: 0, max: 2, step: 0.01 },
-        maxTemp: { label: "Max Temp", type: "number", min: 0, max: 2, step: 0.01 },
-        dynatempExponent: {
-            label: "Dynatemp Exponent",
-            type: "number",
-            min: 0,
-            max: 2,
-            step: 0.01
-        },
-        smoothingFactor: { label: "Smoothing Factor", type: "number", min: 0, max: 1, step: 0.01 },
-        smoothingCurve: { label: "Smoothing Curve", type: "number", min: 0, max: 2, step: 0.01 },
-        dryAllowedLength: { label: "Dry Allowed Length", type: "number", min: 0, max: 10, step: 1 },
-        dryMultiplier: { label: "Dry Multiplier", type: "number", min: 0, max: 2, step: 0.01 },
-        dryBase: { label: "Dry Base", type: "number", min: 0, max: 2, step: 0.01 },
-        dryPenaltyLastN: { label: "Dry Penalty Last N", type: "number", min: 0, max: 10, step: 1 },
-        maxTokensSecond: {
-            label: "Max Tokens/Second",
-            type: "number",
-            min: 0,
-            max: 10000,
-            step: 1
-        },
-        seed: { label: "Seed", type: "number", min: -1, max: 999999, step: 1 },
-        mirostatMode: { label: "Mirostat Mode", type: "number", min: 0, max: 2, step: 1 },
-        xtcThreshold: { label: "XTC Threshold", type: "number", min: 0, max: 1, step: 0.01 },
-        xtcProbability: { label: "XTC Probability", type: "number", min: 0, max: 1, step: 0.01 },
-        nsigma: { label: "N Sigma", type: "number", min: 0, max: 10, step: 0.01 },
-        speculativeNgram: { label: "Speculative Ngram", type: "number", min: 0, max: 10, step: 1 },
-        guidanceScale: { label: "Guidance Scale", type: "number", min: 0, max: 20, step: 0.01 },
-        etaCutoff: { label: "Eta Cutoff", type: "number", min: 0, max: 1, step: 0.01 },
-        epsilonCutoff: { label: "Epsilon Cutoff", type: "number", min: 0, max: 1, step: 0.01 },
-        repPenRange: { label: "Rep Pen Range", type: "number", min: 0, max: 100, step: 1 },
-        repPenDecay: { label: "Rep Pen Decay", type: "number", min: 0, max: 1, step: 0.01 },
-        repPenSlope: { label: "Rep Pen Slope", type: "number", min: 0, max: 2, step: 0.01 },
-        logitBias: { label: "Logit Bias", type: "string" },
-        bannedTokens: { label: "Banned Tokens", type: "string" },
-        // Boolean fields (checkboxes)
-        doSample: { label: "Do Sample", type: "boolean" },
-        addBosToken: { label: "Add BOS Token", type: "boolean" },
-        banEosToken: { label: "Ban EOS Token", type: "boolean" },
-        skipSpecialTokens: { label: "Skip Special Tokens", type: "boolean" },
-        includeReasoning: { label: "Include Reasoning", type: "boolean" },
-        streaming: { label: "Streaming", type: "boolean" },
-        earlyStopping: { label: "Early Stopping", type: "boolean" },
-        dynatemp: { label: "Dynatemp", type: "boolean" }
+    string,
+    {
+        label: string
+        type: FieldType
+        min?: number
+        max?: number
+        step?: number
+        unlockedMax?: number
+        default?: number
     }
+> = {
+    responseTokens: {
+        label: "Response Tokens",
+        type: "number",
+        min: 1,
+        max: 4096,
+        step: 1,
+        unlockedMax: 65536
+    }, // Unlocked max for response tokens
+    contextTokens: {
+        label: "Context Tokens",
+        type: "number",
+        min: 1,
+        max: 32768,
+        step: 1,
+        unlockedMax: 524288
+    }, // Unlocked max for context tokens
+    temperature: { label: "Temperature", type: "number", min: 0, max: 2, step: 0.01 },
+    topP: { label: "Top P", type: "number", min: 0, max: 1, step: 0.01 },
+    topK: { label: "Top K", type: "number", min: 0, max: 200, step: 1 },
+    repetitionPenalty: {
+        label: "Repetition Penalty",
+        type: "number",
+        min: 0.5,
+        max: 2,
+        step: 0.01
+    },
+    frequencyPenalty: {
+        label: "Frequency Penalty",
+        type: "number",
+        min: 0,
+        max: 2,
+        step: 0.01
+    },
+    presencePenalty: { label: "Presence Penalty", type: "number", min: 0, max: 2, step: 0.01 },
+    seed: { label: "Seed", type: "number", min: -1, max: 999999, step: 1 }
+}
 
     // Helper: Show field if enabled, or if no enabled flag exists
     function isFieldVisible(key: string) {
         const enabledKey = key + "Enabled"
-        return key !== "isImmutable" && (weights![enabledKey] === undefined || weights![enabledKey])
+        return key !== "isImmutable" && (sampling![enabledKey] === undefined || sampling![enabledKey])
     }
 
     function getFieldMax(key: string): number {
         // Check if the field is contextTokens or responseTokens
         if (
-            (key === "contextTokens" && weights!.contextTokensUnlocked) ||
-            (key === "responseTokens" && weights!.responseTokensUnlocked)
+            (key === "contextTokens" && sampling!.contextTokensUnlocked) ||
+            (key === "responseTokens" && sampling!.responseTokensUnlocked)
         ) {
             const unlockedMax = fieldMeta[key]?.unlockedMax
             return unlockedMax !== undefined ? unlockedMax : getFieldMax(key)
@@ -188,22 +117,22 @@
         if (el) el.focus()
     }
 
-    // Mock list of saved weights for dropdown
-    let weightsList: Sockets.WeightsList.Response["weightsList"] = $state([])
+    // Mock list of saved sampling for dropdown
+    let samplingConfigsList: Sockets.SamplingConfigList.Response["samplingConfigsList"] = $state([])
 
     function handleSelectChange(e: Event) {
-        socket.emit("setUserActiveWeights", { id: (e.target as HTMLSelectElement).value })
+        socket.emit("setUserActiveSamplingConfig", { id: (e.target as HTMLSelectElement).value })
     }
 
     function handleNew() {
         showNewNameModal = true
     }
     function handleNewNameConfirm(name: string) {
-        const newWeights = { ...weights }
-        delete newWeights.id
-        delete newWeights.isImmutable
-        newWeights.name = name.trim()
-        socket.emit("createWeights", { weights: newWeights })
+        const newSamplingConfig = { ...sampling }
+        delete newSamplingConfig.id
+        delete newSamplingConfig.isImmutable
+        newSamplingConfig.name = name.trim()
+        socket.emit("createSamplingConfig", { sampling: newSamplingConfig })
         showNewNameModal = false
     }
     function handleNewNameCancel() {
@@ -211,32 +140,32 @@
     }
 
     function handleUpdate() {
-        if (weights!.isImmutable) {
-            alert("Cannot save immutable weights.")
+        if (sampling!.isImmutable) {
+            alert("Cannot save immutable sampling.")
             return
         }
-        socket.emit("updateWeights", { weights })
+        socket.emit("updateSamplingConfig", { sampling })
     }
 
     function handleReset() {
-        weights = { ...originalWeights }
+        sampling = { ...originalSamplingConfig }
     }
 
     function handleDelete() {
-        if (weights!.isImmutable) {
-            alert("Cannot delete immutable weights.")
+        if (sampling!.isImmutable) {
+            alert("Cannot delete immutable sampling.")
             return
         }
-        if (confirm("Are you sure you want to delete these weights? This cannot be undone.")) {
-            socket.emit("deleteWeights", { id: userCtx.user.activeWeightsId })
+        if (confirm("Are you sure you want to delete these sampling? This cannot be undone.")) {
+            socket.emit("deleteSamplingConfig", { id: userCtx.user.activeSamplingConfigId })
         }
     }
 
-    function handleSelectWeights() {
-        showSelectWeights = true
+    function handleSelectSamplingConfig() {
+        showSelectSamplingConfig = true
     }
     function handleBackToSidebar() {
-        showSelectWeights = false
+        showSelectSamplingConfig = false
     }
 
     async function handleOnClose() {
@@ -271,7 +200,7 @@
 </script>
 
 <div class="text-foreground p-4">
-    {#if showSelectWeights}
+    {#if showSelectSamplingConfig}
         <!-- ENABLE / DISABLE WEIGHTS -->
         <div class="border-primary bg-background animate-fade-in rounded-lg border p-4 shadow-lg">
             <button
@@ -290,9 +219,9 @@
                         >
                             <input
                                 type="checkbox"
-                                bind:checked={weights[key + "Enabled"]}
+                                bind:checked={sampling[key + "Enabled"]}
                                 class="accent-primary"
-                                disabled={weights[key + "Enabled"] === undefined}
+                                disabled={sampling[key + "Enabled"] === undefined}
                             />
                             <span class="font-medium">{meta.label}</span>
                         </label>
@@ -300,7 +229,7 @@
                 {/each}
             </div>
         </div>
-    {:else if !!weights}
+    {:else if !!sampling}
         <!-- MANAGE WEIGHTS -->
          <div class="mt-2 flex gap-2 sm:mt-0 mb-2">
                 <button
@@ -321,7 +250,7 @@
                     type="button"
                     class="btn btn-sm preset-filled-error-500"
                     onclick={handleDelete}
-                    disabled={!!weights && weights.isImmutable}>
+                    disabled={!!sampling && sampling.isImmutable}>
                     <Icons.X size={16} />
                     </button
                 >
@@ -330,14 +259,14 @@
             <select
                 class="select select-sm bg-background border-muted rounded border"
                 onchange={handleSelectChange}
-                bind:value={userCtx.user.activeWeightsId}
+                bind:value={userCtx.user.activeSamplingConfigId}
             >
-                {#each weightsList.filter((w) => w.isImmutable) as w}
+                {#each samplingConfigsList.filter((w) => w.isImmutable) as w}
                     <option value={w.id}
                         >{w.name}{#if w.isImmutable}*{/if}</option
                     >
                 {/each}
-                {#each weightsList.filter((w) => !w.isImmutable) as w}
+                {#each samplingConfigsList.filter((w) => !w.isImmutable) as w}
                     <option value={w.id}
                         >{w.name}{#if w.isImmutable}*{/if}</option
                     >
@@ -348,27 +277,27 @@
             <button
                 type="button"
                 class="btn preset-tonal-primary w-full"
-                onclick={handleSelectWeights}
+                onclick={handleSelectSamplingConfig}
             >
-                Select Weights
+                Select Samplers
             </button>
             <button
                 type="button"
                 class="btn preset-filled-primary-500 w-full"
                 onclick={handleUpdate}
-                disabled={(!!weights && weights.isImmutable) || !unsavedChanges}>Save</button
+                disabled={(!!sampling && sampling.isImmutable) || !unsavedChanges}>Save</button
             >
         </div>
 
         <form class="space-y-4">
             <div class="flex flex-col gap-1">
-                <label class="font-semibold" for="weightsName">Name</label>
+                <label class="font-semibold" for="samplingName">Name</label>
                 <input
-                    id="weightsName"
+                    id="samplingName"
                     type="text"
-                    bind:value={weights.name}
+                    bind:value={sampling.name}
                     class="input input-sm bg-background border-muted w-full rounded border"
-                    disabled={!!weights && weights.isImmutable}
+                    disabled={!!sampling && sampling.isImmutable}
                 />
             </div>
             {#each Object.entries(fieldMeta) as [key, meta]}
@@ -383,7 +312,7 @@
                                     max={getFieldMax(key)}
                                     step={meta.step}
                                     id={key}
-                                    bind:value={weights![key]}
+                                    bind:value={sampling![key]}
                                     class="accent-primary w-full"
                                 />
                                 <div
@@ -397,7 +326,7 @@
                                             min={meta.min}
                                             max={getFieldMax(key)}
                                             step={meta.step}
-                                            bind:value={weights![key]}
+                                            bind:value={sampling![key]}
                                             id={key + "-manual"}
                                             class="border-primary input w-16 rounded border px-1 py-0.5"
                                             onblur={() => (editingField = null)}
@@ -413,7 +342,7 @@
                                             onclick={async () => {
                                                 editingField = key
                                                 await focusInput(key + "-manual")
-                                            }}>{weights![key]}</button
+                                            }}>{sampling![key]}</button
                                         >
                                     {/if}
                                     <span title="Maximum value" class="select-none"
@@ -426,7 +355,7 @@
                                         <input
                                             type="checkbox"
                                             id="responseTokensUnlocked"
-                                            bind:checked={weights.responseTokensUnlocked}
+                                            bind:checked={sampling.responseTokensUnlocked}
                                             class="accent-primary"
                                         />
                                         <label for="responseTokensUnlocked" class="text-sm"
@@ -438,7 +367,7 @@
                                         <input
                                             type="checkbox"
                                             id="contextTokensUnlocked"
-                                            bind:checked={weights.contextTokensUnlocked}
+                                            bind:checked={sampling.contextTokensUnlocked}
                                             class="accent-primary"
                                         />
                                         <label for="contextTokensUnlocked" class="text-sm"
@@ -451,14 +380,14 @@
                             <input
                                 type="checkbox"
                                 id={key}
-                                bind:checked={weights[key]}
+                                bind:checked={sampling[key]}
                                 class="accent-primary"
                             />
                         {:else}
                             <input
                                 type="text"
                                 id={key}
-                                bind:value={weights[key]}
+                                bind:value={sampling[key]}
                                 class="input input-sm bg-background border-muted w-full rounded border"
                             />
                         {/if}
@@ -469,7 +398,7 @@
     {/if}
 </div>
 
-<WeightsUnsavedChangesModal
+<SamplingConfigUnsavedChangesModal
     open={showUnsavedChangesModal}
     onOpenChange={handleUnsavedChangesModalOpenChange}
     onConfirm={handleUnsavedChangesModalConfirm}
@@ -480,4 +409,6 @@
     onOpenChange={(e) => (showNewNameModal = e.open)}
     onConfirm={handleNewNameConfirm}
     onCancel={handleNewNameCancel}
+    title="New Sampling Config"
+    description="Your current settings will be copied."
 />

@@ -56,8 +56,13 @@
 		"better-sqlite3": "^11.8.0",
 		"carta-md": "^4.10.2",
 		"drizzle-orm": "^0.40.0",
+		"gpt-tokenizer": "^3.0.0",
 		"handlebars": "^4.7.8",
+		"llama-tokenizer-js": "^1.2.2",
+		"llama3-tokenizer-js": "^1.2.0",
 		"lodash": "^4.17.21",
+		"mistral-tokenizer-js": "^1.0.0",
+		"ollama": "^0.5.16",
 		"svelte-exmarkdown": "^5.0.1",
 		"sveltekit-io": "^1.0.12"
 	}

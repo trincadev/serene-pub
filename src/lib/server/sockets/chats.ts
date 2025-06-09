@@ -1,10 +1,10 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
 import { OllamaAdapter } from "../connectionAdapters/ollama"
-import extractChunks from "png-chunks-extract"
-import { decode as decodeText } from "png-chunk-text"
-import { handleCharacterAvatarUpload } from "../utils"
-import { charactersList } from "./characters"
+// import extractChunks from "png-chunks-extract"
+// import { decode as decodeText } from "png-chunk-text"
+// import { handleCharacterAvatarUpload } from "../utils"
+// import { charactersList } from "./characters"
 import { and, eq } from "drizzle-orm"
 
 // List all chats for the current user
@@ -205,7 +205,7 @@ export async function sendPersonaMessage(socket: any, message: Sockets.SendPerso
             where: (u, { eq }) => eq(u.id, userId),
             with: {
                 activeConnection: true,
-                activeWeights: true,
+                activeSamplingConfig: true,
                 activeContextConfig: true,
                 activePromptConfig: true
             }
@@ -214,13 +214,13 @@ export async function sendPersonaMessage(socket: any, message: Sockets.SendPerso
         const adapter = new OllamaAdapter({
             chat,
             connection: user!.activeConnection!,
-            weights: user!.activeWeights!,
+            sampling: user!.activeSamplingConfig!,
             contextConfig: user!.activeContextConfig!,
             promptConfig: user!.activePromptConfig!
         });
 
         // For now, always stream. You can add a config flag if needed.
-        const completionResult = adapter.getCompletion();
+        const completionResult = adapter.generate();
 
         if (typeof completionResult === "function") {
             // Streaming mode: progressively update the message
