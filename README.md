@@ -41,7 +41,7 @@ The following features are functional, mostly functional, in progress or pending
 2. Create, manage, import & export your personas
      - Import and export are not yet implemented.
 3. Chats
-    - Not implemented: Manually continue/trigger response, swipe next response, swipe initial message, hide message, edit/rename chat.
+    - Not implemented: Manually continue/trigger response, swipe next response, swipe initial message, hide message, edit/rename chat, automatic prompt/token length management (currently sends the full history).
     - Implemented: Create & delete chat, send persona message, generate character response, edit and delete messages, streaming, regenerate last message.
 4. Manage prompt instructions, i.e. role-play style
   
