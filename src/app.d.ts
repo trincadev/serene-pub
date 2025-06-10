@@ -33,7 +33,12 @@ declare global {
     }
 
     interface UserCtx {
-        user: SelectUser | undefined
+        user: (SelectUser & {
+            activeConnection: SelectConnection | null
+            activeSamplingConfig: SelectSamplingConfig | null
+            activeContextConfig: SelectContextConfig | null
+            activePromptConfig: SelectPromptConfig | null
+        }) | undefined
     }
 
     // Model select and insert
@@ -336,6 +341,7 @@ declare global {
                 chat: SelectChat & {
                     chatPersonas: SelectChatPersona & { persona: SelectPersona }[]
                     chatCharacters: SelectChatCharacter & { character: SelectCharacter }[]
+                    chatMessages: SelectChatMessage[]
                 }
             }
         }
@@ -447,7 +453,9 @@ declare global {
             }
             interface Response {
                 tokenCount: number
-                tokenLimit: number | null
+                tokenLimit: number,
+                messagesIncluded: number
+                totalMessages: number
             }
         }
         namespace AbortChatMessage {

@@ -88,6 +88,7 @@ export async function createChat(
     })
     if (!resChat) return
     const res: Sockets.CreateChat.Response = { chat: resChat as any }
+    await chatsList(socket, {}, emitToUser) // Refresh chat list
     emitToUser("createChat", res)
 }
 
@@ -299,8 +300,7 @@ export async function promptTokenCount(
         }
     })
     if (!chat || !user || !user.activeConnection || !user.activeSamplingConfig || !user.activeContextConfig || !user.activePromptConfig) {
-        const res: Sockets.PromptTokenCount.Response = { tokenCount: 0, tokenLimit: null }
-        emitToUser("promptTokenCount", res)
+        emitToUser("error", { error: "Chat or user configuration not found." })
         return
     }
     let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
@@ -328,13 +328,8 @@ export async function promptTokenCount(
         contextConfig: user.activeContextConfig,
         promptConfig: user.activePromptConfig
     })
-    const prompt = adapter.compilePrompt()
-    const { TokenCounters } = await import("../utils/TokenCounterManager")
-    const tokenCounter = new TokenCounters(user.activeConnection.tokenCounter)
-    const tokenCount = await tokenCounter.countTokens(prompt)
-    const sampling = user.activeSamplingConfig
-    const tokenLimit = sampling.contextTokensEnabled ? sampling.contextTokens : null
-    const res: Sockets.PromptTokenCount.Response = { tokenCount, tokenLimit }
+    const [prompt, tokenCount, tokenLimit, messagesIncluded, totalMessages] = await adapter.compilePrompt()
+    const res: Sockets.PromptTokenCount.Response = { tokenCount, tokenLimit, messagesIncluded, totalMessages }
     emitToUser("promptTokenCount", res)
 }
 
@@ -353,8 +348,9 @@ export async function abortChatMessage(
     }
     const adapterId = chatMessage.adapterId
     if (!adapterId) {
-        const res: Sockets.AbortChatMessage.Response = { id: message.id, success: false, error: "No adapterId for this message." }
-        emitToUser("abortChatMessage", res)
+        await db.update(schema.chatMessages)
+            .set({ isGenerating: false, adapterId: null })
+            .where(eq(schema.chatMessages.id, message.id))
         return
     }
     const adapter = activeAdapters.get(adapterId)
@@ -404,6 +400,7 @@ export async function triggerGenerateMessage(
             .insert(schema.chatMessages)
             .values(assistantMessage)
             .returning()
+        await chatMessage(socket, { chatMessage: generatingMessage }, emitToUser)
         await generateResponse({
             socket,
             emitToUser,

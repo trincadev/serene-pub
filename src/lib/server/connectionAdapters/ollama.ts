@@ -5,6 +5,7 @@ import { StopStrings } from "../utils/StopStrings"
 import { Ollama } from "ollama"
 import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
+import { TokenCounters } from "../utils/TokenCounterManager"
 
 export class OllamaAdapter {
     connection: SelectConnection
@@ -18,6 +19,7 @@ export class OllamaAdapter {
     }
 
     private _client?: Ollama;
+    private _tokenCounter?: TokenCounters;
 
     constructor({
         connection,
@@ -55,6 +57,9 @@ export class OllamaAdapter {
             raw: true
         }
     }
+
+    static defaultContextLimit = 2048
+    static contextThresholdPercent = 0.9 // we don't want to hit the limit, so we stop at 90% of the context size
 
     // --- Context builders ---
     contextBuildCharacterDescription(character: any): string | undefined {
@@ -195,7 +200,7 @@ export class OllamaAdapter {
     }
 
     // --- Prompt construction ---
-    compilePrompt(): string {
+    async compilePrompt(): Promise<[string, number, number, number, number]> {
         const characterName = this.chat.chatCharacters?.[0]?.character?.name || "assistant"
         const persona = this.chat.chatPersonas?.[0]?.persona
         const personaName = persona?.name || "user"
@@ -220,16 +225,51 @@ export class OllamaAdapter {
             role: "system",
             content: renderedSystemBlock
         })
-        const messageBlock = this.chat.chatMessages.filter((msg: SelectChatMessage) => !msg.isHidden)
-            .map((msg: SelectChatMessage) => {
-                return PromptBlockFormatter.makeBlock({
-                    format: this.connection.promptFormat || "chatml",
-                    role: msg.role! || "assistant",
-                    content: `[{{${msg.role === "user" ? "user" : msg.role === "assistant" ? "char" : msg.role === "system" ? "system" : "system"}}}]:\n${msg.content}`
-                })
+
+        // --- Context window logic ---
+        const messages = this.chat.chatMessages.filter((msg: SelectChatMessage) => !msg.isHidden)
+        const totalMessages = messages.length
+        const reversed = [...messages].reverse()
+        const promptBlocks: string[] = [systemBlock]
+        const messageBlocks: string[] = []
+        let tokenCounter: any
+        let tokenLimit: number
+        let contextThreshold: number
+        let totalTokens = 0
+        let alwaysInclude = 2 // Always include the 2 most recent messages
+        tokenCounter = this.getTokenCounter()
+        if (this.sampling.contextTokensEnabled && typeof this.sampling.contextTokens === 'number') {
+            tokenLimit = this.sampling.contextTokens
+        } else {
+            tokenLimit = (this.constructor as typeof OllamaAdapter).defaultContextLimit
+        }
+        contextThreshold = Math.floor(tokenLimit * (this.constructor as typeof OllamaAdapter).contextThresholdPercent)
+        let includedMessages = 0
+        for (let i = 0; i < reversed.length; i++) {
+            const msg = reversed[i]
+            const block = PromptBlockFormatter.makeBlock({
+                format: this.connection.promptFormat || "chatml",
+                role: msg.role! || "assistant",
+                content: `[{{${msg.role === "user" ? "user" : msg.role === "assistant" ? "char" : msg.role === "system" ? "system" : "system"}}}]:\n${msg.content}`
             })
-            .join("")
-        const promptBlocks = [systemBlock, messageBlock]
+            messageBlocks.unshift(block)
+            if (i < alwaysInclude) {
+                includedMessages++
+                continue
+            }
+            const currentPrompt = [systemBlock, ...messageBlocks].join("\n\n")
+            const tokens = tokenCounter.countTokens(currentPrompt)
+            if (tokens > tokenLimit) {
+                messageBlocks.shift()
+                break
+            }
+            if (tokens > contextThreshold) {
+                includedMessages++
+                break
+            }
+            includedMessages++
+        }
+        promptBlocks.push(...messageBlocks)
         if (this.contextConfig.alwaysForceName) {
             promptBlocks.push(
                 PromptBlockFormatter.makeBlock({
@@ -241,7 +281,8 @@ export class OllamaAdapter {
             )
         }
         const prompt = Handlebars.compile(promptBlocks.join("\n\n"))(systemCtxData)
-        return prompt.trim()
+        totalTokens = tokenCounter.countTokens(prompt)
+        return [prompt.trim(), totalTokens, tokenLimit, includedMessages, totalMessages]
     }
 
     // --- Ollama client instance ---
@@ -253,13 +294,20 @@ export class OllamaAdapter {
         return this._client;
     }
 
+    getTokenCounter() {
+        if (!this._tokenCounter) {
+            this._tokenCounter = new TokenCounters(this.connection.tokenCounter || TokenCounterOptions.ESTIMATE);
+        }
+        return this._tokenCounter;
+    }
+
     static mapRole(role: string): string {
         if (role === "system") return "system"
         if (role === "assistant" || role === "bot") return "assistant"
         return "user"
     }
 
-    generate(): Promise<string> | ((cb: (chunk: string) => void) => Promise<void>) {
+    async generate(): Promise<string | ((cb: (chunk: string) => void) => Promise<void>)> {
         const model = this.connection.model ?? OllamaAdapter.connectionDefaults.baseUrl
         const stream = this.connection!.extraJson?.stream || false
         const think = this.connection!.extraJson?.think || false
@@ -274,9 +322,12 @@ export class OllamaAdapter {
         const stopContext: Record<string, string> = { char: characterName, user: personaName }
         const stop = stopStrings.map(str => Handlebars.compile(str)(stopContext))
 
+        // Await the prompt and token count
+        const [prompt, totalTokens, tokenLimit] = await this.compilePrompt()
+
         const req = {
             model,
-            prompt: this.compilePrompt(),
+            prompt,
             stream,
             think,
             raw,

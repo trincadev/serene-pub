@@ -1,7 +1,7 @@
 import { db } from "$lib/server/db"
 import { eq } from "drizzle-orm"
 import * as schema from "$lib/server/db/schema"
-import { user as loadUser } from "./users"
+import {user as loadUser, user} from './users';
 
 export async function contextConfigsList(
     socket: any,
@@ -64,6 +64,7 @@ export async function updateContextConfig(
     await contextConfigsList(socket, {}, emitToUser)
     const res: Sockets.UpdateContextConfig.Response = { contextConfig }
     emitToUser("updateContextConfig", res)
+    await user(socket, {}, emitToUser)
 }
 
 export async function deleteContextConfig(
@@ -71,6 +72,13 @@ export async function deleteContextConfig(
     message: Sockets.DeleteContextConfig.Call,
     emitToUser: (event: string, data: any) => void
 ) {
+    const userId = 1 // Replace with actual userId
+    let user = await db.query.users.findFirst({
+        where: (u, { eq }) => eq(u.id, userId)
+    })
+    if (user?.activeContextConfigId === message.id) {
+        await setUserActiveContextConfig(socket, { id: null }, emitToUser)
+    }
     await db.delete(schema.contextConfigs).where(eq(schema.contextConfigs.id, message.id))
     await contextConfigsList(socket, {}, emitToUser)
     const res: Sockets.DeleteContextConfig.Response = { id: message.id }

@@ -1,23 +1,29 @@
 <script lang="ts">
     import { page } from "$app/state"
-    import { Avatar, Modal, Tabs } from "@skeletonlabs/skeleton-svelte"
+    import { Avatar, Modal } from "@skeletonlabs/skeleton-svelte"
     import * as skio from "sveltekit-io"
     import * as Icons from "@lucide/svelte"
-    import { marked } from "marked"
     import MessageComposer from "$lib/client/components/chatMessages/MessageComposer.svelte"
     import { renderMarkdownWithQuotedText } from "$lib/client/utils/markdownToHTML"
+    import { getContext } from "svelte"
 
-    let chat: any = $state(null)
+    let chat: Sockets.Chat.Response["chat"] | undefined = $state()
     let newMessage = $state("")
     const socket = skio.get()
     let showDeleteMessageModal = $state(false)
     let deleteChatMessage: SelectChatMessage | undefined = $state()
     let editChatMessage: SelectChatMessage | undefined = $state()
-    let editMessageGroup: "compose" | "preview" = $state("compose")
-    let tokenCounts: { tokenCount: number; tokenLimit: number | null } = $state({
-        tokenCount: 0,
-        tokenLimit: null
-    })
+    let promptStats:
+        | {
+              tokenCount: number
+              tokenLimit: number
+              messagesIncluded: number
+              totalMessages: number
+          }
+        | undefined = $state()
+    let userCtx: UserCtx = getContext("user")
+    let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
+    let contextExceeded = $derived( !!promptStats ? promptStats!.tokenCount > promptStats!.tokenLimit : false )
 
     // Get chat id from route params
     let chatId: number = $derived.by(() => Number(page.params.id))
@@ -31,16 +37,16 @@
     })
 
     socket.on("chatMessage", (msg: Sockets.ChatMessage.Response) => {
-        if (msg.chatMessage.chatId === chatId) {
-            // Check if message already exists and replace it
-            const existingIndex = chat.chatMessages.findIndex(
+        if (chat !== undefined && msg.chatMessage.chatId === chatId) {
+            const existingIndex = chat!.chatMessages.findIndex(
                 (m: SelectChatMessage) => m.id === msg.chatMessage.id
             )
             if (existingIndex !== -1) {
-                chat.chatMessages[existingIndex] = msg.chatMessage
-            } else if (!lastMessage || msg.id > lastMessage.id) {
-                // If it's a new message, push it to the chat messages
-                chat.chatMessages.push(msg.chatMessage)
+                const updatedMessages = [...chat!.chatMessages]
+                updatedMessages[existingIndex] = msg.chatMessage
+                chat = { ...chat, chatMessages: updatedMessages }
+            } else {
+                chat = { ...chat, chatMessages: [...chat.chatMessages, msg.chatMessage] }
             }
         }
         setTimeout(() => {
@@ -49,8 +55,7 @@
     })
 
     socket.on("promptTokenCount", (msg: Sockets.PromptTokenCount.Response) => {
-        console.log("Received token counts:", msg)
-        tokenCounts = msg
+        promptStats = msg
     })
 
     let lastMessage: SelectChatMessage | undefined = $derived.by(() => {
@@ -61,7 +66,6 @@
     })
 
     function handleSend() {
-        console.log("Sending message:", newMessage)
         if (!newMessage.trim()) return
         // TODO: Implement send message socket call
         const msg: Sockets.SendPersonaMessage.Call = {
@@ -141,13 +145,21 @@
     })
 
     $effect(() => {
+        const _connection = userCtx?.user?.activeConnection // DO NOT REMOVE THIS LINE - REACTIVITY TRIGGER
+        const _samplingConfig = userCtx?.user?.activeSamplingConfig // DO NOT REMOVE THIS LINE - REACTIVITY TRIGGER
+        const _contextConfig = userCtx?.user?.activeContextConfig // DO NOT REMOVE THIS LINE - REACTIVITY TRIGGER
+        const _promptConfig = userCtx?.user?.activePromptConfig // DO NOT REMOVE THIS LINE - REACTIVITY TRIGGER
+        const _newMessage = newMessage // DO NOT REMOVE THIS LINE - REACTIVITY TRIGGER
         if (!chatId || !lastMessage || lastMessage.isGenerating || !!editChatMessage) return
-        socket.emit("promptTokenCount", {
-            chatId,
-            content: newMessage,
-            personaId: chat?.chatPersonas?.[0]?.personaId || undefined,
-            role: "user"
-        })
+        if (promptTokenCountTimeout) clearTimeout(promptTokenCountTimeout)
+        promptTokenCountTimeout = setTimeout(() => {
+            socket.emit("promptTokenCount", {
+                chatId,
+                content: newMessage,
+                personaId: chat?.chatPersonas?.[0]?.personaId || undefined,
+                role: "user"
+            })
+        }, 2000)
     })
 
     let chatMessagesContainer: HTMLDivElement | null = null
@@ -198,6 +210,7 @@
             socket.emit("regenerateChatMessage", { id: lastMessage.id })
         }
     }
+
 </script>
 
 <svelte:head>
@@ -211,9 +224,9 @@
             <div class="text-muted mt-8 text-center">No messages yet.</div>
         {:else}
             <ul class="flex flex-col gap-3 py-2">
-                {#each chat.chatMessages as msg}
-                    {@const character = getMessageCharacter(msg)}
-                    <li class="bg-primary-50-950 flex flex-col rounded-lg p-4">
+                {#each chat.chatMessages as msg (msg.id)}
+                {@const character = getMessageCharacter(msg)}
+                    <li class="bg-primary-50-950 flex flex-col rounded-lg p-4" class:opacity-50={msg.isHidden && editChatMessage?.id !== msg.id}>
                         <div class="flex justify-between gap-2">
                             <div class="flex gap-2">
                                 <span>
@@ -312,13 +325,6 @@
                                     <div class="shadow"></div>
                                     <div class="shadow"></div>
                                 </div>
-                            {:else if msg.isLoading}
-                                <div class="animate-pulse">
-                                    <div class="mb-2 h-4 w-3/4 rounded bg-gray-300"></div>
-                                    <div class="h-4 w-1/2 rounded bg-gray-300"></div>
-                                </div>
-                            {:else if msg.isError}
-                                <div class="text-red-500">Error loading message</div>
                             {:else if editChatMessage && editChatMessage.id === msg.id}
                                 <div
                                     class="chat-input-bar bg-surface-100-900 w-full rounded-xl p-2 pb-6 align-middle"
@@ -344,13 +350,19 @@
         <MessageComposer
             bind:markdown={newMessage}
             onSend={handleSend}
-            {tokenCounts}
+            {promptStats}
             extraTabs={[
                 {
                     value: "extraControls",
                     title: "Extra Controls",
                     control: extraControlsButton,
                     content: extraControlsContent
+                },
+                {
+                    value: "statistics",
+                    title: "Statistics",
+                    control: statisticsButton,
+                    content: statisticsContent
                 }
             ]}
         >
@@ -443,6 +455,27 @@
         >
             <Icons.RefreshCw size={24} />
         </button>
+    </div>
+{/snippet}
+
+{#snippet statisticsButton()}
+    <Icons.BarChart2 size="0.75em" />
+{/snippet}
+
+{#snippet statisticsContent()}
+    <div class="flex flex-col p-2 text-sm">
+        {#if promptStats}
+            <div>
+                <b>Prompt Tokens:</b> <span class:text-error-500={contextExceeded}>{promptStats.tokenCount} / {promptStats.tokenLimit}</span>
+                
+            </div>
+            <div>
+                <b>Messages Inserted:</b> {promptStats.messagesIncluded} / {promptStats.totalMessages}
+                <span class="text-surface-500">(Includes current draft)</span>
+            </div>
+        {:else}
+            <div class="text-muted">No prompt statistics available.</div>
+        {/if}
     </div>
 {/snippet}
 

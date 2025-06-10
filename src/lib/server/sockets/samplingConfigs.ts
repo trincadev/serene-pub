@@ -112,6 +112,7 @@ export async function updateSamplingConfig(
         .returning()
     await samplingConfigsList(socket, {}, emitToUser)
     await sampling(socket, { id }, emitToUser)
+    await user(socket, {}, emitToUser)
     const res = { samplingConfig: updatedSamplingConfig }
     emitToUser("updateSamplingConfig", res)
 }
