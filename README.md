@@ -82,8 +82,7 @@ The following features are functional, mostly functional, in progress or pending
 ### In Progress (some functionality)
 
 1. Connect to your favorite API
-    - Only Ollama is currently supported
-    - Select the prompt format strategy
+    - [see here for currently supported options](https://github.com/doolijb/serene-pub/issues/10)
 2. Manage context settings
     - Only one default option is provided right now, but you can add your own.
     - No support for Instruct yet
