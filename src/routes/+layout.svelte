@@ -126,6 +126,11 @@
         return res!
     }
 
+    function handleMobilePanelClick(key: string) {
+        panelsCtx.openPanel(key)
+        panelsCtx.isMobileMenuOpen = false
+    }
+
     setContext("panels", panelsCtx as PanelsCtx)
 
     setContext("user", userCtx)
@@ -212,9 +217,7 @@
         </div>
         {#if panelsCtx.mobilePanel}
             <div
-                class="bg-surface-100-900 fixed inset-0 z-50 flex flex-col transition-all duration-200 ease-in-out md:hidden"
-                in:fade
-                out:fade
+                class="bg-surface-100-900 fixed inset-0 z-[51] flex flex-col md:hidden"
             >
                 <div class="border-border flex items-center justify-between border-b p-4">
                     <span class="text-foreground text-lg font-semibold capitalize">
@@ -226,7 +229,7 @@
                 </div>
                 <div class="flex-1 overflow-y-auto">
                     {#if panelsCtx.mobilePanel === "sampling"}
-                        <SamplingConfigSidebar bind:onclose={panelsCtx.onMobilePanelClose} />
+                        <SamplingSidebar bind:onclose={panelsCtx.onMobilePanelClose} />
                     {:else if panelsCtx.mobilePanel === "connections"}
                         <ConnectionsSidebar bind:onclose={panelsCtx.onMobilePanelClose} />
                     {:else if panelsCtx.mobilePanel === "contexts"}
@@ -246,6 +249,44 @@
                     {:else if panelsCtx.mobilePanel === "settings"}
                         <SettingsSidebar bind:onclose={panelsCtx.onMobilePanelClose} />
                     {/if}
+                </div>
+            </div>
+        {/if}
+        <!-- Mobile menu -->
+        {#if panelsCtx.isMobileMenuOpen}
+            <!-- Backdrop -->
+            <div class="fixed inset-0 z-[40] bg-black/40"></div>
+            <div
+                class="bg-surface-100-900/95 fixed inset-0 z-[40] flex flex-col overflow-y-auto px-2 md:hidden"
+            >
+                <div class="border-border flex items-center justify-between border-b p-4">
+                    <span
+                        class="text-foreground funnel-display text-xl font-bold tracking-tight whitespace-nowrap"
+                    >
+                        Serene Pub
+                    </span>
+                    <button
+                        type="button"
+                        onclick={(e) => {
+                            console.log("Click!")
+                            e.stopPropagation()
+                            panelsCtx.isMobileMenuOpen = false
+                        }}
+                    >
+                        <Icons.X class="text-foreground h-6 w-6" />
+                    </button>
+                </div>
+                <div class="flex flex-col gap-4 p-4 text-2xl">
+                    {#each Object.entries( { ...panelsCtx.rightNav, ...panelsCtx.leftNav } ) as [key, item]}
+                        <button
+                            class="btn-ghost flex items-center gap-2"
+                            title={item.title}
+                            onclick={() => handleMobilePanelClick(key)}
+                        >
+                            <item.icon class="text-foreground h-5 w-5" />
+                            <span>{item.title}</span>
+                        </button>
+                    {/each}
                 </div>
             </div>
         {/if}

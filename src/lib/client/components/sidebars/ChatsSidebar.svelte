@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from "svelte"
+    import { getContext, onMount } from "svelte"
     import * as skio from "sveltekit-io"
     import CreateChatForm from "../chatForms/CreateChatForm.svelte"
     import * as Icons from "@lucide/svelte"
@@ -15,6 +15,7 @@
     let chats: Sockets.ChatsList.Response["chatsList"] = $state([])
     let search = $state("")
     let isCreating = $state(false)
+    let panelsCtx: PanelsCtx = $state(getContext("panels"))
     const socket = skio.get()
 
     // Filtered chats derived from search
@@ -64,6 +65,13 @@
 
     function handleChatClick(chat: any) {
         goto(`/chats/${chat.id}`)
+        // Check if mobile menu/sidebar is open and close it
+        if (panelsCtx.isMobileMenuOpen) {
+            panelsCtx.isMobileMenuOpen = false
+        }
+        if (panelsCtx.mobilePanel) {
+            panelsCtx.mobilePanel = null
+        }
     }
 
     let showDeleteModal = $state(false)
