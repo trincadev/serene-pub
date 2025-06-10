@@ -14,6 +14,12 @@
         }
         leftControls?: Snippet
         rightControls?: Snippet
+        extraTabs?: {
+            value: string
+            title: string
+            control: Snippet
+            content: Snippet
+        }[]
         onSend: () => void
     }
     let {
@@ -21,6 +27,7 @@
         tokenCounts = $bindable(),
         leftControls,
         rightControls,
+        extraTabs = $bindable(),
         onSend
     }: Props = $props()
 
@@ -30,6 +37,8 @@
         if (e) e.preventDefault()
         onSend()
     }
+
+    console.log("additionalTabs", extraTabs)
 </script>
 
 <Tabs value={tabGroup} onValueChange={(e) => (tabGroup = e.value as "compose" | "preview")}>
@@ -40,6 +49,13 @@
         <Tabs.Control value="preview"
             ><span title="Preview"><Icons.Eye size="0.75em" /></span></Tabs.Control
         >
+        {#if extraTabs}
+            {#each extraTabs as tab}
+                <Tabs.Control value={tab.value}>
+                    <span title={tab.title}>{@render tab.control?.()}</span>
+                </Tabs.Control>
+            {/each}
+        {/if}
         {#if tokenCounts}
             <Tabs.Control value="tokenCount" classes="w-full text-right" disabled>
                 <span title="Token Count" class="text-xs">
@@ -80,6 +96,13 @@
                         </div>
                     </div>
                 </Tabs.Panel>
+                {#if extraTabs}
+                    {#each extraTabs as tab}
+                        <Tabs.Panel value={tab.value}>
+                            {@render tab.content?.()}
+                        </Tabs.Panel>
+                    {/each}
+                {/if}
             </div>
             {@render rightControls?.()}
         </div>

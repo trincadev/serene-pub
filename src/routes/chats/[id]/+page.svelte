@@ -289,7 +289,16 @@
     </div>
     <!-- NEW CHAT MESSAGE FORM -->
     <div class="chat-input-bar preset-tonal-surface gap-4 pb-6 align-middle">
-        <MessageComposer bind:markdown={newMessage} onSend={handleSend} {tokenCounts}>
+        <MessageComposer bind:markdown={newMessage} onSend={handleSend} {tokenCounts} extraTabs={
+            [
+                {
+                    value: "extraControls",
+                    title: "Extra Controls",
+                    control: extraControlsButton,
+                    content: extraControlsContent
+                }
+            ]
+        }>
             {#snippet leftControls()}
                 {#if chat?.chatPersonas?.[0]?.persona}
                     {@const persona = chat?.chatPersonas?.[0]?.persona}
@@ -362,6 +371,35 @@
         </footer>
     {/snippet}
 </Modal>
+
+{#snippet extraControlsButton()}
+    <Icons.MessageSquare size="0.75em" />
+{/snippet}
+
+{#snippet extraControlsContent()}
+    <div class="flex gap-2">
+        <button
+            class="btn btn-lg preset-filled-primary-500 h-full"
+            title="Trigger Character Generation"
+            onclick={() => socket.emit('triggerGenerateMessage', { chatId })}
+            disabled={!chat || !chat.chatPersonas?.[0]?.personaId || lastMessage?.isGenerating}
+        >
+            <Icons.MessageSquarePlus size={24} />
+        </button>
+        <button
+            class="btn btn-lg preset-filled-secondary-500 h-full"
+            title="Regenerate Last Message"
+            onclick={() => {
+                if (lastMessage && !lastMessage.isGenerating) {
+                    socket.emit("regenerateChatMessage", { id: lastMessage.id })
+                }
+            }}
+            disabled={!lastMessage || lastMessage.isGenerating}
+        >
+            <Icons.RefreshCcw size={24} />
+        </button>
+    </div>
+{/snippet}
 
 <style lang="postcss">
     @reference "tailwindcss";

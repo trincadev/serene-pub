@@ -25,7 +25,13 @@ export class StopStrings {
                     "*** assistant",
                     "*** system",
                     "[{{user}}]:",
-                    "[{{char}}]:"
+                    "[{{char}}]:",
+                    "[system]:",
+                    "[System]:",
+                    "[user]:",
+                    "[User]:",
+                    "[assistant]:",
+                    "[Assistant]:"
                 ];
             case PromptFormats.VICUNA:
                 // Block starters for Vicuna, plus </s> and template markers
@@ -36,7 +42,13 @@ export class StopStrings {
                     "### Assistant:",
                     "### System:",
                     "[{{user}}]:",
-                    "[{{char}}]:"
+                    "[{{char}}]:",
+                    "[system]:",
+                    "[System]:",
+                    "[user]:",
+                    "[User]:",
+                    "[assistant]:",
+                    "[Assistant]:"
                 ];
             case PromptFormats.OPENAI:
                 // Block starters for OpenAI, plus template markers
@@ -46,7 +58,13 @@ export class StopStrings {
                     "<|assistant|>",
                     "<|system|>",
                     "[{{user}}]:",
-                    "[{{char}}]:"
+                    "[{{char}}]:",
+                    "[system]:",
+                    "[System]:",
+                    "[user]:",
+                    "[User]:",
+                    "[assistant]:",
+                    "[Assistant]:"
                 ];
             default:
                 return ["<|im_end|>"];
