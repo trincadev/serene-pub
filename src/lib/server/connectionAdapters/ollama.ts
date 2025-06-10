@@ -220,7 +220,7 @@ export class OllamaAdapter {
             role: "system",
             content: renderedSystemBlock
         })
-        const messageBlock = this.chat.chatMessages
+        const messageBlock = this.chat.chatMessages.filter((msg: SelectChatMessage) => !msg.isHidden)
             .map((msg: SelectChatMessage) => {
                 return PromptBlockFormatter.makeBlock({
                     format: this.connection.promptFormat || "chatml",

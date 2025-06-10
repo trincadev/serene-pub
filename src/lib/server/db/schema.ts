@@ -280,6 +280,7 @@ export const chatMessages = sqliteTable('chat_messages', {
     metadata: text('metadata'), // JSON for extra info
     isGenerating: integer('is_generating', {mode: "boolean"}).default(false), // 1 if processing, 0 otherwise
     adapterId: text('adapter_id'), // UUID for in-flight adapter instance, nullable
+    isHidden: integer('is_hidden', {mode: "boolean"}).default(false), // Whether this message is processed or not
 })
 
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({

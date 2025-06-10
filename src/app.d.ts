@@ -250,6 +250,33 @@ declare global {
                 id: number
             }
         }
+        namespace SetUserActiveConnection {
+            interface Call {
+                id: number | null
+            }
+            interface Response {
+                ok: boolean
+            }
+        }
+        namespace TestConnection {
+            interface Call {
+                connection: any
+            }
+            interface Response {
+                ok: boolean
+                error: string | null
+                models: any[]
+            }
+        }
+        namespace RefreshModels {
+            interface Call {
+                connection: SelectConnection
+            }
+            interface Response {
+                models: any[]
+                error: string | null
+            }
+        }
         // --- WEIGHTS ---
         namespace DeleteSamplingConfig {
             interface Call {
@@ -273,34 +300,6 @@ declare global {
             }
             interface Response {
                 user: any
-            }
-        }
-        // --- CONNECTIONS (additional) ---
-        namespace SetUserActiveConnection {
-            interface Call {
-                id: number | null
-            }
-            interface Response {
-                user: any
-            }
-        }
-        namespace TestConnection {
-            interface Call {
-                connection: any
-            }
-            interface Response {
-                ok: boolean
-                error: string | null
-                models: any[]
-            }
-        }
-        namespace RefreshModels {
-            interface Call {
-                connection: SelectConnection
-            }
-            interface Response {
-                models: any[]
-                error: string | null
             }
         }
         // --- CHATS ---
@@ -338,6 +337,15 @@ declare global {
                     chatPersonas: SelectChatPersona & { persona: SelectPersona }[]
                     chatCharacters: SelectChatCharacter & { character: SelectCharacter }[]
                 }
+            }
+        }
+        namespace ChatMessage {
+            interface Call {
+                id?: number
+                chatMessage?: SelectChatMessage
+            }
+            interface Response {
+                chatMessage: SelectChatMessage
             }
         }
         // PROMPT CONFIGS
@@ -403,6 +411,63 @@ declare global {
             }
             interface Response {
                 id: number
+            }
+        }
+        namespace DeleteChatMessage {
+            interface Call {
+                id: number
+            }
+            interface Response {
+                id: number
+            }
+        }
+        namespace UpdateChatMessage {
+            interface Call {
+                chatMessage: SelectChatMessage
+            }
+            interface Response {
+                chatMessage: SelectChatMessage
+            }
+        }
+        namespace RegenerateChatMessage {
+            interface Call {
+                id: number
+            }
+            interface Response {
+                chatMessage?: SelectChatMessage
+                error?: string
+            }
+        }
+        namespace PromptTokenCount {
+            interface Call {
+                chatId: number
+                content?: string
+                role?: string
+                personaId?: number
+            }
+            interface Response {
+                tokenCount: number
+                tokenLimit: number | null
+            }
+        }
+        namespace AbortChatMessage {
+            interface Call {
+                id: number
+            }
+            interface Response {
+                id: number
+                success: boolean
+                info?: string
+                error?: string
+            }
+        }
+        namespace TriggerGenerateMessage {
+            interface Call {
+                chatId: number
+            }
+            interface Response {
+                chatMessage?: SelectChatMessage
+                error?: string
             }
         }
     }

@@ -23,8 +23,26 @@
     let chatId: number = $derived.by(() => Number(page.params.id))
 
     socket.on("chat", (msg: Sockets.Chat.Response) => {
-        chat = msg.chat
-        // Scroll to bottom on chat update
+        if (msg.chat.id === Number.parseInt(page.params.id)) {
+            chat = msg.chat
+            // Instantly jump to bottom on chat update
+            window.scrollTo(0, document.body.scrollHeight)
+        }
+    })
+
+    socket.on("chatMessage", (msg: Sockets.ChatMessage.Response) => {
+        if (msg.chatMessage.chatId === chatId) {
+            // Check if message already exists and replace it
+            const existingIndex = chat.chatMessages.findIndex(
+                (m: SelectChatMessage) => m.id === msg.chatMessage.id
+            )
+            if (existingIndex !== -1) {
+                chat.chatMessages[existingIndex] = msg.chatMessage
+            } else if (!lastMessage || msg.id > lastMessage.id) {
+                // If it's a new message, push it to the chat messages
+                chat.chatMessages.push(msg.chatMessage)
+            }
+        }
         setTimeout(() => {
             window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
         }, 0)
@@ -108,8 +126,7 @@
         if (!editChatMessage || !editChatMessage.content.trim()) return
 
         const updatedMessage: Sockets.UpdateChatMessage.Call = {
-            id: editChatMessage.id,
-            content: editChatMessage.content
+            chatMessage: editChatMessage
         }
         socket.emit("updateChatMessage", updatedMessage)
         editChatMessage = undefined
@@ -134,6 +151,53 @@
     })
 
     let chatMessagesContainer: HTMLDivElement | null = null
+
+    function handleCancelEditMessage(e: Event) {
+        e.stopPropagation()
+        editChatMessage = undefined
+    }
+    function handleSaveEditMessage(e: Event) {
+        e.stopPropagation()
+        handleMessageUpdate(e)
+    }
+    function handleHideMessage(e: Event, msg: SelectChatMessage) {
+        e.stopPropagation()
+        socket.emit("updateChatMessage", { chatMessage: { ...msg, isHidden: !msg.isHidden } })
+    }
+    function handleEditMessage(e: Event, msg: SelectChatMessage) {
+        e.stopPropagation()
+        handleEditMessageClick(msg)
+    }
+    function handleDeleteMessage(e: Event, msg: SelectChatMessage) {
+        e.stopPropagation()
+        openDeleteMessageModal(msg)
+    }
+    function handleRegenerateMessage(e: Event, msg: SelectChatMessage) {
+        e.stopPropagation()
+        socket.emit("regenerateChatMessage", { id: msg.id })
+    }
+    function handleAbortMessage(e: Event, msg: SelectChatMessage) {
+        e.stopPropagation()
+        socket.emit("abortChatMessage", { id: msg.id })
+    }
+    function handleSendButton(e: Event) {
+        e.stopPropagation()
+        handleSend()
+    }
+    function handleAbortLastMessage(e: Event) {
+        e.stopPropagation()
+        if (lastMessage) socket.emit("abortChatMessage", { id: lastMessage.id })
+    }
+    function handleTriggerGenerateMessage(e: Event) {
+        e.stopPropagation()
+        socket.emit("triggerGenerateMessage", { chatId })
+    }
+    function handleRegenerateLastMessage(e: Event) {
+        e.stopPropagation()
+        if (lastMessage && !lastMessage.isGenerating) {
+            socket.emit("regenerateChatMessage", { id: lastMessage.id })
+        }
+    }
 </script>
 
 <svelte:head>
@@ -169,22 +233,16 @@
                             <div class="flex gap-2">
                                 {#if editChatMessage && editChatMessage.id === msg.id}
                                     <button
-                                        class="btn btn-sm preset-filled-surface-500 h-min w-min px-2 opacity-80 hover:opacity-100"
+                                        class="btn btn-sm msg-cntrl-icon preset-filled-surface-500"
                                         title="Cancel Edit"
-                                        onclick={(e) => {
-                                            e.stopPropagation()
-                                            editChatMessage = undefined
-                                        }}
+                                        onclick={handleCancelEditMessage}
                                     >
                                         <Icons.X size={16} />
                                     </button>
                                     <button
-                                        class="btn btn-sm preset-filled-success-500 h-min w-min px-2 opacity-80 hover:opacity-100"
+                                        class="btn btn-sm msg-cntrl-icon preset-filled-primary-500"
                                         title="Save"
-                                        onclick={(e) => {
-                                            e.stopPropagation()
-                                            handleMessageUpdate(e)
-                                        }}
+                                        onclick={handleSaveEditMessage}
                                     >
                                         <Icons.Save size={16} />
                                     </button>
@@ -195,54 +253,48 @@
                                         </span>
                                     </div>
                                     <button
-                                        class="btn btn-sm preset-tonal-surface h-min w-min px-2 opacity-50"
-                                        title="Disable Message"
-                                        disabled
+                                        class="btn btn-sm msg-cntrl-icon hover:preset-filled-secondary-500"
+                                        class:preset-filled-secondary-500={msg.isHidden}
+                                        title={msg.isHidden ? "Unhide Message" : "Hide Message"}
+                                        disabled={lastMessage?.isGenerating || !!editChatMessage}
+                                        onclick={(e) => handleHideMessage(e, msg)}
                                     >
                                         <Icons.Ghost size={16} />
                                     </button>
                                     <button
-                                        class="btn btn-sm preset-tonal-surface hover:preset-tonal-primary h-min w-min px-2 opacity-50 hover:opacity-100"
+                                        class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
                                         title="Edit Message"
-                                        disabled={lastMessage?.isGenerating || !!editChatMessage}
-                                        onclick={(e) => {
-                                            e.stopPropagation()
-                                            handleEditMessageClick(msg)
-                                        }}
+                                        disabled={lastMessage?.isGenerating ||
+                                            !!editChatMessage ||
+                                            msg.isGenerating ||
+                                            msg.isHidden}
+                                        onclick={(e) => handleEditMessage(e, msg)}
                                     >
                                         <Icons.Edit size={16} />
                                     </button>
                                     <button
-                                        class="btn btn-sm preset-tonal-surface hover:preset-tonal-error h-min w-min px-2 opacity-50 hover:opacity-100"
+                                        class="btn btn-sm msg-cntrl-icon hover:preset-filled-error-500"
                                         title="Delete Message"
                                         disabled={lastMessage?.isGenerating || !!editChatMessage}
-                                        onclick={(e) => {
-                                            e.stopPropagation()
-                                            openDeleteMessageModal(msg)
-                                        }}
+                                        onclick={(e) => handleDeleteMessage(e, msg)}
                                     >
                                         <Icons.Trash2 size={16} />
                                     </button>
                                     {#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
                                         <button
-                                            class="btn btn-sm preset-tonal-surface hover:preset-tonal-primary h-min w-min px-2 opacity-80 hover:opacity-100"
+                                            class="btn btn-sm msg-cntrl-icon hover:preset-filled-warning-500"
                                             title="Regenerate Response"
-                                            onclick={(e) => {
-                                                e.stopPropagation()
-                                                socket.emit("regenerateChatMessage", { id: msg.id })
-                                            }}
+                                            disabled={msg.isHidden}
+                                            onclick={(e) => handleRegenerateMessage(e, msg)}
                                         >
                                             <Icons.RefreshCw size={16} />
                                         </button>
                                     {/if}
                                     {#if msg.isGenerating}
                                         <button
-                                            class="btn btn-sm preset-filled-error-500 h-min w-min px-2 opacity-80 hover:opacity-100"
+                                            class="btn btn-sm msg-cntrl-icon preset-filled-error-500"
                                             title="Stop Generation"
-                                            onclick={(e) => {
-                                                e.stopPropagation()
-                                                socket.emit("abortChatMessage", { id: msg.id })
-                                            }}
+                                            onclick={(e) => handleAbortMessage(e, msg)}
                                         >
                                             <Icons.Square size={16} />
                                         </button>
@@ -289,16 +341,19 @@
     </div>
     <!-- NEW CHAT MESSAGE FORM -->
     <div class="chat-input-bar preset-tonal-surface gap-4 pb-6 align-middle">
-        <MessageComposer bind:markdown={newMessage} onSend={handleSend} {tokenCounts} extraTabs={
-            [
+        <MessageComposer
+            bind:markdown={newMessage}
+            onSend={handleSend}
+            {tokenCounts}
+            extraTabs={[
                 {
                     value: "extraControls",
                     title: "Extra Controls",
                     control: extraControlsButton,
                     content: extraControlsContent
                 }
-            ]
-        }>
+            ]}
+        >
             {#snippet leftControls()}
                 {#if chat?.chatPersonas?.[0]?.persona}
                     {@const persona = chat?.chatPersonas?.[0]?.persona}
@@ -323,10 +378,7 @@
                         type="button"
                         disabled={!newMessage.trim() || lastMessage?.isGenerating}
                         title="Send"
-                        onclick={(e) => {
-                            e.stopPropagation()
-                            handleSend()
-                        }}
+                        onclick={handleSendButton}
                     >
                         <Icons.Send size={24} class="mx-auto" />
                     </button>
@@ -335,10 +387,7 @@
                         title="Stop Generation"
                         class="text-error-500 hover:preset-tonal-error h-auto rounded-lg p-3 text-center"
                         type="button"
-                        onclick={(e) => {
-                            e.stopPropagation()
-                            socket.emit("abortChatMessage", { id: lastMessage.id })
-                        }}
+                        onclick={handleAbortLastMessage}
                     >
                         <Icons.Square size={24} class="mx-auto" />
                     </button>
@@ -379,24 +428,20 @@
 {#snippet extraControlsContent()}
     <div class="flex gap-2">
         <button
-            class="btn btn-lg preset-filled-primary-500 h-full"
+            class="btn preset-filled-primary-500"
             title="Trigger Character Generation"
-            onclick={() => socket.emit('triggerGenerateMessage', { chatId })}
+            onclick={handleTriggerGenerateMessage}
             disabled={!chat || !chat.chatPersonas?.[0]?.personaId || lastMessage?.isGenerating}
         >
             <Icons.MessageSquarePlus size={24} />
         </button>
         <button
-            class="btn btn-lg preset-filled-secondary-500 h-full"
+            class="btn preset-filled-warning-500"
             title="Regenerate Last Message"
-            onclick={() => {
-                if (lastMessage && !lastMessage.isGenerating) {
-                    socket.emit("regenerateChatMessage", { id: lastMessage.id })
-                }
-            }}
+            onclick={handleRegenerateLastMessage}
             disabled={!lastMessage || lastMessage.isGenerating}
         >
-            <Icons.RefreshCcw size={24} />
+            <Icons.RefreshCw size={24} />
         </button>
     </div>
 {/snippet}
@@ -518,5 +563,9 @@
         margin-top: 1em;
         margin-bottom: 1em;
         min-height: 1.5em;
+    }
+
+    .msg-cntrl-icon {
+        @apply h-min w-min px-2 disabled:opacity-25;
     }
 </style>

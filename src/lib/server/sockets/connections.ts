@@ -31,7 +31,8 @@ export async function connection(
         where: (c, { eq }) => eq(c.id, message.id)
     })
     if (!connection) {
-        emitToUser("error", { error: "Connection not found." })
+        const res = { error: "Connection not found." }
+        emitToUser("error", res)
         return
     }
     const res: Sockets.Connection.Response = { connection }
@@ -43,24 +44,26 @@ export async function createConnection(
     message: Sockets.CreateConnection.Call,
     emitToUser: (event: string, data: any) => void
 ) {
-
-    let data = {...message.connection }
+    let data = { ...message.connection }
     if (data.type === "ollama") {
-        data = {...OllamaAdapter.connectionDefaults, ...data }
+        data = { ...OllamaAdapter.connectionDefaults, ...data }
+        // Ensure id is present for SelectConnection
+        if (!('id' in data) || typeof data.id !== 'number') data.id = 0
         try {
-            const modelsRes = await OllamaAdapter.listModels(data)
+            const modelsRes = await OllamaAdapter.listModels(data as any)
             if (!modelsRes.models || modelsRes.models.length === 0) {
-                emitToUser("error", { error: "No models found for this connection." })
+                const res = { error: "No models found for this connection." }
+                emitToUser("error", res)
             } else {
                 data.model = modelsRes.models[0].model
             }
         } catch (error: any) {
             console.error("Error fetching models:", error)
-            emitToUser("error", { error: "Failed to fetch models for this connection." })
+            const res = { error: "Failed to fetch models for this connection." }
+            emitToUser("error", res)
             return
         }
     }
-
     const [conn] = await db.insert(schema.connections).values(data).returning()
     await setUserActiveConnection(socket, { id: conn.id }, emitToUser)
     await connectionsList(socket, {}, emitToUser)
@@ -111,10 +114,11 @@ export async function setUserActiveConnection(
         where: (u, { eq }) => eq(u.id, 1)
     })
     if (!currentUser) {
-        emitToUser("error", { error: "User not found." })
+        const res = { error: "User not found." }
+        emitToUser("error", res)
         return
     }
-    const updatedUser = await db
+    await db
         .update(schema.users)
         .set({
             activeConnectionId: message.id
@@ -124,7 +128,7 @@ export async function setUserActiveConnection(
     // @ts-ignore
     await loadUser(socket, {}, emitToUser)
     if (message.id) await connection(socket, { id: message.id }, emitToUser)
-    const res: Sockets.SetUserActiveConnection.Response = { user: updatedUser }
+    const res: Sockets.SetUserActiveConnection.Response = { ok: true }
     emitToUser("setUserActiveConnection", res)
 }
 
@@ -137,19 +141,34 @@ export async function testConnection(
     if (message.connection.type === "ollama") {
         AdapterClass = OllamaAdapter
     } else {
-        // TODO
+        // TODO: Add other adapters as needed
     }
 
     try {
-        const res = await AdapterClass!.testConnection(message.connection)
-        if (res.ok) {
-            emitToUser("testConnection", { ok: true, message: "Connection successful." })
+        const result = await AdapterClass!.testConnection(message.connection)
+        let models: any[] = []
+        let error: string | null = null
+        if (result.ok) {
+            const modelsRes = await AdapterClass!.listModels(message.connection)
+            models = modelsRes.models || []
+            error = modelsRes.error || null
         } else {
-            emitToUser("testConnection", { ok: false, message: "Connection failed." })
+            error = result.error || "Connection failed."
         }
+        const res: Sockets.TestConnection.Response = {
+            ok: result.ok,
+            error: error || null,
+            models
+        }
+        emitToUser("testConnection", res)
     } catch (error: any) {
         console.error("Connection test error:", error)
-        emitToUser("testConnection", { ok: false, error: "Connection failed"})
+        const res: Sockets.TestConnection.Response = {
+            ok: false,
+            error: error?.message || String(error) || "Connection failed.",
+            models: []
+        }
+        emitToUser("testConnection", res)
     }
 }
 
@@ -166,14 +185,17 @@ export async function refreshModels(
     }
 
     try {
-        const res = await AdapterClass!.listModels(message.connection)
-        if (!res.models) {
-            emitToUser("refreshModels", { ok: false, error: "Failed to refresh models." })
+        const result = await AdapterClass!.listModels(message.connection)
+        if (!result.models) {
+            const res: Sockets.RefreshModels.Response = { error: "Failed to refresh models.", models: [] }
+            emitToUser("refreshModels", res)
             return
         }
-        emitToUser("refreshModels", { ok: true, models: res.models })
+        const res: Sockets.RefreshModels.Response = { models: result.models, error: null }
+        emitToUser("refreshModels", res)
     } catch (error: any) {
         console.error("Refresh models error:", error)
-        emitToUser("refreshModels", { ok: false, error: "Failed to refresh models." })
+        const res: Sockets.RefreshModels.Response = { error: "Failed to refresh models.", models: [] }
+        emitToUser("refreshModels", res)
     }
 }

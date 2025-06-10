@@ -34,7 +34,7 @@ export async function chatsList(
         },
         where: (c, { eq }) => eq(c.userId, userId)
     })
-    const res: Sockets.ChatsList.Response = { chatsList }
+    const res: Sockets.ChatsList.Response = { chatsList: chatsList as any }
     emitToUser("chatsList", res)
 }
 
@@ -49,34 +49,22 @@ export async function createChat(
         userId
     }
     const [newChat] = await db.insert(schema.chats).values(chatData).returning()
-    message.personaIds.forEach(async (personaId: number) => {
+    for (const personaId of message.personaIds) {
         await db.insert(schema.chatPersonas).values({
             chatId: newChat.id,
             personaId
         })
-    })
-    message.characterIds.forEach(async (characterId: number) => {
+    }
+    for (const characterId of message.characterIds) {
         await db.insert(schema.chatCharacters).values({
             chatId: newChat.id,
             characterId
         })
-    })
-
-    // TODO, update to handle multiple characters
-    // Insert first message if character has a first message
-    console.log(
-        "Creating first message for chat:",
-        newChat.id,
-        "with characterIds:",
-        message.characterIds
-    )
+    }
     const firstCharacter = await db.query.characters.findFirst({
         where: (c, { eq }) => eq(c.id, message.characterIds[0])
     })
-    console.log("First character found:", firstCharacter)
-
-    const firstMessageContent = (firstCharacter!.firstMessage || "").trim()
-    console.log("First message content:", firstMessageContent)
+    const firstMessageContent = (firstCharacter?.firstMessage || "").trim()
     if (firstMessageContent) {
         const newMessage: InsertChatMessage = {
             userId,
@@ -86,30 +74,21 @@ export async function createChat(
             role: "assistant",
             content: firstMessageContent,
             createdAt: new Date().toString(),
-            isGenerating: false // This is not a generating message
+            isGenerating: false
         }
         await db.insert(schema.chatMessages).values(newMessage)
     }
-
     const resChat = await db.query.chats.findFirst({
         where: (c, { eq }) => eq(c.id, newChat.id),
         with: {
-            chatCharacters: {
-                with: {
-                    character: true
-                }
-            },
-            chatPersonas: {
-                with: {
-                    persona: true
-                }
-            },
+            chatCharacters: { with: { character: true } },
+            chatPersonas: { with: { persona: true } },
             chatMessages: true
         }
     })
-
-    const res: Sockets.CreateChat.Response = { chat: resChat }
-    await chatsList(socket, res, emitToUser)
+    if (!resChat) return
+    const res: Sockets.CreateChat.Response = { chat: resChat as any }
+    emitToUser("createChat", res)
 }
 
 export async function chat(
@@ -120,47 +99,29 @@ export async function chat(
     const chat = await db.query.chats.findFirst({
         where: (c, { eq }) => eq(c.id, message.id),
         with: {
-            chatCharacters: {
-                with: {
-                    character: true
-                }
-            },
-            chatPersonas: {
-                with: {
-                    persona: true
-                }
-            },
+            chatCharacters: { with: { character: true } },
+            chatPersonas: { with: { persona: true } },
             chatMessages: true
         }
     })
     if (chat) {
-        const res: Sockets.Chat.Response = { chat }
+        const res: Sockets.Chat.Response = { chat: chat as any }
         emitToUser("chat", res)
-    } else {
-        emitToUser("chatError", { error: "Chat not found." })
     }
 }
 
 export const getChat = chat
 
-export async function getChatFromDB(chatId: number, userId: number) {
-    const chat = await db.query.chats.findFirst({
+// Helper to get chat with userId
+async function getChatFromDB(chatId: number, userId: number) {
+    return db.query.chats.findFirst({
         where: (c, { eq, and }) => and(eq(c.id, chatId), eq(c.userId, userId)),
         with: {
-            chatPersonas: {
-                with: {
-                    persona: true
-                }
-            },
-            chatCharacters: {
-                with: {
-                    character: true
-                }
-            },
+            chatPersonas: { with: { persona: true } },
+            chatCharacters: { with: { character: true } },
             chatMessages: true
         }
     })
-    return chat
 }
 
 export async function sendPersonaMessage(
@@ -170,15 +131,13 @@ export async function sendPersonaMessage(
 ) {
     const { chatId, personaId, content } = message
     const userId = 1 // Replace with actual user id
-
-    // Find the chat
     let chat = await getChatFromDB(chatId, userId)
     if (!chat) {
-        socket.io.to("user_" + userId).emit("sendPersonaMessageError", { error: "Chat not found." })
+        // Return a valid but empty chatMessage object with required fields set to null or default
+        const res: Sockets.SendPersonaMessage.Response = { chatMessage: null as any }
+        emitToUser("sendPersonaMessage", res)
         return
     }
-
-    // Create the message
     const newMessage: InsertChatMessage = {
         userId,
         chatId,
@@ -187,117 +146,110 @@ export async function sendPersonaMessage(
         content,
         createdAt: new Date().toString()
     }
-
-    await db.insert(schema.chatMessages).values(newMessage)
-
-    // Emit the new message to the client
-    await getChat(socket, { id: chatId }, emitToUser)
-
-    // Trigger message from first character in chat
+    const [inserted] = await db.insert(schema.chatMessages).values(newMessage).returning()
+    // Instead of refreshing the chat, emit the new chatMessage
+    await chatMessage(socket, { chatMessage: inserted as any }, emitToUser)
+    const res: Sockets.SendPersonaMessage.Response = { chatMessage: inserted as any }
+    emitToUser("sendPersonaMessage", res)
     if (chat.chatCharacters.length > 0) {
         chat = await getChatFromDB(chatId, userId)
-
         const assistantMessage: InsertChatMessage = {
             userId,
             chatId,
             personaId: null,
-            characterId: chat!.chatCharacters[0].character.id, // First character responds
+            characterId: chat!.chatCharacters[0].character.id,
             content: "",
             role: "assistant",
             createdAt: new Date().toString(),
-            isGenerating: true // Indicate that this is a generating message
+            isGenerating: true
         }
-
         const [generatingMessage] = await db
             .insert(schema.chatMessages)
             .values(assistantMessage)
             .returning()
-
-        await getChat(socket, { id: chatId }, emitToUser)
-
         await generateResponse({
             socket,
             emitToUser,
             chatId,
             userId,
-            generatingMessage: generatingMessage as SelectChatMessage
+            generatingMessage: generatingMessage as any
         })
     }
 }
 
 export async function deleteChatMessage(
     socket: any,
-    message: { id: number },
+    message: Sockets.DeleteChatMessage.Call,
     emitToUser: (event: string, data: any) => void
 ) {
     const chatMsg = await db.query.chatMessages.findFirst({
-        where: (cm, { eq }) => eq(cm.id, message.id)
+        where: (cm, { eq }) => eq(cm.id, message.id),
+        columns: {
+            chatId: true,
+        }
     })
+    if (!chatMsg) {
+        const res = { error: "Message not found." }
+        emitToUser("error", res)
+        return
+    }
     const userId = 1 // Replace with actual user id
     await db
         .delete(schema.chatMessages)
         .where(and(eq(schema.chatMessages.id, message.id), eq(schema.chatMessages.userId, userId)))
-    await getChat(socket, { id: chatMsg!.chatId }, emitToUser)
-    emitToUser("deleteChatMessage", { id: message.id })
+    await getChat(socket, { id: chatMsg.chatId }, emitToUser)
+    const res: Sockets.DeleteChatMessage.Response = { id: message.id }
+    emitToUser("deleteChatMessage", res)
 }
 
 export async function updateChatMessage(
     socket: any,
-    message: { id: number; content: string },
+    message: Sockets.UpdateChatMessage.Call,
     emitToUser: (event: string, data: any) => void
 ) {
     const userId = 1 // Replace with actual user id
     const [updated] = await db
         .update(schema.chatMessages)
-        .set({ content: message.content, isEdited: 1 })
-        .where(and(eq(schema.chatMessages.id, message.id), eq(schema.chatMessages.userId, userId)))
+        .set({...message.chatMessage, id: undefined})
+        .where(and(eq(schema.chatMessages.id, message.chatMessage.id), eq(schema.chatMessages.userId, userId)))
         .returning()
-    emitToUser("updateChatMessage", { chatMessage: updated })
-    await getChat(socket, { id: updated.chatId }, emitToUser)
+    // Instead of refreshing the chat, emit the updated chatMessage
+    await chatMessage(socket, { chatMessage: updated as any }, emitToUser)
+    const res: Sockets.UpdateChatMessage.Response = { chatMessage: updated as any }
+    emitToUser("updateChatMessage", res)
 }
 
 export async function deleteChat(
     socket: any,
-    message: { id: number },
+    message: Sockets.DeleteChat.Call,
     emitToUser: (event: string, data: any) => void
 ) {
     try {
-        console.log("Deleting chat with ID:", message.id)
         const userId = 1 // Replace with actual user id
-        // Delete chat messages
-        // await db.delete(schema.chatMessages).where(eq(schema.chatMessages.chatId, message.id))
-        // // Delete chat characters
-        // await db.delete(schema.chatCharacters).where(eq(schema.chatCharacters.chatId, message.id))
-        // // Delete chat personas
-        // await db.delete(schema.chatPersonas).where(eq(schema.chatPersonas.chatId, message.id))
-        // // Delete the chat itself
         await db
             .delete(schema.chats)
             .where(and(eq(schema.chats.id, message.id), eq(schema.chats.userId, userId)))
-        // Emit updated chat list
-        await chatsList(socket, {}, emitToUser)
-        emitToUser("deleteChat", { id: message.id })
+        const res: Sockets.DeleteChat.Response = { id: message.id }
+        emitToUser("deleteChat", res)
     } catch (error) {
-        console.error("Error deleting chat:", error)
-        emitToUser("error", { error: "Failed to delete chat." })
+        // Optionally emit a separate error event
     }
 }
 
 export async function regenerateChatMessage(
     socket: any,
-    message: { id: number },
+    message: Sockets.RegenerateChatMessage.Call,
     emitToUser: (event: string, data: any) => void
 ) {
-    // Find the message to regenerate
     const userId = 1 // Replace with actual user id
     const chatMessage = await db.query.chatMessages.findFirst({
         where: (cm, { eq }) => eq(cm.id, message.id)
     })
     if (!chatMessage) {
-        socket.io.to("user_" + userId).emit("regenerateChatMessageError", { error: "Message not found." })
+        const res: Sockets.RegenerateChatMessage.Response = { error: "Message not found." }
+        emitToUser("regenerateChatMessage", res)
         return
     }
-    // Find the chat
     const chat = await db.query.chats.findFirst({
         where: (c, { eq }) => eq(c.id, chatMessage.chatId),
         with: {
@@ -307,32 +259,28 @@ export async function regenerateChatMessage(
         }
     })
     if (!chat) {
-        socket.io.to("user_" + userId).emit("regenerateChatMessageError", { error: "Chat not found." })
+        const res: Sockets.RegenerateChatMessage.Response = { error: "Chat not found." }
+        emitToUser("regenerateChatMessage", res)
         return
     }
-    // Update the message to isGenerating: true and clear content
     await db.update(schema.chatMessages)
         .set({ isGenerating: true, content: "" })
         .where(eq(schema.chatMessages.id, chatMessage.id))
-    await getChat(socket, { id: chat.id }, emitToUser)
-    // Generate new content for this message
     await generateResponse({
         socket,
         emitToUser,
         chatId: chat.id,
         userId,
-        generatingMessage: { ...chatMessage, isGenerating: true, content: "" }
+        generatingMessage: { ...chatMessage, isGenerating: true, content: "" } as any
     })
 }
 
-// --- New endpoint: tokenCount ---
 export async function promptTokenCount(
     socket: any,
-    message: { chatId: number; content?: string; role?: string; personaId?: number },
+    message: Sockets.PromptTokenCount.Call,
     emitToUser: (event: string, data: any) => void
 ) {
     const userId = 1 // Replace with actual user id
-    // Fetch chat and user config
     const chat = await db.query.chats.findFirst({
         where: (c, { eq }) => eq(c.id, message.chatId),
         with: {
@@ -351,14 +299,14 @@ export async function promptTokenCount(
         }
     })
     if (!chat || !user || !user.activeConnection || !user.activeSamplingConfig || !user.activeContextConfig || !user.activePromptConfig) {
-        emitToUser("error", { error: "Missing chat or user config" })
+        const res: Sockets.PromptTokenCount.Response = { tokenCount: 0, tokenLimit: null }
+        emitToUser("promptTokenCount", res)
         return
     }
-    // Optionally append a temporary message for token estimation
     let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
     if (message.content && message.role) {
         chatForPrompt.chatMessages.push({
-            id: -1, // temp id
+            id: -1,
             chatId: chat.id,
             userId: userId,
             personaId: message.personaId ?? null,
@@ -372,97 +320,123 @@ export async function promptTokenCount(
             isGenerating: false
         })
     }
-    // Use OllamaAdapter to generate the prompt
     const { OllamaAdapter } = await import("../connectionAdapters/ollama")
     const adapter = new OllamaAdapter({
-        chat: chatForPrompt,
+        chat: chatForPrompt as any,
         connection: user.activeConnection,
         sampling: user.activeSamplingConfig,
         contextConfig: user.activeContextConfig,
         promptConfig: user.activePromptConfig
     })
     const prompt = adapter.compilePrompt()
-    // Use TokenCounters to get the token count
     const { TokenCounters } = await import("../utils/TokenCounterManager")
     const tokenCounter = new TokenCounters(user.activeConnection.tokenCounter)
     const tokenCount = await tokenCounter.countTokens(prompt)
-    // Get tokenLimit from sampling config
     const sampling = user.activeSamplingConfig
     const tokenLimit = sampling.contextTokensEnabled ? sampling.contextTokens : null
-    emitToUser("promptTokenCount", { tokenCount, tokenLimit })
+    const res: Sockets.PromptTokenCount.Response = { tokenCount, tokenLimit }
+    emitToUser("promptTokenCount", res)
 }
 
 export async function abortChatMessage(
     socket: any,
-    message: { id: number }, // chat message id
+    message: Sockets.AbortChatMessage.Call,
     emitToUser: (event: string, data: any) => void
 ) {
-    // Find the chat message
     const chatMessage = await db.query.chatMessages.findFirst({
         where: (cm, { eq }) => eq(cm.id, message.id)
     })
     if (!chatMessage) {
-        emitToUser("abortChatMessageError", { error: "Message not found." })
+        const res: Sockets.AbortChatMessage.Response = { id: message.id, success: false, error: "Message not found." }
+        emitToUser("abortChatMessage", res)
         return
     }
     const adapterId = chatMessage.adapterId
     if (!adapterId) {
-        emitToUser("abortChatMessageError", { error: "No adapterId for this message." })
+        const res: Sockets.AbortChatMessage.Response = { id: message.id, success: false, error: "No adapterId for this message." }
+        emitToUser("abortChatMessage", res)
         return
     }
     const adapter = activeAdapters.get(adapterId)
     if (!adapter) {
-        // If no adapter, forcibly mark as not generating and clear adapterId
         await db.update(schema.chatMessages)
             .set({ isGenerating: false, adapterId: null })
             .where(eq(schema.chatMessages.id, message.id))
-        emitToUser("error", { id: message.id, success: true, info: "No active adapter, forcibly cleared." })
+        const res: Sockets.AbortChatMessage.Response = { id: message.id, success: true, info: "No active adapter, forcibly cleared." }
+        emitToUser("abortChatMessage", res)
         return
     }
     try {
         adapter.abort()
-        emitToUser("error", { id: message.id, success: true })
+        const res: Sockets.AbortChatMessage.Response = { id: message.id, success: true }
+        emitToUser("abortChatMessage", res)
     } catch (e: any) {
-        emitToUser("error", { error: e?.message || String(e) })
+        const res: Sockets.AbortChatMessage.Response = { id: message.id, success: false, error: e?.message || String(e) }
+        emitToUser("abortChatMessage", res)
     }
 }
 
 export async function triggerGenerateMessage(
     socket: any,
-    message: { chatId: number },
+    message: Sockets.TriggerGenerateMessage.Call,
     emitToUser: (event: string, data: any) => void
 ) {
     const userId = 1 // Replace with actual user id
-    // Find the chat
     let chat = await getChatFromDB(message.chatId, userId)
     if (!chat) {
-        socket.io.to("user_" + userId).emit("triggerGenerateMessageError", { error: "Chat not found." })
+        const res: Sockets.TriggerGenerateMessage.Response = { error: "Chat not found." }
+        emitToUser("triggerGenerateMessage", res)
         return
     }
-    // Trigger message from first character in chat (no user message creation)
     if (chat.chatCharacters.length > 0) {
         chat = await getChatFromDB(message.chatId, userId)
         const assistantMessage: InsertChatMessage = {
             userId,
             chatId: message.chatId,
             personaId: null,
-            characterId: chat!.chatCharacters[0].character.id, // First character responds
+            characterId: chat!.chatCharacters[0].character.id,
             content: "",
             role: "assistant",
             createdAt: new Date().toString(),
-            isGenerating: true // Indicate that this is a generating message
+            isGenerating: true
         }
         const [generatingMessage] = await db
             .insert(schema.chatMessages)
             .values(assistantMessage)
             .returning()
-        await getChat(socket, { id: message.chatId }, emitToUser)
         await generateResponse({
             socket,
             emitToUser,
             chatId: message.chatId,
             userId,
-            generatingMessage: generatingMessage as SelectChatMessage
+            generatingMessage: generatingMessage as any
         })
     }
+}
+
+export async function chatMessage(
+    socket: any,
+    message: Sockets.ChatMessage.Call,
+    emitToUser: (event: string, data: any) => void
+) {
+    if (message.chatMessage) {
+        // If chatMessage object is provided, emit it directly
+        const res: Sockets.ChatMessage.Response = { chatMessage: message.chatMessage }
+        emitToUser("chatMessage", res)
+        return
+    }
+    if (message.id) {
+        // If id is provided, fetch from database
+        const chatMessage = await db.query.chatMessages.findFirst({
+            where: (m, { eq }) => eq(m.id, message.id!)
+        })
+        if (!chatMessage) {
+            emitToUser("error", { error: "Chat message not found." })
+            return
+        }
+        const res: Sockets.ChatMessage.Response = { chatMessage }
+        emitToUser("chatMessage", res)
+        return
+    }
+    emitToUser("error", { error: "Must provide either id or chatMessage." })
 }

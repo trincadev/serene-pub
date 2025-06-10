@@ -64,7 +64,7 @@ export async function createCharacter(
         emitToUser("createCharacter", res)
     } catch (e: any) {
         console.error("Error creating character:", e)
-        emitToUser("error", { error: e.message || String(e) })
+        emitToUser("error", { error: e.message || "Failed to create character." })
         return
     }
 }
@@ -77,8 +77,10 @@ export async function updateCharacter(
     const data = message.character
     const id = data.id
     const userId = 1 // Replace with actual userId
-    delete data.userId
-    delete data.id
+
+    // Remove userId and id if present and optional
+    if ('userId' in data) (data as any).userId = undefined
+    if ('id' in data) (data as any).id = undefined
     delete data.avatar // Remove avatar from character data to avoid conflicts
     const [updated] = await db
         .update(schema.characters)
@@ -93,9 +95,8 @@ export async function updateCharacter(
         })
     }
 
-    await character(socket, { id }, emitToUser)
-    await charactersList(socket, {}, emitToUser)
     const res: Sockets.UpdateCharacter.Response = { character: updated }
+    await charactersList(socket, {}, emitToUser)
     emitToUser("updateCharacter", res)
 }
 
@@ -123,6 +124,7 @@ export async function deleteCharacter(
     }
     // Emit the delete event
     const res: Sockets.DeleteCharacter.Response = { id: message.characterId }
+    await charactersList(socket, {}, emitToUser)
     emitToUser("deleteCharacter", res)
 }
 
@@ -165,6 +167,7 @@ export async function characterCardImport(
         character,
         avatarFile: buffer
     })
-    emitToUser("createCharacter", { character })
+    const res: Sockets.CreateCharacter.Response = { character }
+    emitToUser("createCharacter", res)
     await charactersList(socket, {}, emitToUser)
 }

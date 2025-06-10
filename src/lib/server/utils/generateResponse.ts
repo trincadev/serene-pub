@@ -3,7 +3,7 @@ import * as schema from '$lib/server/db/schema';
 import {OllamaAdapter} from '../connectionAdapters/ollama';
 import {eq} from 'drizzle-orm';
 import {v4 as uuidv4} from 'uuid';
-import {activeAdapters, chat, getChat} from '../sockets/chats';
+import {activeAdapters, chat, getChat, chatMessage} from '../sockets/chats';
 
 export async function generateResponse({
     socket,
@@ -25,7 +25,8 @@ export async function generateResponse({
         .update(schema.chatMessages)
         .set({ isGenerating: true, content: "", adapterId })
         .where(eq(schema.chatMessages.id, generatingMessage.id))
-    await getChat(socket, { id: chatId }, emitToUser)
+    // Instead of getChat, emit the chatMessage
+    await chatMessage(socket, { chatMessage: { ...generatingMessage, isGenerating: true, content: "", adapterId } }, emitToUser)
 
     const chat = await db.query.chats.findFirst({
         where: (c, { eq }) => eq(c.id, chatId),
@@ -65,7 +66,8 @@ export async function generateResponse({
                     .update(schema.chatMessages)
                     .set({ content, isGenerating: true })
                     .where(eq(schema.chatMessages.id, generatingMessage.id))
-                await getChat(socket, { id: chatId }, emitToUser)
+                // Instead of getChat, emit the chatMessage
+                await chatMessage(socket, { chatMessage: { ...generatingMessage, content, isGenerating: true } }, emitToUser)
             })
             // Final update: mark as not generating, clear adapterId
             content = content.trim()
@@ -73,6 +75,8 @@ export async function generateResponse({
                 .update(schema.chatMessages)
                 .set({ content, isGenerating: false, adapterId: null })
                 .where(eq(schema.chatMessages.id, generatingMessage.id))
+            // Instead of getChat, emit the chatMessage
+            await chatMessage(socket, { chatMessage: { ...generatingMessage, content, isGenerating: false, adapterId: null } }, emitToUser)
         } else {
             content = await completionResult
             content = content.trim()
@@ -80,6 +84,8 @@ export async function generateResponse({
                 .update(schema.chatMessages)
                 .set({ content, isGenerating: false, adapterId: null })
                 .where(eq(schema.chatMessages.id, generatingMessage.id))
+            // Instead of getChat, emit the chatMessage
+            await chatMessage(socket, { chatMessage: { ...generatingMessage, content, isGenerating: false, adapterId: null } }, emitToUser)
         }
     } finally {
         // Remove adapter from global map
@@ -93,5 +99,6 @@ export async function generateResponse({
         chatMessage: updatedMsg!
     }
     socket.io.to("user_" + userId).emit("personaMessageReceived", response)
-    await getChat(socket, { id: chatId }, emitToUser)
+    // Instead of getChat, emit the chatMessage
+    await chatMessage(socket, { chatMessage: updatedMsg! }, emitToUser)
 }
