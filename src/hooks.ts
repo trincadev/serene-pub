@@ -5,10 +5,10 @@ import skio from 'sveltekit-io';
 // import {db} from '$lib/server/db';
 // import { db } from '$lib/server/db'
 
-skio.setup('http://localhost:3001', {
+skio.setup('http://192.168.68.69:3001', {
   cors: {
-    origin     : "http://localhost:5173",
-    credentials: true,
+    origin: "*", // "http://localhost:5173",
+    credentials: false, // true
   },
   maxHttpBufferSize: 1e8 // 100 MB
 }).then((io: { on: (arg0: string, arg1: (socket: any) => void) => void; }) => {

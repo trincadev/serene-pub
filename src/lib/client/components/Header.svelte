@@ -48,12 +48,11 @@
 
         <!-- Title (centered absolutely for desktop) -->
         <div
-            class="flex w-auto flex-0 justify-center ml-2 md:ml-0 md:absolute md:top-1/2 md:left-1/2 md:w-full md:-translate-x-1/2 md:-translate-y-1/2"
+            class="flex w-auto flex-0 justify-center ml-2 md:ml-0 md:absolute md:top-1/2 md:left-1/2 md:w-auto md:-translate-x-1/2 md:-translate-y-1/2 pointer-events-none"
         >
             <a
-                class="text-foreground funnel-display text-xl font-bold tracking-tight whitespace-nowrap"
-                href="/">Serene Pub</a
-            >
+                class="text-foreground funnel-display text-xl font-bold tracking-tight whitespace-nowrap pointer-events-auto"
+                href="/">Serene Pub</a>
         </div>
 
         <!-- Desktop right nav -->
