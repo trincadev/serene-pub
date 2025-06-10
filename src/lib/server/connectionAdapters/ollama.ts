@@ -225,7 +225,7 @@ export class OllamaAdapter {
                 return PromptBlockFormatter.makeBlock({
                     format: this.connection.promptFormat || "chatml",
                     role: msg.role! || "assistant",
-                    content: `{{${msg.role === "user" ? "user" : msg.role === "assistant" ? "char" : msg.role === "system" ? "system" : "system"}}}:\n${msg.content}`
+                    content: `[{{${msg.role === "user" ? "user" : msg.role === "assistant" ? "char" : msg.role === "system" ? "system" : "system"}}}]:\n${msg.content}`
                 })
             })
             .join("")

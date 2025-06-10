@@ -4,6 +4,8 @@
     import * as skio from "sveltekit-io"
     import * as Icons from "@lucide/svelte"
     import { marked } from "marked"
+    import MessageComposer from "$lib/client/components/chatMessages/MessageComposer.svelte"
+    import { renderMarkdownWithQuotedText } from "$lib/client/utils/markdownToHTML"
 
     let chat: any = $state(null)
     let newMessage = $state("")
@@ -11,7 +13,6 @@
     let showDeleteMessageModal = $state(false)
     let deleteChatMessage: SelectChatMessage | undefined = $state()
     let editChatMessage: SelectChatMessage | undefined = $state()
-    let newMessageGroup: "compose" | "preview" = $state("compose")
     let editMessageGroup: "compose" | "preview" = $state("compose")
     let tokenCounts: { tokenCount: number; tokenLimit: number | null } = $state({
         tokenCount: 0,
@@ -23,9 +24,10 @@
 
     socket.on("chat", (msg: Sockets.Chat.Response) => {
         chat = msg.chat
-        if (chatMessagesContainer) {
-            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight
-        }
+        // Scroll to bottom on chat update
+        setTimeout(() => {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+        }, 0)
     })
 
     socket.on("promptTokenCount", (msg: Sockets.PromptTokenCount.Response) => {
@@ -41,6 +43,7 @@
     })
 
     function handleSend() {
+        console.log("Sending message:", newMessage)
         if (!newMessage.trim()) return
         // TODO: Implement send message socket call
         const msg: Sockets.SendPersonaMessage.Call = {
@@ -49,7 +52,7 @@
             content: newMessage
         }
         socket.emit("sendPersonaMessage", msg)
-        newMessage = " "
+        newMessage = ""
     }
 
     function getMessageCharacter(
@@ -100,8 +103,8 @@
         editChatMessage = { ...message }
     }
 
-    function handleMessageUpdate(event: SubmitEvent) {
-        event.preventDefault()
+    function handleMessageUpdate(event?: Event) {
+        if (event) event.preventDefault()
         if (!editChatMessage || !editChatMessage.content.trim()) return
 
         const updatedMessage: Sockets.UpdateChatMessage.Call = {
@@ -122,35 +125,15 @@
 
     $effect(() => {
         if (!chatId || !lastMessage || lastMessage.isGenerating || !!editChatMessage) return
-        socket.emit("promptTokenCount", { 
+        socket.emit("promptTokenCount", {
             chatId,
             content: newMessage,
             personaId: chat?.chatPersonas?.[0]?.personaId || undefined,
             role: "user"
-         })
+        })
     })
 
     let chatMessagesContainer: HTMLDivElement | null = null
-
-    function markQuotedText(md: string): string {
-        return md
-            .replaceAll("“", '"')
-            .replaceAll("”", '"')
-            .replaceAll(/"([^"\n]+)"/g, '[[QT]]"$1"[[/QT]]')
-    }
-
-    export function replaceQuotedTextMarkers(html: string): string {
-        return html
-            .replaceAll("[[QT]]", '<span class="quoted-text">')
-            .replaceAll("[[/QT]]", "</span>")
-    }
-
-    export function renderMarkdownWithQuotedText(md: string): string {
-        const markedMd = markQuotedText(md)
-        let html = marked.parse(markedMd) as string
-        html = replaceQuotedTextMarkers(html)
-        return html
-    }
 </script>
 
 <svelte:head>
@@ -184,62 +167,86 @@
                                 >
                             </div>
                             <div class="flex gap-2">
-                                <div class="flex gap-6">
-                                    <span class="text-surface-500 mx-6">
-                                        {new Date(msg.createdAt).toLocaleString()}
-                                    </span>
-                                </div>
-                                <button
-                                    class="btn btn-sm preset-tonal-surface h-min w-min px-2 opacity-50"
-                                    title="Disable Message"
-                                    disabled
-                                >
-                                    <Icons.Ghost size={16} />
-                                </button>
-                                <button
-                                    class="btn btn-sm preset-tonal-surface hover:preset-tonal-primary h-min w-min px-2 opacity-50 hover:opacity-100"
-                                    title="Edit Message"
-                                    disabled={lastMessage?.isGenerating || !!editChatMessage}
-                                    onclick={(e) => {
-                                        e.stopPropagation()
-                                        handleEditMessageClick(msg)
-                                    }}
-                                >
-                                    <Icons.Edit size={16} />
-                                </button>
-                                <button
-                                    class="btn btn-sm preset-tonal-surface hover:preset-tonal-error h-min w-min px-2 opacity-50 hover:opacity-100"
-                                    title="Delete Message"
-                                    onclick={(e) => {
-                                        e.stopPropagation()
-                                        openDeleteMessageModal(msg)
-                                    }}
-                                >
-                                    <Icons.Trash2 size={16} />
-                                </button>
-                                {#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
+                                {#if editChatMessage && editChatMessage.id === msg.id}
                                     <button
-                                        class="btn btn-sm preset-tonal-surface hover:preset-tonal-primary h-min w-min px-2 opacity-80 hover:opacity-100"
-                                        title="Regenerate Response"
+                                        class="btn btn-sm preset-filled-surface-500 h-min w-min px-2 opacity-80 hover:opacity-100"
+                                        title="Cancel Edit"
                                         onclick={(e) => {
                                             e.stopPropagation()
-                                            socket.emit("regenerateChatMessage", { id: msg.id })
+                                            editChatMessage = undefined
                                         }}
                                     >
-                                        <Icons.RefreshCw size={16} />
+                                        <Icons.X size={16} />
                                     </button>
-                                {/if}
-                                {#if msg.isGenerating}
                                     <button
-                                        class="btn btn-sm preset-filled-error-500 h-min w-min px-2 opacity-80 hover:opacity-100"
-                                        title="Stop Generation"
+                                        class="btn btn-sm preset-filled-success-500 h-min w-min px-2 opacity-80 hover:opacity-100"
+                                        title="Save"
                                         onclick={(e) => {
                                             e.stopPropagation()
-                                            socket.emit("abortChatMessage", { id: msg.id })
+                                            handleMessageUpdate(e)
                                         }}
                                     >
-                                        <Icons.Square size={16} />
+                                        <Icons.Save size={16} />
                                     </button>
+                                {:else}
+                                    <div class="flex gap-6">
+                                        <span class="text-surface-500 mx-6">
+                                            {new Date(msg.createdAt).toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <button
+                                        class="btn btn-sm preset-tonal-surface h-min w-min px-2 opacity-50"
+                                        title="Disable Message"
+                                        disabled
+                                    >
+                                        <Icons.Ghost size={16} />
+                                    </button>
+                                    <button
+                                        class="btn btn-sm preset-tonal-surface hover:preset-tonal-primary h-min w-min px-2 opacity-50 hover:opacity-100"
+                                        title="Edit Message"
+                                        disabled={lastMessage?.isGenerating || !!editChatMessage}
+                                        onclick={(e) => {
+                                            e.stopPropagation()
+                                            handleEditMessageClick(msg)
+                                        }}
+                                    >
+                                        <Icons.Edit size={16} />
+                                    </button>
+                                    <button
+                                        class="btn btn-sm preset-tonal-surface hover:preset-tonal-error h-min w-min px-2 opacity-50 hover:opacity-100"
+                                        title="Delete Message"
+                                        disabled={lastMessage?.isGenerating || !!editChatMessage}
+                                        onclick={(e) => {
+                                            e.stopPropagation()
+                                            openDeleteMessageModal(msg)
+                                        }}
+                                    >
+                                        <Icons.Trash2 size={16} />
+                                    </button>
+                                    {#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
+                                        <button
+                                            class="btn btn-sm preset-tonal-surface hover:preset-tonal-primary h-min w-min px-2 opacity-80 hover:opacity-100"
+                                            title="Regenerate Response"
+                                            onclick={(e) => {
+                                                e.stopPropagation()
+                                                socket.emit("regenerateChatMessage", { id: msg.id })
+                                            }}
+                                        >
+                                            <Icons.RefreshCw size={16} />
+                                        </button>
+                                    {/if}
+                                    {#if msg.isGenerating}
+                                        <button
+                                            class="btn btn-sm preset-filled-error-500 h-min w-min px-2 opacity-80 hover:opacity-100"
+                                            title="Stop Generation"
+                                            onclick={(e) => {
+                                                e.stopPropagation()
+                                                socket.emit("abortChatMessage", { id: msg.id })
+                                            }}
+                                        >
+                                            <Icons.Square size={16} />
+                                        </button>
+                                    {/if}
                                 {/if}
                             </div>
                         </div>
@@ -261,80 +268,14 @@
                             {:else if msg.isError}
                                 <div class="text-red-500">Error loading message</div>
                             {:else if editChatMessage && editChatMessage.id === msg.id}
-                                <form
-                                    class="chat-input-bar bg-surface-100-900 w-full gap-4 rounded-xl p-2 pb-6 align-middle"
-                                    onsubmit={(e) => {
-                                        e.preventDefault()
-                                        handleMessageUpdate(e)
-                                    }}
+                                <div
+                                    class="chat-input-bar bg-surface-100-900 w-full rounded-xl p-2 pb-6 align-middle"
                                 >
-                                    <Tabs
-                                        value={editMessageGroup}
-                                        onValueChange={(e) =>
-                                            (editMessageGroup = e.value as "compose" | "preview")}
-                                    >
-                                        {#snippet list()}
-                                            <Tabs.Control value="compose"
-                                                ><span title="Compose"
-                                                    ><Icons.Pen size="0.75em" /></span
-                                                ></Tabs.Control
-                                            >
-                                            <Tabs.Control value="preview"
-                                                ><span title="Preview"
-                                                    ><Icons.Eye size="0.75em" /></span
-                                                ></Tabs.Control
-                                            >
-                                        {/snippet}
-                                        {#snippet content()}
-                                            <div class="flex gap-2">
-                                                <div class="w-full">
-                                                    <Tabs.Panel value="compose">
-                                                        <textarea
-                                                            class="input input-sm field-sizing-content min-h-[4.75em] flex-1"
-                                                            placeholder="Type a message..."
-                                                            bind:value={editChatMessage!.content}
-                                                            autocomplete="off"
-                                                            spellcheck="true"
-                                                        >
-                                                        </textarea>
-                                                    </Tabs.Panel>
-                                                    <Tabs.Panel value="preview">
-                                                        <div
-                                                            class="card bg-surface-100-900 min-h-[5em] w-full rounded-lg p-2"
-                                                        >
-                                                            <div class="chatMessageContent">
-                                                                {@html renderMarkdownWithQuotedText(
-                                                                    editChatMessage!.content
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </Tabs.Panel>
-                                                </div>
-                                                <div class="flex flex-col gap-4">
-                                                    <button
-                                                        class="btn preset-filled-success-500 h-auto w-fit"
-                                                        type="submit"
-                                                        disabled={!editChatMessage!.content.trim()}
-                                                        title="Save"
-                                                    >
-                                                        <Icons.Send size={24} />
-                                                    </button>
-                                                    <button
-                                                        class="btn preset-filled-surface-500 h-auto w-fit"
-                                                        type="button"
-                                                        title="Save"
-                                                        onclick={(e) => {
-                                                            e.stopPropagation()
-                                                            editChatMessage = undefined
-                                                        }}
-                                                    >
-                                                        <Icons.X size={24} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        {/snippet}
-                                    </Tabs>
-                                </form>
+                                    <MessageComposer
+                                        bind:markdown={editChatMessage.content}
+                                        onSend={handleMessageUpdate}
+                                    />
+                                </div>
                             {:else}
                                 <div class="rendered-chat-message-content">
                                     {@html renderMarkdownWithQuotedText(msg.content)}
@@ -347,85 +288,64 @@
         {/if}
     </div>
     <!-- NEW CHAT MESSAGE FORM -->
-    <form
-        class="chat-input-bar preset-tonal-surface gap-4 p-2 pb-6 align-middle"
-        onsubmit={(e) => {
-            e.preventDefault()
-            handleSend(e)
-        }}
-    >
-        <Tabs
-            value={newMessageGroup}
-            onValueChange={(e) => (newMessageGroup = e.value as "compose" | "preview")}
-        >
-            {#snippet list()}
-                <Tabs.Control value="compose"
-                    ><span title="Compose"><Icons.Pen size="0.75em" /></span></Tabs.Control
-                >
-                <Tabs.Control value="preview"
-                    ><span title="Preview"><Icons.Eye size="0.75em" /></span></Tabs.Control
-                >
-                <Tabs.Control value="tokenCount" classes="w-full text-right" disabled>
-                    <span title="Token Count" class="text-xs">
-                        {tokenCounts.tokenCount} /
-                        {#if tokenCounts.tokenLimit}
-                            {tokenCounts.tokenLimit}
-                        {:else}
-                            No token limit set
-                        {/if}
-                    </span>
-                </Tabs.Control>
-            {/snippet}
-            {#snippet content()}
-                <div class="flex gap-4">
-                    <div class="flex gap-4">
-                        {#if chat?.chatPersonas?.[0]?.persona}
-                            {@const persona = chat?.chatPersonas?.[0]?.persona}
-                            <div class="flex flex-col gap-2">
-                                <span>
-                                    <Avatar
-                                        src={persona.avatar ?? ""}
-                                        size="w-[4em] h-[4em]"
-                                        name={persona?.name ?? "Unknown"}
-                                        background="preset-filled-primary-500"
-                                    >
-                                        <Icons.User size={36} />
-                                    </Avatar>
-                                </span>
-                            </div>
-                        {/if}
-                    </div>
-                    <div class="w-full">
-                        <Tabs.Panel value="compose">
-                            <textarea
-                                class="input input-sm field-sizing-content min-h-[3.75em] flex-1"
-                                placeholder="Type a message..."
-                                bind:value={newMessage}
-                                autocomplete="off"
-                                spellcheck="true"
+    <div class="chat-input-bar preset-tonal-surface gap-4 pb-6 align-middle">
+        <MessageComposer bind:markdown={newMessage} onSend={handleSend} {tokenCounts} extraTabs={
+            [
+                {
+                    value: "extraControls",
+                    title: "Extra Controls",
+                    control: extraControlsButton,
+                    content: extraControlsContent
+                }
+            ]
+        }>
+            {#snippet leftControls()}
+                {#if chat?.chatPersonas?.[0]?.persona}
+                    {@const persona = chat?.chatPersonas?.[0]?.persona}
+                    <div class="flex flex-col gap-2">
+                        <span>
+                            <Avatar
+                                src={persona.avatar ?? ""}
+                                size="w-[4em] h-[4em]"
+                                name={persona?.name ?? "Unknown"}
+                                background="preset-filled-primary-500"
                             >
-                            </textarea>
-                        </Tabs.Panel>
-                        <Tabs.Panel value="preview">
-                            <div class="card bg-surface-100-900 min-h-[4em] w-full rounded-lg p-2">
-                                <div class="rendered-chat-message-content">
-                                    {@html renderMarkdownWithQuotedText(newMessage)}
-                                </div>
-                            </div>
-                        </Tabs.Panel>
+                                <Icons.User size={36} />
+                            </Avatar>
+                        </span>
                     </div>
+                {/if}
+            {/snippet}
+            {#snippet rightControls()}
+                {#if !lastMessage?.isGenerating && !editChatMessage}
                     <button
-                        class="btn preset-filled-success-500 h-auto w-fit"
-                        type="submit"
+                        class="text-success-500 hover:preset-tonal-success h-auto rounded-lg p-3 text-center"
+                        type="button"
                         disabled={!newMessage.trim() || lastMessage?.isGenerating}
                         title="Send"
+                        onclick={(e) => {
+                            e.stopPropagation()
+                            handleSend()
+                        }}
                     >
-                        <Icons.Send size={24} />
+                        <Icons.Send size={24} class="mx-auto" />
                     </button>
-                </div>
+                {:else if lastMessage?.isGenerating}
+                    <button
+                        title="Stop Generation"
+                        class="text-error-500 hover:preset-tonal-error h-auto rounded-lg p-3 text-center"
+                        type="button"
+                        onclick={(e) => {
+                            e.stopPropagation()
+                            socket.emit("abortChatMessage", { id: lastMessage.id })
+                        }}
+                    >
+                        <Icons.Square size={24} class="mx-auto" />
+                    </button>
+                {/if}
             {/snippet}
-        </Tabs>
-    </form>
+        </MessageComposer>
+    </div>
 </div>
 
 <Modal
@@ -451,6 +371,35 @@
         </footer>
     {/snippet}
 </Modal>
+
+{#snippet extraControlsButton()}
+    <Icons.MessageSquare size="0.75em" />
+{/snippet}
+
+{#snippet extraControlsContent()}
+    <div class="flex gap-2">
+        <button
+            class="btn btn-lg preset-filled-primary-500 h-full"
+            title="Trigger Character Generation"
+            onclick={() => socket.emit('triggerGenerateMessage', { chatId })}
+            disabled={!chat || !chat.chatPersonas?.[0]?.personaId || lastMessage?.isGenerating}
+        >
+            <Icons.MessageSquarePlus size={24} />
+        </button>
+        <button
+            class="btn btn-lg preset-filled-secondary-500 h-full"
+            title="Regenerate Last Message"
+            onclick={() => {
+                if (lastMessage && !lastMessage.isGenerating) {
+                    socket.emit("regenerateChatMessage", { id: lastMessage.id })
+                }
+            }}
+            disabled={!lastMessage || lastMessage.isGenerating}
+        >
+            <Icons.RefreshCcw size={24} />
+        </button>
+    </div>
+{/snippet}
 
 <style lang="postcss">
     @reference "tailwindcss";

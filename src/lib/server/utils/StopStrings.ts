@@ -8,11 +8,14 @@ export class StopStrings {
                 return [
                     "<|im_end|>",
                     "<|im_start|>",
-                    "user:",
-                    "char:",
-                    "assistant:",
-                    "{{user}}:",
-                    "{{char}}:"
+                    "[{{user}}]:",
+                    "[{{char}}]:",
+                    "[system]:",
+                    "[System]:",
+                    "[user]:",
+                    "[User]:",
+                    "[assistant]:",
+                    "[Assistant]:"
                 ];
             case PromptFormats.BASIC:
                 // Block starters for Basic, plus template markers
@@ -21,8 +24,14 @@ export class StopStrings {
                     "*** char",
                     "*** assistant",
                     "*** system",
-                    "{{user}}:",
-                    "{{char}}:"
+                    "[{{user}}]:",
+                    "[{{char}}]:",
+                    "[system]:",
+                    "[System]:",
+                    "[user]:",
+                    "[User]:",
+                    "[assistant]:",
+                    "[Assistant]:"
                 ];
             case PromptFormats.VICUNA:
                 // Block starters for Vicuna, plus </s> and template markers
@@ -32,8 +41,14 @@ export class StopStrings {
                     "### Char:",
                     "### Assistant:",
                     "### System:",
-                    "{{user}}:",
-                    "{{char}}:"
+                    "[{{user}}]:",
+                    "[{{char}}]:",
+                    "[system]:",
+                    "[System]:",
+                    "[user]:",
+                    "[User]:",
+                    "[assistant]:",
+                    "[Assistant]:"
                 ];
             case PromptFormats.OPENAI:
                 // Block starters for OpenAI, plus template markers
@@ -42,8 +57,14 @@ export class StopStrings {
                     "<|char|>",
                     "<|assistant|>",
                     "<|system|>",
-                    "{{user}}:",
-                    "{{char}}:"
+                    "[{{user}}]:",
+                    "[{{char}}]:",
+                    "[system]:",
+                    "[System]:",
+                    "[user]:",
+                    "[User]:",
+                    "[assistant]:",
+                    "[Assistant]:"
                 ];
             default:
                 return ["<|im_end|>"];
