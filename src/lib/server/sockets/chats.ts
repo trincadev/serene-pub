@@ -273,7 +273,8 @@ async function generateResponse({
     // Store adapter in global map
     activeAdapters.set(adapterId, adapter)
 
-    const completionResult = adapter.generate()
+    // Generate completion
+    let completionResult = adapter.generate();
     let content = ""
     try {
         if (typeof completionResult === "function") {
@@ -286,12 +287,14 @@ async function generateResponse({
                 await getChat(socket, { id: chatId }, emitToUser)
             })
             // Final update: mark as not generating, clear adapterId
+            content = content.trim()
             await db
                 .update(schema.chatMessages)
                 .set({ content, isGenerating: false, adapterId: null })
                 .where(eq(schema.chatMessages.id, generatingMessage.id))
         } else {
             content = await completionResult
+            content = content.trim()
             await db
                 .update(schema.chatMessages)
                 .set({ content, isGenerating: false, adapterId: null })

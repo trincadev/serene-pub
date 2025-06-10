@@ -15,7 +15,7 @@ export class PromptBlockFormatter {
     static chatmlClose = PromptBlockFormatter.CHATML_CLOSE;
     static basicOpen(role: string) { return `${PromptBlockFormatter.BASIC_OPEN}${role}\n\n`; }
     static basicClose = PromptBlockFormatter.BASIC_CLOSE;
-    static vicunaOpen(role: string) { return `${PromptBlockFormatter.VICUNA_OPEN}${_.capitalize(role)}:\n\n`; }
+    static vicunaOpen(role: string) { return `${PromptBlockFormatter.VICUNA_OPEN}[${_.capitalize(role)}]:\n\n`; }
     static vicunaClose = PromptBlockFormatter.VICUNA_CLOSE;
     static openaiOpen(role: string) { return `${PromptBlockFormatter.OPENAI_OPEN}${role}|>\n\n`; }
     static openaiClose = PromptBlockFormatter.OPENAI_CLOSE;

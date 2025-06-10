@@ -92,12 +92,12 @@ export async function deleteSamplingConfig(
 
 export async function updateSamplingConfig(
     socket: any,
-    message: Sockets.UpdateSamplingConfig.Call,
+    message: { sampling: any },
     emitToUser: (event: string, data: any) => void
 ) {
     console.log("updateSamplingConfig", message)
-    const id = message.samplingConfig.id
-    delete message.samplingConfig.id // Remove id from sampling object to avoid conflicts
+    const id = message.sampling.id
+    delete message.sampling.id // Remove id from sampling object to avoid conflicts
     const currentSamplingConfig = await db.query.samplingConfigs.findFirst({
         where: (w, { eq }) => eq(w.id, id)
     })
@@ -107,11 +107,11 @@ export async function updateSamplingConfig(
     }
     const updatedSamplingConfig = await db
         .update(schema.samplingConfigs)
-        .set(message.samplingConfig)
+        .set(message.sampling)
         .where(eq(schema.samplingConfigs.id, id))
         .returning()
     await samplingConfigsList(socket, {}, emitToUser)
     await sampling(socket, { id }, emitToUser)
-    const res: Sockets.UpdateSamplingConfig.Response = { samplingConfig: updatedSamplingConfig }
+    const res = { samplingConfig: updatedSamplingConfig }
     emitToUser("updateSamplingConfig", res)
 }
