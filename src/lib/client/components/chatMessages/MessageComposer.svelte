@@ -7,11 +7,7 @@
 
     interface Props {
         markdown: string
-        tokenCounts?: {
-            tokenCount: number
-            tokenLimit?: number
-            error?: string
-        }
+        promptStats?: Sockets.PromptTokenCount.Response
         leftControls?: Snippet
         rightControls?: Snippet
         extraTabs?: {
@@ -24,7 +20,7 @@
     }
     let {
         markdown = $bindable(),
-        tokenCounts = $bindable(),
+        promptStats = $bindable(),
         leftControls,
         rightControls,
         extraTabs = $bindable(),
@@ -32,13 +28,12 @@
     }: Props = $props()
 
     let tabGroup: "compose" | "preview" = $state("compose")
+    let contextExceeded = $derived( !!promptStats ? promptStats!.tokenCount > promptStats!.tokenLimit : false )
 
     function handleSend(e: KeyboardEvent | MouseEvent | undefined = undefined) {
         if (e) e.preventDefault()
         onSend()
     }
-
-    console.log("additionalTabs", extraTabs)
 </script>
 
 <Tabs value={tabGroup} onValueChange={(e) => (tabGroup = e.value as "compose" | "preview")}>
@@ -56,15 +51,10 @@
                 </Tabs.Control>
             {/each}
         {/if}
-        {#if tokenCounts}
+        {#if promptStats}
             <Tabs.Control value="tokenCount" classes="w-full text-right" disabled>
-                <span title="Token Count" class="text-xs">
-                    {tokenCounts.tokenCount} /
-                    {#if tokenCounts.tokenLimit}
-                        {tokenCounts.tokenLimit}
-                    {:else}
-                        No token limit set
-                    {/if}
+                <span title="Token Count" class="text-xs" class:text-error-500={contextExceeded}>
+                    {promptStats.tokenCount} / {promptStats.tokenLimit}
                 </span>
             </Tabs.Control>
         {/if}

@@ -1,7 +1,7 @@
 import { db } from "$lib/server/db"
 import { and, eq } from "drizzle-orm"
 import * as schema from "$lib/server/db/schema"
-import { user as loadUser } from "./users"
+import {user as loadUser, user} from './users';
 import { OllamaAdapter } from "../connectionAdapters/ollama"
 
 // --- CONNECTIONS SOCKET HANDLERS ---
@@ -86,6 +86,7 @@ export async function updateConnection(
     await connection(socket, { id }, emitToUser)
     const res: Sockets.UpdateConnection.Response = { connection: updated }
     emitToUser("updateConnection", res)
+    await user(socket, {}, emitToUser)
 }
 
 export async function deleteConnection(

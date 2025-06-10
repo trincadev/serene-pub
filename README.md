@@ -1,5 +1,26 @@
 # Serene Pub
 
+<!-- TOC -->
+- [Project Status, Testing and Feedback](#project-status-testing-and-feedback)
+- [Features](#features)
+  - [Functional](#functional)
+  - [Mostly Functional](#mostly-functional)
+  - [In Progress (some functionality)](#in-progress-some-functionality)
+  - [Pending Priorities](#pending-priorities)
+  - [Considered](#considered)
+- [Software Stack](#software-stack)
+- [Screenshots](#screenshots)
+- [Getting Started (Help Test Serene Pub!)](#getting-started-help-test-serene-pub)
+  - [Requirements](#requirements)
+    - [Ollama](#ollama)
+    - [Node](#node)
+    - [Bun](#bun)
+  - [Instructions](#instructions)
+- [Directories and files](#directories-and-files)
+- [Feedback and contributing](#feedback-and-contributing)
+  - [Feedback & Contact](#feedback--contact)
+<!-- /TOC -->
+
 Serene Pub is a modern, customizable chat application designed for immersive roleplay and creative conversations.
 
 This app is heavily inspired by Silly Tavern, with the objective of being more intuitive, responsive and simple to configure.
@@ -41,9 +62,22 @@ The following features are functional, mostly functional, in progress or pending
 2. Create, manage, import & export your personas
      - Import and export are not yet implemented.
 3. Chats
-    - Not implemented: Swipe next response, swipe initial message, hide message, edit/rename chat, automatic prompt/token length management (currently sends the full history).
-    - Implemented: Create & delete chat, send persona message, generate character response, edit and delete messages, streaming, regenerate last message, trigger new response.
-4. Manage prompt instructions, i.e. role-play style
+   - Implemented:
+      - create & delete chat
+      - send persona message
+      - automatically generate character response
+      - edit and delete messages
+      - streaming
+      - regenerate last message
+      - manually trigger a response
+      - hide message
+      - get live updates on token count and # of included message history
+    - Not implemented:
+      - Swipe next response
+      - swipe example messages
+      - edit/rename chat
+      - include example messages in compiled prompt
+5. Manage prompt instructions, i.e. role-play style
   
 ### In Progress (some functionality)
 
@@ -54,7 +88,7 @@ The following features are functional, mostly functional, in progress or pending
     - Only one default option is provided right now, but you can add your own.
     - No support for Instruct yet
 
-### Pending
+### Pending Priorities
 
 1. Character/chat tags
 2. Mobile responsive view, (only desktop is fully functional)
@@ -71,7 +105,7 @@ The following features are functional, mostly functional, in progress or pending
 4. Chat/lore vectorization
 5. User/per chat backgrounds
 6. Day/night mode toggle and theme selection
-7. Story narration
+7. Story narration with seperate system instructions
 8. Screen reader support
 
 ## Software Stack
@@ -84,13 +118,25 @@ The following features are functional, mostly functional, in progress or pending
 
 ## Screenshots
 
-![image](https://github.com/user-attachments/assets/73be6dbd-08ca-4ebd-b754-35c2da7686c3)
+1. Clean, intuitive chat interface, enter your text in the bottom field
 
-![image](https://github.com/user-attachments/assets/40319283-93a1-4ce3-8412-3778ad3ce9a1)
+![image](https://github.com/user-attachments/assets/aead8e09-00b5-42ec-983f-6e5f2005fddc)
 
-![image](https://github.com/user-attachments/assets/4d4eb3ea-022c-4de6-a5d3-27701eb7e71e)
 
-## Getting Started (Testing)
+3. Manage sampling in the left panel, character list in the right panel, monitor your token/prompt stats in the bottom
+   
+![image](https://github.com/user-attachments/assets/4be5e4ec-08e7-47c4-bf4d-b55abfeff184)
+
+
+4. Manage your connections/models in the left panel, edit characters on the right, preview your text in the bottom
+   
+![image](https://github.com/user-attachments/assets/4a8b92a1-2e49-426c-b437-0ed3a45b4276)
+
+5. Manage system prompt/roleplay instructions on the left panel, create a persona on the right, trigger a response on the bottom.
+   
+![image](https://github.com/user-attachments/assets/35a6b563-1c9c-4b81-847d-30060b268ffb)
+
+## Getting Started (Help Test Serene Pub!)
 
 ### Requirements
 
@@ -129,14 +175,29 @@ Download & install from [here.](https://bun.sh/)
 By default the data will automatically be saved to the following directory, based on your operating system:
 
 - **macOS:** `~/Library/Application Support/SerenePub`
+
 - **Windows:** `%LOCALAPPDATA%\SerenePub`
+
 - **Linux:** `~/.local/share/SerenePub`
 
 The following files will be located inside:
 
 - **Database:** `./data/main.db`
+
 - **Character avatar:** `./data/users/[userId]/characters/[characterId]/avatar.png`
+
 - **Persona avatar:** `./data/users/[userId]/personas/[personaId]/avatar.png`
 
 Avatars are linked via the database. Manually placing an avatar in the directory will not work, it should be uploaded through the edit character form.
+
+## Feedback and contributing
+
+### Feedback & Contact
+
+Feel free to clone & contribute! Bug fixes are appreciated. If you want to add a brand new feature, please first propose your strategy for implementation before investing your time.
+
+To provide feedback, or to reach out to me, you have any of the following options:
+1. [Open up a new issue](https://github.com/doolijb/serene-pub/issues). Feedback, bug fixes or questions are welcome.
+2. [Contact me on Reddit](https://reddit.com/u/doolijb)
+3. Message me on discord, ID: `285999266088878080`
 

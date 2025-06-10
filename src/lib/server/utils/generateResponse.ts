@@ -3,7 +3,7 @@ import * as schema from '$lib/server/db/schema';
 import {OllamaAdapter} from '../connectionAdapters/ollama';
 import {eq} from 'drizzle-orm';
 import {v4 as uuidv4} from 'uuid';
-import {activeAdapters, chat, getChat, chatMessage} from '../sockets/chats';
+import {activeAdapters, chatMessage} from '../sockets/chats';
 
 export async function generateResponse({
     socket,
@@ -56,7 +56,7 @@ export async function generateResponse({
     activeAdapters.set(adapterId, adapter)
 
     // Generate completion
-    let completionResult = adapter.generate();
+    let completionResult = await adapter.generate();
     let content = ""
     try {
         if (typeof completionResult === "function") {
@@ -78,7 +78,7 @@ export async function generateResponse({
             // Instead of getChat, emit the chatMessage
             await chatMessage(socket, { chatMessage: { ...generatingMessage, content, isGenerating: false, adapterId: null } }, emitToUser)
         } else {
-            content = await completionResult
+            content = completionResult
             content = content.trim()
             await db
                 .update(schema.chatMessages)
