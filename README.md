@@ -53,6 +53,7 @@ The following features are functional, mostly functional, in progress or pending
 1. Manage sampling and context limits
     - Any setting can be individually disabled/enabled, great for relying on API defaults.
 2. Manage roleplay/system prompt instructions
+3. Mobile responsive view
 
 ### Mostly Functional
 
@@ -119,7 +120,7 @@ The following features are functional, mostly functional, in progress or pending
 
 1. Clean, intuitive chat interface, enter your text in the bottom field
 
-![image](https://github.com/user-attachments/assets/aead8e09-00b5-42ec-983f-6e5f2005fddc)
+<img src"https://github.com/user-attachments/assets/aead8e09-00b5-42ec-983f-6e5f2005fddc" width="100px" height="100px" />
 
 
 3. Manage sampling in the left panel, character list in the right panel, monitor your token/prompt stats in the bottom
@@ -134,6 +135,14 @@ The following features are functional, mostly functional, in progress or pending
 5. Manage system prompt/roleplay instructions on the left panel, create a persona on the right, trigger a response on the bottom.
    
 ![image](https://github.com/user-attachments/assets/35a6b563-1c9c-4b81-847d-30060b268ffb)
+
+6. Mobile chat view
+
+![localhost_5173_chats_1(iPhone SE) (1)](https://github.com/user-attachments/assets/60a89d4d-f0ae-4761-b51b-385feddcddfe)
+
+7. Mobile characters view
+
+      ![localhost_5173_chats_1(iPhone SE) (2)](https://github.com/user-attachments/assets/b28d36d2-9d2b-4c15-b9ff-c9e3c2e84c5b)
 
 ## Getting Started (Help Test Serene Pub!)
 
