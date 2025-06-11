@@ -42,11 +42,6 @@
         chats = msg.chatsList || []
     })
 
-    function getAvatarUrl(entity: any) {
-        // Replace with your actual avatar URL logic
-        return entity?.avatar || "/avatars/default.png"
-    }
-
     async function handleOnClose() {
         return true // TODO
     }
