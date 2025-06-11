@@ -179,6 +179,7 @@
                     name={editPersonaData.name ??
                         (mode === "edit" ? "Edit Character" : "New Character")}
                     background="preset-filled-primary-500"
+                    imageClasses="object-cover"
                 >
                     <Icons.User size={36} />
                 </Avatar>
@@ -217,7 +218,7 @@
                 </div>
                 <button
                     type="button"
-                    class="btn btn-xs preset-tonal-error mt-1"
+                    class="btn btn-sm preset-tonal-error mt-1"
                     onclick={() => {
                         editPersonaData._avatarFile = undefined
                         editPersonaData._avatar = ""

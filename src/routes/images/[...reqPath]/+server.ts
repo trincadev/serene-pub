@@ -13,7 +13,6 @@ export const GET: RequestHandler = async ({ params }) => {
     const relPath = Array.isArray(reqPath) ? reqPath.join('/') : reqPath
     const appData = envPaths('SerenePub', { suffix: "" }).data
     const filePath = path.join(appData, relPath)
-    console.log(`Serving avatar from: ${filePath}`)
     try {
         const data = await fs.readFile(filePath)
         // Guess content type from extension
@@ -25,7 +24,7 @@ export const GET: RequestHandler = async ({ params }) => {
         else if (ext === '.gif') type = 'image/gif'
         // SvelteKit Response expects Uint8Array, not Buffer
         return new Response(new Uint8Array(data), {
-            headers: { 'Content-Type': type, 'Cache-Control': 'public, max-age=31536000' }
+            headers: { 'Content-Type': type, 'Cache-Control': 'public, max-age=0' }
         })
     } catch (e) {
         return new Response('Not found', { status: 404 })

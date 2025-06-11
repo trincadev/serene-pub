@@ -3,7 +3,6 @@
 	"singleQuote": false,
 	"tabWidth": 4,
 	"trailingComma": "none",
-	"printWidth": 100,
 	"plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
 	"overrides": [
 		{
@@ -12,5 +11,9 @@
 				"parser": "svelte"
 			}
 		}
-	]
+	],
+	"printWidth": 80,
+	"useTabs": true,
+	"bracketSpacing": true,
+	"htmlWhitespaceSensitivity": "ignore"
 }

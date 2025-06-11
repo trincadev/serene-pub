@@ -250,14 +250,15 @@
                                     <Avatar
                                         src={character?.avatar ?? ""}
                                         size="w-[4em] h-[4em]"
-                                        name={character?.name ?? "Unknown"}
+                                        name={character?.nickname || character?.name || "Unknown"}
                                         background="preset-filled-primary-500"
+                                        imageClasses="object-cover"
                                     >
                                         <Icons.User size={36} />
                                     </Avatar>
                                 </span>
                                 <span class="funnel-display text-[1.1em] font-bold"
-                                    >{character?.name || "Unknown"}</span
+                                    >{character?.nickname || character?.name || "Unknown"}</span
                                 >
                             </div>
                             {#if editChatMessage && editChatMessage.id === msg.id}
@@ -377,6 +378,7 @@
                                 size="w-[4em] h-[4em]"
                                 name={persona?.name ?? "Unknown"}
                                 background="preset-filled-primary-500"
+                                imageClasses="object-cover"
                             >
                                 <Icons.User size={36} />
                             </Avatar>

@@ -118,7 +118,7 @@
                 bind:value={selectedCharacterId}
             >
                 {#each characters as c}
-                    <option value={c.id}>{c.name}</option>
+                    <option value={c.id}>{c.nickname || c.name}</option>
                 {/each}
             </select>
         </div>
