@@ -142,7 +142,8 @@
                                     <Avatar
                                         src={cc.character.avatar || ""}
                                         size="w-[4em] h-[4em]"
-                                        name={cc.character.name}
+                                        name={cc.character.nickname || cc.character.name}
+                                        imageClasses="object-cover"
                                     >
                                         <Icons.User size={36} />
                                     </Avatar>
@@ -155,6 +156,7 @@
                                         src={cp.persona.avatar || ""}
                                         size="w-[4em] h-[4em]"
                                         name={cp.persona.name}
+                                        imageClasses="object-cover"
                                     >
                                         <Icons.User size={36} />
                                     </Avatar>
@@ -183,7 +185,7 @@
                             </div>
                             <div class="flex gap-4 ml-auto">
                                 <button
-                                    class="btn btn-xs text-primary-500 px-0"
+                                    class="btn btn-sm text-primary-500 px-0"
                                     onclick={() => {
                                         handleEditClick(chat.id!)
                                     }}
@@ -192,7 +194,7 @@
                                     <Icons.Edit size={16} />
                                 </button>
                                 <button
-                                    class="btn btn-xs text-error-500 px-0"
+                                    class="btn btn-sm text-error-500 px-0"
                                     onclick={(e) => {
                                         e.stopPropagation()
                                         handleDeleteClick(chat.id!)

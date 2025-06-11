@@ -58,7 +58,7 @@ The following features are functional, mostly functional, in progress or pending
 ### Mostly Functional
 
 1. Create, manage, import & export your characters
-    - Import currently only supports [PNG Card Files](https://aicharactercards.com/).
+    - Import currently only supports [Image Card Files](https://aicharactercards.com/), JSON .etc are not yet supported.
     - Export is not yet implemented.
 2. Create, manage, import & export your personas
      - Import and export are not yet implemented.
