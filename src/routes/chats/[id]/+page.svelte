@@ -1,6 +1,6 @@
 <script lang="ts">
     import { page } from "$app/state"
-    import { Avatar, Modal } from "@skeletonlabs/skeleton-svelte"
+    import { Avatar, Modal, Popover } from "@skeletonlabs/skeleton-svelte"
     import * as skio from "sveltekit-io"
     import * as Icons from "@lucide/svelte"
     import MessageComposer from "$lib/client/components/chatMessages/MessageComposer.svelte"
@@ -23,7 +23,10 @@
         | undefined = $state()
     let userCtx: UserCtx = getContext("user")
     let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
-    let contextExceeded = $derived( !!promptStats ? promptStats!.tokenCount > promptStats!.tokenLimit : false )
+    let contextExceeded = $derived(
+        !!promptStats ? promptStats!.tokenCount > promptStats!.tokenLimit : false
+    )
+    let openMobileMsgControls: number | undefined = $state(undefined)
 
     // Get chat id from route params
     let chatId: number = $derived.by(() => Number(page.params.id))
@@ -32,7 +35,9 @@
         if (msg.chat.id === Number.parseInt(page.params.id)) {
             chat = msg.chat
             // Instantly jump to bottom on chat update
-            window.scrollTo(0, document.body.scrollHeight)
+            if (!openMobileMsgControls) {
+                window.scrollTo(0, document.body.scrollHeight)
+            }
         }
     })
 
@@ -49,9 +54,11 @@
                 chat = { ...chat, chatMessages: [...chat.chatMessages, msg.chatMessage] }
             }
         }
-        setTimeout(() => {
-            window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
-        }, 0)
+        if (!openMobileMsgControls) {
+            setTimeout(() => {
+                window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+            }, 0)
+        }
     })
 
     socket.on("promptTokenCount", (msg: Sockets.PromptTokenCount.Response) => {
@@ -122,6 +129,7 @@
     }
 
     function handleEditMessageClick(message: SelectChatMessage) {
+        openMobileMsgControls = undefined
         editChatMessage = { ...message }
     }
 
@@ -164,6 +172,10 @@
 
     let chatMessagesContainer: HTMLDivElement | null = null
 
+    function handleEditMessage(e: Event, msg: SelectChatMessage) {
+        e.stopPropagation()
+        handleEditMessageClick(msg)
+    }
     function handleCancelEditMessage(e: Event) {
         e.stopPropagation()
         editChatMessage = undefined
@@ -174,22 +186,22 @@
     }
     function handleHideMessage(e: Event, msg: SelectChatMessage) {
         e.stopPropagation()
+        openMobileMsgControls = undefined
         socket.emit("updateChatMessage", { chatMessage: { ...msg, isHidden: !msg.isHidden } })
-    }
-    function handleEditMessage(e: Event, msg: SelectChatMessage) {
-        e.stopPropagation()
-        handleEditMessageClick(msg)
     }
     function handleDeleteMessage(e: Event, msg: SelectChatMessage) {
         e.stopPropagation()
+        openMobileMsgControls = undefined
         openDeleteMessageModal(msg)
     }
     function handleRegenerateMessage(e: Event, msg: SelectChatMessage) {
         e.stopPropagation()
+        openMobileMsgControls = undefined
         socket.emit("regenerateChatMessage", { id: msg.id })
     }
     function handleAbortMessage(e: Event, msg: SelectChatMessage) {
         e.stopPropagation()
+        openMobileMsgControls = undefined
         socket.emit("abortChatMessage", { id: msg.id })
     }
     function handleSendButton(e: Event) {
@@ -198,19 +210,21 @@
     }
     function handleAbortLastMessage(e: Event) {
         e.stopPropagation()
+        openMobileMsgControls = undefined
         if (lastMessage) socket.emit("abortChatMessage", { id: lastMessage.id })
     }
     function handleTriggerGenerateMessage(e: Event) {
         e.stopPropagation()
+        openMobileMsgControls = undefined
         socket.emit("triggerGenerateMessage", { chatId })
     }
     function handleRegenerateLastMessage(e: Event) {
         e.stopPropagation()
+        openMobileMsgControls = undefined
         if (lastMessage && !lastMessage.isGenerating) {
             socket.emit("regenerateChatMessage", { id: lastMessage.id })
         }
     }
-
 </script>
 
 <svelte:head>
@@ -218,15 +232,18 @@
     <meta name="description" content="Serene Pub" />
 </svelte:head>
 
-<div class="flex h-full w-full flex-col px-2">
+<div class="flex h-full w-full flex-col lg:px-2">
     <div class="chat-messages flex-1" bind:this={chatMessagesContainer}>
         {#if !chat || chat.chatMessages.length === 0}
             <div class="text-muted mt-8 text-center">No messages yet.</div>
         {:else}
             <ul class="flex flex-col gap-3 py-2">
                 {#each chat.chatMessages as msg (msg.id)}
-                {@const character = getMessageCharacter(msg)}
-                    <li class="bg-primary-50-950 flex flex-col rounded-lg p-4" class:opacity-50={msg.isHidden && editChatMessage?.id !== msg.id}>
+                    {@const character = getMessageCharacter(msg)}
+                    <li
+                        class="bg-primary-50-950 flex flex-col rounded-lg p-2 lg:p-4"
+                        class:opacity-50={msg.isHidden && editChatMessage?.id !== msg.id}
+                    >
                         <div class="flex justify-between gap-2">
                             <div class="flex gap-2">
                                 <span>
@@ -243,8 +260,8 @@
                                     >{character?.name || "Unknown"}</span
                                 >
                             </div>
-                            <div class="flex gap-2">
-                                {#if editChatMessage && editChatMessage.id === msg.id}
+                            {#if editChatMessage && editChatMessage.id === msg.id}
+                                <div class="flex gap-2">
                                     <button
                                         class="btn btn-sm msg-cntrl-icon preset-filled-surface-500"
                                         title="Cancel Edit"
@@ -253,68 +270,48 @@
                                         <Icons.X size={16} />
                                     </button>
                                     <button
-                                        class="btn btn-sm msg-cntrl-icon preset-filled-primary-500"
+                                        class="btn btn-sm msg-cntrl-icon preset-filled-success-500"
                                         title="Save"
                                         onclick={handleSaveEditMessage}
                                     >
-                                        <Icons.Save size={16} />
+                                        <Icons.Save size={16} class="mx-4" />
                                     </button>
-                                {:else}
-                                    <div class="flex gap-6">
-                                        <span class="text-surface-500 mx-6">
-                                            {new Date(msg.createdAt).toLocaleString()}
-                                        </span>
-                                    </div>
-                                    <button
-                                        class="btn btn-sm msg-cntrl-icon hover:preset-filled-secondary-500"
-                                        class:preset-filled-secondary-500={msg.isHidden}
-                                        title={msg.isHidden ? "Unhide Message" : "Hide Message"}
-                                        disabled={lastMessage?.isGenerating || !!editChatMessage}
-                                        onclick={(e) => handleHideMessage(e, msg)}
+                                </div>
+                            {:else}
+                                <div class="hidden gap-2 lg:flex">
+                                    {@render messageControls(msg)}
+                                </div>
+                                <div class="lg:hidden">
+                                    <Popover
+                                        open={openMobileMsgControls === msg.id}
+                                        onOpenChange={(e) =>
+                                            (openMobileMsgControls = e.open ? msg.id : undefined)}
+                                        positioning={{ placement: "bottom" }}
+                                        triggerBase="btn btn-sm hover:bg-primary-600-400 {openMobileMsgControls ===
+                                        msg.id
+                                            ? 'bg-primary-600-400'
+                                            : ''}"
+                                        contentBase="card bg-primary-200-800 p-4 space-y-4 max-w-[320px]"
+                                        arrow
+                                        arrowBackground="!bg-primary-200 dark:!bg-primary-800"
+                                        zIndex="1000"
                                     >
-                                        <Icons.Ghost size={16} />
-                                    </button>
-                                    <button
-                                        class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
-                                        title="Edit Message"
-                                        disabled={lastMessage?.isGenerating ||
-                                            !!editChatMessage ||
-                                            msg.isGenerating ||
-                                            msg.isHidden}
-                                        onclick={(e) => handleEditMessage(e, msg)}
-                                    >
-                                        <Icons.Edit size={16} />
-                                    </button>
-                                    <button
-                                        class="btn btn-sm msg-cntrl-icon hover:preset-filled-error-500"
-                                        title="Delete Message"
-                                        disabled={lastMessage?.isGenerating || !!editChatMessage}
-                                        onclick={(e) => handleDeleteMessage(e, msg)}
-                                    >
-                                        <Icons.Trash2 size={16} />
-                                    </button>
-                                    {#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
-                                        <button
-                                            class="btn btn-sm msg-cntrl-icon hover:preset-filled-warning-500"
-                                            title="Regenerate Response"
-                                            disabled={msg.isHidden}
-                                            onclick={(e) => handleRegenerateMessage(e, msg)}
-                                        >
-                                            <Icons.RefreshCw size={16} />
-                                        </button>
-                                    {/if}
-                                    {#if msg.isGenerating}
-                                        <button
-                                            class="btn btn-sm msg-cntrl-icon preset-filled-error-500"
-                                            title="Stop Generation"
-                                            onclick={(e) => handleAbortMessage(e, msg)}
-                                        >
-                                            <Icons.Square size={16} />
-                                        </button>
-                                    {/if}
-                                {/if}
-                            </div>
+                                        {#snippet trigger()}
+                                            <Icons.EllipsisVertical size={20} />
+                                        {/snippet}
+                                        {#snippet content()}
+                                            <header class="flex justify-between">
+                                                <p class="text-xl font-bold">Popover Example</p>
+                                            </header>
+                                            <article class="flex flex-col gap-4">
+                                                {@render messageControls(msg)}
+                                            </article>
+                                        {/snippet}
+                                    </Popover>
+                                </div>
+                            {/if}
                         </div>
+
                         <div class="flex h-fit rounded p-2 text-left">
                             {#if msg.content === "" && msg.isGenerating}
                                 <div class="wrapper">
@@ -327,7 +324,7 @@
                                 </div>
                             {:else if editChatMessage && editChatMessage.id === msg.id}
                                 <div
-                                    class="chat-input-bar bg-surface-100-900 w-full rounded-xl p-2 pb-6 align-middle"
+                                    class="chat-input-bar bg-surface-100-900 w-full rounded-xl p-2 pb-2 lg:pb-4 align-middle"
                                 >
                                     <MessageComposer
                                         bind:markdown={editChatMessage.content}
@@ -346,11 +343,15 @@
         {/if}
     </div>
     <!-- NEW CHAT MESSAGE FORM -->
-    <div class="chat-input-bar preset-tonal-surface gap-4 pb-6 align-middle">
+    <div 
+        class="chat-input-bar preset-tonal-surface gap-4 pb-3 lg:pb-4 align-middle shadow-xl"
+        class:hidden={!!editChatMessage}
+    >
         <MessageComposer
             bind:markdown={newMessage}
             onSend={handleSend}
             {promptStats}
+            classes=""
             extraTabs={[
                 {
                     value: "extraControls",
@@ -369,7 +370,7 @@
             {#snippet leftControls()}
                 {#if chat?.chatPersonas?.[0]?.persona}
                     {@const persona = chat?.chatPersonas?.[0]?.persona}
-                    <div class="flex flex-col gap-2">
+                    <div class="flex-col lg:gap-2 hidden lg:flex">
                         <span>
                             <Avatar
                                 src={persona.avatar ?? ""}
@@ -386,7 +387,7 @@
             {#snippet rightControls()}
                 {#if !lastMessage?.isGenerating && !editChatMessage}
                     <button
-                        class="text-success-500 hover:preset-tonal-success h-auto rounded-lg p-3 text-center"
+                        class="text-success-500 hover:preset-tonal-success h-auto rounded-lg p-3 text-center hidden lg:block"
                         type="button"
                         disabled={!newMessage.trim() || lastMessage?.isGenerating}
                         title="Send"
@@ -433,6 +434,66 @@
     {/snippet}
 </Modal>
 
+{#snippet messageControls(msg: SelectChatMessage)}
+    <div class="hidden gap-6 lg:flex">
+        <span class="text-surface-500 mx-6">
+            {new Date(msg.createdAt).toLocaleString()}
+        </span>
+    </div>
+    <button
+        class="btn btn-sm msg-cntrl-icon hover:preset-filled-secondary-500"
+        class:preset-filled-secondary-500={msg.isHidden}
+        title={msg.isHidden ? "Unhide Message" : "Hide Message"}
+        disabled={lastMessage?.isGenerating || !!editChatMessage}
+        onclick={(e) => handleHideMessage(e, msg)}
+    >
+        <Icons.Ghost size={16} />
+        <span class="lg:hidden"> {msg.isHidden ? "Unhide Message" : "Hide Message"} </span>
+    </button>
+    <button
+        class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
+        title="Edit Message"
+        disabled={lastMessage?.isGenerating ||
+            !!editChatMessage ||
+            msg.isGenerating ||
+            msg.isHidden}
+        onclick={(e) => handleEditMessage(e, msg)}
+    >
+        <Icons.Edit size={16} />
+        <span class="lg:hidden"> Edit Message </span>
+    </button>
+    <button
+        class="btn btn-sm msg-cntrl-icon hover:preset-filled-error-500"
+        title="Delete Message"
+        disabled={lastMessage?.isGenerating || !!editChatMessage}
+        onclick={(e) => handleDeleteMessage(e, msg)}
+    >
+        <Icons.Trash2 size={16} />
+        <span class="lg:hidden"> Delete Message </span>
+    </button>
+    {#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
+        <button
+            class="btn btn-sm msg-cntrl-icon hover:preset-filled-warning-500"
+            title="Regenerate Response"
+            disabled={msg.isHidden}
+            onclick={(e) => handleRegenerateMessage(e, msg)}
+        >
+            <Icons.RefreshCw size={16} />
+            <span class="lg:hidden"> Regenerate Response </span>
+        </button>
+    {/if}
+    {#if msg.isGenerating}
+        <button
+            class="btn btn-sm msg-cntrl-icon preset-filled-error-500"
+            title="Stop Generation"
+            onclick={(e) => handleAbortMessage(e, msg)}
+        >
+            <Icons.Square size={16} />
+            <span class="lg:hidden"> Stop Generation </span>
+        </button>
+    {/if}
+{/snippet}
+
 {#snippet extraControlsButton()}
     <Icons.MessageSquare size="0.75em" />
 {/snippet}
@@ -466,11 +527,14 @@
     <div class="flex flex-col p-2 text-sm">
         {#if promptStats}
             <div>
-                <b>Prompt Tokens:</b> <span class:text-error-500={contextExceeded}>{promptStats.tokenCount} / {promptStats.tokenLimit}</span>
-                
+                <b>Prompt Tokens:</b>
+                <span class:text-error-500={contextExceeded}
+                    >{promptStats.tokenCount} / {promptStats.tokenLimit}</span
+                >
             </div>
             <div>
-                <b>Messages Inserted:</b> {promptStats.messagesIncluded} / {promptStats.totalMessages}
+                <b>Messages Inserted:</b>
+                {promptStats.messagesIncluded} / {promptStats.totalMessages}
                 <span class="text-surface-500">(Includes current draft)</span>
             </div>
         {:else}
@@ -485,7 +549,7 @@
     .chat-messages {
         overflow-y: auto;
         flex: 1 1 0%;
-        padding-bottom: 4rem;
+        padding-bottom: 0.5rem;
     }
     .chat-input-bar {
         position: sticky;
@@ -599,6 +663,6 @@
     }
 
     .msg-cntrl-icon {
-        @apply h-min w-min px-2 disabled:opacity-25;
+        @apply h-min w-min px-2 disabled:opacity-25 text-[1em];
     }
 </style>

@@ -137,16 +137,16 @@
 </script>
 
 {#if !!userCtx.user}
-    <div class="bg-surface-100-900 flex min-h-screen flex-col">
+    <div
+        class="bg-surface-100-900 relative flex min-h-screen w-[100%] max-w-[100%] flex-col justify-between"
+    >
         <Header />
-        <div class="mx-auto flex w-full flex-1 flex-col md:flex-row">
+        <div class="mx-auto flex w-full flex-1 flex-col lg:flex-row gap-1 relative gap-2">
             <!-- Left Sidebar -->
-            <aside
-                class="sticky top-[2rem] z-30 hidden h-[calc(100vh-4.5rem)] w-full flex-[2_2_0%] md:block"
-            >
+            <aside class="desktop-sidebar">
                 {#if panelsCtx.leftPanel}
                     <div
-                        class="bg-surface-50-950 me-2 flex h-full flex-col rounded-r-lg"
+                        class="bg-surface-50-950 me-2 flex h-full w-full flex-col rounded-r-lg"
                         in:fly={{ x: -100, duration: 200 }}
                         out:fly={{ x: -100, duration: 200 }}
                     >
@@ -175,18 +175,14 @@
                 {/if}
             </aside>
             <!-- Main Content -->
-            <main
-                class="bg-surface-50-950 flex min-h-[calc(100vh-4.5rem)] w-full flex-[4_4_0%] flex-col items-center justify-center rounded-t-lg px-2 md:px-0"
-            >
+            <main class="bg-surface-50-950">
                 {@render children?.()}
             </main>
             <!-- Right Sidebar -->
-            <aside
-                class="sticky top-[2rem] z-30 hidden h-[calc(100vh-4.5rem)] w-full flex-[2_2_0%] md:block"
-            >
+            <aside class="desktop-sidebar">
                 {#if panelsCtx.rightPanel}
                     <div
-                        class="bg-surface-50-950 ms-2 flex h-full flex-col rounded-l-lg"
+                        class="bg-surface-50-950 flex h-full w-full flex-col rounded-l-lg"
                         in:fly={{ x: 100, duration: 200 }}
                         out:fly={{ x: 100, duration: 200 }}
                     >
@@ -216,9 +212,7 @@
             </aside>
         </div>
         {#if panelsCtx.mobilePanel}
-            <div
-                class="bg-surface-100-900 fixed inset-0 z-[51] flex flex-col md:hidden"
-            >
+            <div class="bg-surface-100-900 fixed inset-0 z-[51] flex flex-col lg:hidden">
                 <div class="border-border flex items-center justify-between border-b p-4">
                     <span class="text-foreground text-lg font-semibold capitalize">
                         {panelsCtx.mobilePanel}</span
@@ -257,7 +251,7 @@
             <!-- Backdrop -->
             <div class="fixed inset-0 z-[40] bg-black/40"></div>
             <div
-                class="bg-surface-100-900/95 fixed inset-0 z-[40] flex flex-col overflow-y-auto px-2 md:hidden"
+                class="bg-surface-100-900/95 fixed inset-0 z-[40] flex flex-col overflow-y-auto px-2 lg:hidden"
             >
                 <div class="border-border flex items-center justify-between border-b p-4">
                     <span
@@ -295,5 +289,18 @@
 
 <Toaster {toaster}></Toaster>
 
-<style>
+<style lang="postcss">
+    @reference "tailwindcss";
+
+    /* w-[100%] lg:min-w-[50%] lg:w-[50%] */
+
+    main {
+        @apply relative min-h-[calc(100vh-4.5rem)]  lg:max-w-[50%] flex-col rounded-t-lg px-2 p-0 m-0 basis-1/2;
+    }
+
+    /* w-[25%] max-w-[25%] */
+
+    .desktop-sidebar {
+        @apply sticky top-[2rem] z-30 hidden h-[calc(100vh-4.5rem)]  lg:block overflow-x-hidden basis-1/4;
+    }
 </style>

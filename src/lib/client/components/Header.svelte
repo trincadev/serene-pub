@@ -68,7 +68,7 @@
             {/each}
         </div>
 
-		<div class="flex items-center gap-2 md:hidden mr-2">
+		<div class="flex items-center gap-2 md:hidden">
             <button
                 class="btn preset-tonal"
                 aria-label="Open menu"
