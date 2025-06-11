@@ -7,6 +7,7 @@
 
     interface Props {
         markdown: string
+        classes?: string
         promptStats?: Sockets.PromptTokenCount.Response
         leftControls?: Snippet
         rightControls?: Snippet
@@ -21,6 +22,7 @@
     let {
         markdown = $bindable(),
         promptStats = $bindable(),
+        classes,
         leftControls,
         rightControls,
         extraTabs = $bindable(),
@@ -36,7 +38,7 @@
     }
 </script>
 
-<Tabs value={tabGroup} onValueChange={(e) => (tabGroup = e.value as "compose" | "preview")}>
+<Tabs value={tabGroup} {classes} onValueChange={(e) => (tabGroup = e.value as "compose" | "preview")}>
     {#snippet list()}
         <Tabs.Control value="compose"
             ><span title="Compose"><Icons.Pen size="0.75em" /></span></Tabs.Control
@@ -65,7 +67,7 @@
             <div class="w-full">
                 <Tabs.Panel value="compose">
                     <textarea
-                        class="input input-sm field-sizing-content min-h-[3.75em] flex-1"
+                        class="input input-sm field-sizing-content lg:min-h-[3.75em] flex-1"
                         placeholder="Type a message..."
                         bind:value={markdown}
                         autocomplete="off"

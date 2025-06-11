@@ -54,6 +54,7 @@
 		"@types/lodash": "^4.17.17",
 		"@types/pngjs": "^6.0.5",
 		"better-sqlite3": "^11.8.0",
+		"dotenv": "^16.5.0",
 		"drizzle-orm": "^0.40.0",
 		"gpt-tokenizer": "^3.0.0",
 		"handlebars": "^4.7.8",
