@@ -302,12 +302,11 @@
 		<div class="p-6">
 			<h2 class="mb-2 text-lg font-bold">Import Character</h2>
 			<p class="mb-4">
-				Import your character card or JSON file here. Make sure the file
-				is in the correct format.
+				Import your character card. (JSON is not supported yet.)
 			</p>
 			<FileUpload
 				name="example"
-				accept=".png,.apng,.json,.charx,.JSON"
+				accept=".png,.apng,.jpeg, .jpg, .webp"
 				maxFiles={1}
 				onFileAccept={handleFileImport}
 				onFileReject={console.error}
