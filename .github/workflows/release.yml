@@ -23,7 +23,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Ensure database directory exists
-        run: mkdir -p ./dbdata
+        run: mkdir -p ~/SerenePubData
 
       - name: Build project
         run: bun run build

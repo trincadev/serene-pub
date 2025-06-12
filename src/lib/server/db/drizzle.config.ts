@@ -4,7 +4,7 @@ import { mkdirSync } from "fs"
 import { existsSync } from "fs"
 
 const isCI = process.env.CI === "true";
-export const dataDir = isCI ? "./dbdata" : (envPaths("SerenePub", { suffix: "" }) + "/data")
+export const dataDir = isCI ? "~/SerenePubData" : (envPaths("SerenePub", { suffix: "" }) + "/data")
 export const dbPath = `${dataDir}/main.db`
 export const migrationsDir = "./src/lib/server/db/drizzle"
 export const schemaDir = "./src/lib/server/db/schema.ts"
