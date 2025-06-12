@@ -19,23 +19,6 @@
 	"bugs": {
 		"url": "https://github.com/doolijb/serene-pub/issues"
 	},
-	"pkg": {
-		"assets": [
-			"build/**/*",
-			"static/**/*"
-		],
-		"scripts": [
-			"build/index.js",
-			"build/env.js",
-			"build/shims.js"
-		],
-		"outputPath": "dist",
-		"targets": [
-			"node18-linux-x64",
-			"node18-macos-x64",
-			"node18-win-x64"
-		]
-	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build && vite build --ssr",
@@ -50,8 +33,8 @@
 		"db:migrate": "drizzle-kit migrate --config ./src/lib/server/db/drizzle.config.ts",
 		"db:studio": "drizzle-kit studio --config ./src/lib/server/db/drizzle.config.ts",
 		"build:licenses": "npx license-checker --yaml => THIRD_PARTY_LICENSES.txt",
-		"build:copy-docs": "cp LICENSE README.md THIRD_PARTY_LICENSES.txt build/",
-		"pkg": "bun run build:licenses && bun run build:copy-docs && pkg . --targets node18-linux-x64,node18-macos-x64,node18-win-x64 --output build/serene-pub && node pkg-postprocess.js"
+		"bundle": "node scripts/bundle-dist.js",
+		"dist": "bun run build && bun run build:licenses && bun run bundle"
 	},
 	"devDependencies": {
 		"@enviro/metadata": "^1.5.1",

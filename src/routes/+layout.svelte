@@ -2,9 +2,10 @@
 	import { browser } from "$app/environment"
 	import Layout from "$lib/client/components/Layout.svelte"
 	import { loadSocketsClient } from "$lib/client/sockets/loadSockets.svelte"
+    import type { Snippet } from "svelte"
 
 	interface Props {
-		children?: import("svelte").Snippet
+		children?: Snippet
 	}
 
 	let { children }: Props = $props()

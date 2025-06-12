@@ -320,7 +320,6 @@ export async function promptTokenCount(
             isGenerating: false
         })
     }
-    const { OllamaAdapter } = await import("../connectionAdapters/ollama")
     const adapter = new OllamaAdapter({
         chat: chatForPrompt as any,
         connection: user.activeConnection,

@@ -17,9 +17,10 @@
 	import { Toaster } from "@skeletonlabs/skeleton-svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import SettingsSidebar from "$lib/client/components/sidebars/SettingsSidebar.svelte"
+	import type { Snippet } from "svelte"
 
 	interface Props {
-		children?: import("svelte").Snippet
+		children?: Snippet
 	}
 
 	let { children }: Props = $props()

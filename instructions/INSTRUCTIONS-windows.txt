@@ -1,0 +1,32 @@
+Welcome to Serene Pub for Windows!
+
+Thank you for downloading Serene Pub.
+
+To run the app:
+
+1. Extract the archive to your preferred location.
+2. Open the extracted folder (e.g., serene-pub-<version>-win).
+3. Double-click the "run.cmd" file to start Serene Pub.
+
+   - The first launch will automatically download and set up Node.js if needed. No manual installation is required.
+
+4. On your Windows PC, access Serene Pub from http://0.0.0.0:3000 or http://localhost:3000.
+
+Notes:
+- Serene Pub will attempt to automatically identify your local network IP address, allowing access across other devices (e.g. mobile phones.)
+    - To find your local IP, open Command Prompt and run: ipconfig
+    - Look for the "IPv4 Address" under your active network adapter (e.g., 192.168.1.42). You can access Serene Pub from your phone at http://<your-ip>:3000
+
+Troubleshooting:
+- If double-clicking "run.cmd" does not start the app, try right-clicking and selecting "Run as administrator."
+- If you see a security warning, click "More info" and then "Run anyway."
+- If Node.js fails to download, check your internet connection or firewall settings.
+
+Uninstall:
+- To remove Serene Pub, simply delete the extracted folder. No files are installed outside this directory.
+
+Feedback & Help:
+- For questions, feedback, or to report issues, please visit:
+  https://github.com/doolijb/serene-pub
+
+Enjoy using Serene Pub!

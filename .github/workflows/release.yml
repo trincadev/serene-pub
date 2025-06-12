@@ -24,16 +24,13 @@ jobs:
       # - name: Ensure database directory exists
       #   run: mkdir -p ~/SerenePubData
 
-      - name: Build project
-        run: bun run build
-
-      - name: Package binaries
-        run: bun run pkg
+      - name: Build app & make release distributions
+        run: bun run dist
 
       - name: Zip each dist directory
         run: |
           cd dist
-          for d in serene-tavern-* ; do
+          for d in serene-pub-* ; do
             zip -r "../${d}.zip" "$d"
           done
           cd ..

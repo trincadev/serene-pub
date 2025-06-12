@@ -3,6 +3,7 @@ import os from 'os';
 import dotenv from 'dotenv';
 import * as skio from 'sveltekit-io';
 import axios from 'axios';
+import { connectSockets } from './index';
 
 if (!browser) {
   dotenv.config(); // Bun does not load .env files automatically
@@ -12,17 +13,17 @@ function getSocketsHttpMode() {
   const SOCKETS_USE_HTTPS = process.env.SOCKETS_HTTP_MODE;
   const useHttps = !!SOCKETS_USE_HTTPS ? !!Number.parseInt(SOCKETS_USE_HTTPS) : undefined;
   if (useHttps !== undefined) {
-    console.log("SOCKETS_HTTP_MODE set:", SOCKETS_USE_HTTPS);
+    if (!process.env.production) console.log("SOCKETS_HTTP_MODE set:", SOCKETS_USE_HTTPS);
     return useHttps ? "https" : "http";
   }
-  console.log("SOCKETS_USE_HTTPS not set, defaulting to: http");
+  if (!process.env.production) console.log("SOCKETS_USE_HTTPS not set, defaulting to: http");
   return "http";
 }
 
 function getSocketsHostIP() {
   const SOCKETS_HOST = process.env.SOCKETS_HOST;
   if (SOCKETS_HOST) {
-    console.log("SOCKETS_HOST set:", SOCKETS_HOST);
+    if (!process.env.production) console.log("SOCKETS_HOST set:", SOCKETS_HOST);
     return SOCKETS_HOST;
   }
   const interfaces = os.networkInterfaces();
@@ -34,17 +35,17 @@ function getSocketsHostIP() {
       }
     }
   }
-  console.log("SOCKETS_HOST not set, could not determine local IPv4 address, defaulting to: localhost");
+  if (!process.env.production) console.log("SOCKETS_HOST not set, could not determine local IPv4 address, defaulting to: localhost");
   return "localhost";
 }
 
 function getSocketsPort() {
   const SOCKETS_PORT = process.env.SOCKETS_PORT;
   if (SOCKETS_PORT) {
-    console.log("SOCKETS_PORT set:", SOCKETS_PORT);
+    if (!process.env.production) console.log("SOCKETS_PORT set:", SOCKETS_PORT);
     return SOCKETS_PORT;
   }
-  console.log("SOCKETS_PORT not set, defaulting to: 3001");
+  if (!process.env.production) console.log("SOCKETS_PORT not set, defaulting to: 3001");
   return "3001";
 }
 
@@ -80,10 +81,7 @@ export async function loadSockets() {
     if (typeof io.to !== "function") {
       io.to = () => ({ emit: () => {} });
     }
-    if (browser) return;
-    import(".").then(({ connectSockets }) => {
-      connectSockets(io);
-    });
-    console.log("Sockets initialized with endpoint:", process.env.PUBLIC_SOCKETS_ENDPOINT);
+	connectSockets(io);
+    if (!process.env.production) console.log("Sockets initialized with endpoint:", process.env.PUBLIC_SOCKETS_ENDPOINT);
   });
 }
