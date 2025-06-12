@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*.*.*'
+      - 'v*.*.* alpha'
 
 jobs:
   build-and-release:
@@ -42,6 +43,7 @@ jobs:
         with:
           files: |
             dist/*.zip
+          prerelease: ${{ contains(github.ref, 'alpha') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
