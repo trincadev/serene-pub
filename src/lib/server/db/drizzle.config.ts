@@ -1,19 +1,22 @@
 import { defineConfig } from "drizzle-kit"
 import envPaths from "env-paths"
+import { mkdirSync } from "fs"
+import { existsSync } from "fs"
 
-export const dataDir = envPaths("SerenePub", { suffix: "" })
-export const dbPath = `${dataDir.data}/data/main.db`
+const isCI = process.env.CI === "true";
+export const dataDir = isCI ? "./dbdata" : (envPaths("SerenePub", { suffix: "" }) + "/data")
+export const dbPath = `${dataDir}/main.db`
 export const migrationsDir = "./src/lib/server/db/drizzle"
 export const schemaDir = "./src/lib/server/db/schema.ts"
+
+if (!existsSync(dataDir)) {
+	mkdirSync(dataDir, { recursive: true });
+}
 
 console.log(`Using database path: ${dbPath}`)
 
 // Create the data directory if it doesn't exist
-import { mkdirSync } from "fs"
-import { existsSync } from "fs"
-if (!existsSync(dataDir.data)) {
-	mkdirSync(dataDir.data, { recursive: true })
-}
+
 
 export default defineConfig({
 	schema: schemaDir,
