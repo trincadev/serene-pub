@@ -1,7 +1,6 @@
 import { drizzle } from "drizzle-orm/better-sqlite3"
 import Database from "better-sqlite3"
 import * as schema from "./schema"
-import envPaths from "env-paths"
 import { migrate } from "drizzle-orm/better-sqlite3/migrator"
 import * as dbConfig from "./drizzle.config"
 import type { MigrationConfig } from "drizzle-orm/migrator"
