@@ -9,10 +9,7 @@ import type { MigrationConfig } from "drizzle-orm/migrator"
 // if (!env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
 // import drizzle.config.ts from 'drizzle.config.ts';
 
-const dataDir = envPaths("SerenePub", { suffix: "" })
-const dbPath = `${dataDir.data}/data/main.db`
-
-const client = new Database(process.env.DATABASE_URL || dbPath)
+const client = new Database(process.env.DATABASE_URL || dbConfig.dbPath)
 
 export const db = drizzle(client, { schema })
 

@@ -1,0 +1,3131 @@
+├─ @ampproject/remapping@2.3.0
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/ampproject/remapping
+│  ├─ publisher: Justin Ridgewell
+│  ├─ email: jridgewell@google.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@ampproject/remapping
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@ampproject/remapping/LICENSE
+├─ @babel/generator@7.18.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/babel/babel
+│  ├─ publisher: The Babel Team
+│  ├─ url: https://babel.dev/team
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@babel/generator
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@babel/generator/LICENSE
+├─ @babel/helper-string-parser@7.27.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/babel/babel
+│  ├─ publisher: The Babel Team
+│  ├─ url: https://babel.dev/team
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@babel/helper-string-parser
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@babel/helper-string-parser/LICENSE
+├─ @babel/helper-validator-identifier@7.27.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/babel/babel
+│  ├─ publisher: The Babel Team
+│  ├─ url: https://babel.dev/team
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@babel/helper-validator-identifier
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@babel/helper-validator-identifier/LICENSE
+├─ @babel/parser@7.18.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/babel/babel
+│  ├─ publisher: The Babel Team
+│  ├─ url: https://babel.dev/team
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@babel/parser
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@babel/parser/LICENSE
+├─ @babel/types@7.19.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/babel/babel
+│  ├─ publisher: The Babel Team
+│  ├─ url: https://babel.dev/team
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@babel/types
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@babel/types/LICENSE
+├─ @date-fns/tz@1.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/date-fns/tz
+│  ├─ publisher: Sasha Koss
+│  ├─ email: koss@nocorp.me
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@date-fns/tz
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@date-fns/tz/LICENSE.md
+├─ @drizzle-team/brocli@0.10.2
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/drizzle-team/brocli
+│  ├─ publisher: Drizzle Team
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@drizzle-team/brocli
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@drizzle-team/brocli/README.md
+├─ @duckdb/duckdb-wasm@1.29.1-dev68.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/duckdb/duckdb-wasm
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/README.md
+├─ @enviro/metadata@1.5.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/anasshakil/metadata
+│  ├─ publisher: Ahmed Anas Shakil
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@enviro/metadata
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@enviro/metadata/LICENSE
+├─ @esbuild-kit/core-utils@3.3.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/esbuild-kit/core-utils
+│  ├─ publisher: Hiroki Osame
+│  ├─ email: hiroki.osame@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@esbuild-kit/core-utils
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@esbuild-kit/core-utils/LICENSE
+├─ @esbuild-kit/esm-loader@2.6.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/esbuild-kit/esm-loader
+│  ├─ publisher: Hiroki Osame
+│  ├─ email: hiroki.osame@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@esbuild-kit/esm-loader
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@esbuild-kit/esm-loader/LICENSE
+├─ @esbuild/linux-x64@0.18.20
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/evanw/esbuild
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@esbuild-kit/core-utils/node_modules/esbuild/node_modules/@esbuild/linux-x64
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@esbuild-kit/core-utils/node_modules/esbuild/node_modules/@esbuild/linux-x64/README.md
+├─ @esbuild/linux-x64@0.19.12
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/evanw/esbuild
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@esbuild/linux-x64
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@esbuild/linux-x64/README.md
+├─ @esbuild/linux-x64@0.25.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/evanw/esbuild
+│  ├─ path: /home/jody/github/serene-pub/node_modules/vite/node_modules/esbuild/node_modules/@esbuild/linux-x64
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/vite/node_modules/esbuild/node_modules/@esbuild/linux-x64/README.md
+├─ @floating-ui/core@1.7.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/floating-ui/floating-ui
+│  ├─ publisher: atomiks
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@floating-ui/core
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@floating-ui/core/LICENSE
+├─ @floating-ui/dom@1.7.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/floating-ui/floating-ui
+│  ├─ publisher: atomiks
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@floating-ui/dom
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@floating-ui/dom/LICENSE
+├─ @floating-ui/utils@0.2.9
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/floating-ui/floating-ui
+│  ├─ publisher: atomiks
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@floating-ui/utils
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@floating-ui/utils/LICENSE
+├─ @fontsource/fira-mono@5.2.6
+│  ├─ licenses: OFL-1.1
+│  ├─ repository: https://github.com/fontsource/font-files
+│  ├─ publisher: Google Inc.
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@fontsource/fira-mono
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@fontsource/fira-mono/LICENSE
+├─ @isaacs/fs-minipass@4.0.1
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/fs-minipass
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@isaacs/fs-minipass
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@isaacs/fs-minipass/LICENSE
+├─ @jridgewell/gen-mapping@0.3.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jridgewell/gen-mapping
+│  ├─ publisher: Justin Ridgewell
+│  ├─ email: justin@ridgewell.name
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@jridgewell/gen-mapping
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@jridgewell/gen-mapping/LICENSE
+├─ @jridgewell/resolve-uri@3.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jridgewell/resolve-uri
+│  ├─ publisher: Justin Ridgewell
+│  ├─ email: justin@ridgewell.name
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@jridgewell/resolve-uri
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@jridgewell/resolve-uri/LICENSE
+├─ @jridgewell/set-array@1.2.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jridgewell/set-array
+│  ├─ publisher: Justin Ridgewell
+│  ├─ email: justin@ridgewell.name
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@jridgewell/set-array
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@jridgewell/set-array/LICENSE
+├─ @jridgewell/sourcemap-codec@1.5.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jridgewell/sourcemap-codec
+│  ├─ publisher: Rich Harris
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@jridgewell/sourcemap-codec
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@jridgewell/sourcemap-codec/LICENSE
+├─ @jridgewell/trace-mapping@0.3.25
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jridgewell/trace-mapping
+│  ├─ publisher: Justin Ridgewell
+│  ├─ email: justin@ridgewell.name
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@jridgewell/trace-mapping
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@jridgewell/trace-mapping/LICENSE
+├─ @lenml/char-card-reader@1.0.6
+│  ├─ licenses: AGPL-3.0-only
+│  ├─ publisher: lenml
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@lenml/char-card-reader
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@lenml/char-card-reader/LICENSE
+├─ @lucide/svelte@0.511.0
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/lucide-icons/lucide
+│  ├─ publisher: Eric Fennis
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@lucide/svelte
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@lucide/svelte/LICENSE
+├─ @microsoft/fetch-event-source@2.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Azure/fetch-event-source
+│  ├─ publisher: Microsoft
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@microsoft/fetch-event-source
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@microsoft/fetch-event-source/LICENSE
+├─ @moeru/std@0.1.0-beta.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/moeru-ai/std
+│  ├─ publisher: Moeru AI
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@moeru/std
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@moeru/std/LICENSE.md
+├─ @neoconfetti/svelte@2.2.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/puruvj/neoconfetti
+│  ├─ publisher: Puru Vijay
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@neoconfetti/svelte
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@neoconfetti/svelte/README.md
+├─ @nodelib/fs.scandir@2.1.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.scandir
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@nodelib/fs.scandir
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@nodelib/fs.scandir/LICENSE
+├─ @nodelib/fs.stat@2.0.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.stat
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@nodelib/fs.stat
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@nodelib/fs.stat/LICENSE
+├─ @nodelib/fs.walk@1.2.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.walk
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@nodelib/fs.walk
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@nodelib/fs.walk/LICENSE
+├─ @petamoriken/float16@3.9.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/petamoriken/float16
+│  ├─ publisher: Kenta Moriuchi
+│  ├─ email: moriken@kimamass.com
+│  ├─ url: https://moriken.dev
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@petamoriken/float16
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@petamoriken/float16/LICENSE
+├─ @polka/url@1.0.0-next.29
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lukeed/polka
+│  ├─ publisher: Luke Edwards
+│  ├─ email: luke@lukeed.com
+│  ├─ url: https://lukeed.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@polka/url
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@polka/url/readme.md
+├─ @proj-airi/duckdb-wasm@0.4.27
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/proj-airi/duckdb-wasm
+│  ├─ publisher: Neko Ayaka
+│  ├─ email: neko@ayaka.moe
+│  ├─ url: https://github.com/nekomeowww
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@proj-airi/duckdb-wasm
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@proj-airi/duckdb-wasm/LICENSE
+├─ @rollup/plugin-commonjs@28.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/rollup/plugins
+│  ├─ publisher: Rich Harris
+│  ├─ email: richard.a.harris@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@rollup/plugin-commonjs
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@rollup/plugin-commonjs/LICENSE
+├─ @rollup/plugin-json@6.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/rollup/plugins
+│  ├─ publisher: rollup
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@rollup/plugin-json
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@rollup/plugin-json/LICENSE
+├─ @rollup/plugin-node-resolve@16.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/rollup/plugins
+│  ├─ publisher: Rich Harris
+│  ├─ email: richard.a.harris@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@rollup/plugin-node-resolve
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@rollup/plugin-node-resolve/LICENSE
+├─ @rollup/pluginutils@5.1.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/rollup/plugins
+│  ├─ publisher: Rich Harris
+│  ├─ email: richard.a.harris@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@rollup/pluginutils
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@rollup/pluginutils/LICENSE
+├─ @rollup/rollup-linux-x64-gnu@4.41.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/rollup/rollup
+│  ├─ publisher: Lukas Taegert-Atkinson
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@rollup/rollup-linux-x64-gnu
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@rollup/rollup-linux-x64-gnu/README.md
+├─ @rollup/rollup-linux-x64-musl@4.41.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/rollup/rollup
+│  ├─ publisher: Lukas Taegert-Atkinson
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@rollup/rollup-linux-x64-musl
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@rollup/rollup-linux-x64-musl/README.md
+├─ @skeletonlabs/skeleton-svelte@1.2.3
+│  ├─ licenses: MIT*
+│  ├─ publisher: endigo9740
+│  ├─ email: chris@skeletonlabs.dev
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@skeletonlabs/skeleton-svelte
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@skeletonlabs/skeleton-svelte/LICENSE
+├─ @skeletonlabs/skeleton@3.1.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/skeletonlabs/skeleton
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@skeletonlabs/skeleton
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@skeletonlabs/skeleton/LICENSE
+├─ @socket.io/component-emitter@3.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/socketio/emitter
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@socket.io/component-emitter
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@socket.io/component-emitter/LICENSE
+├─ @sveltejs/acorn-typescript@1.0.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sveltejs/acorn-typescript
+│  ├─ publisher: tyrealhu and the Svelte team
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@sveltejs/acorn-typescript
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@sveltejs/acorn-typescript/LICENSE.md
+├─ @sveltejs/adapter-node@5.2.12
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sveltejs/kit
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@sveltejs/adapter-node
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@sveltejs/adapter-node/LICENSE
+├─ @sveltejs/kit@2.21.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sveltejs/kit
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@sveltejs/kit
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@sveltejs/kit/LICENSE
+├─ @sveltejs/vite-plugin-svelte-inspector@4.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sveltejs/vite-plugin-svelte
+│  ├─ publisher: dominikg
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@sveltejs/vite-plugin-svelte-inspector
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@sveltejs/vite-plugin-svelte-inspector/LICENSE
+├─ @sveltejs/vite-plugin-svelte@5.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sveltejs/vite-plugin-svelte
+│  ├─ publisher: dominikg
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@sveltejs/vite-plugin-svelte
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@sveltejs/vite-plugin-svelte/LICENSE
+├─ @swc/helpers@0.5.17
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/swc-project/swc
+│  ├─ publisher: 강동윤
+│  ├─ email: kdy1997.dev@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@swc/helpers
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@swc/helpers/LICENSE
+├─ @tailwindcss/forms@0.5.10
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tailwindlabs/tailwindcss-forms
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@tailwindcss/forms
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@tailwindcss/forms/LICENSE
+├─ @tailwindcss/node@4.1.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tailwindlabs/tailwindcss
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@tailwindcss/node
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@tailwindcss/node/LICENSE
+├─ @tailwindcss/oxide-linux-x64-gnu@4.1.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tailwindlabs/tailwindcss
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@tailwindcss/oxide-linux-x64-gnu
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@tailwindcss/oxide-linux-x64-gnu/LICENSE
+├─ @tailwindcss/oxide-linux-x64-musl@4.1.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tailwindlabs/tailwindcss
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@tailwindcss/oxide-linux-x64-musl
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@tailwindcss/oxide-linux-x64-musl/LICENSE
+├─ @tailwindcss/oxide@4.1.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tailwindlabs/tailwindcss
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@tailwindcss/oxide
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@tailwindcss/oxide/LICENSE
+├─ @tailwindcss/typography@0.5.16
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tailwindlabs/tailwindcss-typography
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@tailwindcss/typography
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@tailwindcss/typography/LICENSE
+├─ @tailwindcss/vite@4.1.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tailwindlabs/tailwindcss
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@tailwindcss/vite
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@tailwindcss/vite/LICENSE
+├─ @tokenizer/inflate@0.2.7
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Borewit/tokenizer-inflate
+│  ├─ publisher: Borewit
+│  ├─ url: https://github.com/Borewit
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@tokenizer/inflate
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@tokenizer/inflate/LICENSE
+├─ @tokenizer/token@0.3.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Borewit/tokenizer-token
+│  ├─ publisher: Borewit
+│  ├─ url: https://github.com/Borewit
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@tokenizer/token
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@tokenizer/token/README.md
+├─ @types/better-sqlite3@7.6.13
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/better-sqlite3
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/better-sqlite3/LICENSE
+├─ @types/command-line-args@5.2.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/command-line-args
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/command-line-args/LICENSE
+├─ @types/command-line-usage@5.0.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/command-line-usage
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/command-line-usage/LICENSE
+├─ @types/cookie@0.6.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/cookie
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/cookie/LICENSE
+├─ @types/cors@2.8.19
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/cors
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/cors/LICENSE
+├─ @types/estree@1.0.7
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/estree
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/estree/LICENSE
+├─ @types/js-yaml@4.0.9
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/js-yaml
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/js-yaml/LICENSE
+├─ @types/lodash@4.17.17
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/lodash
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/lodash/LICENSE
+├─ @types/node@20.17.57
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/node
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/node/LICENSE
+├─ @types/png-chunk-text@1.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/png-chunk-text
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/png-chunk-text/LICENSE
+├─ @types/png-chunks-extract@1.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/png-chunks-extract
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/png-chunks-extract/LICENSE
+├─ @types/pngjs@6.0.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/pngjs
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/pngjs/LICENSE
+├─ @types/resolve@1.20.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@types/resolve
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@types/resolve/LICENSE
+├─ @zag-js/accordion@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/accordion
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/accordion
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/accordion/LICENSE
+├─ @zag-js/anatomy@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/machine
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/anatomy
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/anatomy/LICENSE
+├─ @zag-js/aria-hidden@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/aria-hidden
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/aria-hidden
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/aria-hidden/LICENSE
+├─ @zag-js/auto-resize@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/auto-resize
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/auto-resize
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/auto-resize/LICENSE
+├─ @zag-js/avatar@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/avatar
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/avatar
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/avatar/LICENSE
+├─ @zag-js/collection@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/collection
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/collection
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/collection/LICENSE
+├─ @zag-js/combobox@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/combobox
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/combobox
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/combobox/LICENSE
+├─ @zag-js/core@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/machine
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/core
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/core/LICENSE
+├─ @zag-js/dialog@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/dialog
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/dialog
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/dialog/LICENSE
+├─ @zag-js/dismissable@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/interact-outside
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/dismissable
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/dismissable/LICENSE
+├─ @zag-js/dom-query@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/dom-helpers
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/dom-query
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/dom-query/LICENSE
+├─ @zag-js/file-upload@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/file-upload
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/file-upload
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/file-upload/LICENSE
+├─ @zag-js/file-utils@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/file-utils
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/file-utils
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/file-utils/LICENSE
+├─ @zag-js/focus-trap@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/focus-trap
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/focus-trap
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/focus-trap/LICENSE
+├─ @zag-js/focus-visible@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/focus-visible
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/focus-visible
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/focus-visible/LICENSE
+├─ @zag-js/i18n-utils@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/i18n-utils
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/i18n-utils
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/i18n-utils/LICENSE
+├─ @zag-js/interact-outside@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/interact-outside
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/interact-outside
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/interact-outside/LICENSE
+├─ @zag-js/live-region@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/live-region
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/live-region
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/live-region/LICENSE
+├─ @zag-js/pagination@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/pagination
+│  ├─ publisher: Abraham Aremu
+│  ├─ email: anubra266@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/pagination
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/pagination/LICENSE
+├─ @zag-js/popover@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/popover
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/popover
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/popover/LICENSE
+├─ @zag-js/popper@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/popper
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/popper
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/popper/LICENSE
+├─ @zag-js/progress@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/progress
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/progress
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/progress/LICENSE
+├─ @zag-js/radio-group@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/radio-group
+│  ├─ publisher: Abraham Aremu
+│  ├─ email: anubra266@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/radio-group
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/radio-group/LICENSE
+├─ @zag-js/rating-group@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/rating
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/rating-group
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/rating-group/LICENSE
+├─ @zag-js/remove-scroll@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/remove-scroll
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/remove-scroll
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/remove-scroll/LICENSE
+├─ @zag-js/slider@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/slider
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/slider
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/slider/LICENSE
+├─ @zag-js/store@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/store
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/store
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/store/LICENSE
+├─ @zag-js/svelte@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/frameworks/svelte
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/svelte
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/svelte/LICENSE
+├─ @zag-js/switch@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/switch
+│  ├─ publisher: Abraham Aremu
+│  ├─ email: anubra266@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/switch
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/switch/LICENSE
+├─ @zag-js/tabs@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/tabs
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/tabs
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/tabs/LICENSE
+├─ @zag-js/tags-input@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/tags-input
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/tags-input
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/tags-input/LICENSE
+├─ @zag-js/toast@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/toast
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/toast
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/toast/LICENSE
+├─ @zag-js/tooltip@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/tooltip
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/tooltip
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/tooltip/LICENSE
+├─ @zag-js/types@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/types
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/types
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/types/LICENSE
+├─ @zag-js/utils@1.14.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chakra-ui/zag/tree/main/packages/utilities/core
+│  ├─ publisher: Segun Adebayo
+│  ├─ email: sage@adebayosegun.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@zag-js/utils
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@zag-js/utils/LICENSE
+├─ abbrev@1.1.1
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/abbrev-js
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ path: /home/jody/github/serene-pub/node_modules/abbrev
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/abbrev/LICENSE
+├─ accepts@1.3.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/accepts
+│  ├─ path: /home/jody/github/serene-pub/node_modules/accepts
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/accepts/LICENSE
+├─ acorn@8.14.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/acornjs/acorn
+│  ├─ path: /home/jody/github/serene-pub/node_modules/acorn
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/acorn/LICENSE
+├─ agent-base@6.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/TooTallNate/node-agent-base
+│  ├─ publisher: Nathan Rajlich
+│  ├─ email: nathan@tootallnate.net
+│  ├─ url: http://n8.io/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/agent-base
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/agent-base/README.md
+├─ ansi-regex@5.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chalk/ansi-regex
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/ansi-regex
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/ansi-regex/license
+├─ ansi-styles@4.3.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chalk/ansi-styles
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/ansi-styles
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/ansi-styles/license
+├─ apache-arrow@17.0.0
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/apache/arrow
+│  ├─ publisher: Apache Software Foundation
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow
+│  ├─ licenseFile: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/LICENSE.txt
+│  └─ noticeFile: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/NOTICE.txt
+├─ apache-arrow@20.0.0
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/apache/arrow
+│  ├─ publisher: Apache Software Foundation
+│  ├─ path: /home/jody/github/serene-pub/node_modules/apache-arrow
+│  ├─ licenseFile: /home/jody/github/serene-pub/node_modules/apache-arrow/LICENSE.txt
+│  └─ noticeFile: /home/jody/github/serene-pub/node_modules/apache-arrow/NOTICE.txt
+├─ argparse@2.0.1
+│  ├─ licenses: Python-2.0
+│  ├─ repository: https://github.com/nodeca/argparse
+│  ├─ path: /home/jody/github/serene-pub/node_modules/argparse
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/argparse/LICENSE
+├─ aria-query@5.3.2
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/A11yance/aria-query
+│  ├─ publisher: Jesse Beach
+│  ├─ email: splendidnoise@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/aria-query
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/aria-query/LICENSE
+├─ array-back@3.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/array-back
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: 75pound@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/node_modules/command-line-args/node_modules/array-back
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/node_modules/command-line-args/node_modules/array-back/LICENSE
+├─ array-back@6.2.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/array-back
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: 75pound@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/array-back
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/array-back/LICENSE
+├─ array-find-index@1.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/array-find-index
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/array-find-index
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/array-find-index/license
+├─ array-union@2.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/array-union
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/array-union
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/array-union/license
+├─ asap@2.0.6
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/kriskowal/asap
+│  ├─ path: /home/jody/github/serene-pub/node_modules/asap
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/asap/LICENSE.md
+├─ asynckit@0.4.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/alexindigo/asynckit
+│  ├─ publisher: Alex Indigo
+│  ├─ email: iam@alexindigo.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/asynckit
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/asynckit/LICENSE
+├─ at-least-node@1.0.0
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/RyanZim/at-least-node
+│  ├─ publisher: Ryan Zimmerman
+│  ├─ email: opensrc@ryanzim.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/at-least-node
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/at-least-node/LICENSE
+├─ axios@1.9.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/axios/axios
+│  ├─ publisher: Matt Zabriskie
+│  ├─ path: /home/jody/github/serene-pub/node_modules/axios
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/axios/LICENSE
+├─ axobject-query@4.1.0
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/A11yance/axobject-query
+│  ├─ publisher: Jesse Beach
+│  ├─ email: splendidnoise@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/axobject-query
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/axobject-query/LICENSE
+├─ balanced-match@1.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/juliangruber/balanced-match
+│  ├─ publisher: Julian Gruber
+│  ├─ email: mail@juliangruber.com
+│  ├─ url: http://juliangruber.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/balanced-match
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/balanced-match/LICENSE.md
+├─ base64-js@1.5.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/beatgammit/base64-js
+│  ├─ publisher: T. Jameson Little
+│  ├─ email: t.jameson.little@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/base64-js
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/base64-js/LICENSE
+├─ base64id@2.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/faeldt/base64id
+│  ├─ publisher: Kristian Faeldt
+│  ├─ email: faeldt_kristian@cyberagent.co.jp
+│  ├─ path: /home/jody/github/serene-pub/node_modules/base64id
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/base64id/LICENSE
+├─ better-sqlite3@11.10.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/WiseLibs/better-sqlite3
+│  ├─ publisher: Joshua Wise
+│  ├─ email: joshuathomaswise@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/better-sqlite3
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/better-sqlite3/LICENSE
+├─ bindings@1.5.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/TooTallNate/node-bindings
+│  ├─ publisher: Nathan Rajlich
+│  ├─ email: nathan@tootallnate.net
+│  ├─ url: http://tootallnate.net
+│  ├─ path: /home/jody/github/serene-pub/node_modules/bindings
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/bindings/LICENSE.md
+├─ bl@4.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/rvagg/bl
+│  ├─ path: /home/jody/github/serene-pub/node_modules/bl
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/bl/LICENSE.md
+├─ body-parser@2.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/expressjs/body-parser
+│  ├─ path: /home/jody/github/serene-pub/node_modules/body-parser
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/body-parser/LICENSE
+├─ brace-expansion@1.1.12
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/juliangruber/brace-expansion
+│  ├─ publisher: Julian Gruber
+│  ├─ email: mail@juliangruber.com
+│  ├─ url: http://juliangruber.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/brace-expansion
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/brace-expansion/LICENSE
+├─ braces@3.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/micromatch/braces
+│  ├─ publisher: Jon Schlinkert
+│  ├─ url: https://github.com/jonschlinkert
+│  ├─ path: /home/jody/github/serene-pub/node_modules/braces
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/braces/LICENSE
+├─ buffer-from@1.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/LinusU/buffer-from
+│  ├─ path: /home/jody/github/serene-pub/node_modules/buffer-from
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/buffer-from/LICENSE
+├─ buffer@5.7.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/feross/buffer
+│  ├─ publisher: Feross Aboukhadijeh
+│  ├─ email: feross@feross.org
+│  ├─ url: https://feross.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/buffer
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/buffer/LICENSE
+├─ bytes@3.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/visionmedia/bytes.js
+│  ├─ publisher: TJ Holowaychuk
+│  ├─ email: tj@vision-media.ca
+│  ├─ url: http://tjholowaychuk.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/bytes
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/bytes/LICENSE
+├─ call-bind-apply-helpers@1.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/call-bind-apply-helpers
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/call-bind-apply-helpers
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/call-bind-apply-helpers/LICENSE
+├─ call-bound@1.0.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/call-bound
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/call-bound
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/call-bound/LICENSE
+├─ chalk-template@0.4.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chalk/chalk-template
+│  ├─ path: /home/jody/github/serene-pub/node_modules/chalk-template
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/chalk-template/license
+├─ chalk@4.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chalk/chalk
+│  ├─ path: /home/jody/github/serene-pub/node_modules/chalk
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/chalk/license
+├─ chokidar@4.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/paulmillr/chokidar
+│  ├─ publisher: Paul Miller
+│  ├─ url: https://paulmillr.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/chokidar
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/chokidar/LICENSE
+├─ chownr@1.1.4
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/chownr
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/tar-fs/node_modules/chownr
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/tar-fs/node_modules/chownr/LICENSE
+├─ chownr@3.0.0
+│  ├─ licenses: BlueOak-1.0.0
+│  ├─ repository: https://github.com/isaacs/chownr
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/chownr
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/chownr/LICENSE.md
+├─ cliui@7.0.4
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/yargs/cliui
+│  ├─ publisher: Ben Coe
+│  ├─ email: ben@npmjs.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/cliui
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/cliui/LICENSE.txt
+├─ clsx@2.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lukeed/clsx
+│  ├─ publisher: Luke Edwards
+│  ├─ email: luke.edwards05@gmail.com
+│  ├─ url: https://lukeed.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/clsx
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/clsx/license
+├─ color-convert@2.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Qix-/color-convert
+│  ├─ publisher: Heather Arthur
+│  ├─ email: fayearthur@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/color-convert
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/color-convert/LICENSE
+├─ color-name@1.1.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/colorjs/color-name
+│  ├─ publisher: DY
+│  ├─ email: dfcreative@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/color-name
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/color-name/LICENSE
+├─ combined-stream@1.0.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/felixge/node-combined-stream
+│  ├─ publisher: Felix Geisendörfer
+│  ├─ email: felix@debuggable.com
+│  ├─ url: http://debuggable.com/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/combined-stream
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/combined-stream/License
+├─ command-line-args@5.2.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/command-line-args
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: 75pound@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/node_modules/command-line-args
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/node_modules/command-line-args/LICENSE
+├─ command-line-args@6.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/command-line-args
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: opensource@75lb.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/command-line-args
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/command-line-args/LICENSE
+├─ command-line-usage@7.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/command-line-usage
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: 75pound@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/command-line-usage
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/command-line-usage/LICENSE
+├─ commondir@1.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/substack/node-commondir
+│  ├─ publisher: James Halliday
+│  ├─ email: mail@substack.net
+│  ├─ url: http://substack.net
+│  ├─ path: /home/jody/github/serene-pub/node_modules/commondir
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/commondir/LICENSE
+├─ concat-map@0.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/substack/node-concat-map
+│  ├─ publisher: James Halliday
+│  ├─ email: mail@substack.net
+│  ├─ url: http://substack.net
+│  ├─ path: /home/jody/github/serene-pub/node_modules/concat-map
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/concat-map/LICENSE
+├─ content-disposition@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/content-disposition
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/content-disposition
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/content-disposition/LICENSE
+├─ content-type@1.0.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/content-type
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/content-type
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/content-type/LICENSE
+├─ cookie-signature@1.2.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/visionmedia/node-cookie-signature
+│  ├─ publisher: TJ Holowaychuk
+│  ├─ email: tj@learnboost.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/cookie-signature
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/cookie-signature/LICENSE
+├─ cookie@0.6.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/cookie
+│  ├─ publisher: Roman Shtylman
+│  ├─ email: shtylman@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/cookie
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/cookie/LICENSE
+├─ cookie@0.7.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/cookie
+│  ├─ publisher: Roman Shtylman
+│  ├─ email: shtylman@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/engine.io/node_modules/cookie
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/engine.io/node_modules/cookie/LICENSE
+├─ core-util-is@1.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/isaacs/core-util-is
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/core-util-is
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/core-util-is/LICENSE
+├─ cors@2.8.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/expressjs/cors
+│  ├─ publisher: Troy Goode
+│  ├─ email: troygoode@gmail.com
+│  ├─ url: https://github.com/troygoode/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/cors
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/cors/LICENSE
+├─ crc-32@0.3.0
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/SheetJS/js-crc32
+│  ├─ publisher: sheetjs
+│  ├─ path: /home/jody/github/serene-pub/node_modules/crc-32
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/crc-32/LICENSE
+├─ cssesc@3.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mathiasbynens/cssesc
+│  ├─ publisher: Mathias Bynens
+│  ├─ url: https://mathiasbynens.be/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/cssesc
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/cssesc/LICENSE-MIT.txt
+├─ csstype@3.1.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/frenic/csstype
+│  ├─ publisher: Fredrik Nicol
+│  ├─ email: fredrik.nicol@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/csstype
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/csstype/LICENSE
+├─ date-fns@4.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/date-fns/date-fns
+│  ├─ path: /home/jody/github/serene-pub/node_modules/date-fns
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/date-fns/LICENSE.md
+├─ debug@4.3.7
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/debug-js/debug
+│  ├─ publisher: Josh Junon
+│  ├─ url: https://github.com/qix-
+│  ├─ path: /home/jody/github/serene-pub/node_modules/socket.io/node_modules/debug
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/socket.io/node_modules/debug/LICENSE
+├─ debug@4.4.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/debug-js/debug
+│  ├─ publisher: Josh Junon
+│  ├─ url: https://github.com/qix-
+│  ├─ path: /home/jody/github/serene-pub/node_modules/debug
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/debug/LICENSE
+├─ debuglog@1.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sam-github/node-debuglog
+│  ├─ publisher: Sam Roberts
+│  ├─ email: sam@strongloop.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/debuglog
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/debuglog/LICENSE
+├─ decompress-response@6.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/decompress-response
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: https://sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/decompress-response
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/decompress-response/license
+├─ deep-extend@0.6.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/unclechu/node-deep-extend
+│  ├─ publisher: Viacheslav Lotsmanov
+│  ├─ email: lotsmanov89@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/deep-extend
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/deep-extend/LICENSE
+├─ deepmerge@4.3.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/TehShrike/deepmerge
+│  ├─ path: /home/jody/github/serene-pub/node_modules/deepmerge
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/deepmerge/license.txt
+├─ defu@6.1.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/unjs/defu
+│  ├─ path: /home/jody/github/serene-pub/node_modules/defu
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/defu/LICENSE
+├─ delayed-stream@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/felixge/node-delayed-stream
+│  ├─ publisher: Felix Geisendörfer
+│  ├─ email: felix@debuggable.com
+│  ├─ url: http://debuggable.com/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/delayed-stream
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/delayed-stream/License
+├─ depd@2.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/dougwilson/nodejs-depd
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/depd
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/depd/LICENSE
+├─ detect-libc@2.0.4
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/lovell/detect-libc
+│  ├─ publisher: Lovell Fuller
+│  ├─ email: npm@lovell.info
+│  ├─ path: /home/jody/github/serene-pub/node_modules/detect-libc
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/detect-libc/LICENSE
+├─ devalue@5.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Rich-Harris/devalue
+│  ├─ path: /home/jody/github/serene-pub/node_modules/devalue
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/devalue/LICENSE
+├─ dezalgo@1.0.4
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/dezalgo
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/dezalgo
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/dezalgo/LICENSE
+├─ dir-glob@3.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/kevva/dir-glob
+│  ├─ publisher: Kevin Mårtensson
+│  ├─ email: kevinmartensson@gmail.com
+│  ├─ url: github.com/kevva
+│  ├─ path: /home/jody/github/serene-pub/node_modules/dir-glob
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/dir-glob/license
+├─ dotenv@16.5.0
+│  ├─ licenses: BSD-2-Clause
+│  ├─ repository: https://github.com/motdotla/dotenv
+│  ├─ path: /home/jody/github/serene-pub/node_modules/dotenv
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/dotenv/LICENSE
+├─ drizzle-kit@0.30.6
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/drizzle-team/drizzle-orm
+│  ├─ publisher: Drizzle Team
+│  ├─ path: /home/jody/github/serene-pub/node_modules/drizzle-kit
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/drizzle-kit/README.md
+├─ drizzle-orm@0.40.1
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/drizzle-team/drizzle-orm
+│  ├─ publisher: Drizzle Team
+│  ├─ path: /home/jody/github/serene-pub/node_modules/drizzle-orm
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/drizzle-orm/README.md
+├─ dunder-proto@1.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/es-shims/dunder-proto
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/dunder-proto
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/dunder-proto/LICENSE
+├─ ee-first@1.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jonathanong/ee-first
+│  ├─ publisher: Jonathan Ong
+│  ├─ email: me@jongleberry.com
+│  ├─ url: http://jongleberry.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/ee-first
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/ee-first/LICENSE
+├─ emoji-regex@8.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mathiasbynens/emoji-regex
+│  ├─ publisher: Mathias Bynens
+│  ├─ url: https://mathiasbynens.be/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/emoji-regex
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/emoji-regex/LICENSE-MIT.txt
+├─ encodeurl@2.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/pillarjs/encodeurl
+│  ├─ path: /home/jody/github/serene-pub/node_modules/encodeurl
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/encodeurl/LICENSE
+├─ end-of-stream@1.4.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mafintosh/end-of-stream
+│  ├─ publisher: Mathias Buus
+│  ├─ email: mathiasbuus@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/end-of-stream
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/end-of-stream/LICENSE
+├─ engine.io-client@6.6.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/socketio/socket.io
+│  ├─ path: /home/jody/github/serene-pub/node_modules/engine.io-client
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/engine.io-client/LICENSE
+├─ engine.io-parser@5.2.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/socketio/socket.io
+│  ├─ path: /home/jody/github/serene-pub/node_modules/engine.io-parser
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/engine.io-parser/LICENSE
+├─ engine.io@6.6.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/socketio/socket.io
+│  ├─ publisher: Guillermo Rauch
+│  ├─ email: guillermo@learnboost.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/engine.io
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/engine.io/LICENSE
+├─ enhanced-resolve@5.18.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/webpack/enhanced-resolve
+│  ├─ publisher: Tobias Koppers @sokra
+│  ├─ path: /home/jody/github/serene-pub/node_modules/enhanced-resolve
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/enhanced-resolve/LICENSE
+├─ env-paths@3.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/env-paths
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: https://sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/env-paths
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/env-paths/license
+├─ es-define-property@1.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/es-define-property
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/es-define-property
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/es-define-property/LICENSE
+├─ es-errors@1.3.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/es-errors
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/es-errors
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/es-errors/LICENSE
+├─ es-object-atoms@1.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/es-object-atoms
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/es-object-atoms
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/es-object-atoms/LICENSE
+├─ es-set-tostringtag@2.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/es-shims/es-set-tostringtag
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/es-set-tostringtag
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/es-set-tostringtag/LICENSE
+├─ es-toolkit@1.39.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/toss/es-toolkit
+│  ├─ path: /home/jody/github/serene-pub/node_modules/es-toolkit
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/es-toolkit/LICENSE
+├─ esbuild-register@3.6.0
+│  ├─ licenses: MIT
+│  ├─ path: /home/jody/github/serene-pub/node_modules/esbuild-register
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/esbuild-register/LICENSE
+├─ esbuild@0.18.20
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/evanw/esbuild
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@esbuild-kit/core-utils/node_modules/esbuild
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@esbuild-kit/core-utils/node_modules/esbuild/LICENSE.md
+├─ esbuild@0.19.12
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/evanw/esbuild
+│  ├─ path: /home/jody/github/serene-pub/node_modules/esbuild
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/esbuild/LICENSE.md
+├─ esbuild@0.25.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/evanw/esbuild
+│  ├─ path: /home/jody/github/serene-pub/node_modules/vite/node_modules/esbuild
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/vite/node_modules/esbuild/LICENSE.md
+├─ escalade@3.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lukeed/escalade
+│  ├─ publisher: Luke Edwards
+│  ├─ email: luke.edwards05@gmail.com
+│  ├─ url: https://lukeed.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/escalade
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/escalade/license
+├─ escape-html@1.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/component/escape-html
+│  ├─ path: /home/jody/github/serene-pub/node_modules/escape-html
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/escape-html/LICENSE
+├─ escape-string-regexp@1.0.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/escape-string-regexp
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/escape-string-regexp
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/escape-string-regexp/license
+├─ esm-env@1.2.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/benmccann/esm-env
+│  ├─ publisher: Ben McCann
+│  ├─ url: https://www.benmccann.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/esm-env
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/esm-env/LICENSE
+├─ esrap@1.4.6
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sveltejs/esrap
+│  ├─ path: /home/jody/github/serene-pub/node_modules/esrap
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/esrap/LICENSE
+├─ estree-walker@2.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Rich-Harris/estree-walker
+│  ├─ publisher: Rich Harris
+│  ├─ path: /home/jody/github/serene-pub/node_modules/estree-walker
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/estree-walker/LICENSE
+├─ etag@1.8.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/etag
+│  ├─ path: /home/jody/github/serene-pub/node_modules/etag
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/etag/LICENSE
+├─ expand-template@2.0.3
+│  ├─ licenses: (MIT OR WTFPL)
+│  ├─ repository: https://github.com/ralphtheninja/expand-template
+│  ├─ publisher: LM
+│  ├─ email: ralphtheninja@riseup.net
+│  ├─ path: /home/jody/github/serene-pub/node_modules/expand-template
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/expand-template/LICENSE
+├─ fast-glob@3.3.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mrmlnc/fast-glob
+│  ├─ publisher: Denis Malinochkin
+│  ├─ url: https://mrmlnc.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/fast-glob
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/fast-glob/LICENSE
+├─ fastq@1.19.1
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/mcollina/fastq
+│  ├─ publisher: Matteo Collina
+│  ├─ email: hello@matteocollina.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/fastq
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/fastq/LICENSE
+├─ fdir@6.4.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/thecodrr/fdir
+│  ├─ publisher: thecodrr
+│  ├─ email: thecodrr@protonmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/fdir
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/fdir/LICENSE
+├─ fflate@0.8.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/101arrowz/fflate
+│  ├─ publisher: Arjun Barrett
+│  ├─ email: arjunbarrett@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/fflate
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/fflate/LICENSE
+├─ file-type@21.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/file-type
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: https://sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/file-type
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/file-type/license
+├─ file-uri-to-path@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/TooTallNate/file-uri-to-path
+│  ├─ publisher: Nathan Rajlich
+│  ├─ email: nathan@tootallnate.net
+│  ├─ url: http://n8.io/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/file-uri-to-path
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/file-uri-to-path/LICENSE
+├─ fill-range@7.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jonschlinkert/fill-range
+│  ├─ publisher: Jon Schlinkert
+│  ├─ url: https://github.com/jonschlinkert
+│  ├─ path: /home/jody/github/serene-pub/node_modules/fill-range
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/fill-range/LICENSE
+├─ finalhandler@2.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/pillarjs/finalhandler
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/finalhandler
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/finalhandler/LICENSE
+├─ find-replace@3.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/find-replace
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: 75pound@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/node_modules/command-line-args/node_modules/find-replace
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/node_modules/command-line-args/node_modules/find-replace/LICENSE
+├─ find-replace@5.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/find-replace
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: 75pound@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/find-replace
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/find-replace/LICENSE
+├─ flatbuffers@24.12.23
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/google/flatbuffers
+│  ├─ publisher: The FlatBuffers project
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/node_modules/flatbuffers
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/node_modules/flatbuffers/LICENSE
+├─ flatbuffers@25.2.10
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/google/flatbuffers
+│  ├─ publisher: The FlatBuffers project
+│  ├─ path: /home/jody/github/serene-pub/node_modules/flatbuffers
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/flatbuffers/LICENSE
+├─ follow-redirects@1.15.9
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/follow-redirects/follow-redirects
+│  ├─ publisher: Ruben Verborgh
+│  ├─ email: ruben@verborgh.org
+│  ├─ url: https://ruben.verborgh.org/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/follow-redirects
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/follow-redirects/LICENSE
+├─ form-data@4.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/form-data/form-data
+│  ├─ publisher: Felix Geisendörfer
+│  ├─ email: felix@debuggable.com
+│  ├─ url: http://debuggable.com/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/form-data
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/form-data/License
+├─ forwarded@0.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/forwarded
+│  ├─ path: /home/jody/github/serene-pub/node_modules/forwarded
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/forwarded/LICENSE
+├─ fresh@2.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/fresh
+│  ├─ publisher: TJ Holowaychuk
+│  ├─ email: tj@vision-media.ca
+│  ├─ url: http://tjholowaychuk.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/fresh
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/fresh/LICENSE
+├─ from2@2.3.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/hughsk/from2
+│  ├─ publisher: Hugh Kennedy
+│  ├─ email: hughskennedy@gmail.com
+│  ├─ url: http://hughsk.io/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/from2
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/from2/LICENSE.md
+├─ fs-constants@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mafintosh/fs-constants
+│  ├─ publisher: Mathias Buus
+│  ├─ url: @mafintosh
+│  ├─ path: /home/jody/github/serene-pub/node_modules/fs-constants
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/fs-constants/LICENSE
+├─ fs-extra@9.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jprichardson/node-fs-extra
+│  ├─ publisher: JP Richardson
+│  ├─ email: jprichardson@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/fs-extra
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/fs-extra/LICENSE
+├─ fs.realpath@1.0.0
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/fs.realpath
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/fs.realpath
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/fs.realpath/LICENSE
+├─ function-bind@1.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Raynos/function-bind
+│  ├─ publisher: Raynos
+│  ├─ email: raynos2@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/function-bind
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/function-bind/LICENSE
+├─ gel@2.1.0
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/geldata/gel-js
+│  ├─ publisher: Gel
+│  ├─ email: info@geldata.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/gel
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/gel/README.md
+├─ get-caller-file@2.0.5
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/stefanpenner/get-caller-file
+│  ├─ publisher: Stefan Penner
+│  ├─ path: /home/jody/github/serene-pub/node_modules/get-caller-file
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/get-caller-file/LICENSE.md
+├─ get-intrinsic@1.3.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/get-intrinsic
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/get-intrinsic
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/get-intrinsic/LICENSE
+├─ get-proto@1.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/get-proto
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/get-proto
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/get-proto/LICENSE
+├─ get-tsconfig@4.10.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/privatenumber/get-tsconfig
+│  ├─ publisher: Hiroki Osame
+│  ├─ email: hiroki.osame@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/get-tsconfig
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/get-tsconfig/LICENSE
+├─ github-from-package@0.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/substack/github-from-package
+│  ├─ publisher: James Halliday
+│  ├─ email: mail@substack.net
+│  ├─ url: http://substack.net
+│  ├─ path: /home/jody/github/serene-pub/node_modules/github-from-package
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/github-from-package/LICENSE
+├─ glob-parent@5.1.2
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/gulpjs/glob-parent
+│  ├─ publisher: Gulp Team
+│  ├─ email: team@gulpjs.com
+│  ├─ url: https://gulpjs.com/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/glob-parent
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/glob-parent/LICENSE
+├─ glob@7.2.3
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/node-glob
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/glob
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/glob/LICENSE
+├─ globby@11.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/globby
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: https://sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/globby
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/globby/license
+├─ gopd@1.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/gopd
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/gopd
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/gopd/LICENSE
+├─ gpt-tokenizer@3.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/niieani/gpt-tokenizer
+│  ├─ publisher: Bazyli Brzoska
+│  ├─ email: npm@invent.life
+│  ├─ url: https://github.com/niieani
+│  ├─ path: /home/jody/github/serene-pub/node_modules/gpt-tokenizer
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/gpt-tokenizer/LICENSE
+├─ graceful-fs@4.2.11
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/node-graceful-fs
+│  ├─ path: /home/jody/github/serene-pub/node_modules/graceful-fs
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/graceful-fs/LICENSE
+├─ handlebars@4.7.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/handlebars-lang/handlebars.js
+│  ├─ publisher: Yehuda Katz
+│  ├─ path: /home/jody/github/serene-pub/node_modules/handlebars
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/handlebars/LICENSE
+├─ has-flag@4.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/has-flag
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/has-flag
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/has-flag/license
+├─ has-symbols@1.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/inspect-js/has-symbols
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ url: http://ljharb.codes
+│  ├─ path: /home/jody/github/serene-pub/node_modules/has-symbols
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/has-symbols/LICENSE
+├─ has-tostringtag@1.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/inspect-js/has-tostringtag
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ url: http://ljharb.codes
+│  ├─ path: /home/jody/github/serene-pub/node_modules/has-tostringtag
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/has-tostringtag/LICENSE
+├─ has@1.0.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tarruda/has
+│  ├─ publisher: Thiago de Arruda
+│  ├─ email: tpadilha84@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/has
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/has/LICENSE-MIT
+├─ hasown@2.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/inspect-js/hasOwn
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/hasown
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/hasown/LICENSE
+├─ hosted-git-info@2.8.9
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/hosted-git-info
+│  ├─ publisher: Rebecca Turner
+│  ├─ email: me@re-becca.org
+│  ├─ url: http://re-becca.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/hosted-git-info
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/hosted-git-info/LICENSE
+├─ http-errors@2.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/http-errors
+│  ├─ publisher: Jonathan Ong
+│  ├─ email: me@jongleberry.com
+│  ├─ url: http://jongleberry.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/http-errors
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/http-errors/LICENSE
+├─ https-proxy-agent@5.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/TooTallNate/node-https-proxy-agent
+│  ├─ publisher: Nathan Rajlich
+│  ├─ email: nathan@tootallnate.net
+│  ├─ url: http://n8.io/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/https-proxy-agent
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/https-proxy-agent/README.md
+├─ iconv-lite@0.6.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ashtuchkin/iconv-lite
+│  ├─ publisher: Alexander Shtuchkin
+│  ├─ email: ashtuchkin@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/iconv-lite
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/iconv-lite/LICENSE
+├─ ieee754@1.2.1
+│  ├─ licenses: BSD-3-Clause
+│  ├─ repository: https://github.com/feross/ieee754
+│  ├─ publisher: Feross Aboukhadijeh
+│  ├─ email: feross@feross.org
+│  ├─ url: https://feross.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/ieee754
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/ieee754/LICENSE
+├─ ignore@5.3.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/kaelzhang/node-ignore
+│  ├─ publisher: kael
+│  ├─ path: /home/jody/github/serene-pub/node_modules/ignore
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/ignore/LICENSE-MIT
+├─ inflight@1.0.6
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/inflight
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/inflight
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/inflight/LICENSE
+├─ inherits@2.0.4
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/inherits
+│  ├─ path: /home/jody/github/serene-pub/node_modules/inherits
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/inherits/LICENSE
+├─ ini@1.3.8
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/ini
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/ini
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/ini/LICENSE
+├─ into-stream@6.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/into-stream
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: https://sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/into-stream
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/into-stream/license
+├─ ipaddr.js@1.9.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/whitequark/ipaddr.js
+│  ├─ publisher: whitequark
+│  ├─ email: whitequark@whitequark.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/ipaddr.js
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/ipaddr.js/LICENSE
+├─ is-core-module@2.16.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/inspect-js/is-core-module
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/resolve/node_modules/is-core-module
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/resolve/node_modules/is-core-module/LICENSE
+├─ is-core-module@2.9.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/inspect-js/is-core-module
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/is-core-module
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/is-core-module/LICENSE
+├─ is-extglob@2.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jonschlinkert/is-extglob
+│  ├─ publisher: Jon Schlinkert
+│  ├─ url: https://github.com/jonschlinkert
+│  ├─ path: /home/jody/github/serene-pub/node_modules/is-extglob
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/is-extglob/LICENSE
+├─ is-fullwidth-code-point@3.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/is-fullwidth-code-point
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/is-fullwidth-code-point
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/is-fullwidth-code-point/license
+├─ is-glob@4.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/micromatch/is-glob
+│  ├─ publisher: Jon Schlinkert
+│  ├─ url: https://github.com/jonschlinkert
+│  ├─ path: /home/jody/github/serene-pub/node_modules/is-glob
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/is-glob/LICENSE
+├─ is-module@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/component/is-module
+│  ├─ publisher: Jonathan Ong
+│  ├─ email: me@jongleberry.com
+│  ├─ url: http://jongleberry.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/is-module
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/is-module/README.md
+├─ is-number@7.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jonschlinkert/is-number
+│  ├─ publisher: Jon Schlinkert
+│  ├─ url: https://github.com/jonschlinkert
+│  ├─ path: /home/jody/github/serene-pub/node_modules/is-number
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/is-number/LICENSE
+├─ is-promise@4.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/then/is-promise
+│  ├─ publisher: ForbesLindesay
+│  ├─ path: /home/jody/github/serene-pub/node_modules/is-promise
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/is-promise/LICENSE
+├─ is-reference@1.2.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Rich-Harris/is-reference
+│  ├─ publisher: Rich Harris
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@rollup/plugin-commonjs/node_modules/is-reference
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@rollup/plugin-commonjs/node_modules/is-reference/README.md
+├─ is-reference@3.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Rich-Harris/is-reference
+│  ├─ publisher: Rich Harris
+│  ├─ path: /home/jody/github/serene-pub/node_modules/is-reference
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/is-reference/README.md
+├─ isarray@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/juliangruber/isarray
+│  ├─ publisher: Julian Gruber
+│  ├─ email: mail@juliangruber.com
+│  ├─ url: http://juliangruber.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/isarray
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/isarray/README.md
+├─ isexe@3.1.1
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/isexe
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/isexe
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/isexe/LICENSE
+├─ jiti@2.4.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/unjs/jiti
+│  ├─ path: /home/jody/github/serene-pub/node_modules/jiti
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/jiti/LICENSE
+├─ js-yaml@4.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/nodeca/js-yaml
+│  ├─ publisher: Vladimir Zapparov
+│  ├─ email: dervus.grim@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/js-yaml
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/js-yaml/LICENSE
+├─ jsesc@2.5.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mathiasbynens/jsesc
+│  ├─ publisher: Mathias Bynens
+│  ├─ url: https://mathiasbynens.be/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/jsesc
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/jsesc/LICENSE-MIT.txt
+├─ json-bignum@0.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/datalanche/json-bignum
+│  ├─ publisher: Datalanche, Inc.
+│  ├─ url: https://www.datalanche.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/json-bignum
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/json-bignum/LICENSE
+├─ json-parse-even-better-errors@2.3.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/npm/json-parse-even-better-errors
+│  ├─ publisher: Kat Marchán
+│  ├─ email: kzm@zkat.tech
+│  ├─ path: /home/jody/github/serene-pub/node_modules/json-parse-even-better-errors
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/json-parse-even-better-errors/LICENSE.md
+├─ jsonfile@6.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jprichardson/node-jsonfile
+│  ├─ publisher: JP Richardson
+│  ├─ email: jprichardson@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/jsonfile
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/jsonfile/LICENSE
+├─ kleur@4.1.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lukeed/kleur
+│  ├─ publisher: Luke Edwards
+│  ├─ email: luke.edwards05@gmail.com
+│  ├─ url: https://lukeed.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/kleur
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/kleur/license
+├─ lightningcss-linux-x64-gnu@1.30.1
+│  ├─ licenses: MPL-2.0
+│  ├─ repository: https://github.com/parcel-bundler/lightningcss
+│  ├─ path: /home/jody/github/serene-pub/node_modules/lightningcss-linux-x64-gnu
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/lightningcss-linux-x64-gnu/LICENSE
+├─ lightningcss-linux-x64-musl@1.30.1
+│  ├─ licenses: MPL-2.0
+│  ├─ repository: https://github.com/parcel-bundler/lightningcss
+│  ├─ path: /home/jody/github/serene-pub/node_modules/lightningcss-linux-x64-musl
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/lightningcss-linux-x64-musl/LICENSE
+├─ lightningcss@1.30.1
+│  ├─ licenses: MPL-2.0
+│  ├─ repository: https://github.com/parcel-bundler/lightningcss
+│  ├─ path: /home/jody/github/serene-pub/node_modules/lightningcss
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/lightningcss/LICENSE
+├─ llama-tokenizer-js@1.2.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/belladoreai/llama-tokenizer
+│  ├─ publisher: Belladore
+│  ├─ email: 135602125+belladoreai@users.noreply.github.com
+│  ├─ url: https://belladore.ai
+│  ├─ path: /home/jody/github/serene-pub/node_modules/llama-tokenizer-js
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/llama-tokenizer-js/LICENSE.md
+├─ llama3-tokenizer-js@1.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/belladoreai/llama3-tokenizer-js
+│  ├─ publisher: Belladore
+│  ├─ email: 135602125+belladoreai@users.noreply.github.com
+│  ├─ url: https://belladore.ai
+│  ├─ path: /home/jody/github/serene-pub/node_modules/llama3-tokenizer-js
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/llama3-tokenizer-js/LICENSE.md
+├─ locate-character@3.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: git+https://gitlab.com/Rich-Harris/locate-character
+│  ├─ publisher: Rich Harris
+│  ├─ path: /home/jody/github/serene-pub/node_modules/locate-character
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/locate-character/README.md
+├─ lodash.camelcase@4.3.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lodash/lodash
+│  ├─ publisher: John-David Dalton
+│  ├─ email: john.david.dalton@gmail.com
+│  ├─ url: http://allyoucanleet.com/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/lodash.camelcase
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/lodash.camelcase/LICENSE
+├─ lodash.castarray@4.4.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lodash/lodash
+│  ├─ publisher: John-David Dalton
+│  ├─ email: john.david.dalton@gmail.com
+│  ├─ url: http://allyoucanleet.com/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/lodash.castarray
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/lodash.castarray/LICENSE
+├─ lodash.isplainobject@4.0.6
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lodash/lodash
+│  ├─ publisher: John-David Dalton
+│  ├─ email: john.david.dalton@gmail.com
+│  ├─ url: http://allyoucanleet.com/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/lodash.isplainobject
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/lodash.isplainobject/LICENSE
+├─ lodash.merge@4.6.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lodash/lodash
+│  ├─ publisher: John-David Dalton
+│  ├─ email: john.david.dalton@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/lodash.merge
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/lodash.merge/LICENSE
+├─ lodash@4.17.21
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lodash/lodash
+│  ├─ publisher: John-David Dalton
+│  ├─ email: john.david.dalton@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/lodash
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/lodash/LICENSE
+├─ magic-string@0.30.17
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/rich-harris/magic-string
+│  ├─ publisher: Rich Harris
+│  ├─ path: /home/jody/github/serene-pub/node_modules/magic-string
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/magic-string/LICENSE
+├─ marked@15.0.12
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/markedjs/marked
+│  ├─ publisher: Christopher Jeffrey
+│  ├─ path: /home/jody/github/serene-pub/node_modules/marked
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/marked/LICENSE.md
+├─ math-intrinsics@1.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/es-shims/math-intrinsics
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/math-intrinsics
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/math-intrinsics/LICENSE
+├─ media-typer@1.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/media-typer
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/media-typer
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/media-typer/LICENSE
+├─ merge-descriptors@2.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/merge-descriptors
+│  ├─ path: /home/jody/github/serene-pub/node_modules/merge-descriptors
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/merge-descriptors/license
+├─ merge2@1.4.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/teambition/merge2
+│  ├─ path: /home/jody/github/serene-pub/node_modules/merge2
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/merge2/LICENSE
+├─ micromatch@4.0.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/micromatch/micromatch
+│  ├─ publisher: Jon Schlinkert
+│  ├─ url: https://github.com/jonschlinkert
+│  ├─ path: /home/jody/github/serene-pub/node_modules/micromatch
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/micromatch/LICENSE
+├─ mime-db@1.52.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/mime-db
+│  ├─ path: /home/jody/github/serene-pub/node_modules/mime-db
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/mime-db/LICENSE
+├─ mime-types@2.1.35
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/mime-types
+│  ├─ path: /home/jody/github/serene-pub/node_modules/mime-types
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/mime-types/LICENSE
+├─ mimic-response@3.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/mimic-response
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: https://sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/mimic-response
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/mimic-response/license
+├─ mini-svg-data-uri@1.4.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tigt/mini-svg-data-uri
+│  ├─ publisher: Taylor “Tigt” Hunt
+│  ├─ email: holla@ti.gt
+│  ├─ url: https://ti.gt/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/mini-svg-data-uri
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/mini-svg-data-uri/LICENSE
+├─ minimatch@3.1.2
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/minimatch
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me
+│  ├─ path: /home/jody/github/serene-pub/node_modules/minimatch
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/minimatch/LICENSE
+├─ minimist@1.2.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/minimistjs/minimist
+│  ├─ publisher: James Halliday
+│  ├─ email: mail@substack.net
+│  ├─ url: http://substack.net
+│  ├─ path: /home/jody/github/serene-pub/node_modules/minimist
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/minimist/LICENSE
+├─ minipass@7.1.2
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/minipass
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/minipass
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/minipass/LICENSE
+├─ minizlib@3.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/isaacs/minizlib
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/minizlib
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/minizlib/LICENSE
+├─ mistral-tokenizer-js@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/imoneoi/mistral-tokenizer
+│  ├─ publisher: One
+│  ├─ email: imonenext@gmail.com
+│  ├─ url: https://github.com/imoneoi
+│  ├─ path: /home/jody/github/serene-pub/node_modules/mistral-tokenizer-js
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/mistral-tokenizer-js/LICENSE.md
+├─ mkdirp-classic@0.5.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mafintosh/mkdirp-classic
+│  ├─ publisher: Mathias Buus
+│  ├─ url: @mafintosh
+│  ├─ path: /home/jody/github/serene-pub/node_modules/mkdirp-classic
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/mkdirp-classic/LICENSE
+├─ mkdirp@3.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/isaacs/node-mkdirp
+│  ├─ path: /home/jody/github/serene-pub/node_modules/tar/node_modules/mkdirp
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/tar/node_modules/mkdirp/LICENSE
+├─ mri@1.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lukeed/mri
+│  ├─ publisher: Luke Edwards
+│  ├─ email: luke.edwards05@gmail.com
+│  ├─ url: https://lukeed.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/mri
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/mri/license.md
+├─ mrmime@2.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lukeed/mrmime
+│  ├─ publisher: Luke Edwards
+│  ├─ email: luke.edwards05@gmail.com
+│  ├─ url: https://lukeed.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/mrmime
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/mrmime/license
+├─ ms@2.1.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/vercel/ms
+│  ├─ path: /home/jody/github/serene-pub/node_modules/ms
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/ms/license.md
+├─ multistream@4.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/feross/multistream
+│  ├─ publisher: Feross Aboukhadijeh
+│  ├─ email: feross@feross.org
+│  ├─ url: https://feross.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/multistream
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/multistream/LICENSE
+├─ nanoid@3.3.11
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ai/nanoid
+│  ├─ publisher: Andrey Sitnik
+│  ├─ email: andrey@sitnik.ru
+│  ├─ path: /home/jody/github/serene-pub/node_modules/nanoid
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/nanoid/LICENSE
+├─ napi-build-utils@1.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/inspiredware/napi-build-utils
+│  ├─ publisher: Jim Schlight
+│  ├─ path: /home/jody/github/serene-pub/node_modules/pkg/node_modules/prebuild-install/node_modules/napi-build-utils
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/pkg/node_modules/prebuild-install/node_modules/napi-build-utils/LICENSE
+├─ napi-build-utils@2.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/inspiredware/napi-build-utils
+│  ├─ publisher: Jim Schlight
+│  ├─ path: /home/jody/github/serene-pub/node_modules/napi-build-utils
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/napi-build-utils/LICENSE
+├─ negotiator@0.6.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/negotiator
+│  ├─ path: /home/jody/github/serene-pub/node_modules/negotiator
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/negotiator/LICENSE
+├─ neo-async@2.6.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/suguru03/neo-async
+│  ├─ path: /home/jody/github/serene-pub/node_modules/neo-async
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/neo-async/LICENSE
+├─ node-abi@3.75.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/electron/node-abi
+│  ├─ publisher: Lukas Geiger
+│  ├─ path: /home/jody/github/serene-pub/node_modules/node-abi
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/node-abi/LICENSE
+├─ node-fetch@2.7.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/bitinn/node-fetch
+│  ├─ publisher: David Frank
+│  ├─ path: /home/jody/github/serene-pub/node_modules/node-fetch
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/node-fetch/LICENSE.md
+├─ nopt@4.0.3
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/nopt
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/nopt
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/nopt/LICENSE
+├─ normalize-package-data@2.5.0
+│  ├─ licenses: BSD-2-Clause
+│  ├─ repository: https://github.com/npm/normalize-package-data
+│  ├─ publisher: Meryn Stol
+│  ├─ email: merynstol@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/normalize-package-data
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/normalize-package-data/LICENSE
+├─ npm-normalize-package-bin@1.0.1
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/npm-normalize-package-bin
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: https://izs.me
+│  ├─ path: /home/jody/github/serene-pub/node_modules/npm-normalize-package-bin
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/npm-normalize-package-bin/LICENSE
+├─ object-assign@4.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/object-assign
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/object-assign
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/object-assign/license
+├─ object-inspect@1.13.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/inspect-js/object-inspect
+│  ├─ publisher: James Halliday
+│  ├─ email: mail@substack.net
+│  ├─ url: http://substack.net
+│  ├─ path: /home/jody/github/serene-pub/node_modules/object-inspect
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/object-inspect/LICENSE
+├─ ollama@0.5.16
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ollama/ollama-js
+│  ├─ publisher: Saul Boyd
+│  ├─ path: /home/jody/github/serene-pub/node_modules/ollama
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/ollama/LICENSE
+├─ on-finished@2.4.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/on-finished
+│  ├─ path: /home/jody/github/serene-pub/node_modules/on-finished
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/on-finished/LICENSE
+├─ once@1.4.0
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/once
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/once
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/once/LICENSE
+├─ os-homedir@1.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/os-homedir
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/os-homedir
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/os-homedir/license
+├─ os-tmpdir@1.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/os-tmpdir
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/os-tmpdir
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/os-tmpdir/license
+├─ osenv@0.1.5
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/osenv
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/osenv
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/osenv/LICENSE
+├─ p-is-promise@3.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/p-is-promise
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/p-is-promise
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/p-is-promise/license
+├─ parseurl@1.3.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/pillarjs/parseurl
+│  ├─ path: /home/jody/github/serene-pub/node_modules/parseurl
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/parseurl/LICENSE
+├─ path-is-absolute@1.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/path-is-absolute
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/path-is-absolute
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/path-is-absolute/license
+├─ path-parse@1.0.7
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jbgutierrez/path-parse
+│  ├─ publisher: Javier Blanco
+│  ├─ email: http://jbgutierrez.info
+│  ├─ path: /home/jody/github/serene-pub/node_modules/path-parse
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/path-parse/LICENSE
+├─ path-to-regexp@8.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/pillarjs/path-to-regexp
+│  ├─ path: /home/jody/github/serene-pub/node_modules/path-to-regexp
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/path-to-regexp/LICENSE
+├─ path-type@4.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/path-type
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/path-type
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/path-type/license
+├─ picocolors@1.1.1
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/alexeyraspopov/picocolors
+│  ├─ publisher: Alexey Raspopov
+│  ├─ path: /home/jody/github/serene-pub/node_modules/picocolors
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/picocolors/LICENSE
+├─ picomatch@2.3.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/micromatch/picomatch
+│  ├─ publisher: Jon Schlinkert
+│  ├─ url: https://github.com/jonschlinkert
+│  ├─ path: /home/jody/github/serene-pub/node_modules/micromatch/node_modules/picomatch
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/micromatch/node_modules/picomatch/LICENSE
+├─ picomatch@4.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/micromatch/picomatch
+│  ├─ publisher: Jon Schlinkert
+│  ├─ url: https://github.com/jonschlinkert
+│  ├─ path: /home/jody/github/serene-pub/node_modules/picomatch
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/picomatch/LICENSE
+├─ pkg-fetch@3.4.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/vercel/pkg-fetch
+│  ├─ path: /home/jody/github/serene-pub/node_modules/pkg-fetch
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/pkg-fetch/license.md
+├─ pkg@5.8.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/vercel/pkg
+│  ├─ path: /home/jody/github/serene-pub/node_modules/pkg
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/pkg/LICENSE
+├─ postcss-selector-parser@6.0.10
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/postcss/postcss-selector-parser
+│  ├─ path: /home/jody/github/serene-pub/node_modules/postcss-selector-parser
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/postcss-selector-parser/LICENSE-MIT
+├─ postcss@8.5.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/postcss/postcss
+│  ├─ publisher: Andrey Sitnik
+│  ├─ email: andrey@sitnik.ru
+│  ├─ path: /home/jody/github/serene-pub/node_modules/postcss
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/postcss/LICENSE
+├─ prebuild-install@7.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/prebuild/prebuild-install
+│  ├─ publisher: Mathias Buus
+│  ├─ url: @mafintosh
+│  ├─ path: /home/jody/github/serene-pub/node_modules/pkg/node_modules/prebuild-install
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/pkg/node_modules/prebuild-install/LICENSE
+├─ prebuild-install@7.1.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/prebuild/prebuild-install
+│  ├─ publisher: Mathias Buus
+│  ├─ url: @mafintosh
+│  ├─ path: /home/jody/github/serene-pub/node_modules/prebuild-install
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/prebuild-install/LICENSE
+├─ prettier-plugin-svelte@3.4.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sveltejs/prettier-plugin-svelte
+│  ├─ publisher: James Birtles
+│  ├─ email: jameshbirtles@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/prettier-plugin-svelte
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/prettier-plugin-svelte/LICENSE
+├─ prettier-plugin-tailwindcss@0.6.12
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tailwindlabs/prettier-plugin-tailwindcss
+│  ├─ path: /home/jody/github/serene-pub/node_modules/prettier-plugin-tailwindcss
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/prettier-plugin-tailwindcss/LICENSE
+├─ prettier@3.5.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/prettier/prettier
+│  ├─ publisher: James Long
+│  ├─ path: /home/jody/github/serene-pub/node_modules/prettier
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/prettier/LICENSE
+├─ process-nextick-args@2.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/calvinmetcalf/process-nextick-args
+│  ├─ path: /home/jody/github/serene-pub/node_modules/process-nextick-args
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/process-nextick-args/license.md
+├─ progress@2.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/visionmedia/node-progress
+│  ├─ publisher: TJ Holowaychuk
+│  ├─ email: tj@vision-media.ca
+│  ├─ path: /home/jody/github/serene-pub/node_modules/progress
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/progress/LICENSE
+├─ proxy-addr@2.0.7
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/proxy-addr
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/proxy-addr
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/proxy-addr/LICENSE
+├─ proxy-compare@3.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/dai-shi/proxy-compare
+│  ├─ publisher: Daishi Kato
+│  ├─ path: /home/jody/github/serene-pub/node_modules/proxy-compare
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/proxy-compare/LICENSE
+├─ proxy-from-env@1.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Rob--W/proxy-from-env
+│  ├─ publisher: Rob Wu
+│  ├─ email: rob@robwu.nl
+│  ├─ url: https://robwu.nl/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/proxy-from-env
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/proxy-from-env/LICENSE
+├─ pump@3.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mafintosh/pump
+│  ├─ publisher: Mathias Buus Madsen
+│  ├─ email: mathiasbuus@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/pump
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/pump/LICENSE
+├─ qs@6.14.0
+│  ├─ licenses: BSD-3-Clause
+│  ├─ repository: https://github.com/ljharb/qs
+│  ├─ path: /home/jody/github/serene-pub/node_modules/qs
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/qs/LICENSE.md
+├─ queue-microtask@1.2.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/feross/queue-microtask
+│  ├─ publisher: Feross Aboukhadijeh
+│  ├─ email: feross@feross.org
+│  ├─ url: https://feross.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/queue-microtask
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/queue-microtask/LICENSE
+├─ range-parser@1.2.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/range-parser
+│  ├─ publisher: TJ Holowaychuk
+│  ├─ email: tj@vision-media.ca
+│  ├─ url: http://tjholowaychuk.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/range-parser
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/range-parser/LICENSE
+├─ raw-body@3.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/stream-utils/raw-body
+│  ├─ publisher: Jonathan Ong
+│  ├─ email: me@jongleberry.com
+│  ├─ url: http://jongleberry.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/raw-body
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/raw-body/LICENSE
+├─ rc@1.2.8
+│  ├─ licenses: (BSD-2-Clause OR MIT OR Apache-2.0)
+│  ├─ repository: https://github.com/dominictarr/rc
+│  ├─ publisher: Dominic Tarr
+│  ├─ email: dominic.tarr@gmail.com
+│  ├─ url: dominictarr.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/rc
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/rc/LICENSE.APACHE2
+├─ read-installed@4.0.3
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/read-installed
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/read-installed
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/read-installed/LICENSE
+├─ read-package-json@2.1.2
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/read-package-json
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/read-package-json
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/read-package-json/LICENSE
+├─ readable-stream@2.3.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/nodejs/readable-stream
+│  ├─ path: /home/jody/github/serene-pub/node_modules/from2/node_modules/readable-stream
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/from2/node_modules/readable-stream/LICENSE
+├─ readable-stream@3.6.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/nodejs/readable-stream
+│  ├─ path: /home/jody/github/serene-pub/node_modules/readable-stream
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/readable-stream/LICENSE
+├─ readdir-scoped-modules@1.1.0
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/readdir-scoped-modules
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/readdir-scoped-modules
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/readdir-scoped-modules/LICENSE
+├─ readdirp@4.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/paulmillr/readdirp
+│  ├─ publisher: Thorsten Lorenz
+│  ├─ email: thlorenz@gmx.de
+│  ├─ url: thlorenz.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/readdirp
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/readdirp/LICENSE
+├─ require-directory@2.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/troygoode/node-require-directory
+│  ├─ publisher: Troy Goode
+│  ├─ email: troygoode@gmail.com
+│  ├─ url: http://github.com/troygoode/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/require-directory
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/require-directory/LICENSE
+├─ resolve-pkg-maps@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/privatenumber/resolve-pkg-maps
+│  ├─ publisher: Hiroki Osame
+│  ├─ email: hiroki.osame@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/resolve-pkg-maps
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/resolve-pkg-maps/LICENSE
+├─ resolve@1.22.10
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/browserify/resolve
+│  ├─ publisher: James Halliday
+│  ├─ email: mail@substack.net
+│  ├─ url: http://substack.net
+│  ├─ path: /home/jody/github/serene-pub/node_modules/resolve
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/resolve/LICENSE
+├─ reusify@1.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mcollina/reusify
+│  ├─ publisher: Matteo Collina
+│  ├─ email: hello@matteocollina.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/reusify
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/reusify/LICENSE
+├─ rollup@4.41.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/rollup/rollup
+│  ├─ publisher: Rich Harris
+│  ├─ path: /home/jody/github/serene-pub/node_modules/rollup
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/rollup/LICENSE.md
+├─ router@2.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/pillarjs/router
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/router
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/router/LICENSE
+├─ run-parallel@1.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/feross/run-parallel
+│  ├─ publisher: Feross Aboukhadijeh
+│  ├─ email: feross@feross.org
+│  ├─ url: https://feross.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/run-parallel
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/run-parallel/LICENSE
+├─ sade@1.8.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lukeed/sade
+│  ├─ publisher: Luke Edwards
+│  ├─ email: luke.edwards05@gmail.com
+│  ├─ url: https://lukeed.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/sade
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/sade/license
+├─ safe-buffer@5.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/feross/safe-buffer
+│  ├─ publisher: Feross Aboukhadijeh
+│  ├─ email: feross@feross.org
+│  ├─ url: http://feross.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/from2/node_modules/readable-stream/node_modules/safe-buffer
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/from2/node_modules/readable-stream/node_modules/safe-buffer/LICENSE
+├─ safe-buffer@5.2.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/feross/safe-buffer
+│  ├─ publisher: Feross Aboukhadijeh
+│  ├─ email: feross@feross.org
+│  ├─ url: https://feross.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/safe-buffer
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/safe-buffer/LICENSE
+├─ safer-buffer@2.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ChALkeR/safer-buffer
+│  ├─ publisher: Nikita Skovoroda
+│  ├─ email: chalkerx@gmail.com
+│  ├─ url: https://github.com/ChALkeR
+│  ├─ path: /home/jody/github/serene-pub/node_modules/safer-buffer
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/safer-buffer/LICENSE
+├─ semver@7.7.2
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/node-semver
+│  ├─ publisher: GitHub Inc.
+│  ├─ path: /home/jody/github/serene-pub/node_modules/node-abi/node_modules/semver
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/node-abi/node_modules/semver/LICENSE
+├─ send@1.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/pillarjs/send
+│  ├─ publisher: TJ Holowaychuk
+│  ├─ email: tj@vision-media.ca
+│  ├─ path: /home/jody/github/serene-pub/node_modules/send
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/send/LICENSE
+├─ serene-pub@0.0.1
+│  ├─ licenses: UNLICENSED
+│  ├─ private: true
+│  ├─ repository: https://github.com/doolijb/serene-pub
+│  ├─ publisher: Jody Doolittle
+│  ├─ email: jody@doolittle.me
+│  ├─ url: https://github.com/doolijb
+│  ├─ path: /home/jody/github/serene-pub
+│  └─ licenseFile: /home/jody/github/serene-pub/LICENSE
+├─ serve-static@2.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/expressjs/serve-static
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/serve-static
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/serve-static/LICENSE
+├─ set-cookie-parser@2.7.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/nfriedly/set-cookie-parser
+│  ├─ publisher: Nathan Friedly
+│  ├─ url: http://nfriedly.com/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/set-cookie-parser
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/set-cookie-parser/LICENSE
+├─ setprototypeof@1.2.0
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/wesleytodd/setprototypeof
+│  ├─ publisher: Wes Todd
+│  ├─ path: /home/jody/github/serene-pub/node_modules/setprototypeof
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/setprototypeof/LICENSE
+├─ shell-quote@1.8.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/shell-quote
+│  ├─ publisher: James Halliday
+│  ├─ email: mail@substack.net
+│  ├─ url: http://substack.net
+│  ├─ path: /home/jody/github/serene-pub/node_modules/shell-quote
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/shell-quote/LICENSE
+├─ side-channel-list@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/side-channel-list
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/side-channel-list
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/side-channel-list/LICENSE
+├─ side-channel-map@1.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/side-channel-map
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/side-channel-map
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/side-channel-map/LICENSE
+├─ side-channel-weakmap@1.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/side-channel-weakmap
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/side-channel-weakmap
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/side-channel-weakmap/LICENSE
+├─ side-channel@1.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/ljharb/side-channel
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/side-channel
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/side-channel/LICENSE
+├─ simple-concat@1.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/feross/simple-concat
+│  ├─ publisher: Feross Aboukhadijeh
+│  ├─ email: feross@feross.org
+│  ├─ url: https://feross.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/simple-concat
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/simple-concat/LICENSE
+├─ simple-get@4.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/feross/simple-get
+│  ├─ publisher: Feross Aboukhadijeh
+│  ├─ email: feross@feross.org
+│  ├─ url: https://feross.org
+│  ├─ path: /home/jody/github/serene-pub/node_modules/simple-get
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/simple-get/LICENSE
+├─ sirv@3.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lukeed/sirv
+│  ├─ publisher: Luke Edwards
+│  ├─ email: luke@lukeed.com
+│  ├─ url: https://lukeed.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/sirv
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/sirv/readme.md
+├─ slash@3.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/slash
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/slash
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/slash/license
+├─ slide@1.1.6
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/slide-flow-control
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/slide
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/slide/LICENSE
+├─ socket.io-adapter@2.5.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/socketio/socket.io-adapter
+│  ├─ path: /home/jody/github/serene-pub/node_modules/socket.io-adapter
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/socket.io-adapter/LICENSE
+├─ socket.io-client@4.8.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/socketio/socket.io
+│  ├─ path: /home/jody/github/serene-pub/node_modules/socket.io-client
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/socket.io-client/LICENSE
+├─ socket.io-parser@4.2.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/socketio/socket.io-parser
+│  ├─ path: /home/jody/github/serene-pub/node_modules/socket.io-parser
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/socket.io-parser/LICENSE
+├─ socket.io@4.8.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/socketio/socket.io
+│  ├─ path: /home/jody/github/serene-pub/node_modules/socket.io
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/socket.io/LICENSE
+├─ source-map-js@1.2.1
+│  ├─ licenses: BSD-3-Clause
+│  ├─ repository: https://github.com/7rulnik/source-map-js
+│  ├─ publisher: Valentin 7rulnik Semirulnik
+│  ├─ email: v7rulnik@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/source-map-js
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/source-map-js/LICENSE
+├─ source-map-support@0.5.21
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/evanw/node-source-map-support
+│  ├─ path: /home/jody/github/serene-pub/node_modules/source-map-support
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/source-map-support/LICENSE.md
+├─ source-map@0.6.1
+│  ├─ licenses: BSD-3-Clause
+│  ├─ repository: https://github.com/mozilla/source-map
+│  ├─ publisher: Nick Fitzgerald
+│  ├─ email: nfitzgerald@mozilla.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/source-map
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/source-map/LICENSE
+├─ spdx-compare@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/kemitchell/spdx-compare.js
+│  ├─ publisher: Kyle E. Mitchell
+│  ├─ email: kyle@kemitchell.com
+│  ├─ url: https://kemitchell.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/spdx-compare
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/spdx-compare/LICENSE.md
+├─ spdx-correct@3.2.0
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/jslicense/spdx-correct.js
+│  ├─ path: /home/jody/github/serene-pub/node_modules/spdx-correct
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/spdx-correct/LICENSE
+├─ spdx-exceptions@2.5.0
+│  ├─ licenses: CC-BY-3.0
+│  ├─ repository: https://github.com/kemitchell/spdx-exceptions.json
+│  ├─ publisher: The Linux Foundation
+│  ├─ path: /home/jody/github/serene-pub/node_modules/spdx-exceptions
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/spdx-exceptions/README.md
+├─ spdx-expression-parse@3.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jslicense/spdx-expression-parse.js
+│  ├─ publisher: Kyle E. Mitchell
+│  ├─ email: kyle@kemitchell.com
+│  ├─ url: https://kemitchell.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/spdx-expression-parse
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/spdx-expression-parse/LICENSE
+├─ spdx-license-ids@3.0.21
+│  ├─ licenses: CC0-1.0
+│  ├─ repository: https://github.com/jslicense/spdx-license-ids
+│  ├─ publisher: Shinnosuke Watanabe
+│  ├─ url: https://github.com/shinnn
+│  ├─ path: /home/jody/github/serene-pub/node_modules/spdx-license-ids
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/spdx-license-ids/README.md
+├─ spdx-ranges@2.1.1
+│  ├─ licenses: (MIT AND CC-BY-3.0)
+│  ├─ repository: https://github.com/kemitchell/spdx-ranges.js
+│  ├─ publisher: The Linux Foundation
+│  ├─ path: /home/jody/github/serene-pub/node_modules/spdx-ranges
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/spdx-ranges/LICENSE.md
+├─ spdx-satisfies@4.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/kemitchell/spdx-satisfies.js
+│  ├─ publisher: Kyle E. Mitchell
+│  ├─ email: kyle@kemitchell.com
+│  ├─ url: https://kemitchell.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/spdx-satisfies
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/spdx-satisfies/LICENSE
+├─ statuses@2.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/statuses
+│  ├─ path: /home/jody/github/serene-pub/node_modules/http-errors/node_modules/statuses
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/http-errors/node_modules/statuses/LICENSE
+├─ statuses@2.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/statuses
+│  ├─ path: /home/jody/github/serene-pub/node_modules/statuses
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/statuses/LICENSE
+├─ stream-meter@1.0.4
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/brycebaril/node-stream-meter
+│  ├─ publisher: Bryce B. Baril
+│  ├─ path: /home/jody/github/serene-pub/node_modules/stream-meter
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/stream-meter/LICENSE
+├─ string-width@4.2.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/string-width
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/string-width
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/string-width/license
+├─ string_decoder@1.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/nodejs/string_decoder
+│  ├─ path: /home/jody/github/serene-pub/node_modules/from2/node_modules/readable-stream/node_modules/string_decoder
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/from2/node_modules/readable-stream/node_modules/string_decoder/LICENSE
+├─ string_decoder@1.3.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/nodejs/string_decoder
+│  ├─ path: /home/jody/github/serene-pub/node_modules/string_decoder
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/string_decoder/LICENSE
+├─ strip-ansi@6.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chalk/strip-ansi
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/strip-ansi
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/strip-ansi/license
+├─ strip-json-comments@2.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/strip-json-comments
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/strip-json-comments
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/strip-json-comments/license
+├─ strtok3@10.3.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Borewit/strtok3
+│  ├─ publisher: Borewit
+│  ├─ url: https://github.com/Borewit
+│  ├─ path: /home/jody/github/serene-pub/node_modules/strtok3
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/strtok3/LICENSE.txt
+├─ supports-color@7.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chalk/supports-color
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/supports-color
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/supports-color/license
+├─ supports-preserve-symlinks-flag@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/inspect-js/node-supports-preserve-symlinks-flag
+│  ├─ publisher: Jordan Harband
+│  ├─ email: ljharb@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/supports-preserve-symlinks-flag
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/supports-preserve-symlinks-flag/LICENSE
+├─ svelte-check@4.2.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sveltejs/language-tools
+│  ├─ publisher: The Svelte Community
+│  ├─ path: /home/jody/github/serene-pub/node_modules/svelte-check
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/svelte-check/LICENSE
+├─ svelte@5.33.14
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sveltejs/svelte
+│  ├─ path: /home/jody/github/serene-pub/node_modules/svelte
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/svelte/LICENSE.md
+├─ sveltekit-io@1.0.12
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/cedrictailly/sveltekit-io
+│  ├─ publisher: Cédric Tailly
+│  ├─ path: /home/jody/github/serene-pub/node_modules/sveltekit-io
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/sveltekit-io/README.md
+├─ sveltekit-sse@0.13.19
+│  ├─ licenses: MIT
+│  ├─ path: /home/jody/github/serene-pub/node_modules/sveltekit-sse
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/sveltekit-sse/LICENSE
+├─ table-layout@4.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/table-layout
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: 75pound@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/table-layout
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/table-layout/LICENSE
+├─ tailwindcss@4.1.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/tailwindlabs/tailwindcss
+│  ├─ path: /home/jody/github/serene-pub/node_modules/tailwindcss
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/tailwindcss/LICENSE
+├─ tapable@2.2.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/webpack/tapable
+│  ├─ publisher: Tobias Koppers @sokra
+│  ├─ path: /home/jody/github/serene-pub/node_modules/tapable
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/tapable/LICENSE
+├─ tar-fs@2.1.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mafintosh/tar-fs
+│  ├─ publisher: Mathias Buus
+│  ├─ path: /home/jody/github/serene-pub/node_modules/tar-fs
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/tar-fs/LICENSE
+├─ tar-stream@2.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mafintosh/tar-stream
+│  ├─ publisher: Mathias Buus
+│  ├─ email: mathiasbuus@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/tar-stream
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/tar-stream/LICENSE
+├─ tar@7.4.3
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/isaacs/node-tar
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ path: /home/jody/github/serene-pub/node_modules/tar
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/tar/LICENSE
+├─ tinyglobby@0.2.14
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/SuperchupuDev/tinyglobby
+│  ├─ publisher: Superchupu
+│  ├─ path: /home/jody/github/serene-pub/node_modules/tinyglobby
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/tinyglobby/LICENSE
+├─ to-fast-properties@2.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/to-fast-properties
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/to-fast-properties
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/to-fast-properties/license
+├─ to-regex-range@5.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/micromatch/to-regex-range
+│  ├─ publisher: Jon Schlinkert
+│  ├─ url: https://github.com/jonschlinkert
+│  ├─ path: /home/jody/github/serene-pub/node_modules/to-regex-range
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/to-regex-range/LICENSE
+├─ toidentifier@1.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/component/toidentifier
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/toidentifier
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/toidentifier/LICENSE
+├─ token-types@6.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Borewit/token-types
+│  ├─ publisher: Borewit
+│  ├─ url: https://github.com/Borewit
+│  ├─ path: /home/jody/github/serene-pub/node_modules/token-types
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/token-types/LICENSE
+├─ totalist@3.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lukeed/totalist
+│  ├─ publisher: Luke Edwards
+│  ├─ email: luke.edwards05@gmail.com
+│  ├─ url: https://lukeed.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/totalist
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/totalist/license
+├─ tr46@0.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/Sebmaster/tr46.js
+│  ├─ publisher: Sebastian Mayr
+│  ├─ email: npm@smayr.name
+│  └─ path: /home/jody/github/serene-pub/node_modules/tr46
+├─ treeify@1.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/notatestuser/treeify
+│  ├─ publisher: Luke Plaster
+│  ├─ email: notatestuser@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/treeify
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/treeify/LICENSE
+├─ tslib@2.8.1
+│  ├─ licenses: 0BSD
+│  ├─ repository: https://github.com/Microsoft/tslib
+│  ├─ publisher: Microsoft Corp.
+│  ├─ path: /home/jody/github/serene-pub/node_modules/tslib
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/tslib/LICENSE.txt
+├─ tunnel-agent@0.6.0
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/mikeal/tunnel-agent
+│  ├─ publisher: Mikeal Rogers
+│  ├─ email: mikeal.rogers@gmail.com
+│  ├─ url: http://www.futurealoof.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/tunnel-agent
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/tunnel-agent/LICENSE
+├─ type-is@2.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/type-is
+│  ├─ path: /home/jody/github/serene-pub/node_modules/type-is
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/type-is/LICENSE
+├─ typescript@5.8.3
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/microsoft/TypeScript
+│  ├─ publisher: Microsoft Corp.
+│  ├─ path: /home/jody/github/serene-pub/node_modules/typescript
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/typescript/LICENSE.txt
+├─ typical@4.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/typical
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: 75pound@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/node_modules/command-line-args/node_modules/typical
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/@duckdb/duckdb-wasm/node_modules/apache-arrow/node_modules/command-line-args/node_modules/typical/LICENSE
+├─ typical@7.3.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/typical
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: opensource@75lb.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/typical
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/typical/LICENSE
+├─ uglify-js@3.19.3
+│  ├─ licenses: BSD-2-Clause
+│  ├─ repository: https://github.com/mishoo/UglifyJS
+│  ├─ publisher: Mihai Bazon
+│  ├─ email: mihai.bazon@gmail.com
+│  ├─ url: http://lisperator.net/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/uglify-js
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/uglify-js/LICENSE
+├─ uint8array-extras@1.4.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/sindresorhus/uint8array-extras
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: https://sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/uint8array-extras
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/uint8array-extras/license
+├─ undici-types@6.19.8
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/nodejs/undici
+│  ├─ path: /home/jody/github/serene-pub/node_modules/undici-types
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/undici-types/LICENSE
+├─ universalify@2.0.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/RyanZim/universalify
+│  ├─ publisher: Ryan Zimmerman
+│  ├─ email: opensrc@ryanzim.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/universalify
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/universalify/LICENSE
+├─ unpipe@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/stream-utils/unpipe
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/unpipe
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/unpipe/LICENSE
+├─ util-deprecate@1.0.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/TooTallNate/util-deprecate
+│  ├─ publisher: Nathan Rajlich
+│  ├─ email: nathan@tootallnate.net
+│  ├─ url: http://n8.io/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/util-deprecate
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/util-deprecate/LICENSE
+├─ util-extend@1.0.3
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/isaacs/util-extend
+│  ├─ path: /home/jody/github/serene-pub/node_modules/util-extend
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/util-extend/LICENSE
+├─ uuid@11.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/uuidjs/uuid
+│  ├─ path: /home/jody/github/serene-pub/node_modules/uuid
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/uuid/LICENSE.md
+├─ validate-npm-package-license@3.0.4
+│  ├─ licenses: Apache-2.0
+│  ├─ repository: https://github.com/kemitchell/validate-npm-package-license.js
+│  ├─ publisher: Kyle E. Mitchell
+│  ├─ email: kyle@kemitchell.com
+│  ├─ url: https://kemitchell.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/validate-npm-package-license
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/validate-npm-package-license/LICENSE
+├─ vary@1.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jshttp/vary
+│  ├─ publisher: Douglas Christopher Wilson
+│  ├─ email: doug@somethingdoug.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/vary
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/vary/LICENSE
+├─ vite@6.3.5
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/vitejs/vite
+│  ├─ publisher: Evan You
+│  ├─ path: /home/jody/github/serene-pub/node_modules/vite
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/vite/LICENSE.md
+├─ vitefu@1.0.6
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/svitejs/vitefu
+│  ├─ path: /home/jody/github/serene-pub/node_modules/vitefu
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/vitefu/LICENSE
+├─ webidl-conversions@3.0.1
+│  ├─ licenses: BSD-2-Clause
+│  ├─ repository: https://github.com/jsdom/webidl-conversions
+│  ├─ publisher: Domenic Denicola
+│  ├─ email: d@domenic.me
+│  ├─ url: https://domenic.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/webidl-conversions
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/webidl-conversions/LICENSE.md
+├─ whatwg-fetch@3.6.20
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/github/fetch
+│  ├─ path: /home/jody/github/serene-pub/node_modules/whatwg-fetch
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/whatwg-fetch/LICENSE
+├─ whatwg-url@5.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/jsdom/whatwg-url
+│  ├─ publisher: Sebastian Mayr
+│  ├─ email: github@smayr.name
+│  ├─ path: /home/jody/github/serene-pub/node_modules/whatwg-url
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/whatwg-url/LICENSE.txt
+├─ which@4.0.0
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/node-which
+│  ├─ publisher: GitHub Inc.
+│  ├─ path: /home/jody/github/serene-pub/node_modules/which
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/which/LICENSE
+├─ wordwrap@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/substack/node-wordwrap
+│  ├─ publisher: James Halliday
+│  ├─ email: mail@substack.net
+│  ├─ url: http://substack.net
+│  ├─ path: /home/jody/github/serene-pub/node_modules/wordwrap
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/wordwrap/LICENSE
+├─ wordwrapjs@5.1.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/75lb/wordwrapjs
+│  ├─ publisher: Lloyd Brookes
+│  ├─ email: 75pound@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/wordwrapjs
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/wordwrapjs/LICENSE
+├─ wrap-ansi@7.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/chalk/wrap-ansi
+│  ├─ publisher: Sindre Sorhus
+│  ├─ email: sindresorhus@gmail.com
+│  ├─ url: https://sindresorhus.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/wrap-ansi
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/wrap-ansi/license
+├─ wrappy@1.0.2
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/npm/wrappy
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/wrappy
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/wrappy/LICENSE
+├─ ws@8.17.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/websockets/ws
+│  ├─ publisher: Einar Otto Stangvik
+│  ├─ email: einaros@gmail.com
+│  ├─ url: http://2x.io
+│  ├─ path: /home/jody/github/serene-pub/node_modules/ws
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/ws/LICENSE
+├─ xmlhttprequest-ssl@2.1.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/mjwwit/node-XMLHttpRequest
+│  ├─ publisher: Michael de Wit
+│  ├─ path: /home/jody/github/serene-pub/node_modules/xmlhttprequest-ssl
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/xmlhttprequest-ssl/LICENSE
+├─ y18n@5.0.8
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/yargs/y18n
+│  ├─ publisher: Ben Coe
+│  ├─ email: bencoe@gmail.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/y18n
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/y18n/LICENSE
+├─ yallist@5.0.0
+│  ├─ licenses: BlueOak-1.0.0
+│  ├─ repository: https://github.com/isaacs/yallist
+│  ├─ publisher: Isaac Z. Schlueter
+│  ├─ email: i@izs.me
+│  ├─ url: http://blog.izs.me/
+│  ├─ path: /home/jody/github/serene-pub/node_modules/yallist
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/yallist/LICENSE.md
+├─ yargs-parser@20.2.9
+│  ├─ licenses: ISC
+│  ├─ repository: https://github.com/yargs/yargs-parser
+│  ├─ publisher: Ben Coe
+│  ├─ email: ben@npmjs.com
+│  ├─ path: /home/jody/github/serene-pub/node_modules/yargs-parser
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/yargs-parser/LICENSE.txt
+├─ yargs@16.2.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/yargs/yargs
+│  ├─ path: /home/jody/github/serene-pub/node_modules/yargs
+│  └─ licenseFile: /home/jody/github/serene-pub/node_modules/yargs/LICENSE
+└─ zimmerframe@1.1.2
+   ├─ licenses: MIT
+   ├─ repository: https://github.com/Rich-Harris/zimmerframe
+   ├─ path: /home/jody/github/serene-pub/node_modules/zimmerframe
+   └─ licenseFile: /home/jody/github/serene-pub/node_modules/zimmerframe/LICENSE
+
