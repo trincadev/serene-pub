@@ -133,7 +133,7 @@ if not exist %NODE_BIN% (
 
     // Add clickable executable for Linux/macOS
     if (target.os === 'linux' || target.os === 'macos') {
-      const execPath = path.join(outDir, 'Serene pub');
+      const execPath = path.join(outDir, 'Serene Pub');
       const script = `#!/bin/sh\ncd \"$(dirname \"$0\")\"\n\n# Try common terminals\nif command -v x-terminal-emulator >/dev/null 2>&1; then\n  exec x-terminal-emulator -e ./run.sh\nelif command -v gnome-terminal >/dev/null 2>&1; then\n  exec gnome-terminal -- ./run.sh\nelif command -v konsole >/dev/null 2>&1; then\n  exec konsole -e ./run.sh\nelif command -v xfce4-terminal >/dev/null 2>&1; then\n  exec xfce4-terminal -e ./run.sh\nelif command -v mate-terminal >/dev/null 2>&1; then\n  exec mate-terminal -e ./run.sh\nelif command -v lxterminal >/dev/null 2>&1; then\n  exec lxterminal -e ./run.sh\nelif command -v tilix >/dev/null 2>&1; then\n  exec tilix -e ./run.sh\nelse\n  ./run.sh\nfi\n`;
       fs.writeFileSync(execPath, script, { mode: 0o755 });
     }
