@@ -28,18 +28,6 @@
     let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
     let editingField: string | null = $state(null)
 
-    socket.on("sampling", (message: Sockets.SamplingConfig.Response) => {
-        sampling = { ...message.sampling }
-        originalSamplingConfig = { ...message.sampling }
-    })
-
-    socket.on("samplingConfigsList", (message: Sockets.SamplingConfigList.Response) => {
-        samplingConfigsList = message.samplingConfigsList
-    })
-
-    socket.emit("sampling", { id: userCtx.user.activeSamplingConfigId })
-    socket.emit("samplingConfigsList", {})
-
     type FieldType = "number" | "boolean" | "string"
 
     const fieldMeta: Record<
@@ -196,6 +184,17 @@
 
     onMount(() => {
         onclose = handleOnClose
+        socket.on("sampling", (message: Sockets.SamplingConfig.Response) => {
+            sampling = { ...message.sampling }
+            originalSamplingConfig = { ...message.sampling }
+        })
+
+        socket.on("samplingConfigsList", (message: Sockets.SamplingConfigList.Response) => {
+            samplingConfigsList = message.samplingConfigsList
+        })
+
+        socket.emit("sampling", { id: userCtx.user.activeSamplingConfigId })
+        socket.emit("samplingConfigsList", {})
     })
 </script>
 

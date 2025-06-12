@@ -40,20 +40,6 @@
     let mode: "create" | "edit" = $derived.by(() => (!!editPersonaData.id ? "edit" : "create"))
     let isDataValid = $derived(!!editPersonaData?.name?.trim())
 
-    socket.on("createPersona", (res) => {
-        if (!res.error) {
-            isSafeToClose = true
-            closeForm()
-        }
-    })
-
-    socket.on("updatePersona", (res) => {
-        if (!res.error) {
-            isSafeToClose = true
-            closeForm()
-        }
-    })
-
     function handleAvatarChange(e: Event) {
         const input = e.target as HTMLInputElement | null
         if (!input || !input.files || input.files.length === 0) return
@@ -135,6 +121,19 @@
     }
 
     onMount(() => {
+        socket.on("createPersona", (res) => {
+            if (!res.error) {
+                isSafeToClose = true
+                closeForm()
+            }
+        })
+
+        socket.on("updatePersona", (res) => {
+            if (!res.error) {
+                isSafeToClose = true
+                closeForm()
+            }
+        })
         if (personaId) {
             socket.once("persona", (message) => {
                 if (message.persona) {

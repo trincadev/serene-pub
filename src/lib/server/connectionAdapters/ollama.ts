@@ -63,17 +63,17 @@ export class OllamaAdapter {
 	static contextThresholdPercent = 0.9 // we don't want to hit the limit, so we stop at 90% of the context size
 
 	// --- Context builders ---
-	contextBuildCharacterDescription(character: any): string | undefined {
+	contextBuildCharacterDescription(character: SelectCharacter): string | undefined {
 		if (!character?.description) return undefined
 		return `**Assistant character {{char}}'s description:**\n\n${character.description}\n\n`
 	}
-	contextBuildCharacterPersonality(character: any): string | undefined {
+	contextBuildCharacterPersonality(character: SelectCharacter): string | undefined {
 		if (!character?.personality) return undefined
 		return `**Assistant character {{char}}'s personality:**\n\n${character.personality}\n\n`
 	}
-	contextBuildCharacterScenario(character: any): string | undefined {
+	contextBuildCharacterScenario(character: SelectCharacter): string | undefined {
 		if (!character?.scenario) return undefined
-		return `**Assistant character {{char}}'s scenario:**\n\n${character.scenario}\n\n`
+		return `**Scenario:**\n\n${character.scenario}\n\n`
 	}
 	contextBuildCharacterWiBefore(): string | undefined {
 		return undefined
@@ -85,9 +85,16 @@ export class OllamaAdapter {
 		if (!persona?.description) return undefined
 		return `**User character {{user}}'s description:**\n\n${persona.description}\n\n`
 	}
-	contextBuildSystemPrompt(): string | undefined {
-		if (!this.promptConfig.systemPrompt) return undefined
+	contextBuildSystemPrompt(): string {
 		return `**Instructions:**\n\n${this.promptConfig.systemPrompt}\n\n`
+	}
+	contextBuildCharacterExampleDialogues(character: SelectCharacter): string | undefined {
+		if (!character?.exampleDialogues) return undefined
+		return `**Example Dialogue Only — Do Not Include in Conversation History:**\n\n${character.exampleDialogues}\n\n`
+	}
+	contextBuildPostHistoryInstructions(character: SelectCharacter): string | undefined {
+		if (!character?.postHistoryInstructions) return undefined
+		return `**${character.postHistoryInstructions}\n\n`
 	}
 
 	// --- SamplingConfig mapping ---
@@ -220,7 +227,7 @@ export class OllamaAdapter {
 			"assistant"
 		const persona = this.chat.chatPersonas?.[0]?.persona
 		const personaName = persona?.name || "user"
-		const character = this.chat.chatCharacters?.[0]?.character
+		const character = this.chat.chatCharacters?.[0]?.character ?? {} as SelectCharacter
 		const systemCtxData: Record<string, string | undefined> = {
 			char: characterName,
 			character: characterName,
@@ -232,15 +239,23 @@ export class OllamaAdapter {
 			scenario: this.contextBuildCharacterScenario(character),
 			wiBefore: this.contextBuildCharacterWiBefore(),
 			wiAfter: this.contextBuildCharacterWiAfter(),
-			system: this.contextBuildSystemPrompt()
+			// system: this.contextBuildSystemPrompt() // REMOVE from context block
 		}
-		const systemTemplate = this.contextConfig.template || "{{system}}"
-		const renderedSystemBlock =
-			Handlebars.compile(systemTemplate)(systemCtxData)
-		const systemBlock = PromptBlockFormatter.makeBlock({
+		// Render context system block (without instructions)
+		const contextTemplate = this.contextConfig.template || "{{description}}{{personality}}{{scenario}}{{wiBefore}}{{wiAfter}}"
+		const renderedContextBlock = Handlebars.compile(contextTemplate)(systemCtxData)
+		const contextSystemBlock = PromptBlockFormatter.makeBlock({
 			format: this.connection.promptFormat || "chatml",
 			role: "system",
-			content: renderedSystemBlock
+			content: renderedContextBlock
+		})
+
+		// Render instructions system block (just instructions)
+		const instructions = this.contextBuildSystemPrompt()
+		const instructionsSystemBlock = PromptBlockFormatter.makeBlock({
+			format: this.connection.promptFormat || "chatml",
+			role: "system",
+			content: instructions
 		})
 
 		// --- Context window logic ---
@@ -249,7 +264,35 @@ export class OllamaAdapter {
 		)
 		const totalMessages = messages.length
 		const reversed = [...messages].reverse()
-		const promptBlocks: string[] = [systemBlock]
+
+		// Modularize block construction
+		let promptBlocks: string[] = [instructionsSystemBlock, contextSystemBlock]
+		if (instructionsSystemBlock) promptBlocks.push()
+		let exampleDialogueBlock = this.contextBuildCharacterExampleDialogues(character)
+		let exampleDialogueBlockIndex = -1
+		if (exampleDialogueBlock) {
+			const compiledExampleDialogueBlock = Handlebars.compile(
+				PromptBlockFormatter.makeBlock({ 
+					format: this.connection.promptFormat || "chatml", 
+					role: "system", 
+					content: exampleDialogueBlock
+				})
+			)
+			promptBlocks.push(compiledExampleDialogueBlock(systemCtxData))
+			exampleDialogueBlockIndex = promptBlocks.length - 1
+		}
+
+		const postHistoryInstructions = this.contextBuildPostHistoryInstructions(character)
+		if (postHistoryInstructions) {
+			promptBlocks.unshift(
+				PromptBlockFormatter.makeBlock({
+					format: this.connection.promptFormat || "chatml",
+					role: "system",
+					content: postHistoryInstructions,
+				})
+			)
+		}
+
 		const messageBlocks: string[] = []
 		let tokenCounter: any
 		let tokenLimit: number
@@ -271,7 +314,9 @@ export class OllamaAdapter {
 				(this.constructor as typeof OllamaAdapter)
 					.contextThresholdPercent
 		)
+
 		let includedMessages = 0
+		let thresholdReached = false
 		for (let i = 0; i < reversed.length; i++) {
 			const msg = reversed[i]
 			const block = PromptBlockFormatter.makeBlock({
@@ -284,33 +329,43 @@ export class OllamaAdapter {
 				includedMessages++
 				continue
 			}
-			const currentPrompt = [systemBlock, ...messageBlocks].join("\n\n")
+			const currentPrompt = [...promptBlocks, ...messageBlocks].join("\n\n")
 			const tokens = tokenCounter.countTokens(currentPrompt)
 			if (tokens > tokenLimit) {
 				messageBlocks.shift()
 				break
 			}
-			if (tokens > contextThreshold) {
-				includedMessages++
-				break
+			if (tokens > contextThreshold && !thresholdReached) {
+				// Remove example dialogue block if present and threshold is reached for the first time
+				if (exampleDialogueBlockIndex !== -1) {
+					promptBlocks.splice(exampleDialogueBlockIndex, 1)
+					exampleDialogueBlockIndex = -1
+					thresholdReached = true
+					// Recalculate tokens after removing example block
+					const newPrompt = [...promptBlocks, ...messageBlocks].join("\n\n")
+					const newTokens = tokenCounter.countTokens(newPrompt)
+					if (newTokens > contextThreshold) {
+						// If still over threshold, break
+						break
+					} else {
+						// Otherwise, continue adding messages
+						continue
+					}
+				} else {
+					break
+				}
 			}
 			includedMessages++
 		}
 		promptBlocks.push(...messageBlocks)
-		if (this.contextConfig.alwaysForceName) {
-			promptBlocks.push(
-				PromptBlockFormatter.makeBlock({
-					format: this.connection.promptFormat || "chatml",
-					role: "assistant",
-					content: "{{char}}:",
-					includeClose: false
-				})
-			)
-		}
+
 		const prompt = Handlebars.compile(promptBlocks.join("\n\n"))(
 			systemCtxData
 		)
 		totalTokens = tokenCounter.countTokens(prompt)
+
+		console.log("PROMPT:\n\n", prompt, "\n\n")
+
 		return [
 			prompt.trim(),
 			totalTokens,

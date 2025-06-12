@@ -35,10 +35,6 @@
 		console.log("Unsaved changes:", unsavedChanges)
 	})
 
-	socket.on("charactersList", (msg: Sockets.CharactersList.Response) => {
-		charactersList = msg.charactersList
-	})
-
 	// Filtered list
 	let filteredCharacters: Sockets.CharactersList.Response["charactersList"] =
 		$derived.by(() => {
@@ -147,6 +143,9 @@
 	}
 
 	onMount(() => {
+		socket.on("charactersList", (msg: Sockets.CharactersList.Response) => {
+			charactersList = msg.charactersList
+		})
 		socket.emit("charactersList", {})
 		onclose = handleOnClose
 	})

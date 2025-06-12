@@ -55,7 +55,7 @@
 		groupOnlyGreetings: [],
 		postHistoryInstructions: "",
 		isFavorite: false,
-        characterVersion: "",
+		characterVersion: "",
 		_avatarFile: undefined,
 		_avatar: ""
 	})
@@ -84,18 +84,6 @@
 	let showCancelModal = $state(false)
 	let newLangKey = $state("")
 	let newLangNote = $state("")
-
-	socket.on("createCharacter", (res) => {
-		if (!res.error) {
-			closeForm()
-		}
-	})
-
-	socket.on("updateCharacter", (res) => {
-		if (!res.error) {
-			closeForm()
-		}
-	})
 
 	// Events: avatarChange, save, cancel
 	function handleAvatarChange(e: Event) {
@@ -167,6 +155,17 @@
 	}
 
 	onMount(() => {
+		socket.on("createCharacter", (res) => {
+			if (!res.error) {
+				closeForm()
+			}
+		})
+
+		socket.on("updateCharacter", (res) => {
+			if (!res.error) {
+				closeForm()
+			}
+		})
 		if (characterId) {
 			socket.once("character", (message) => {
 				console.log(
@@ -174,7 +173,10 @@
 					message.character
 				)
 				character = message.character
-				editCharacterData = {...editCharacterData, ...message.character}
+				editCharacterData = {
+					...editCharacterData,
+					...message.character
+				}
 				originalCharacterData = { ...editCharacterData }
 			})
 			socket.emit("character", { id: characterId })
@@ -211,7 +213,9 @@
 	class="border-primary bg-background animate-fade-in min-h-full rounded-lg border p-4 shadow-lg"
 >
 	<h2 class="mb-4 text-lg font-bold">
-		{mode === "edit" ? `Edit: ${character.nickname || character.name}` : "Create Character"}
+		{mode === "edit"
+			? `Edit: ${character.nickname || character.name}`
+			: "Create Character"}
 	</h2>
 	<div class="mt-4 mb-4 flex gap-2">
 		<button
@@ -239,7 +243,7 @@
 					name={editCharacterData.name ??
 						(mode === "edit" ? "Edit Character" : "New Character")}
 					background="preset-filled-primary-500"
-                    imageClasses="object-cover"
+					imageClasses="object-cover"
 				>
 					<Icons.User size={36} />
 				</Avatar>
@@ -432,12 +436,12 @@
 						</div>
 					{/each}
 					<button
-						class="btn btn-sm mt-1 preset-filled-primary-500"
+						class="btn btn-sm preset-filled-primary-500 mt-1"
 						type="button"
 						onclick={() =>
 							addToArray(editCharacterData.alternateGreetings)}
 					>
-                        <Icons.Plus class="h-4 w-4" />
+						<Icons.Plus class="h-4 w-4" />
 						Add Greeting
 					</button>
 				</div>
@@ -580,12 +584,12 @@
 						</div>
 					{/each}
 					<button
-						class="btn btn-sm mt-1 preset-filled-primary-500"
+						class="btn btn-sm preset-filled-primary-500 mt-1"
 						type="button"
 						onclick={() =>
 							addToArray(editCharacterData.groupOnlyGreetings)}
 					>
-                        <Icons.Plus class="h-4 w-4" />
+						<Icons.Plus class="h-4 w-4" />
 						Add Group Greeting
 					</button>
 				</div>
@@ -614,8 +618,13 @@
 			{/if}
 		</div>
 		<div class="mt-2 flex items-center gap-2">
-            <Switch name="example" checked={editCharacterData.isFavorite} onCheckedChange={(e) => (editCharacterData.isFavorite = e.checked)} />
-                Favorite
+			<Switch
+				name="example"
+				checked={editCharacterData.isFavorite}
+				onCheckedChange={(e) =>
+					(editCharacterData.isFavorite = e.checked)}
+			/>
+			Favorite
 		</div>
 	</div>
 </div>

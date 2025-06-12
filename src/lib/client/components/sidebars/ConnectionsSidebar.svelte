@@ -33,34 +33,6 @@
     let newConnectionName = $state("")
     let newConnectionType = $state(CONNECTION_TYPES[0].value)
 
-    // On load, if ollama and no models, fetch models
-    onMount(() => {
-        socket.emit("connectionsList", {})
-        if (userCtx.user?.activeConnectionId) {
-            socket.emit("connection", { id: userCtx.user.activeConnectionId })
-        }
-        onclose = handleOnClose
-        // If ollama, fetch models
-        if (connection?.type === "ollama" && connection.baseUrl) {
-            handleRefreshModels()
-        }
-    })
-
-    // --- Socket handlers ---
-    socket.on("connectionsList", (msg) => {
-        connectionsList = msg.connectionsList
-    })
-    socket.on("connection", (msg) => {
-        connection = { ...msg.connection }
-        originalConnection = { ...msg.connection }
-    })
-    socket.on("testConnection", (msg) => {
-        testResult = msg
-    })
-    socket.on("refreshModels", (msg) => {
-        refreshModelsResult = msg.models || []
-    })
-
     function handleSelectChange(e: Event) {
         socket.emit("setUserActiveConnection", { id: +(e.target as HTMLSelectElement).value })
     }
@@ -119,6 +91,31 @@
     function handleFieldChange(key: string, value: any) {
         connection = { ...connection, [key]: value }
     }
+
+    onMount(() => {
+        socket.on("connectionsList", (msg) => {
+            connectionsList = msg.connectionsList
+        })
+        socket.on("connection", (msg) => {
+            connection = { ...msg.connection }
+            originalConnection = { ...msg.connection }
+        })
+        socket.on("testConnection", (msg) => {
+            testResult = msg
+        })
+        socket.on("refreshModels", (msg) => {
+            refreshModelsResult = msg.models || []
+        })
+        socket.emit("connectionsList", {})
+        if (userCtx.user?.activeConnectionId) {
+            socket.emit("connection", { id: userCtx.user.activeConnectionId })
+        }
+        onclose = handleOnClose
+        // If ollama, fetch models
+        if (connection?.type === "ollama" && connection.baseUrl) {
+            handleRefreshModels()
+        }
+    })
 </script>
 
 <div class="text-foreground p-4">

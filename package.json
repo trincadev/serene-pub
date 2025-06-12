@@ -3,18 +3,57 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
+	"license": "AGPL-3.0",
+	"bin": "build/index.js",
+	"description": "Serene Pub is a modern, customizable chat application designed for immersive roleplay and creative conversations.",
+	"author": {
+		"name": "Jody Doolittle",
+		"email": "jody@doolittle.me",
+		"url": "https://github.com/doolijb"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/doolijb/serene-pub.git"
+	},
+	"homepage": "https://github.com/doolijb/serene-pub",
+	"bugs": {
+		"url": "https://github.com/doolijb/serene-pub/issues"
+	},
+	"pkg": {
+		"assets": [
+			"build/client/**/*",
+			"build/server/**/*",
+			"build/handler.js",
+			"static/**/*"
+		],
+		"scripts": [
+			"build/index.js",
+			"build/env.js",
+			"build/shims.js"
+		],
+		"outputPath": "dist",
+		"targets": [
+			"node18-linux-x64",
+			"node18-macos-x64",
+			"node18-win-x64"
+		]
+	},
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build",
+		"build": "vite build && vite build --ssr",
+		"start": "node build/index.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check .",
-		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
-		"db:studio": "drizzle-kit studio"
+		"db:generate": "drizzle-kit generate --config ./src/lib/server/db/drizzle.config.ts",
+		"db:migrate": "drizzle-kit migrate --config ./src/lib/server/db/drizzle.config.ts",
+		"db:studio": "drizzle-kit studio --config ./src/lib/server/db/drizzle.config.ts",
+		"build:licenses": "npx license-checker --yaml => THIRD_PARTY_LICENSES.txt",
+		"build:copy-docs": "cp LICENSE README.md THIRD_PARTY_LICENSES.txt build/",
+		"pkg": "bun run build:licenses && bun run build:copy-docs && pkg . --targets node18-linux-x64,node18-macos-x64,node18-win-x64 --output build/serene-pub && node pkg-postprocess.js"
 	},
 	"devDependencies": {
 		"@enviro/metadata": "^1.5.1",
@@ -50,6 +89,7 @@
 	"dependencies": {
 		"@lenml/char-card-reader": "^1.0.6",
 		"@lucide/svelte": "^0.511.0",
+		"@proj-airi/duckdb-wasm": "^0.4.27",
 		"@types/lodash": "^4.17.17",
 		"@types/pngjs": "^6.0.5",
 		"better-sqlite3": "^11.8.0",
@@ -64,6 +104,7 @@
 		"marked": "^15.0.12",
 		"mistral-tokenizer-js": "^1.0.0",
 		"ollama": "^0.5.16",
+		"pkg": "^5.8.1",
 		"sveltekit-io": "^1.0.12",
 		"uuid": "^11.1.0"
 	}

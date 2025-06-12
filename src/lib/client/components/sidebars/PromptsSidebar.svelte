@@ -29,22 +29,6 @@
     let showUnsavedChangesModal = $state(false)
     let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 
-    socket.on("promptConfigsList", (msg: Sockets.PromptConfigsList.Response) => {
-        promptsList = msg.promptConfigsList
-        if (!selectedPromptId && promptsList.length > 0) {
-            selectedPromptId = userCtx.user.activePromptConfigId ?? promptsList[0].id
-        }
-    })
-
-    socket.on("promptConfig", (msg: Sockets.PromptConfig.Response) => {
-        promptConfig = { ...msg.promptConfig }
-        originalData = { ...msg.promptConfig }
-    })
-
-    socket.on("createPromptConfig", (msg: Sockets.CreatePromptConfig.Response) => {
-        selectedPromptId = msg.promptConfig.id
-    })
-
     function handleSave() {
         socket.emit("updatePromptConfig", {
             promptConfig: { ...promptConfig, id: promptConfig.id }
@@ -119,6 +103,21 @@
     })
 
     onMount(() => {
+        socket.on("promptConfigsList", (msg: Sockets.PromptConfigsList.Response) => {
+            promptsList = msg.promptConfigsList
+            if (!selectedPromptId && promptsList.length > 0) {
+                selectedPromptId = userCtx.user.activePromptConfigId ?? promptsList[0].id
+            }
+        })
+
+        socket.on("promptConfig", (msg: Sockets.PromptConfig.Response) => {
+            promptConfig = { ...msg.promptConfig }
+            originalData = { ...msg.promptConfig }
+        })
+
+        socket.on("createPromptConfig", (msg: Sockets.CreatePromptConfig.Response) => {
+            selectedPromptId = msg.promptConfig.id
+        })
         socket.emit("promptConfigsList", {})
         if (selectedPromptId) {
             socket.emit("promptConfig", { id: selectedPromptId })
