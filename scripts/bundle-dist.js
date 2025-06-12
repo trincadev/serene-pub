@@ -3,10 +3,8 @@
 
 import fs from 'fs';
 import path from 'path';
-import https from 'https';
-import child_process from 'child_process';
-import os from 'os';
 import { fileURLToPath } from 'url';
+import child_process from 'child_process';
 
 import pkg from '../package.json' assert { type: 'json' };
 
@@ -16,7 +14,7 @@ const version = pkg.version;
 const distDir = path.resolve(__dirname, '../dist');
 const buildDir = path.resolve(__dirname, '../build');
 const staticDir = path.resolve(__dirname, '../static');
-const filesToCopy = ['LICENSE', 'README.md', 'THIRD_PARTY_LICENSES.txt'];
+const filesToCopy = ['LICENSE', 'README.md'];
 
 const targets = [
   {
@@ -41,28 +39,6 @@ const targets = [
     launcher: 'run.cmd',
   },
 ];
-
-function download(url, dest) {
-  return new Promise((resolve, reject) => {
-    if (fs.existsSync(dest)) return resolve();
-    const file = fs.createWriteStream(dest);
-    https.get(url, (response) => {
-      if (response.statusCode !== 200) return reject(new Error('Failed to download: ' + url));
-      response.pipe(file);
-      file.on('finish', () => file.close(resolve));
-    }).on('error', reject);
-  });
-}
-
-function extract(archive, dest, os) {
-  if (os === 'win') {
-    child_process.execSync(`unzip -q -o ${archive} -d ${dest}`);
-  } else if (archive.endsWith('.tar.xz')) {
-    child_process.execSync(`tar -xf ${archive} -C ${dest}`);
-  } else if (archive.endsWith('.tar.gz')) {
-    child_process.execSync(`tar -xzf ${archive} -C ${dest}`);
-  }
-}
 
 function copyRecursive(src, dest) {
   if (!fs.existsSync(src)) return;
@@ -105,62 +81,159 @@ if not exist %NODE_BIN% (
   }
 }
 
+// Whitelist for packages with UNKNOWN license but known to be MIT
+const LICENSE_WHITELIST = [
+  { name: 'json-bignum', version: '0.0.3' },
+  { name: 'xmlhttprequest-ssl', version: '2.1.2' }
+];
+
+function isWhitelisted(name, version) {
+  return LICENSE_WHITELIST.some(pkg => pkg.name === name && pkg.version === version);
+}
+
+// Acceptable licenses for redistribution with AGPL app
+const ACCEPTABLE_LICENSES = [
+  'mit', 'isc', 'bsd-2-clause', 'bsd-3-clause', '0bsd', 'wtfpl', 'apache-2.0', 'agpl-3.0', 'agpl-3.0-only', 'agpl-3.0-or-later',
+  'bsd', 'bsd-2-clause or mit or apache-2.0', 'bsd-2-clause or mit', 'bsd-3-clause or mit', 'bsd-2-clause or mit or apache-2.0',
+  'apache-2.0 or mit', 'apache-2.0 or bsd-3-clause', 'apache-2.0 or mit or bsd-3-clause', 'apache-2.0 or mit or bsd-2-clause',
+  'mit or wtfpl', 'mit or bsd-2-clause', 'mit or bsd-3-clause', 'mit or apache-2.0', 'mit or isc', 'isc or mit', '0bsd or mit',
+  'bsd-2-clause or mit or apache-2.0', 'bsd-3-clause or mit or apache-2.0', 'bsd-3-clause or mit or apache-2.0',
+  'bsd-2-clause or mit or apache-2.0', 'bsd-3-clause or mit or apache-2.0', 'bsd-2-clause or mit', 'bsd-3-clause or mit',
+  'bsd-2-clause or apache-2.0', 'bsd-3-clause or apache-2.0', 'bsd-2-clause or bsd-3-clause', 'bsd-3-clause or bsd-2-clause',
+  'public domain', 'unlicense', 'cc0-1.0', 'cc0', '0bsd', 'bsd-2-clause-freebsd', 'bsd-3-clause-clear', 'bsd-3-clause-new',
+  'bsd-3-clause-revised', 'bsd-3-clause-simplified', 'bsd-3-clause-modified', 'bsd-3-clause', 'bsd-2-clause', 'bsd',
+  'wtfpl', 'isc', 'mit', 'apache-2.0', 'agpl-3.0', 'agpl-3.0-only', 'agpl-3.0-or-later', 'bsd-2-clause or mit or apache-2.0',
+  'bsd-3-clause or mit or apache-2.0', 'bsd-2-clause or mit', 'bsd-3-clause or mit', 'bsd-2-clause or apache-2.0',
+  'bsd-3-clause or apache-2.0', 'bsd-2-clause or bsd-3-clause', 'bsd-3-clause or bsd-2-clause', 'public domain', 'unlicense',
+  'cc0-1.0', 'cc0', '0bsd', 'bsd-2-clause-freebsd', 'bsd-3-clause-clear', 'bsd-3-clause-new', 'bsd-3-clause-revised',
+  'bsd-3-clause-simplified', 'bsd-3-clause-modified', 'bsd-3-clause', 'bsd-2-clause', 'bsd'
+];
+
+function isAcceptableLicense(license, name, version) {
+  if (!license) return false;
+  // Special case: whitelist
+  if (isWhitelisted(name, version)) return true;
+  // Remove parentheses and whitespace, split on OR/AND/||/&&
+  const cleaned = license.replace(/[()]/g, '').toLowerCase();
+  const parts = cleaned.split(/\s*(or|and|\|\||&&|,|\/)\s*/i).filter(s => s && !['or','and','||','&&','/'].includes(s));
+  // If all parts are in the allowlist, it's acceptable
+  return parts.length > 0 && parts.every(l => ACCEPTABLE_LICENSES.includes(l.trim()));
+}
+
+function checkAllLicensesAcceptable(nodeModulesPath) {
+  let problematic = [];
+  function checkDir(dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (entry.name.startsWith('@')) {
+          checkDir(path.join(dir, entry.name));
+        } else {
+          const pkgPath = path.join(dir, entry.name, 'package.json');
+          if (fs.existsSync(pkgPath)) {
+            try {
+              const pkgData = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+              const license = (pkgData.license || '').toLowerCase();
+              const name = pkgData.name || entry.name;
+              const version = pkgData.version || '';
+              if (license === 'unknown' || !license) {
+                if (!isAcceptableLicense(license, name, version)) {
+                  if (!isWhitelisted(name, version)) {
+                    // Print a warning, but do not fail; user must manually verify
+                    console.warn(`WARNING: ${name}@${version} has UNKNOWN license. Please verify manually. (${pkgPath})`);
+                  }
+                }
+              } else if (!isAcceptableLicense(license, name, version)) {
+                problematic.push({
+                  name,
+                  version,
+                  license: pkgData.license || 'UNKNOWN',
+                  path: pkgPath
+                });
+              }
+            } catch (e) {
+              problematic.push({ name: entry.name, version: '', license: 'PARSE_ERROR', path: pkgPath });
+            }
+          }
+        }
+      }
+    }
+  }
+  checkDir(nodeModulesPath);
+  return problematic;
+}
+
 (async () => {
-  fs.mkdirSync(distDir, { recursive: true });
-  for (const target of targets) {
-    const outDir = path.join(distDir, `serene-pub-${version}-${target.os}`);
-    fs.rmSync(outDir, { recursive: true, force: true });
-    fs.mkdirSync(outDir, { recursive: true });
+  try {
+    // 1. Prepare temp directory for pruned node_modules
+    const os = process.platform;
+    const tempDir = path.join(__dirname, '../.tmp-bundle-dist');
+    if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true });
+    fs.mkdirSync(tempDir);
+    fs.writeFileSync(path.join(tempDir, 'package.json'), JSON.stringify(pkg, null, 2));
 
-    // Do NOT bundle Node.js binary or download it here
+    // 2. Prune node_modules using Bun
+    console.log('Pruning node_modules for production...');
+    child_process.execSync('bun install --production', { cwd: tempDir, stdio: 'inherit' });
 
-    // Copy app files
-    copyRecursive(buildDir, path.join(outDir, 'build'));
-    copyRecursive(staticDir, path.join(outDir, 'static'));
-    for (const file of filesToCopy) {
-      if (fs.existsSync(path.join(buildDir, file))) {
-        fs.copyFileSync(path.join(buildDir, file), path.join(outDir, file));
-      } else if (fs.existsSync(path.resolve(__dirname, '../', file))) {
-        fs.copyFileSync(path.resolve(__dirname, '../', file), path.join(outDir, file));
+    // 3. Clean node_modules with modclean, preserving license files
+    console.log('Cleaning node_modules with modclean...');
+    child_process.execSync('bunx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"', { cwd: tempDir, stdio: 'inherit' });
+
+    // 4. License check
+    console.log('Checking licenses...');
+    const problematic = checkAllLicensesAcceptable(path.join(tempDir, 'node_modules'));
+    if (problematic.length > 0) {
+      console.error('Unacceptable licenses found:');
+      for (const p of problematic) {
+        console.error(`  ${p.name}@${p.version}: ${p.license} (${p.path})`);
+      }
+      process.exit(1);
+    }
+
+    // 5. For each target, create dist bundle
+    for (const target of targets) {
+      const outDir = path.join(distDir, `serene-pub-${version}-${target.os}`);
+      if (fs.existsSync(outDir)) fs.rmSync(outDir, { recursive: true, force: true });
+      fs.mkdirSync(outDir, { recursive: true });
+      // Copy build and static
+      copyRecursive(buildDir, path.join(outDir, 'build'));
+      copyRecursive(staticDir, path.join(outDir, 'static'));
+      // Copy pruned node_modules
+      copyRecursive(path.join(tempDir, 'node_modules'), path.join(outDir, 'node_modules'));
+      // Copy LICENSE, README, etc.
+      for (const file of filesToCopy) {
+        if (fs.existsSync(path.resolve(__dirname, '..', file))) {
+          fs.copyFileSync(path.resolve(__dirname, '..', file), path.join(outDir, file));
+        }
+      }
+      // Copy platform-specific instructions
+      const instrFile = path.resolve(__dirname, `../instructions/INSTRUCTIONS-${target.os}.txt`);
+      if (fs.existsSync(instrFile)) {
+        fs.copyFileSync(instrFile, path.join(outDir, 'INSTRUCTIONS.txt'));
+      }
+      // Write minimal package.json
+      fs.writeFileSync(path.join(outDir, 'package.json'), JSON.stringify({
+        type: 'module',
+        name: pkg.name,
+        version: pkg.version,
+        description: pkg.description,
+        license: pkg.license
+      }, null, 2));
+      // Write launcher script
+      const launcher = makeRunScript(target, 'build/index.js');
+      const launcherPath = path.join(outDir, target.launcher);
+      fs.writeFileSync(launcherPath, launcher, { mode: 0o755 });
+      if (target.os !== 'win') {
+        fs.chmodSync(launcherPath, 0o755);
       }
     }
 
-    // Write run script
-    const runScript = makeRunScript(target, 'build/index.js');
-    const runScriptPath = path.join(outDir, target.launcher);
-    fs.writeFileSync(runScriptPath, runScript, { mode: 0o755 });
-    if (target.os !== 'win') fs.chmodSync(runScriptPath, 0o755);
-
-    // Add clickable executable for Linux/macOS
-    if (target.os === 'linux' || target.os === 'macos') {
-      const execPath = path.join(outDir, 'Serene Pub');
-      const script = `#!/bin/sh\ncd \"$(dirname \"$0\")\"\n\n# Try common terminals\nif command -v x-terminal-emulator >/dev/null 2>&1; then\n  exec x-terminal-emulator -e ./run.sh\nelif command -v gnome-terminal >/dev/null 2>&1; then\n  exec gnome-terminal -- ./run.sh\nelif command -v konsole >/dev/null 2>&1; then\n  exec konsole -e ./run.sh\nelif command -v xfce4-terminal >/dev/null 2>&1; then\n  exec xfce4-terminal -e ./run.sh\nelif command -v mate-terminal >/dev/null 2>&1; then\n  exec mate-terminal -e ./run.sh\nelif command -v lxterminal >/dev/null 2>&1; then\n  exec lxterminal -e ./run.sh\nelif command -v tilix >/dev/null 2>&1; then\n  exec tilix -e ./run.sh\nelse\n  ./run.sh\nfi\n`;
-      fs.writeFileSync(execPath, script, { mode: 0o755 });
-    }
-
-    // Copy platform-specific instructions as INSTRUCTIONS.txt
-    let instructionsFile;
-    if (target.os === 'linux') instructionsFile = path.resolve(__dirname, '../instructions/INSTRUCTIONS-linux.txt');
-    else if (target.os === 'macos') instructionsFile = path.resolve(__dirname, '../instructions/INSTRUCTIONS-macos.txt');
-    else if (target.os === 'win') instructionsFile = path.resolve(__dirname, '../instructions/INSTRUCTIONS-windows.txt');
-    if (instructionsFile && fs.existsSync(instructionsFile)) {
-      fs.copyFileSync(instructionsFile, path.join(outDir, 'INSTRUCTIONS.txt'));
-    }
-
-    // Write minimal package.json for ESM support and meta info
-    const minimalPkg = {
-      name: pkg.name,
-      version: pkg.version,
-      description: pkg.description,
-      author: pkg.author,
-      license: pkg.license,
-      homepage: pkg.homepage,
-      repository: pkg.repository,
-      type: 'module'
-    };
-    fs.writeFileSync(path.join(outDir, 'package.json'), JSON.stringify(minimalPkg, null, 2));
-
-    console.log(`Created: ${outDir}`);
+    // 6. Clean up temp dir
+    fs.rmSync(tempDir, { recursive: true, force: true });
+    console.log('All distributables generated in dist/.');
+  } catch (err) {
+    console.error('Bundle process failed:', err);
+    process.exit(1);
   }
-  console.log('All distributables created in ./dist');
 })();

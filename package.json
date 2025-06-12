@@ -32,9 +32,8 @@
 		"db:generate": "drizzle-kit generate --config ./src/lib/server/db/drizzle.config.ts",
 		"db:migrate": "drizzle-kit migrate --config ./src/lib/server/db/drizzle.config.ts",
 		"db:studio": "drizzle-kit studio --config ./src/lib/server/db/drizzle.config.ts",
-		"build:licenses": "npx license-checker --yaml => THIRD_PARTY_LICENSES.txt",
 		"bundle": "node scripts/bundle-dist.js",
-		"dist": "bun run build && bun run build:licenses && bun run bundle"
+		"dist": "bun run build && bun run bundle"
 	},
 	"devDependencies": {
 		"@enviro/metadata": "^1.5.1",
