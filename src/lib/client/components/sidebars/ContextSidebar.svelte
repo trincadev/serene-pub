@@ -12,7 +12,7 @@
     let { onclose = $bindable() }: Props = $props()
 
     const socket = skio.get()
-    let userCtx: { user: SelectUser } = getContext("user")
+    let userCtx: { user: SelectUser } = getContext("userCtx")
     let configsList: Sockets.ContextConfigsList.Response["contextConfigsList"] = $state([])
     let selectedConfigId: number | undefined = $state(
         userCtx.user.activeContextConfigId || undefined

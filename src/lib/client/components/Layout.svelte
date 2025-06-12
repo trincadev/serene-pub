@@ -18,6 +18,7 @@
 	import { toaster } from "$lib/client/utils/toaster"
 	import SettingsSidebar from "$lib/client/components/sidebars/SettingsSidebar.svelte"
 	import type { Snippet } from "svelte"
+	import { Theme } from "$lib/client/consts/Theme"
 
 	interface Props {
 		children?: Snippet
@@ -55,6 +56,10 @@
 			tags: { icon: Icons.Tag, title: "Tags" },
 			chats: { icon: Icons.MessageSquare, title: "Chats" }
 		}
+	})
+	let themeCtx: ThemeCtx = $state({
+		mode: localStorage.getItem("mode") as "light" | "dark" || "dark",
+		theme: localStorage.getItem("theme") || Theme.CERBERUS
 	})
 
 	function openPanel(which: string) {
@@ -135,9 +140,21 @@
 		panelsCtx.isMobileMenuOpen = false
 	}
 
-	setContext("panels", panelsCtx as PanelsCtx)
+	$effect(() => {
+		const mode = themeCtx.mode
+		localStorage.setItem("mode", mode)
+		document.documentElement.setAttribute("data-mode", mode)
+	})
 
-	setContext("user", userCtx)
+	$effect(() => {
+		const theme = themeCtx.theme
+		localStorage.setItem("theme", theme)
+		document.documentElement.setAttribute("data-theme", theme)
+	})
+
+	setContext("panelsCtx", panelsCtx as PanelsCtx)
+	setContext("userCtx", userCtx)
+	setContext("themeCtx", themeCtx)
 
 	onMount(() => {
 		socket.on("user", (message) => {

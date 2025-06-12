@@ -5,28 +5,18 @@ Thank you for downloading Serene Pub.
 To run the app:
 
 1. Extract the archive to your preferred location.
-2. Choose one of the following ways to start the app:
 
-   a) Graphical (no terminal required):
-      - In Finder, right-click the "Serene Pub" file.
-      - Select "Get Info" and check "Executable" under permissions if available (or use Terminal to run: chmod +x "Serene Pub").
-      - Double-click the "Serene Pub" icon to launch. This will open a terminal and start the app.
+2. Open the Terminal app.
 
-   b) Terminal method:
-      - Open the Terminal app.
-      - Navigate to the extracted folder (e.g., serene-pub-<version>-macos):
+3. Navigate to the extracted folder (e.g., serene-pub-<version>-macos):
+      cd /path/to/serene-pub-<version>-macos
 
-            cd /path/to/serene-pub-<version>-macos
+3. Run the app with:
+      bash run.sh
 
-      - Run the app with:
+4. On first launch, the app will automatically download and set up a local Node.js runtime if needed. No manual installation is required.
 
-            bash run.sh
-
-      - If you get a permission error, run: chmod +x run.sh
-
-3. On first launch, the app will automatically download and set up a local Node.js runtime if needed. No manual installation is required.
-
-4. On your Mac, access Serene Pub from http://0.0.0.0:3000 or http://localhost:3000.
+5. On your Mac, access Serene Pub from http://0.0.0.0:3000 or http://localhost:3000.
 
 Notes:
 - Serene Pub will attempt to automatically identify your local network IP address, allowing access across other devices (e.g. mobile phones.)
@@ -34,8 +24,7 @@ Notes:
     - For example, if the result is 192.168.1.42, you can access Serene Pub from your phone at http://192.168.1.42:3000
 
 Troubleshooting:
-- If double-clicking "Serene Pub" does not open a terminal, try the terminal method above.
-- If you see a message about missing permissions, run: chmod +x "Serene Pub" run.sh
+- If you get a permission error, run: chmod +x run.sh
 - If your system does not have curl or a supported terminal, install curl (brew install curl) or use the terminal method above.
 
 Feedback & Help:

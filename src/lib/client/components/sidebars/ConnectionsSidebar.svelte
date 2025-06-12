@@ -13,7 +13,7 @@
     }
 
     let { onclose = $bindable() }: Props = $props()
-    let userCtx: UserCtx = getContext("user")
+    let userCtx: UserCtx = getContext("userCtx")
     const socket = skio.get()
 
     // --- State ---

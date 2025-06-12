@@ -15,7 +15,7 @@
     let chats: Sockets.ChatsList.Response["chatsList"] = $state([])
     let search = $state("")
     let isCreating = $state(false)
-    let panelsCtx: PanelsCtx = $state(getContext("panels"))
+    let panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
     const socket = skio.get()
 
     // Filtered chats derived from search
@@ -133,7 +133,7 @@
                         <!-- svelte-ignore a11y_click_events_have_key_events -->
                         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                         <li
-                            class="hover:bg-surface-800 flex cursor-pointer items-center gap-2 rounded-lg p-2 transition"
+                            class="sidebar-list-item"
                             onclick={() => handleChatClick(chat)}
                         >
                             <!-- First character avatar -->
@@ -167,17 +167,17 @@
                                     {chat.name || "Untitled Chat"}
                                 </div>
                                 <div class="text-muted-foreground truncate text-xs">
-                                    {#if chat.chatPersonas?.length}
-                                        {chat.chatPersonas
-                                            .map((cp) => cp.persona?.name)
+                                    {#if chat.chatCharacters?.length}
+                                        
+                                        {chat.chatCharacters
+                                            .map((cc) => cc.character?.nickname || cc.character?.name)
                                             .filter(Boolean)
                                             .join(", ")}
                                     {/if}
-                                    {#if chat.chatCharacters?.length}
-                                        {#if chat.chatPersonas?.length},
-                                        {/if}
-                                        {chat.chatCharacters
-                                            .map((cc) => cc.character?.name)
+                                    {chat.chatPersonas?.length ? "," : ""}
+                                    {#if chat.chatPersonas?.length}
+                                        {chat.chatPersonas
+                                            .map((cp) => cp.persona?.name)
                                             .filter(Boolean)
                                             .join(", ")}
                                     {/if}

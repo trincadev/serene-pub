@@ -619,12 +619,12 @@
 		</div>
 		<div class="mt-2 flex items-center gap-2">
 			<Switch
-				name="example"
+				name="favorite"
 				checked={editCharacterData.isFavorite}
 				onCheckedChange={(e) =>
 					(editCharacterData.isFavorite = e.checked)}
 			/>
-			Favorite
+			<label for="Favorite" class="font-semibold">Favorite</label>
 		</div>
 	</div>
 </div>

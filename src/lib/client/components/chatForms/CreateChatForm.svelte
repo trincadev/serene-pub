@@ -8,7 +8,7 @@
 
 	let { isCreating = $bindable() }: Props = $props()
 
-	let panelsCtx: PanelsCtx = getContext("panels")
+	let panelsCtx: PanelsCtx = getContext("panelsCtx")
 
 	let name = $state("")
 	let selectedCharacterId: number | undefined = $state(undefined)

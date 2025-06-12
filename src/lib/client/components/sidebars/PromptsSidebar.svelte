@@ -13,7 +13,7 @@
     let { onclose = $bindable() }: Props = $props()
 
     const socket = skio.get()
-    let userCtx: { user: SelectUser } = getContext("user")
+    let userCtx: { user: SelectUser } = getContext("userCtx")
     let promptsList: Sockets.PromptConfigsList.Response["promptConfigsList"] = $state([])
     let selectedPromptId: number | undefined = $state(
         userCtx.user.activePromptConfigId || undefined

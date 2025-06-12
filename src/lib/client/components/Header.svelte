@@ -2,7 +2,7 @@
     import * as Icons from "@lucide/svelte"
     import { getContext, onMount, onDestroy } from "svelte"
 
-    let panelsCtx: PanelsCtx = $state(getContext("panels"))
+    let panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 
     // Prevent body scroll when mobile menu is open
     $effect(() => {
@@ -30,7 +30,7 @@
 
 <header class="sticky top-0 z-30 w-full">
     <div
-        class="bg-surface-100-900 bg-opacity-25 relative mx-auto flex w-full justify-between px-4 py-2 shadow-lg backdrop-blur md:w-[50%]"
+        class="bg-surface-100-900 bg-opacity-25 relative mx-auto flex w-full justify-between px-4 py-2 backdrop-blur md:w-[50%]"
     >
 
         <!-- Desktop left nav -->

@@ -6,23 +6,51 @@
 @import "@skeletonlabs/skeleton";
 @import "@skeletonlabs/skeleton/optional/presets";
 @import "@skeletonlabs/skeleton/themes/cerberus";
+@import "@skeletonlabs/skeleton/themes/catppuccin";
+@import "@skeletonlabs/skeleton/themes/concord";
+@import "@skeletonlabs/skeleton/themes/fennec";
+@import "@skeletonlabs/skeleton/themes/legacy";
+@import "@skeletonlabs/skeleton/themes/modern";
+@import "@skeletonlabs/skeleton/themes/nosh";
+@import "@skeletonlabs/skeleton/themes/pine";
+@import "@skeletonlabs/skeleton/themes/rocket";
+@import "@skeletonlabs/skeleton/themes/sahara";
+@import "@skeletonlabs/skeleton/themes/terminus";
+@import "@skeletonlabs/skeleton/themes/vox";
+@import "@skeletonlabs/skeleton/themes/cerberus";
+@import "@skeletonlabs/skeleton/themes/crimson";
+@import "@skeletonlabs/skeleton/themes/hamlindigo";
+@import "@skeletonlabs/skeleton/themes/mint";
+@import "@skeletonlabs/skeleton/themes/mona";
+@import "@skeletonlabs/skeleton/themes/nouveau";
+@import "@skeletonlabs/skeleton/themes/reign";
+@import "@skeletonlabs/skeleton/themes/rose";
+@import "@skeletonlabs/skeleton/themes/seafoam";
+@import "@skeletonlabs/skeleton/themes/vintage";
+@import "@skeletonlabs/skeleton/themes/wintry";
 
 @source '../node_modules/@skeletonlabs/skeleton-svelte/dist';
 
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
+
 .funnel-display {
-    font-family: "Funnel Display", sans-serif;
-    font-optical-sizing: auto;
-    font-style: normal;
+	font-family: "Funnel Display", sans-serif;
+	font-optical-sizing: auto;
+	font-style: normal;
 }
 
 .rendered-chat-message-content p + p {
-    margin-top: 1em;
+	margin-top: 1em;
 }
 
 .rendered-chat-message-content em {
-    @apply text-surface-700-300;
+	@apply text-surface-700-300;
 }
 
 .rendered-chat-message-content span.quoted-text {
-    @apply text-tertiary-900-100;
+	@apply text-tertiary-900-100;
+}
+
+.sidebar-list-item {
+    @apply card hover:preset-filled-surface-200-800 flex cursor-pointer items-center gap-2 rounded-lg p-2 transition;
 }

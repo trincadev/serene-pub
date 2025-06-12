@@ -41,6 +41,11 @@ declare global {
         }) | undefined
     }
 
+    interface ThemeCtx {
+		mode: "light" | "dark",
+		theme: string
+	}
+
     // Model select and insert
     type SelectUser = typeof schema.users.$inferSelect
     type InsertUser = typeof schema.users.$inferInsert

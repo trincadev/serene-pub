@@ -153,7 +153,7 @@
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div
-						class="hover:bg-surface-800 flex cursor-pointer items-center gap-2 rounded-lg p-2 transition"
+						class="sidebar-list-item"
 						onclick={() => handlePersonaClick(p)}
 					>
 						<span class="text-muted-foreground w-[2.5em] text-xs">

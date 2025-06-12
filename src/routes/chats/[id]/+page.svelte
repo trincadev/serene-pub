@@ -21,7 +21,7 @@
 				totalMessages: number
 		  }
 		| undefined = $state()
-	let userCtx: UserCtx = getContext("user")
+	let userCtx: UserCtx = getContext("userCtx")
 	let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
 	let contextExceeded = $derived(
 		!!promptStats
@@ -383,7 +383,7 @@
 	</div>
 	<!-- NEW CHAT MESSAGE FORM -->
 	<div
-		class="chat-input-bar preset-tonal-surface gap-4 pb-3 align-middle shadow-xl lg:pb-4"
+		class="chat-input-bar preset-tonal-surface gap-4 pb-3 align-middle lg:pb-4"
 		class:hidden={!!editChatMessage}
 	>
 		<MessageComposer
@@ -427,7 +427,7 @@
 			{#snippet rightControls()}
 				{#if !lastMessage?.isGenerating && !editChatMessage}
 					<button
-						class="text-success-500 hover:preset-tonal-success hidden h-auto rounded-lg p-3 text-center lg:block"
+						class="hover:preset-tonal-success hidden h-auto rounded-lg p-3 text-center lg:block"
 						type="button"
 						disabled={!newMessage.trim() ||
 							lastMessage?.isGenerating}
