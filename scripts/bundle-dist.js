@@ -147,6 +147,19 @@ if not exist %NODE_BIN% (
       fs.copyFileSync(instructionsFile, path.join(outDir, 'INSTRUCTIONS.txt'));
     }
 
+    // Write minimal package.json for ESM support and meta info
+    const minimalPkg = {
+      name: pkg.name,
+      version: pkg.version,
+      description: pkg.description,
+      author: pkg.author,
+      license: pkg.license,
+      homepage: pkg.homepage,
+      repository: pkg.repository,
+      type: 'module'
+    };
+    fs.writeFileSync(path.join(outDir, 'package.json'), JSON.stringify(minimalPkg, null, 2));
+
     console.log(`Created: ${outDir}`);
   }
   console.log('All distributables created in ./dist');
