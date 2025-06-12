@@ -200,35 +200,41 @@ function checkAllLicensesAcceptable(nodeModulesPath) {
 
 ;(async () => {
 	try {
-		// 1. Prepare temp directory for pruned node_modules
-		const os = process.platform
-		const tempDir = path.join(__dirname, "../.tmp-bundle-dist")
-		if (fs.existsSync(tempDir))
-			fs.rmSync(tempDir, { recursive: true, force: true })
-		fs.mkdirSync(tempDir)
-		fs.writeFileSync(
-			path.join(tempDir, "package.json"),
-			JSON.stringify(pkg, null, 2)
-		)
+		// 1. Prepare temp directories for pruned node_modules for each platform
+		const platforms = [
+			{ name: "linux", env: { ...process.env, npm_config_platform: "linux" } },
+			{ name: "macos", env: { ...process.env, npm_config_platform: "darwin" } },
+			{ name: "windows", env: { ...process.env, npm_config_platform: "win32" } },
+		]
+		const tempDirs = {}
+		for (const platform of platforms) {
+			const tempDir = path.join(__dirname, `../.tmp-bundle-dist-${platform.name}`)
+			if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true })
+			fs.mkdirSync(tempDir)
+			fs.writeFileSync(
+				path.join(tempDir, "package.json"),
+				JSON.stringify(pkg, null, 2)
+			)
+			// Prune node_modules using Bun (or npm/yarn if you prefer)
+			console.log(`Pruning node_modules for ${platform.name}...`)
+			child_process.execSync("bun install --production", {
+				cwd: tempDir,
+				stdio: "inherit",
+				env: platform.env
+			})
+			// Clean node_modules with modclean, preserving license files
+			console.log(`Cleaning node_modules with modclean for ${platform.name}...`)
+			child_process.execSync(
+				'bunx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"',
+				{ cwd: tempDir, stdio: "inherit", env: platform.env }
+			)
+			tempDirs[platform.name] = tempDir
+		}
 
-		// 2. Prune node_modules using Bun
-		console.log("Pruning node_modules for production...")
-		child_process.execSync("bun install --production", {
-			cwd: tempDir,
-			stdio: "inherit"
-		})
-
-		// 3. Clean node_modules with modclean, preserving license files
-		console.log("Cleaning node_modules with modclean...")
-		child_process.execSync(
-			'bunx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"',
-			{ cwd: tempDir, stdio: "inherit" }
-		)
-
-		// 4. License check
+		// 2. License check
 		console.log("Checking licenses...")
 		const problematic = checkAllLicensesAcceptable(
-			path.join(tempDir, "node_modules")
+			path.join(tempDirs.linux, "node_modules")
 		)
 		if (problematic.length > 0) {
 			console.error("Unacceptable licenses found:")
@@ -240,7 +246,7 @@ function checkAllLicensesAcceptable(nodeModulesPath) {
 			process.exit(1)
 		}
 
-		// 5. For each target, create dist bundle
+		// 3. For each target, create dist bundle
 		const osList = fs
 			.readdirSync(path.resolve(__dirname, "../dist-assets"))
 			.filter((f) =>
@@ -254,9 +260,14 @@ function checkAllLicensesAcceptable(nodeModulesPath) {
 			// Copy build and static
 			copyRecursive(buildDir, path.join(outDir, "build"))
 			copyRecursive(staticDir, path.join(outDir, "static"))
-			// Copy pruned node_modules
+			// Copy pruned node_modules for this OS
+			let tempNodeModules
+			if (os === "linux") tempNodeModules = tempDirs.linux
+			else if (os === "macos") tempNodeModules = tempDirs.macos
+			else if (os === "windows") tempNodeModules = tempDirs.windows
+			else throw new Error(`Unknown OS: ${os}`)
 			copyRecursive(
-				path.join(tempDir, "node_modules"),
+				path.join(tempNodeModules, "node_modules"),
 				path.join(outDir, "node_modules")
 			)
 			// Copy LICENSE, README, etc.
@@ -307,8 +318,10 @@ function checkAllLicensesAcceptable(nodeModulesPath) {
 			)
 		}
 
-		// 6. Clean up temp dir
-		fs.rmSync(tempDir, { recursive: true, force: true })
+		// 4. Clean up temp dirs
+		for (const tempDir of Object.values(tempDirs)) {
+			fs.rmSync(tempDir, { recursive: true, force: true })
+		}
 		console.log("All distributables generated in dist/.")
 	} catch (err) {
 		console.error("Bundle process failed:", err)
