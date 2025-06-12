@@ -29,22 +29,6 @@
     let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
     let showAdvanced = $state(false)
 
-    socket.on("contextConfigsList", (msg: Sockets.ContextConfigsList.Response) => {
-        configsList = msg.contextConfigsList
-        if (!selectedConfigId && configsList.length > 0) {
-            selectedConfigId = userCtx.user.activeContextConfigId ?? configsList[0].id
-        }
-    })
-
-    socket.on("contextConfig", (msg: Sockets.ContextConfig.Response) => {
-        contextConfig = { ...msg.contextConfig }
-        originalData = { ...msg.contextConfig }
-    })
-
-    socket.on("createContextConfig", (msg: Sockets.CreateContextConfig.Response) => {
-        selectedConfigId = msg.contextConfig.id
-    })
-
     function handleSave() {
         socket.emit("updateContextConfig", {
             contextConfig
@@ -126,6 +110,21 @@
     })
 
     onMount(() => {
+        socket.on("contextConfigsList", (msg: Sockets.ContextConfigsList.Response) => {
+            configsList = msg.contextConfigsList
+            if (!selectedConfigId && configsList.length > 0) {
+                selectedConfigId = userCtx.user.activeContextConfigId ?? configsList[0].id
+            }
+        })
+
+        socket.on("contextConfig", (msg: Sockets.ContextConfig.Response) => {
+            contextConfig = { ...msg.contextConfig }
+            originalData = { ...msg.contextConfig }
+        })
+
+        socket.on("createContextConfig", (msg: Sockets.CreateContextConfig.Response) => {
+            selectedConfigId = msg.contextConfig.id
+        })
         socket.emit("contextConfigsList", {})
         socket.emit("contextConfig", {
             id: selectedConfigId

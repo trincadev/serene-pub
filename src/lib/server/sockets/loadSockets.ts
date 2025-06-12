@@ -81,7 +81,7 @@ export async function loadSockets() {
       io.to = () => ({ emit: () => {} });
     }
     if (browser) return;
-    import("./lib/server/sockets").then(({ connectSockets }) => {
+    import(".").then(({ connectSockets }) => {
       connectSockets(io);
     });
     console.log("Sockets initialized with endpoint:", process.env.PUBLIC_SOCKETS_ENDPOINT);
