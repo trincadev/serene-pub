@@ -6,7 +6,7 @@ import { existsSync } from "fs"
 const isCI = process.env.CI === "true";
 export const dataDir = isCI ? "~/SerenePubData" : (envPaths("SerenePub", { suffix: "" }).data + "/data")
 export const dbPath = `${dataDir}/main.db`
-export const migrationsDir = "./src/lib/server/db/drizzle"
+export const migrationsDir = "./drizzle"
 export const schemaDir = "./src/lib/server/db/schema.ts"
 
 if (!existsSync(dataDir)) {

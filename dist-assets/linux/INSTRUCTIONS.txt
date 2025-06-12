@@ -8,7 +8,7 @@ To run the app:
 2. Choose one of the following ways to start the app:
 
    a) Graphical (no terminal required):
-      - In your file manager, right-click the "Serene Pub" file.
+      - In your file manager, right-click the "run.sh" file.
       - Select "Properties" and ensure "Allow executing file as program" (or similar) is checked. Save and close the dialog.
       - Right-click the "Serene Pub" icon again and choose "Run as program" (wording may vary by desktop environment).
       - This will open a terminal and start the app.

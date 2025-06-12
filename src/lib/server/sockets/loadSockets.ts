@@ -13,17 +13,17 @@ function getSocketsHttpMode() {
   const SOCKETS_USE_HTTPS = process.env.SOCKETS_HTTP_MODE;
   const useHttps = !!SOCKETS_USE_HTTPS ? !!Number.parseInt(SOCKETS_USE_HTTPS) : undefined;
   if (useHttps !== undefined) {
-    if (!process.env.production) console.log("SOCKETS_HTTP_MODE set:", SOCKETS_USE_HTTPS);
+    if (process.env.NODE_ENV !== "production") console.log("SOCKETS_HTTP_MODE set:", SOCKETS_USE_HTTPS);
     return useHttps ? "https" : "http";
   }
-  if (!process.env.production) console.log("SOCKETS_USE_HTTPS not set, defaulting to: http");
+  if (process.env.NODE_ENV !== "production") console.log("SOCKETS_USE_HTTPS not set, defaulting to: http");
   return "http";
 }
 
 function getSocketsHostIP() {
   const SOCKETS_HOST = process.env.SOCKETS_HOST;
   if (SOCKETS_HOST) {
-    if (!process.env.production) console.log("SOCKETS_HOST set:", SOCKETS_HOST);
+    if (process.env.NODE_ENV !== "production") console.log("SOCKETS_HOST set:", SOCKETS_HOST);
     return SOCKETS_HOST;
   }
   const interfaces = os.networkInterfaces();
@@ -35,17 +35,17 @@ function getSocketsHostIP() {
       }
     }
   }
-  if (!process.env.production) console.log("SOCKETS_HOST not set, could not determine local IPv4 address, defaulting to: localhost");
+  if (process.env.NODE_ENV !== "production") console.log("SOCKETS_HOST not set, could not determine local IPv4 address, defaulting to: localhost");
   return "localhost";
 }
 
 function getSocketsPort() {
   const SOCKETS_PORT = process.env.SOCKETS_PORT;
   if (SOCKETS_PORT) {
-    if (!process.env.production) console.log("SOCKETS_PORT set:", SOCKETS_PORT);
+    if (process.env.NODE_ENV !== "production") console.log("SOCKETS_PORT set:", SOCKETS_PORT);
     return SOCKETS_PORT;
   }
-  if (!process.env.production) console.log("SOCKETS_PORT not set, defaulting to: 3001");
+  if (process.env.NODE_ENV !== "production") console.log("SOCKETS_PORT not set, defaulting to: 3001");
   return "3001";
 }
 
@@ -82,6 +82,6 @@ export async function loadSockets() {
       io.to = () => ({ emit: () => {} });
     }
 	connectSockets(io);
-    if (!process.env.production) console.log("Sockets initialized with endpoint:", process.env.PUBLIC_SOCKETS_ENDPOINT);
+    if (process.env.NODE_ENV !== "production") console.log("Sockets initialized with endpoint:", process.env.PUBLIC_SOCKETS_ENDPOINT);
   });
 }
