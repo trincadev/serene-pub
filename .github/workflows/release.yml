@@ -33,8 +33,8 @@ jobs:
       - name: Zip each dist directory
         run: |
           cd dist
-          for d in */ ; do
-            zip -r "../${d%/}.zip" "$d"
+          for d in serene-tavern-* ; do
+            zip -r "../${d}.zip" "$d"
           done
           cd ..
 

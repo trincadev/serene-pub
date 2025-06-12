@@ -3,18 +3,18 @@ import { mkdirSync, renameSync, copyFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 const targets = [
-  { os: 'linux', filename: 'serene-pub-linux' },
-  { os: 'macos', filename: 'serene-pub-macos' },
-  { os: 'win', filename: 'serene-pub-win.exe' }
+  { os: 'linux', filename: 'serene-tavern-linux', dir: 'linux' },
+  { os: 'macos', filename: 'serene-tavern-macos', dir: 'macos' },
+  { os: 'windows', filename: 'serene-tavern-windows.exe', dir: 'windows' }
 ];
 
 // Read version from package.json
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 const version = pkg.version;
 
-for (const { os, filename } of targets) {
-  // Append version to the OS directory
-  const distDir = join('dist', `${os}-${version}`);
+for (const { os, filename, dir } of targets) {
+  // Use new directory naming: serene-tavern-[version]-[os]
+  const distDir = join('dist', `serene-tavern-${version}-${dir}`);
   mkdirSync(distDir, { recursive: true });
 
   renameSync(join('build', filename), join(distDir, filename));
