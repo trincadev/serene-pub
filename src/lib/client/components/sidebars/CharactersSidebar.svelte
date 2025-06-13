@@ -1,11 +1,12 @@
 <script lang="ts">
 	import skio from "sveltekit-io"
-	import { onMount } from "svelte"
+	import { getContext, onMount } from "svelte"
 	import { Avatar, FileUpload, Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import CharacterForm from "../characterForms/CharacterForm.svelte"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
+	import { goto } from "$app/navigation"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -14,6 +15,7 @@
 	let { onclose = $bindable() }: Props = $props()
 
 	const socket = skio.get()
+	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 
 	let charactersList: Sockets.CharactersList.Response["charactersList"] =
 		$state([])
@@ -137,9 +139,11 @@
 	function handleCharacterClick(
 		character: Sockets.CharactersList.Response["charactersList"][0]
 	) {
-		toaster.warning({
-			title: "Action not implemented"
-		})
+		const url = new URL(window.location.href)
+		url.searchParams.set("chats-by-characterId", character.id.toString())
+		goto(url.pathname + url.search, {replaceState: true})
+		// Open chat sidebar
+		panelsCtx.openPanel("chats")
 	}
 
 	onMount(() => {

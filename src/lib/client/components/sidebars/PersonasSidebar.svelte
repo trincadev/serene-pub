@@ -1,11 +1,12 @@
 <script lang="ts">
 	import skio from "sveltekit-io"
-	import { onMount } from "svelte"
+	import { getContext, onMount } from "svelte"
 	import { Avatar, Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import PersonaForm from "../personaForms/PersonaForm.svelte"
 	import PersonaUnsavedChangesModal from "../modals/PersonaUnsavedChangesModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
+	import { goto } from "$app/navigation"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -14,6 +15,7 @@
 	let { onclose = $bindable() }: Props = $props()
 
 	const socket = skio.get()
+	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 
 	let personasList = $state([])
 	let search = $state("")
@@ -107,9 +109,13 @@
 	function handlePersonaClick(
 		persona: Sockets.PersonasList.Response["personasList"][0]
 	) {
-		toaster.warning({
-			title: "Action not implemented"
-		})
+		const url = new URL(window.location.href)
+		if (persona.id !== undefined) {
+			url.searchParams.set("chats-by-personaId", persona.id.toString())
+			goto(url.pathname + url.search, {replaceState: true})
+			// Open chat sidebar
+			panelsCtx.openPanel("chats")
+		}
 	}
 </script>
 

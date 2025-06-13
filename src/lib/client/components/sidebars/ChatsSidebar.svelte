@@ -6,6 +6,7 @@
     import { Avatar, Modal } from "@skeletonlabs/skeleton-svelte"
     import { goto } from "$app/navigation"
     import { toaster } from "$lib/client/utils/toaster"
+	import { page } from "$app/state"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -16,33 +17,27 @@
     let search = $state("")
     let isCreating = $state(false)
     let panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
+    let searchByCharacterId: number | null = $state(null)
+    let searchByPersonaId: number | null = $state(null)
+    let searchCharacter: SelectCharacter | null = $state(null)
+    let searchPersona: SelectPersona | null = $state(null)
     const socket = skio.get()
 
     // Filtered chats derived from search
-    let filteredChats: Sockets.ChatsList.Response["chatsList"] = $derived.by(() => {
-        if (!search.trim()) return chats
-        const lower = search.toLowerCase()
-        return chats.filter((chat) => {
-            const chatName = chat.name?.toLowerCase() || ""
-            const personaNames = (chat.chatPersonas || [])
-                .map((cp) => cp.persona?.name?.toLowerCase() || "")
-                .join(" ")
-            const characterNames = (chat.chatCharacters || [])
-                .map((cc) => cc.character?.name?.toLowerCase() || "")
-                .join(" ")
-            return (
-                chatName.includes(lower) ||
-                personaNames.includes(lower) ||
-                characterNames.includes(lower)
-            )
-        })
-    })
+    let filteredChats: Sockets.ChatsList.Response["chatsList"] = $state([])
 
     socket.on("chatsList", (msg: Sockets.ChatsList.Response) => {
         chats = msg.chatsList || []
     })
 
     async function handleOnClose() {
+
+        // Remove "chats-by-characterId" and "chats-by-personaId" from search params
+        const url = new URL(window.location.href)
+        url.searchParams.delete("chats-by-characterId")
+        url.searchParams.delete("chats-by-personaId")
+        goto(url.toString(), { replaceState: true })
+
         return true // TODO
     }
 
@@ -94,7 +89,78 @@
     })
 
     $effect(() => {
-        console.log("Filtered chats:", $state.snapshot(filteredChats))
+        const lower = search.toLowerCase()
+        const _characterId = searchByCharacterId
+        const _personaId = searchByPersonaId
+
+        let filtered = [...chats]
+
+        // If searching by character ID, filter chats that include that character
+        console.log("Search by Character ID:", searchByCharacterId)
+        if (searchByCharacterId) {
+            filtered = filtered.filter((chat) =>
+                chat.chatCharacters?.some(
+                    (cc) => cc.character?.id === searchByCharacterId
+                )
+            )
+        }
+
+        // If searching by persona ID, filter chats that include that persona
+        console.log("Search by Persona ID:", searchByPersonaId)
+        if (searchByPersonaId) {
+            filtered = filtered.filter((chat) =>
+                chat.chatPersonas?.some(
+                    (cp) => cp.persona?.id === searchByPersonaId
+                )
+            )
+        }
+
+        filteredChats = filtered.filter((chat) => {
+            const chatName = chat.name?.toLowerCase() || ""
+            const personaNames = (chat.chatPersonas || [])
+                .map((cp) => cp.persona?.name?.toLowerCase() || "")
+                .join(" ")
+            const characterNames = (chat.chatCharacters || [])
+                .map((cc) => cc.character?.name?.toLowerCase() || "")
+                .join(" ")
+            return (
+                chatName.includes(lower) ||
+                personaNames.includes(lower) ||
+                characterNames.includes(lower)
+            )
+        })
+    })
+
+    $effect.pre(() => {
+        const characterId = page.url.searchParams.get("chats-by-characterId")
+        console.log("Character ID from URL:", characterId)
+        if (characterId) {
+            searchByCharacterId = parseInt(characterId)
+        }
+        if (searchByCharacterId) {
+            socket.once("character", (msg: Sockets.Character.Response) => {
+                searchCharacter = msg.character
+            })
+            const charIdReq: Sockets.Character.Call = {
+                id: searchByCharacterId
+            }
+            socket.emit("character", charIdReq)
+        }
+
+        const personaId = page.url.searchParams.get("chats-by-personaId")
+        console.log("Persona ID from URL:", personaId)
+        if (personaId) {
+            searchByPersonaId = parseInt(personaId)
+        }
+        if (searchByPersonaId) {
+            socket.once("persona", (msg: Sockets.Persona.Response) => {
+                searchPersona = msg.persona
+            })
+            const personaIdReq: Sockets.Persona.Call = {
+                id: searchByPersonaId
+            }
+            socket.emit("persona", personaIdReq)
+        }
     })
 
     onMount(() => {
@@ -124,6 +190,32 @@
                 bind:value={search}
             />
         </div>
+        {#if searchCharacter}
+            <button
+                class="btn btn-sm preset-filled-secondary-500 mb-2"
+                onclick={() => {
+                    searchByCharacterId = null
+                    searchCharacter = null
+                    page.url.searchParams.delete("chats-by-characterId")
+                }}
+            >
+                <Icons.X size={16} />
+                {searchCharacter.nickname || searchCharacter.name}
+            </button>
+        {/if}
+        {#if searchPersona}
+            <button
+                class="btn btn-sm preset-filled-secondary-500 mb-2"
+                onclick={() => {
+                    searchByPersonaId = null
+                    searchPersona = null
+                    page.url.searchParams.delete("chats-by-personaId")
+                }}
+            >
+                <Icons.X size={16} />
+                {searchPersona.name}
+            </button>
+        {/if}
         <div class="flex-1 overflow-y-auto">
             {#if filteredChats.length === 0}
                 <div class="text-muted">No chats found.</div>
