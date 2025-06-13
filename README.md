@@ -56,6 +56,18 @@ Primary concerns Serene Pub aims to address:
 
    <img src="https://github.com/user-attachments/assets/b28d36d2-9d2b-4c15-b9ff-c9e3c2e84c5b" alt="mobile-characters" width="400"/>
 
+### Select theme and dark mode
+
+Toggle night mode on or off with over 20 themes!
+
+<img src="https://github.com/user-attachments/assets/ff425506-3524-41a7-9c18-b11f4dd673a2" alt="theme-1" width="400"/>
+<img src="https://github.com/user-attachments/assets/8f6f57b0-b143-4ae2-a8b5-063551999478" alt="theme-2" width="400"/>
+<img src="https://github.com/user-attachments/assets/c23e9634-374f-49b7-b6b6-1fa8ef7c3a25" alt="theme-3" width="400"/>
+<img src="https://github.com/user-attachments/assets/c73d7d7c-ea27-4be2-8479-b0be7722f9f0" alt="theme-4" width="400"/>
+
+
+
+
 ## Project Status
 
 **Alpha:** Serene Pub is in early development. Expect bugs and breaking changes. If you are a developer or comfortable with manual setup, your testing and feedback are appreciated!
@@ -71,26 +83,26 @@ Primary concerns Serene Pub aims to address:
 - Create, manage, import & export characters (Image Card Files supported; JSON not yet)
 - Create, manage, import & export personas (import/export not yet implemented)
 - Chats: create/delete, send persona message, auto character response, edit/delete messages, streaming, regenerate, manual response, hide message, live token/history stats
+- Home page setup guide
+- Day/night mode & themes
+- Mobile responsive layout
 
 ### In Progress
 - Connect to your favorite API ([see supported options](https://github.com/doolijb/serene-pub/issues/10))
 - Manage context settings (add your own, only one default provided)
 - Instruct support not yet available
+- App/user settings
 
 ### Pending Priorities
 - Character/chat tags
-- Full mobile support (desktop is fully functional)
 - Lorebooks
 - Group chats
-- App/user settings
-- Home page setup guide
 
 ### Considered
 - Multi-user logins & group chats
 - Chat summarizing
 - Chat/lore vectorization
 - User/chat backgrounds
-- Day/night mode & themes
 - Story narration/system instructions
 - Screen reader support
 
