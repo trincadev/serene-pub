@@ -203,7 +203,7 @@
                 </div>
                 <div class="flex flex-col gap-4">
                     <div class="flex flex-col gap-1">
-                        <label class="flex items-center gap-2">
+                        <label class="flex items-center gap-2 font-semibold disabled">
                             <input
                                 type="checkbox"
                                 checked={contextConfig.alwaysForceName}
@@ -212,8 +212,14 @@
                                         ...contextConfig,
                                         alwaysForceName: e.target.checked
                                     })}
+                                    disabled
                             /> Append Name to Prompt
                         </label>
+                        <div class="card preset-filled-surface-400-600 p-2">
+                            <p>
+                                Append Name to Prompt is disabled for now.
+                            </p>
+                        </div>
                     </div>
                 </div>
             {/if}

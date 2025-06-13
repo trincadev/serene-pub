@@ -48,7 +48,8 @@ export async function createConnection(
     if (data.type === "ollama") {
         data = { ...OllamaAdapter.connectionDefaults, ...data }
         // Ensure id is present for SelectConnection
-        if (!('id' in data) || typeof data.id !== 'number') data.id = 0
+        // Remove id for insert to avoid UNIQUE constraint error
+        if ("id" in data) delete data.id
         try {
             const modelsRes = await OllamaAdapter.listModels(data as any)
             if (!modelsRes.models || modelsRes.models.length === 0) {
@@ -64,6 +65,8 @@ export async function createConnection(
             return
         }
     }
+    // Always remove id before insert to let DB auto-increment
+    if ("id" in data) delete data.id
     const [conn] = await db.insert(schema.connections).values(data).returning()
     await setUserActiveConnection(socket, { id: conn.id }, emitToUser)
     await connectionsList(socket, {}, emitToUser)
