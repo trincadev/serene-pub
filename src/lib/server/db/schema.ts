@@ -396,7 +396,7 @@ export const chatCharacters = sqliteTable("chat_characters", {
     characterId: integer("character_id")
         .references(() => characters.id, { onDelete: "set null" }),
     position: integer("position").default(0), // Position in the chat
-    isActive: integer("is_active", { mode: "boolean" }).default(false) // 1 if active in chat, 0 if not
+    isActive: integer("is_active", { mode: "boolean" }).default(true) // 1 if active in chat, 0 if not
 })
 
 export const chatCharactersRelations = relations(chatCharacters, ({ one }) => ({

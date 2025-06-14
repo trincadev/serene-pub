@@ -14,10 +14,10 @@
 </script>
 
 <Avatar
-    src={src ? src : char.avatar || ""}
+    src={src ? src : char ? char.avatar || "" : ""}
     size="w-[4em] h-[4em]"
     imageClasses="object-cover"
-    name={"nickname" in char && char.nickname ? char.nickname : char.name!}
+    name={char ? "nickname" in char && char.nickname ? char.nickname : char.name! : "Unknown"}
 >
     <Icons.User size={36} />
 </Avatar>

@@ -64,6 +64,13 @@
       "when": 1749853937977,
       "tag": "0008_lethal_risque",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1749883406286,
+      "tag": "0009_natural_marten_broadcloak",
+      "breakpoints": true
     }
   ]
 }

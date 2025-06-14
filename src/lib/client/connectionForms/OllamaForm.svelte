@@ -102,7 +102,7 @@
         <select
             id="model"
             bind:value={connection.model}
-            class="input input-sm bg-background border-muted w-full rounded border"
+            class="select bg-background border-muted w-full rounded border"
         >
             <option value="">-- Select Model --</option>
             {#each availableOllamaModels as m}
@@ -136,7 +136,7 @@
         <label class="font-semibold" for="promptFormat">Prompt Format</label>
         <select
             id="promptFormat"
-            class="input input-sm bg-background border-muted w-full rounded border"
+            class="select bg-background border-muted w-full rounded border"
             bind:value={connection.promptFormat}
         >
             {#each PromptFormats.options as option}
@@ -149,7 +149,7 @@
         <select
             id="tokenCounter"
             bind:value={connection.tokenCounter}
-            class="input input-sm bg-background border-muted w-full rounded border"
+            class="select bg-background border-muted w-full rounded border"
         >
             {#each TokenCounterOptions.options as t}
                 <option value={t.value}>{t.label}</option>
@@ -166,7 +166,7 @@
                 bind:value={connection.baseUrl}
                 placeholder="http://localhost:11434/"
                 required
-                class="input input-sm bg-background border-muted w-full rounded border"
+                class="input bg-background border-muted w-full rounded border"
             />
         </div>
         {#if ollamaFields}
@@ -176,7 +176,7 @@
                     id="stream"
                     type="checkbox"
                     bind:checked={ollamaFields.stream}
-                    class="input input-sm bg-background border-muted h-6 w-6 rounded border"
+                    class="input bg-background border-muted h-6 w-6 rounded border"
                 />
             </div>
         {/if}
@@ -187,7 +187,7 @@
                     id="raw"
                     type="checkbox"
                     bind:checked={ollamaFields.raw}
-                    class="input input-sm bg-background border-muted h-6 w-6 rounded border"
+                    class="input bg-background border-muted h-6 w-6 rounded border"
                 />
             </div>
         {/if}
@@ -198,7 +198,7 @@
                     id="think"
                     type="checkbox"
                     bind:checked={ollamaFields.think}
-                    class="input input-sm bg-background border-muted h-6 w-6 rounded border"
+                    class="input bg-background border-muted h-6 w-6 rounded border"
                 />
             </div>
         {/if}
@@ -211,12 +211,12 @@
                         type="number"
                         min="0"
                         bind:value={ollamaFields.keepAliveNumber}
-                        class="input input-sm bg-background border-muted w-20 rounded border"
+                        class="input bg-background border-muted w-20 rounded border"
                     />
                     <select
                         id="keepAliveUnit"
                         bind:value={ollamaFields.keepAliveUnit}
-                        class="input input-sm bg-background border-muted w-16 rounded border"
+                        class="select bg-background border-muted w-16 rounded border"
                     >
                         <option value="ms">ms</option>
                         <option value="s">s</option>

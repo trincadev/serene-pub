@@ -33,7 +33,7 @@ import {
     deleteContextConfig,
     setUserActiveContextConfig
 } from "./contextConfigs"
-import {chat, chatsList, createChat, deleteChatMessage, sendPersonaMessage, updateChatMessage, deleteChat, regenerateChatMessage, promptTokenCount, abortChatMessage, triggerGenerateMessage, chatMessage} from './chats';
+import {chat, chatsList, createChat, deleteChatMessage, sendPersonaMessage, updateChatMessage, deleteChat, regenerateChatMessage, promptTokenCount, abortChatMessage, triggerGenerateMessage, chatMessage, updateChat} from './chats';
 import {
     promptConfigsList,
     promptConfig,
@@ -118,6 +118,7 @@ export function connectSockets(io: {
         register(socket, abortChatMessage, emitToUser)
         register(socket, triggerGenerateMessage, emitToUser)
         register(socket, chatMessage, emitToUser)
+        register(socket, updateChat, emitToUser)
         console.log(`Socket connected: ${socket.id} for user ${userId}`)
     })
 }

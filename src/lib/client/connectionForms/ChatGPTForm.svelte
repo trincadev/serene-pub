@@ -31,7 +31,7 @@
             id="baseUrl"
             type="text"
             bind:value={connection.baseUrl}
-            class="input input-sm bg-background border-muted w-full rounded border"
+            class="input bg-background border-muted w-full rounded border"
         />
     </div>
     <div class="mt-2 flex flex-col gap-1">
@@ -40,7 +40,7 @@
             id="model"
             type="text"
             bind:value={connection.model}
-            class="input input-sm bg-background border-muted w-full rounded border"
+            class="input bg-background border-muted w-full rounded border"
         />
     </div>
     <div class="mt-2 flex flex-col gap-1">
@@ -58,7 +58,7 @@
             id="chatgptApiKey"
             type="text"
             bind:value={connection.apiKey}
-            class="input input-sm bg-background border-muted w-full rounded border"
+            class="input bg-background border-muted w-full rounded border"
         />
     </div>
     <button

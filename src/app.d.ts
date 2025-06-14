@@ -326,7 +326,7 @@ declare global {
         }
         namespace CreateChat {
             interface Call {
-                chat: InsertChat
+                chat: InsertChat & { userId?: undefined}
                 personaIds: number[]
                 characterIds: number[]
                 characterPositions: Record<number, number>
@@ -341,7 +341,7 @@ declare global {
         }
         namespace UpdateChat {
             interface Call {
-                chat: InsertChat & { id: number }
+                chat: InsertChat & { id: number, userId?: undefined | number }
                 personaIds: number[]
                 characterIds: number[]
                 characterPositions: Record<number, number>

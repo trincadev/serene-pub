@@ -149,7 +149,7 @@
         </button>
     </div>
     <div class="mb-6 flex items-center gap-2">
-        <select class="input input-sm w-full" bind:value={selectedPromptId}>
+        <select class="select w-full" bind:value={selectedPromptId}>
             {#each promptsList.filter((c) => c.isImmutable) as c}
                 <option value={c.id}>{c.name}{c.isImmutable ? "*" : ""}</option>
             {/each}
@@ -173,7 +173,7 @@
                     id="promptName"
                     type="text"
                     bind:value={promptConfig.name}
-                    class="input input-sm w-full"
+                    class="input w-full"
                     disabled={promptConfig.isImmutable}
                 />
             </div>
@@ -183,7 +183,7 @@
                     id="systemPrompt"
                     rows="15"
                     bind:value={promptConfig.systemPrompt}
-                    class="input input-sm w-full"
+                    class="input w-full"
                 ></textarea>
             </div>
         </div>

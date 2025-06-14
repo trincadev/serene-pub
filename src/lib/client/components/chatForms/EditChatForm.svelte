@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from "svelte"
 	import * as skio from "sveltekit-io"
 	import CharacterSelectModal from "../modals/CharacterSelectModal.svelte"
 	import PersonaSelectModal from "../modals/PersonaSelectModal.svelte"
@@ -18,6 +17,18 @@
 		showEditChatForm = $bindable()
 	}: Props = $props()
 
+    const groupReplyOptions = [
+		{
+			value: "manual",
+			label: "Manual (user selects persona for each reply)"
+		},
+		{ value: "ordered", label: "Ordered (replies follow persona order)" },
+		{ value: "natural", label: "Natural (assigned by conversation flow)" }
+	]
+	const socket = skio.get()
+
+    // STATE VARIABLES
+
 	let chat:
 		| (SelectChat & {
 				chatCharacters?: SelectChatCharacter &
@@ -30,49 +41,61 @@
 		[]
 	)
 	let personas: Sockets.PersonasList.Response["personasList"] = $state([])
-	let data = $state({
-		name: chat?.name || "",
-		scenario: chat?.scenario || "",
-		selectedCharacters: [] as SelectCharacter[],
-		selectedPersonas: [] as SelectPersona[],
-		characterPositions: {} as Record<number, number>,
-		groupReplyStrategy: chat?.group_reply_strategy || "ordered"
-	})
-	let originalData = $state({
-		name: chat?.name || "",
-		scenario: chat?.scenario || "",
+	let data: {
+        chat: {
+			id: number | undefined,
+			name: string
+			scenario: string
+			groupReplyStrategy: string
+		},
+		characterIds: number[],
+		personaIds: number[],
+		characterPositions: Record<number, number>
+    } | undefined = $state()
 
-		selectedCharacters: [] as SelectCharacter[],
-		selectedPersonas: [] as SelectPersona[],
-		characterPositions: {} as Record<number, number>,
-		groupReplyStrategy: chat?.group_reply_strategy || "ordered"
-	})
+	let originalData: {
+        chat: {
+			id: number | undefined,
+			name: string
+			scenario: string
+			groupReplyStrategy: string
+		},
+		characterIds: number[],
+		personaIds: number[],
+		characterPositions: Record<number, number>
+    } | undefined = $state()
+
+    // DATA FIELDS
+    let name = $state("")
+    let scenario = $state("")
+	let groupReplyStrategy = $state("ordered")
+
+    // MODALS
 	let showCharacterModal = $state(false)
 	let showPersonaModal = $state(false)
 
-	let canSave = $derived.by(() => {
-		return (
-			(!!editChatId && isDirty) ||
+    // FORM SUBMIT STATE
+	let isDirty: boolean = $derived(
+		JSON.stringify(data) !== JSON.stringify(originalData)
+	)
+	let canSave: boolean = $derived(
+		(!!editChatId && isDirty) ||
 			(!editChatId &&
-				data.name.trim() &&
-				data.selectedCharacters.length > 0 &&
-				data.selectedPersonas.length > 0)
-		)
-	})
+				data?.chat.name.trim() &&
+				data?.characterIds.length > 0 &&
+				data?.personaIds.length > 0)
+	)
+
+    // SELECTED CHARACTERS AND PERSONAS
+	let selectedCharacters: SelectCharacter[] = $state([])
+	let selectedPersonas: SelectPersona[] = $state([])
 	let showRemoveModal = $state(false)
 	let removeType: "character" | "persona" = $state("character")
 	let removeName = $state("")
 	let removeId: number | null = $state(null)
 
-	const groupReplyOptions = [
-		{
-			value: "manual",
-			label: "Manual (user selects persona for each reply)"
-		},
-		{ value: "ordered", label: "Ordered (replies follow persona order)" },
-		{ value: "natural", label: "Natural (assigned by conversation flow)" }
-	]
-	const socket = skio.get()
+
+    // SOCKET LISTENERS
 
 	socket.on("charactersList", (msg: Sockets.CharactersList.Response) => {
 		characters = msg.charactersList || []
@@ -83,107 +106,109 @@
 	socket.emit("charactersList", {})
 	socket.emit("personasList", {})
 
+    $effect(() => {
+        const _name = name.trim()
+        const _scenario = scenario.trim()
+        const _groupReplyStrategy = groupReplyStrategy || "ordered"
+        const _selectedCharacters = selectedCharacters
+        const _selectedPersonas = selectedPersonas
+        data = {
+            chat: {
+                id: chat?.id,
+                name: _name,
+                scenario: _scenario,
+                groupReplyStrategy: _groupReplyStrategy || "ordered"
+            },
+            characterIds: _selectedCharacters.map((cc) => cc.id),
+            personaIds: _selectedPersonas.map((cp) => cp.id),
+            characterPositions: Object.fromEntries(
+                _selectedCharacters.map((cc, i) => [cc.id, i])
+            )
+        }
+
+        if (!originalData) {
+            originalData = { ...data }
+        }
+    })
+
 	$effect(() => {
 		if (editChatId) {
 			// Fetch chat details if editing
 			socket.once("chat", (msg: Sockets.Chat.Response) => {
 				if (msg.chat && msg.chat.id === editChatId) {
 					chat = msg.chat
-					// Populate selectedCharacters and selectedPersonas from chat
-					data.selectedCharacters =
-						chat?.chatCharacters!.map((c) => c.character) || []
-					data.selectedPersonas =
-						chat?.chatPersonas!.map((p) => p.persona) || []
-					data.name = chat.name || ""
-					data.scenario = chat.scenario || ""
-					data.groupReplyStrategy =
-						chat.group_reply_strategy || "ordered"
-					chat.chatCharacters?.forEach((c) => {
-						data.characterPositions[c.character.id] =
-							c.position || 0
-					})
-					originalData = { ...data }
+					name = chat.name || ""
+                    scenario = chat.scenario || ""
+                    groupReplyStrategy = chat.group_reply_strategy || "ordered"
+                    selectedCharacters = chat.chatCharacters?.map((cc) => cc.character) || []
+                    selectedPersonas = chat.chatPersonas?.map((cp) => cp.persona) || []
 				}
 			})
 			socket.emit("chat", { id: editChatId })
 		}
 	})
 
-	$effect(() => {
-		data.characterPositions = Object.fromEntries(
-			data.selectedCharacters.map((c, i) => [c.id, i])
-		)
-	})
+    $effect(() => {
+        console.log("data:", $state.snapshot(data))
+    })
 
 	function handleAddCharacter(char: SelectCharacter) {
-		if (!data.selectedCharacters.some((c) => c.id === char.id))
-			data.selectedCharacters = [...data.selectedCharacters, char]
+		if (!selectedCharacters.some((c) => c.id === char.id))
+			selectedCharacters = [...selectedCharacters, char]
 		showCharacterModal = false
 	}
 	function handleRemoveCharacter(id: number) {
-		data.selectedCharacters = data.selectedCharacters.filter(
-			(c) => c.id !== id
-		)
+		selectedCharacters = selectedCharacters.filter((c) => c.id !== id)
 	}
 	function handleAddPersona(p: SelectPersona) {
-		if (!data.selectedPersonas.some((pp) => pp.id === p.id))
-			data.selectedPersonas = [...data.selectedPersonas, p]
+		if (!selectedPersonas.some((pp) => pp.id === p.id))
+			selectedPersonas = [...selectedPersonas, p]
 		showPersonaModal = false
+		// Sync data.personaIds
 	}
 	function handleRemovePersona(id: number) {
-		data.selectedPersonas = data.selectedPersonas.filter((p) => p.id !== id)
+		selectedPersonas = selectedPersonas.filter((p) => p.id !== id)
 	}
 	function handleSave() {
 		if (
-			!data.name.trim() ||
-			data.selectedCharacters.length === 0 ||
-			data.selectedPersonas.length === 0
+			!data?.chat.name.trim() ||
+			selectedCharacters.length === 0 ||
+			selectedPersonas.length === 0
 		)
 			return
-		const chatData: any = { name: data.name }
-		if (data.scenario.trim()) chatData.scenario = data.scenario
-		if (data.selectedCharacters.length > 1)
-			chatData.group_reply_strategy = data.groupReplyStrategy
-		const characterIds = data.selectedCharacters.map((c) => c.id)
-		const personaIds = data.selectedPersonas.map((p) => p.id)
+		const chatData: any = { name: data.chat.name }
+		if (data.chat.scenario.trim()) chatData.scenario = data.chat.scenario
+		if (selectedCharacters.length > 1)
+			chatData.group_reply_strategy = data.chat.groupReplyStrategy
+		const characterIds = selectedCharacters.map((c) => c.id)
+		const personaIds = selectedPersonas.map((p) => p.id)
 		// characterPositions is now always up-to-date in data.characterPositions
 		if (chat && chat.id) {
-			const updateChat: Sockets.UpdateChat.Call = {
-				id: chat.id,
-				chat: chatData,
-				characterIds,
-				personaIds,
-				characterPositions: data.characterPositions
-			}
+			const updateChat: Sockets.UpdateChat.Call = data
 			socket.emit("updateChat", updateChat)
 		} else {
-			const createChat: Sockets.CreateChat.Call = {
-				chat: chatData,
-				characterIds,
-				personaIds,
-				characterPositions: data.characterPositions
-			}
+			const createChat: Sockets.CreateChat.Call = data
 			socket.emit("createChat", createChat)
 		}
 		isCreating = false
-		dispatch("saved")
+		showEditChatForm = false
 	}
 
-	function confirmRemoveCharacter(id, name) {
+	function confirmRemoveCharacter(id: number, name: string) {
 		removeType = "character"
 		removeName = name
 		removeId = id
 		showRemoveModal = true
 	}
-	function confirmRemovePersona(id, name) {
+	function confirmRemovePersona(id: number, name: string) {
 		removeType = "persona"
 		removeName = name
 		removeId = id
 		showRemoveModal = true
 	}
 	function handleRemoveConfirm() {
-		if (removeType === "character") handleRemoveCharacter(removeId)
-		else if (removeType === "persona") handleRemovePersona(removeId)
+		if (removeType === "character") handleRemoveCharacter(removeId!)
+		else if (removeType === "persona") handleRemovePersona(removeId!)
 		showRemoveModal = false
 		removeId = null
 		removeName = ""
@@ -193,27 +218,30 @@
 		removeId = null
 		removeName = ""
 	}
-	function isDirty() {
-		return JSON.stringify(data) !== JSON.stringify(originalData)
+
+	function handleCloseForm() {
+		// TODO handle unsaved changes if any
+		showEditChatForm = false
 	}
 
 	$effect(() => {
 		console.log("can save:", canSave)
+		console.log("is dirty:", isDirty)
 	})
 </script>
 
 <div class="flex flex-col gap-6 p-6">
-    <div class="mt-4 flex gap-2">
+	<div class="mt-4 flex gap-2">
 		<button
 			class="btn preset-filled-surface-500 w-full"
-			onclick={() => (isCreating = false)}
+			onclick={handleCloseForm}
 		>
 			Cancel
 		</button>
 		<button
 			class="btn preset-filled-success-500 w-full"
 			onclick={handleSave}
-			disabled={canSave}
+			disabled={!canSave}
 		>
 			{chat ? "Save Changes" : "Create Chat"}
 		</button>
@@ -225,33 +253,33 @@
 			class="input input-lg w-full"
 			type="text"
 			placeholder="Enter chat name"
-			bind:value={data.name}
+			bind:value={name}
 			required
 		/>
 	</div>
 	<div>
 		<span class="mb-2 font-semibold">Characters*</span>
 		<div
-			class="relative mb-2 flex max-w-100 flex-wrap gap-3"
+			class="relative mb-2 flex flex-wrap gap-3"
 			use:dndzone={{
-				items: data.selectedCharacters,
+				items: selectedCharacters,
 				flipDurationMs: 150,
-				dragDisabled: !(data.selectedCharacters.length > 1),
+				dragDisabled: !(selectedCharacters.length > 1),
 				dropFromOthersDisabled: true
 			}}
-			onconsider={(e) => (data.selectedCharacters = e.detail.items)}
-			onfinalize={(e) => (data.selectedCharacters = e.detail.items)}
+			onconsider={(e) => (selectedCharacters = e.detail.items)}
+			onfinalize={(e) => (selectedCharacters = e.detail.items)}
 		>
-			{#each data.selectedCharacters as c (c.id)}
+			{#each selectedCharacters as c (c.id)}
 				<div
-					class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full max-w-[25em] gap-3 overflow-hidden rounded p-3"
+					class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"
 					data-dnd-handle
 				>
 					<div class="relative w-fit">
 						<span
 							class="text-surface-400 hover:text-primary-500 absolute -top-2 -left-2 z-10 cursor-grab"
 							data-dnd-handle
-							class:hidden={data.selectedCharacters.length <= 1}
+							class:hidden={selectedCharacters.length <= 1}
 							title="Drag to reorder"
 						>
 							<Icons.GripVertical size={20} />
@@ -293,9 +321,9 @@
 	<div>
 		<span class="mb-2 font-semibold">Personas*</span>
 		<div class="mb-2 flex flex-wrap gap-3">
-			{#each data.selectedPersonas as p}
+			{#each selectedPersonas as p}
 				<div
-					class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full max-w-[25em] gap-3 overflow-hidden rounded p-3"
+					class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"
 				>
 					<div class="w-fit">
 						<Avatar char={p} />
@@ -325,22 +353,22 @@
 		<div>
 			<button
 				class="btn btn-sm preset-filled-primary-500 flex items-center gap-1"
-				disabled={data.selectedPersonas.length > 0}
+				disabled={selectedPersonas.length > 0}
 				onclick={() => (showPersonaModal = true)}
 			>
 				<Icons.Plus size={16} /> Add Persona
 			</button>
 		</div>
 	</div>
-	{#if data.selectedCharacters.length > 1}
+	{#if selectedCharacters.length > 1}
 		<div>
 			<label class="font-semibold" for="groupReplyStrategy">
 				Group Reply Strategy
 			</label>
 			<select
 				id="groupReplyStrategy"
-				class="input input-lg w-full"
-				bind:value={data.groupReplyStrategy}
+				class="select input-lg w-full"
+				bind:value={groupReplyStrategy}
 			>
 				{#each groupReplyOptions as opt}
 					<option value={opt.value}>{opt.label}</option>
@@ -352,9 +380,9 @@
 		<label class="font-semibold" for="scenario">Scenario</label>
 		<textarea
 			id="scenario"
-			class="input input-lg w-full"
+			class="textarea input-lg w-full"
 			placeholder="Describe the chat scenario, setting, or context (optional)"
-			bind:value={data.scenario}
+			bind:value={scenario}
 			rows={3}
 		></textarea>
 	</div>
@@ -362,7 +390,7 @@
 <CharacterSelectModal
 	open={showCharacterModal}
 	characters={characters.filter(
-		(c) => !data.selectedCharacters.some((sel) => sel.id === c.id)
+		(c) => !selectedCharacters.some((sel) => sel.id === c.id)
 	)}
 	onOpenChange={(e) => (showCharacterModal = e.open)}
 	onSelect={handleAddCharacter}
@@ -370,7 +398,7 @@
 <PersonaSelectModal
 	open={showPersonaModal}
 	personas={personas.filter(
-		(p) => !data.selectedPersonas.some((sel) => sel.id === p.id)
+		(p) => !selectedPersonas.some((sel) => sel.id === p.id)
 	)}
 	onOpenChange={(e) => (showPersonaModal = e.open)}
 	onSelect={handleAddPersona}

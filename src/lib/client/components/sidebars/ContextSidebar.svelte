@@ -156,7 +156,7 @@
         </button>
     </div>
     <div class="mb-6 flex items-center gap-2">
-        <select class="input input-sm w-full" bind:value={selectedConfigId}>
+        <select class="select w-full" bind:value={selectedConfigId}>
             {#each configsList.filter((c) => c.isImmutable) as c}
                 <option value={c.id}>{c.name}{c.isImmutable ? "*" : ""}</option>
             {/each}
@@ -180,7 +180,7 @@
                     id="contextName"
                     type="text"
                     bind:value={contextConfig.name}
-                    class="input input-sm w-full"
+                    class="input w-full"
                     disabled={contextConfig.isImmutable}
                 />
             </div>
@@ -198,7 +198,7 @@
                         id="template"
                         rows="8"
                         bind:value={contextConfig.template}
-                        class="input input-sm w-full"
+                        class="input w-full"
                     ></textarea>
                 </div>
                 <div class="flex flex-col gap-4">

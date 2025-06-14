@@ -145,7 +145,7 @@
         class:hidden={!connectionsList.length}
     >
         <select
-            class="select select-sm bg-background border-muted rounded border"
+            class="select bg-background border-muted rounded border"
             onchange={handleSelectChange}
             bind:value={userCtx.user.activeConnectionId}
         >
@@ -169,7 +169,7 @@
                 id="name"
                 type="text"
                 bind:value={connection.name}
-                class="input input-sm bg-background border-muted w-full rounded border"
+                class="input bg-background border-muted w-full rounded border"
             />
         </div>
         {#if connection.type === "ollama"}
@@ -249,7 +249,7 @@
             </div>
             <div>
                 <label class="font-semibold" for="newConnType">Type</label>
-                <select id="newConnType" class="input w-full" bind:value={newConnectionType}>
+                <select id="newConnType" class="select w-full" bind:value={newConnectionType}>
                     {#each CONNECTION_TYPES as t}
                         <option value={t.value}>{t.label}</option>
                     {/each}

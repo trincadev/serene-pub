@@ -66,7 +66,7 @@ onMount(() => {
     </div>
     <div class="mb-4 flex items-center gap-2">
         <input
-            class="input input-sm w-full"
+            class="input w-full"
             type="text"
             placeholder="Search tags..."
             bind:value={search}
@@ -75,13 +75,13 @@ onMount(() => {
     {#if isCreating}
         <div class="flex flex-col gap-2 mb-4">
             <input
-                class="input input-sm w-full"
+                class="input w-full"
                 type="text"
                 placeholder="Tag name"
                 bind:value={newTagName}
             />
             <textarea
-                class="input input-sm w-full"
+                class="input w-full"
                 rows="2"
                 placeholder="Description (optional)"
                 bind:value={newTagDescription}

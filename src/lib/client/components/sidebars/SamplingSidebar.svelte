@@ -295,7 +295,7 @@
                     id="samplingName"
                     type="text"
                     bind:value={sampling.name}
-                    class="input input-sm bg-background border-muted w-full rounded border"
+                    class="input bg-background border-muted w-full rounded border"
                     disabled={!!sampling && sampling.isImmutable}
                 />
             </div>
@@ -387,7 +387,7 @@
                                 type="text"
                                 id={key}
                                 bind:value={sampling[key]}
-                                class="input input-sm bg-background border-muted w-full rounded border"
+                                class="input bg-background border-muted w-full rounded border"
                             />
                         {/if}
                     </div>

@@ -184,7 +184,7 @@ export class OllamaAdapter {
 			if (res && Array.isArray(res.models)) {
 				return { ok: true }
 			} else {
-				console.log("Ollama testConnection response:", res)
+				// console.log("Ollama testConnection response:", res)
 				return {
 					ok: false,
 					error: "Unexpected response format from Ollama API"
@@ -207,7 +207,7 @@ export class OllamaAdapter {
 			if (res && Array.isArray(res.models)) {
 				return { models: res.models }
 			} else {
-				console.log("Ollama listModels response:", res)
+				// console.log("Ollama listModels response:", res)
 				return {
 					models: [],
 					error: "Unexpected response format from Ollama API"
@@ -364,7 +364,7 @@ export class OllamaAdapter {
 		)
 		totalTokens = tokenCounter.countTokens(prompt)
 
-		console.log("PROMPT:\n\n", prompt, "\n\n")
+		// console.log("PROMPT:\n\n", prompt, "\n\n")
 
 		return [
 			prompt.trim(),
