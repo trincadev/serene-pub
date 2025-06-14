@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Avatar, Switch } from "@skeletonlabs/skeleton-svelte"
+	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import skio from "sveltekit-io"
 	import { onMount } from "svelte"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
+	import Avatar from "../Avatar.svelte"
 
 	interface EditCharacterData {
 		id?: number
@@ -239,14 +240,8 @@
 			<span>
 				<Avatar
 					src={editCharacterData._avatar || editCharacterData.avatar}
-					size="w-[4em] h-[4em]"
-					name={editCharacterData.name ??
-						(mode === "edit" ? "Edit Character" : "New Character")}
-					background="preset-filled-primary-500"
-					imageClasses="object-cover"
-				>
-					<Icons.User size={36} />
-				</Avatar>
+					char={editCharacterData}
+				/>
 			</span>
 			<div class="flex w-full flex-col gap-2">
 				<div class="flex w-full items-center justify-center">

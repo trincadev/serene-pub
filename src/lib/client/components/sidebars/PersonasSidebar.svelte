@@ -1,12 +1,13 @@
 <script lang="ts">
 	import skio from "sveltekit-io"
 	import { getContext, onMount } from "svelte"
-	import { Avatar, Modal } from "@skeletonlabs/skeleton-svelte"
+	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import PersonaForm from "../personaForms/PersonaForm.svelte"
 	import PersonaUnsavedChangesModal from "../modals/PersonaUnsavedChangesModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import { goto } from "$app/navigation"
+	import Avatar from "../Avatar.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -165,14 +166,15 @@
 						<span class="text-muted-foreground w-[2.5em] text-xs">
 							#{p.id}
 						</span>
-						<Avatar
+						<!-- <Avatar
 							src={p.avatar}
 							size="w-[4em] h-[4em]"
 							name={p.name}
 							imageClasses="object-cover"
 						>
 							<Icons.User size={36} />
-						</Avatar>
+						</Avatar> -->
+						<Avatar char={p} />
 						<div class="min-w-0 flex-1">
 							<div class="truncate">{p.name ?? "Unnamed"}</div>
 							{#if p.description}

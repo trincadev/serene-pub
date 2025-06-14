@@ -1,12 +1,13 @@
 <script lang="ts">
     import { getContext, onMount } from "svelte"
     import * as skio from "sveltekit-io"
-    import CreateChatForm from "../chatForms/CreateChatForm.svelte"
+    import EditChatForm from "../chatForms/EditChatForm.svelte"
     import * as Icons from "@lucide/svelte"
-    import { Avatar, Modal } from "@skeletonlabs/skeleton-svelte"
+    import { Modal } from "@skeletonlabs/skeleton-svelte"
     import { goto } from "$app/navigation"
     import { toaster } from "$lib/client/utils/toaster"
 	import { page } from "$app/state"
+	import Avatar from "../Avatar.svelte"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -15,12 +16,13 @@
 
     let chats: Sockets.ChatsList.Response["chatsList"] = $state([])
     let search = $state("")
-    let isCreating = $state(false)
+    let showEditChatForm = $state(false)
     let panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
     let searchByCharacterId: number | null = $state(null)
     let searchByPersonaId: number | null = $state(null)
     let searchCharacter: SelectCharacter | null = $state(null)
     let searchPersona: SelectPersona | null = $state(null)
+    let editChatId: number | null = $state(null)
     const socket = skio.get()
 
     // Filtered chats derived from search
@@ -44,13 +46,12 @@
     function handleCreateClick(
         event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }
     ) {
-        isCreating = true
+        showEditChatForm = true
     }
 
     function handleEditClick(chatId: number) {
-        toaster.warning({
-            title: "Action not implemented"
-        })
+       showEditChatForm = true
+       editChatId = chatId
     }
 
     function handleChatClick(chat: any) {
@@ -90,13 +91,10 @@
 
     $effect(() => {
         const lower = search.toLowerCase()
-        const _characterId = searchByCharacterId
-        const _personaId = searchByPersonaId
 
         let filtered = [...chats]
 
         // If searching by character ID, filter chats that include that character
-        console.log("Search by Character ID:", searchByCharacterId)
         if (searchByCharacterId) {
             filtered = filtered.filter((chat) =>
                 chat.chatCharacters?.some(
@@ -106,7 +104,6 @@
         }
 
         // If searching by persona ID, filter chats that include that persona
-        console.log("Search by Persona ID:", searchByPersonaId)
         if (searchByPersonaId) {
             filtered = filtered.filter((chat) =>
                 chat.chatPersonas?.some(
@@ -133,7 +130,6 @@
 
     $effect.pre(() => {
         const characterId = page.url.searchParams.get("chats-by-characterId")
-        console.log("Character ID from URL:", characterId)
         if (characterId) {
             searchByCharacterId = parseInt(characterId)
         }
@@ -148,7 +144,6 @@
         }
 
         const personaId = page.url.searchParams.get("chats-by-personaId")
-        console.log("Persona ID from URL:", personaId)
         if (personaId) {
             searchByPersonaId = parseInt(personaId)
         }
@@ -163,6 +158,12 @@
         }
     })
 
+    $effect(() => {
+        if (editChatId && !showEditChatForm) {
+            editChatId = null
+        }
+    })
+
     onMount(() => {
         socket.emit("chatsList", {})
         onclose = handleOnClose
@@ -170,8 +171,8 @@
 </script>
 
 <div class="text-foreground flex h-full flex-col p-4">
-    {#if isCreating}
-        <CreateChatForm bind:isCreating />
+    {#if showEditChatForm}
+        <EditChatForm bind:showEditChatForm bind:editChatId />
     {:else}
         <div class="mb-2 flex gap-2">
             <button
@@ -231,27 +232,33 @@
                             <!-- First character avatar -->
                             {#if chat && chat.chatCharacters}
                                 {#each chat.chatCharacters as cc}
-                                    <Avatar
+                                    <!-- <Avatar
                                         src={cc.character.avatar || ""}
                                         size="w-[4em] h-[4em]"
                                         name={cc.character.nickname || cc.character.name}
                                         imageClasses="object-cover"
                                     >
                                         <Icons.User size={36} />
-                                    </Avatar>
+                                    </Avatar> -->
+                                    <Avatar
+                                        char={cc.character}
+                                    />
                                 {/each}
                             {/if}
                             <!-- First persona avatar -->
                             {#if chat && chat.chatPersonas}
                                 {#each chat.chatPersonas as cp}
-                                    <Avatar
+                                    <!-- <Avatar
                                         src={cp.persona.avatar || ""}
                                         size="w-[4em] h-[4em]"
                                         name={cp.persona.name}
                                         imageClasses="object-cover"
                                     >
                                         <Icons.User size={36} />
-                                    </Avatar>
+                                    </Avatar> -->
+                                    <Avatar
+                                        char={cp.persona}
+                                    />
                                 {/each}
                             {/if}
                             <div class="flex min-w-0 flex-col">

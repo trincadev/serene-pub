@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { Avatar } from "@skeletonlabs/skeleton-svelte"
     import * as Icons from "@lucide/svelte"
     import skio from "sveltekit-io"
     import { onMount } from "svelte"
     import PersonaUnsavedChangesModal from "../modals/PersonaUnsavedChangesModal.svelte"
+	import Avatar from "../Avatar.svelte"
 
     interface EditPersonaData {
         id?: number
@@ -172,7 +172,7 @@
     <div class="flex flex-col gap-4">
         <div class="flex items-center gap-4">
             <span>
-                <Avatar
+                <!-- <Avatar
                     src={editPersonaData._avatar || editPersonaData.avatar}
                     size="w-[4em] h-[4em]"
                     name={editPersonaData.name ??
@@ -181,7 +181,12 @@
                     imageClasses="object-cover"
                 >
                     <Icons.User size={36} />
-                </Avatar>
+                </Avatar> -->
+
+                <Avatar
+                    src={editPersonaData._avatar || editPersonaData.avatar}
+                    char={editPersonaData} 
+                />
             </span>
             <div class="flex w-full flex-col gap-2">
                 <div class="flex w-full items-center justify-center">

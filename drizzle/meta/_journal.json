@@ -43,6 +43,27 @@
       "when": 1749694611310,
       "tag": "0005_flippant_skreet",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1749792914756,
+      "tag": "0006_shiny_whizzer",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1749794357652,
+      "tag": "0007_exotic_payback",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1749853937977,
+      "tag": "0008_lethal_risque",
+      "breakpoints": true
     }
   ]
 }

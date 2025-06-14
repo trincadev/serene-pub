@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { page } from "$app/state"
-	import { Avatar, Modal, Popover } from "@skeletonlabs/skeleton-svelte"
+	import { Modal, Popover } from "@skeletonlabs/skeleton-svelte"
 	import * as skio from "sveltekit-io"
 	import * as Icons from "@lucide/svelte"
 	import MessageComposer from "$lib/client/components/chatMessages/MessageComposer.svelte"
 	import { renderMarkdownWithQuotedText } from "$lib/client/utils/markdownToHTML"
 	import { getContext, onMount } from "svelte"
+	import Avatar from "$lib/client/components/Avatar.svelte"
 
 	let chat: Sockets.Chat.Response["chat"] | undefined = $state()
 	let newMessage = $state("")
@@ -269,7 +270,7 @@
 						<div class="flex justify-between gap-2">
 							<div class="flex gap-2">
 								<span>
-									<Avatar
+									<!-- <Avatar
 										src={character?.avatar ?? ""}
 										size="w-[4em] h-[4em]"
 										name={character?.nickname ||
@@ -279,7 +280,8 @@
 										imageClasses="object-cover"
 									>
 										<Icons.User size={36} />
-									</Avatar>
+									</Avatar> -->
+									<Avatar char={character} />
 								</span>
 								<span
 									class="funnel-display text-[1.1em] font-bold"
@@ -411,7 +413,7 @@
 					{@const persona = chat?.chatPersonas?.[0]?.persona}
 					<div class="hidden flex-col lg:flex lg:gap-2">
 						<span>
-							<Avatar
+							<!-- <Avatar
 								src={persona.avatar ?? ""}
 								size="w-[4em] h-[4em]"
 								name={persona?.name ?? "Unknown"}
@@ -419,7 +421,8 @@
 								imageClasses="object-cover"
 							>
 								<Icons.User size={36} />
-							</Avatar>
+							</Avatar> -->
+							<Avatar char={persona} />
 						</span>
 					</div>
 				{/if}

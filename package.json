@@ -85,6 +85,7 @@
 		"mistral-tokenizer-js": "^1.0.0",
 		"ollama": "^0.5.16",
 		"pkg": "^5.8.1",
+		"svelte-dnd-action": "^0.9.61",
 		"sveltekit-io": "^1.0.12",
 		"uuid": "^11.1.0"
 	}

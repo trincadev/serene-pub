@@ -10,6 +10,8 @@ import {
     SQLiteBoolean
 } from "drizzle-orm/sqlite-core"
 import { TokenCounterManager } from "../utils/TokenCounterManager"
+import { group } from "console"
+import { GroupReplyStrategies } from "../../shared/constants/GroupReplyStrategies"
 
 export const users = sqliteTable("users", {
     id: integer("id").primaryKey(),
@@ -303,13 +305,15 @@ export const personasRelations = relations(personas, ({ one, many }) => ({
 export const chats = sqliteTable("chats", {
     id: integer("id").primaryKey(),
     name: text("name"), // Optional chat/group name
-    isGroup: integer("is_group").default(0), // 1 for group chat, 0 for 1:1
+    isGroup: integer("is_group", {mode: "boolean"}).default(false), // 1 for group chat, 0 for 1:1
     userId: integer("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
     createdAt: text("created_at"),
     updatedAt: text("updated_at"),
-    metadata: text("metadata") // JSON for extra settings
+    scenario: text("scenario"),
+    metadata: text("metadata"), // JSON for extra settings
+    group_reply_strategy: text("group_reply_strategy").default(GroupReplyStrategies.ORDERED)
 })
 
 export const chatsRelations = relations(chats, ({ one, many }) => ({
@@ -363,22 +367,14 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
     })
 }))
 
-export const GroupReplyStrategies = {
-    MANUAL: "manual", // User manually selects persona for each reply
-    ORDERED: "ordered", // Replies follow the order of personas in the chat
-    NATURAL: "natural" // Replies are assigned based on natural conversation flow
-}
-
 // Many-to-many: chats <-> personas
 export const chatPersonas = sqliteTable("chat_personas", {
     chatId: integer("chat_id")
         .notNull()
         .references(() => chats.id, { onDelete: "cascade" }),
     personaId: integer("persona_id")
-        .notNull()
-        .references(() => personas.id, { onDelete: "cascade" }),
+        .references(() => personas.id, { onDelete: "set null" }),
     position: integer("position").default(0), // Position in the chat
-    group_reply_strategy: text("group_reply_strategy").default(GroupReplyStrategies.ORDERED) // How to handle group replies
 })
 
 export const chatPersonasRelations = relations(chatPersonas, ({ one }) => ({
@@ -398,8 +394,7 @@ export const chatCharacters = sqliteTable("chat_characters", {
         .notNull()
         .references(() => chats.id, { onDelete: "cascade" }),
     characterId: integer("character_id")
-        .notNull()
-        .references(() => characters.id, { onDelete: "cascade" }),
+        .references(() => characters.id, { onDelete: "set null" }),
     position: integer("position").default(0), // Position in the chat
     isActive: integer("is_active", { mode: "boolean" }).default(false) // 1 if active in chat, 0 if not
 })

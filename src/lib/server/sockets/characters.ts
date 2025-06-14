@@ -18,7 +18,9 @@ export async function charactersList(
 			name: true,
             nickname: true,
 			avatar: true,
-			isFavorite: true
+			isFavorite: true,
+			description: true,
+			creatorNotes: true
 		},
 		where: (c, { eq }) => eq(c.userId, 1) // TODO: Replace with actual user id
 	})

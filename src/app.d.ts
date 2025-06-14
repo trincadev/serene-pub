@@ -329,6 +329,22 @@ declare global {
                 chat: InsertChat
                 personaIds: number[]
                 characterIds: number[]
+                characterPositions: Record<number, number>
+            }
+            interface Response {
+                chat: SelectChat & {
+                    chatPersonas: SelectChatPersona & { persona: SelectPersona }[]
+                    chatCharacters: SelectChatCharacter & { character: SelectCharacter }[]
+                    chatMessages: SelectChatMessage[]
+                }
+            }
+        }
+        namespace UpdateChat {
+            interface Call {
+                chat: InsertChat & { id: number }
+                personaIds: number[]
+                characterIds: number[]
+                characterPositions: Record<number, number>
             }
             interface Response {
                 chat: SelectChat & {
