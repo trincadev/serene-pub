@@ -71,6 +71,34 @@
       "when": 1749883406286,
       "tag": "0009_natural_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1749971948454,
+      "tag": "0010_mixed_the_renegades",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1749972800011,
+      "tag": "0011_colorful_cyclops",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1749973025502,
+      "tag": "0012_jazzy_vengeance",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1749979196073,
+      "tag": "0013_perfect_amazoness",
+      "breakpoints": true
     }
   ]
 }

@@ -33,7 +33,9 @@ export async function generateResponse({
         with: {
             chatCharacters: { with: { character: true } },
             chatPersonas: { with: { persona: true } },
-            chatMessages: true
+            chatMessages: {
+                where: (cm, {ne}) => ne(cm.id, generatingMessage.id),
+            }
         }
     })
     const user = await db.query.users.findFirst({

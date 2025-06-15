@@ -7,66 +7,66 @@ export class StopStrings {
                 // <|im_end|> is the explicit stop string for ChatML, plus block starters and template markers
                 return [
                     "<|im_end|>",
-                    "<|im_start|>",
-                    "[{{user}}]:",
-                    "[{{char}}]:",
-                    "[system]:",
-                    "[System]:",
-                    "[user]:",
-                    "[User]:",
-                    "[assistant]:",
-                    "[Assistant]:"
+                    // "<|im_start|>",
+                    "{{user}}:",
+                    "{{char}}:",
+                    // "system:",
+                    // "System:",
+                    // "user:",
+                    // "User:",
+                    // "assistant:",
+                    // "Assistant:"
                 ];
             case PromptFormats.BASIC:
                 // Block starters for Basic, plus template markers
                 return [
-                    "*** user",
-                    "*** char",
-                    "*** assistant",
-                    "*** system",
-                    "[{{user}}]:",
-                    "[{{user}}]",
-                    "[{{char}}]:",
-                    "[{{char}}]",
-                    "[system]:",
-                    "[System]:",
-                    "[user]:",
-                    "[User]:",
-                    "[assistant]:",
-                    "[Assistant]:"
+                    // "*** user",
+                    // "*** char",
+                    // "*** assistant",
+                    // "*** system",
+                    // "{{user}}:",
+                    // "{{user}}",
+                    // "{{char}}:",
+                    // "{{char}}",
+                    // "system:",
+                    // "System:",
+                    // "user:",
+                    // "User:",
+                    // "assistant:",
+                    // "Assistant:"
                 ];
             case PromptFormats.VICUNA:
                 // Block starters for Vicuna, plus </s> and template markers
                 return [
-                    "</s>",
-                    "### User:",
-                    "### Char:",
-                    "### Assistant:",
-                    "### System:",
-                    "[{{user}}]:",
-                    "[{{char}}]:",
-                    "[system]:",
-                    "[System]:",
-                    "[user]:",
-                    "[User]:",
-                    "[assistant]:",
-                    "[Assistant]:"
+                    // "</s>",
+                    // "### User:",
+                    // "### Char:",
+                    // "### Assistant:",
+                    // "### System:",
+                    // "{{user}}:",
+                    // "{{char}}:",
+                    // "system:",
+                    // "System:",
+                    // "user:",
+                    // "User:",
+                    // "assistant:",
+                    // "Assistant:"
                 ];
             case PromptFormats.OPENAI:
                 // Block starters for OpenAI, plus template markers
                 return [
-                    "<|user|>",
-                    "<|char|>",
-                    "<|assistant|>",
-                    "<|system|>",
-                    "[{{user}}]:",
-                    "[{{char}}]:",
-                    "[system]:",
-                    "[System]:",
-                    "[user]:",
-                    "[User]:",
-                    "[assistant]:",
-                    "[Assistant]:"
+                    // "<|user|>",
+                    // "<|char|>",
+                    // "<|assistant|>",
+                    // "<|system|>",
+                    // "{{user}}:",
+                    // "{{char}}:",
+                    // "system:",
+                    // "System:",
+                    // "user:",
+                    // "User:",
+                    // "assistant:",
+                    // "Assistant:"
                 ];
             default:
                 return ["<|im_end|>"];

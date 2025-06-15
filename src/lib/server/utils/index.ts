@@ -4,7 +4,7 @@ import {db} from '$lib/server/db';
 import {eq} from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import {writeFile, mkdir} from 'fs/promises';
-import * as fsPromises from 'fs/promises';
+import {v4 as uuid} from 'uuid';
 
 export function getAppDataDir() {
     const paths = envPaths("SerenePub", { suffix: "" })
@@ -43,11 +43,12 @@ export async function handleCharacterAvatarUpload({
     avatarFile: Buffer
 }) {
     const ext = character.avatarType?.split("/")[1] || "png"
-    const filename = `avatar.${ext}`
+    const filename = `avatar-${uuid().substring(0, 4)}.${ext}`
     const avatarDir = getCharacterDataDir({
         characterId: character.id,
         userId: character.userId
     })
+    const oldAvatar = character.avatar
     // Ensure the directory exists
     await mkdir(avatarDir, { recursive: true })
     // Save the new avatar file
@@ -55,6 +56,15 @@ export async function handleCharacterAvatarUpload({
     await writeFile(filePath, avatarFile, { flag: "w"}) // Write the file to disk
     const avatar = `/images/data/users/${character.userId}/characters/${character.id}/${filename}` // Construct URL for the avatar
     await db.update(schema.characters).set({ avatar }).where(eq(schema.characters.id, character.id))
+    // Delete old avatar file if it exists and is not the same as the new one
+    if (oldAvatar && oldAvatar !== avatar) {
+        try {
+            const oldAvatarPath = path.join(avatarDir, path.basename(oldAvatar))
+            await import('fs/promises').then(fs => fs.unlink(oldAvatarPath))
+        } catch (e) {
+            // Ignore error if file does not exist
+        }
+    }
 }
 
 export async function handlePersonaAvatarUpload({
@@ -65,11 +75,12 @@ export async function handlePersonaAvatarUpload({
     avatarFile: Buffer
 }) {
     const ext = persona.avatarType?.split("/")[1] || "png"
-    const filename = `avatar.${ext}`
+    const filename = `avatar-${uuid().substring(0, 4)}.${ext}` // Use UUID to ensure unique filename
     const avatarDir = getPersonaDataDir({
         personaId: persona.id,
         userId: persona.userId
     })
+    const oldAvatar = persona.avatar
     // Ensure the directory exists
     await mkdir(avatarDir, { recursive: true })
     // Save the new avatar file
@@ -77,4 +88,13 @@ export async function handlePersonaAvatarUpload({
     await writeFile(filePath, avatarFile, { flag: "w"}) // Write the file to disk
     const avatar = `/images/data/users/${persona.userId}/personas/${persona.id}/${filename}` // Construct URL for the avatar
     await db.update(schema.personas).set({ avatar }).where(eq(schema.personas.id, persona.id))
+    // Delete old avatar file if it exists and is not the same as the new one
+    if (oldAvatar && oldAvatar !== avatar) {
+        try {
+            const oldAvatarPath = path.join(avatarDir, path.basename(oldAvatar))
+            await import('fs/promises').then(fs => fs.unlink(oldAvatarPath))
+        } catch (e) {
+            // Ignore error if file does not exist
+        }
+    }
 }

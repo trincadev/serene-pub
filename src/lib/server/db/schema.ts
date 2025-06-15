@@ -123,7 +123,7 @@ export const promptConfigs = sqliteTable("prompt_configs", {
     id: integer("id").primaryKey(),
     isImmutable: integer("is_immutable", { mode: "boolean" }).default(true),
     name: text("name").notNull(),
-    systemPrompt: text("system_prompt") // Maps to sillytavern sysPrompt.content
+    systemPrompt: text("system_prompt").notNull() // Maps to sillytavern sysPrompt.content
 })
 
 export const promptConfigsRelations = relations(promptConfigs, () => ({}))
@@ -233,7 +233,7 @@ export const characters = sqliteTable("characters", {
     name: text("name").notNull(),
     nickname: text("nickname"), // Optional nickname
     characterVersion: text("character_version").default("1.0"), // Version of the character schema
-    description: text("description"),
+    description: text("description").notNull(),
     personality: text("personality"), // Persona field
     scenario: text("scenario"),
     firstMessage: text("first_message"),
@@ -287,7 +287,7 @@ export const personas = sqliteTable("personas", {
     isDefault: integer("is_default", { mode: "boolean" }).default(false), // Is this the default persona for the user?
     avatar: text("avatar"), // e.g. 'user-default.png', '1747379438925-Ryvn.png'
     name: text("name").notNull(), // e.g. 'Warren', 'Master Desir'
-    description: text("description"), // Persona description (long text)
+    description: text("description").notNull(), // Persona description (long text)
     position: integer("position").default(0),
     connections: text("connections"), // JSON array of connection IDs or objects
     createdAt: text("created_at"),

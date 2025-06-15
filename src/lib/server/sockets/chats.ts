@@ -3,6 +3,7 @@ import * as schema from "$lib/server/db/schema"
 import { OllamaAdapter } from "../connectionAdapters/ollama"
 import { and, eq, inArray } from "drizzle-orm"
 import { generateResponse } from "../utils/generateResponse"
+import { getNextCharacterTurn } from '../utils/PromptBuilder';
 
 // --- Global map for active adapters ---
 export const activeAdapters = new Map<string, OllamaAdapter>()
@@ -181,13 +182,25 @@ export async function sendPersonaMessage(
 		chatMessage: inserted as any
 	}
 	emitToUser("sendPersonaMessage", res)
-	if (chat.chatCharacters.length > 0) {
+
+	// Use getNextCharacterTurn to determine which character should reply next
+	const nextCharacterId = getNextCharacterTurn({
+		chatMessages: [...chat.chatMessages, inserted],
+		chatCharacters: chat.chatCharacters.filter(cc => cc.character !== null) as any,
+		chatPersonas: chat.chatPersonas.filter(cp => cp.persona !== null) as any
+	}, { 
+		triggered: false
+	});
+	console.log("Next character ID:", nextCharacterId);
+	if (chat && chat.chatCharacters.length > 0 && nextCharacterId) {
 		chat = await getChatFromDB(chatId, userId)
+		const nextCharacter = chat?.chatCharacters.find(cc => cc.character && cc.character.id === nextCharacterId);
+		if (!nextCharacter || !nextCharacter.character) return;
 		const assistantMessage: InsertChatMessage = {
 			userId,
 			chatId,
 			personaId: null,
-			characterId: chat!.chatCharacters[0].character.id,
+			characterId: nextCharacter.character.id,
 			content: "",
 			role: "assistant",
 			createdAt: new Date().toString(),
@@ -307,6 +320,7 @@ export async function regenerateChatMessage(
 		emitToUser("regenerateChatMessage", res)
 		return
 	}
+
 	await db
 		.update(schema.chatMessages)
 		.set({ isGenerating: true, content: "" })
@@ -379,8 +393,8 @@ export async function promptTokenCount(
 		contextConfig: user.activeContextConfig,
 		promptConfig: user.activePromptConfig
 	})
-	const [prompt, tokenCount, tokenLimit, messagesIncluded, totalMessages] =
-		await adapter.compilePrompt()
+	const [prompt, tokenCount, tokenLimit, messagesIncluded, totalMessages] = [0, 0, 0, 0]
+		// await adapter.compilePrompt()
 	const res: Sockets.PromptTokenCount.Response = {
 		tokenCount,
 		tokenLimit,
@@ -488,6 +502,42 @@ export async function triggerGenerateMessage(
 			userId,
 			generatingMessage: generatingMessage as any
 		})
+		const nextCharacterId = getNextCharacterTurn({
+			chatMessages: chat.chatMessages,
+			chatCharacters: chat.chatCharacters.filter(cc => cc.character !== null) as any,
+			chatPersonas: chat.chatPersonas.filter(cp => cp.persona !== null) as any
+		}, { triggered: true });
+		if (chat && chat.chatCharacters.length > 0 && nextCharacterId) {
+			chat = await getChatFromDB(message.chatId, userId)
+			const nextCharacter = chat?.chatCharacters.find(cc => cc.character && cc.character.id === nextCharacterId);
+			if (!nextCharacter || !nextCharacter.character) return;
+			const assistantMessage: InsertChatMessage = {
+				userId,
+				chatId: message.chatId,
+				personaId: null,
+				characterId: nextCharacter.character.id,
+				content: "",
+				role: "assistant",
+				createdAt: new Date().toString(),
+				isGenerating: true
+			}
+			const [generatingMessage] = await db
+				.insert(schema.chatMessages)
+				.values(assistantMessage)
+				.returning()
+			await chatMessage(
+				socket,
+				{ chatMessage: generatingMessage },
+				emitToUser
+			)
+			await generateResponse({
+				socket,
+				emitToUser,
+				chatId: message.chatId,
+				userId,
+				generatingMessage: generatingMessage as any
+			})
+		}
 	}
 }
 
