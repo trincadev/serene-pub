@@ -13,22 +13,25 @@ export class OllamaAdapter {
 	contextConfig: SelectContextConfig
 	promptConfig: SelectPromptConfig
 	chat: SelectChat & {
-		chatCharacters?: (SelectChatCharacter & {
+		chatCharacters: (SelectChatCharacter & {
 			character: SelectCharacter
 		})[]
-		chatPersonas?: (SelectChatPersona & { persona: SelectPersona })[]
+		chatPersonas: (SelectChatPersona & { persona: SelectPersona })[]
 		chatMessages: SelectChatMessage[]
 	}
+	currentCharacterId: number
 
 	private _client?: Ollama
 	private _tokenCounter?: TokenCounters
+	promptBuilder: PromptBuilder
 
 	constructor({
 		connection,
 		sampling,
 		contextConfig,
 		promptConfig,
-		chat
+		chat,
+		currentCharacterId,
 	}: {
 		connection: SelectConnection
 		sampling: SelectSamplingConfig
@@ -39,7 +42,8 @@ export class OllamaAdapter {
 				{ character: SelectCharacter }[]
 			chatPersonas?: SelectChatPersona & { persona: SelectPersona }[]
 			chatMessages: SelectChatMessage[]
-		}
+		},
+		currentCharacterId: number
 	}) {
 		this.connection = connection
 		this.sampling = sampling
@@ -52,6 +56,18 @@ export class OllamaAdapter {
 			chatPersonas: (chat.chatPersonas || []).filter((cp: any) => cp && cp.persona && cp.chatId !== undefined && cp.personaId !== undefined && cp.position !== undefined && typeof cp.chatId === 'number' && typeof cp.personaId === 'number'),
 			chatMessages: chat.chatMessages || []
 		}
+		this.currentCharacterId = currentCharacterId
+		this.promptBuilder = new PromptBuilder({
+			connection: this.connection,
+			sampling: this.sampling,
+			contextConfig: this.contextConfig,
+			promptConfig: this.promptConfig,
+			chat: this.chat,
+			currentCharacterId: this.currentCharacterId,
+			tokenCounter: this.getTokenCounter(),
+			tokenLimit: this.sampling.contextTokens || this.defaultContextLimit,
+			contextThresholdPercent: this.contextThresholdPercent,
+		})
 	}
 
 	// --- Default Ollama connection config ---
@@ -67,8 +83,8 @@ export class OllamaAdapter {
 		}
 	}
 
-	static defaultContextLimit = 2048
-	static contextThresholdPercent = 0.9 // we don't want to hit the limit, so we stop at 90% of the context size
+	defaultContextLimit = 2048
+	contextThresholdPercent = 0.9 // we don't want to hit the limit, so we stop at 90% of the context size
 
 	// --- SamplingConfig mapping ---
 	static ollamaKeyMap: Record<string, string> = {
@@ -249,26 +265,12 @@ export class OllamaAdapter {
 		)
 
 		// Use PromptBuilder for prompt construction
-		const promptBuilder = new PromptBuilder({
-			connection: this.connection,
-			sampling: this.sampling,
-			contextConfig: this.contextConfig,
-			promptConfig: this.promptConfig,
-			chat: this.chat,
-			currentCharacterId: this.chat.chatCharacters?.[0]?.character?.id || 0
-		})
-		const tokenCounter = this.getTokenCounter()
-		const [prompt, totalTokens, tokenLimit] = await promptBuilder.compilePrompt(
+		
+		const [prompt, totalTokens, tokenLimit] = await this.promptBuilder.compilePrompt(
 			this.chat.chatCharacters?.[0]?.character?.id || 0,
-			{
-				countTokens: (s: string) => {
-					const result = this.getTokenCounter().countTokens(s);
-					if (typeof result === 'number') return result;
-					throw new Error('Async token counters are not supported');
-				}
-			},
+			this.getTokenCounter(),
 			this.sampling.contextTokens || OllamaAdapter.defaultContextLimit,
-			OllamaAdapter.contextThresholdPercent
+			this.contextThresholdPercent
 		)
 
 		const req = {
@@ -329,7 +331,6 @@ export class OllamaAdapter {
 			})()
 		}
 	}
-
 	// --- Abort in-flight Ollama request ---
 	abort() {
 		const client = this.getClient()

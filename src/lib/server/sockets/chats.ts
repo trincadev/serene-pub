@@ -386,15 +386,17 @@ export async function promptTokenCount(
 			isGenerating: false
 		})
 	}
+	const currentCharacterId = getNextCharacterTurn(chat, {triggered: true})!
+	console.log("Current character ID for prompt:", currentCharacterId);
 	const adapter = new OllamaAdapter({
 		chat: chatForPrompt as any,
 		connection: user.activeConnection,
 		sampling: user.activeSamplingConfig,
 		contextConfig: user.activeContextConfig,
-		promptConfig: user.activePromptConfig
+		promptConfig: user.activePromptConfig,
+		currentCharacterId
 	})
-	const [prompt, tokenCount, tokenLimit, messagesIncluded, totalMessages] = [0, 0, 0, 0]
-		// await adapter.compilePrompt()
+	const [prompt, tokenCount, tokenLimit, messagesIncluded, totalMessages] = await adapter.promptBuilder.compilePrompt()
 	const res: Sockets.PromptTokenCount.Response = {
 		tokenCount,
 		tokenLimit,
@@ -418,6 +420,7 @@ export async function abortChatMessage(
 			success: false,
 			error: "Message not found."
 		}
+		emitToUser("chatMessage", res)
 		emitToUser("abortChatMessage", res)
 		return
 	}
@@ -440,6 +443,7 @@ export async function abortChatMessage(
 			success: true,
 			info: "No active adapter, forcibly cleared."
 		}
+		emitToUser("chatMessage", res)
 		emitToUser("abortChatMessage", res)
 		return
 	}
@@ -449,6 +453,7 @@ export async function abortChatMessage(
 			id: message.id,
 			success: true
 		}
+		emitToUser("chatMessage", res)
 		emitToUser("abortChatMessage", res)
 	} catch (e: any) {
 		const res: Sockets.AbortChatMessage.Response = {
@@ -456,6 +461,7 @@ export async function abortChatMessage(
 			success: false,
 			error: e?.message || String(e)
 		}
+		emitToUser("chatMessage", res)
 		emitToUser("abortChatMessage", res)
 	}
 }

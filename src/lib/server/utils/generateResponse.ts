@@ -4,6 +4,7 @@ import {OllamaAdapter} from '../connectionAdapters/ollama';
 import {eq} from 'drizzle-orm';
 import {v4 as uuidv4} from 'uuid';
 import {activeAdapters, chatMessage} from '../sockets/chats';
+import { getNextCharacterTurn } from './PromptBuilder';
 
 export async function generateResponse({
     socket,
@@ -47,12 +48,14 @@ export async function generateResponse({
             activePromptConfig: true
         }
     })
+
     const adapter = new OllamaAdapter({
         chat,
         connection: user!.activeConnection!,
         sampling: user!.activeSamplingConfig!,
         contextConfig: user!.activeContextConfig!,
-        promptConfig: user!.activePromptConfig
+        promptConfig: user!.activePromptConfig!,
+        currentCharacterId: generatingMessage.characterId!,
     })
     // Store adapter in global map
     activeAdapters.set(adapterId, adapter)

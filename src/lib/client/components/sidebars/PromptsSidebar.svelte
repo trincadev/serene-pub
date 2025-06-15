@@ -178,7 +178,7 @@
                 />
             </div>
             <div class="flex flex-col gap-1">
-                <label class="font-semibold" for="systemPrompt">System Prompt</label>
+                <label class="font-semibold" for="systemPrompt">System Instructions</label>
                 <textarea
                     id="systemPrompt"
                     rows="15"

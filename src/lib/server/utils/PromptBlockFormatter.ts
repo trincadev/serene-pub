@@ -11,13 +11,13 @@ export class PromptBlockFormatter {
     static readonly OPENAI_OPEN = "<|";
     static readonly OPENAI_CLOSE = "\n";
 
-    static chatmlOpen(role: string) { return `${PromptBlockFormatter.CHATML_OPEN}${role}\n\n`; }
+    static chatmlOpen(role: string) { return `${PromptBlockFormatter.CHATML_OPEN}${role}\n`; }
     static chatmlClose = PromptBlockFormatter.CHATML_CLOSE;
-    static basicOpen(role: string) { return `${PromptBlockFormatter.BASIC_OPEN}${role}\n\n`; }
+    static basicOpen(role: string) { return `${PromptBlockFormatter.BASIC_OPEN}${role}\n`; }
     static basicClose = PromptBlockFormatter.BASIC_CLOSE;
-    static vicunaOpen(role: string) { return `${PromptBlockFormatter.VICUNA_OPEN}${_.capitalize(role)}:\n\n`; }
+    static vicunaOpen(role: string) { return `${PromptBlockFormatter.VICUNA_OPEN}${_.capitalize(role)}:\n`; }
     static vicunaClose = PromptBlockFormatter.VICUNA_CLOSE;
-    static openaiOpen(role: string) { return `${PromptBlockFormatter.OPENAI_OPEN}${role}|>\n\n`; }
+    static openaiOpen(role: string) { return `${PromptBlockFormatter.OPENAI_OPEN}${role}|>\n`; }
     static openaiClose = PromptBlockFormatter.OPENAI_CLOSE;
 
     static makeBlock({ format, role, content, includeClose = true }: { format: string, role: string, content: string, includeClose?: boolean }) {
