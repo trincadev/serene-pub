@@ -9,14 +9,15 @@
   - [In Progress](#in-progress)
   - [Pending Priorities](#pending-priorities)
   - [Considered](#considered)
-- [Software Stack](#software-stack)
 - [Getting Started (Download & Play!)](#getting-started-download--play)
+- [Software Stack](#software-stack)
 - [Getting Started (Source Code)](#getting-started-source-code)
   - [Requirements](#requirements)
   - [Instructions](#instructions)
-- [Directories and Files](#directories-and-files)
 - [Feedback and Contributing](#feedback-and-contributing)
   - [Feedback & Contact](#feedback--contact)
+- [Documentation](#documentation)
+- [Troubleshooting](#troubleshooting)
 <!-- /TOC -->
 
 Serene Pub is a modern, customizable chat application designed for immersive roleplay and creative conversations. Inspired by Silly Tavern, it aims to be more intuitive, responsive, and simple to configure.
@@ -66,8 +67,6 @@ Toggle night mode on or off with over 20 themes!
 <img src="https://github.com/user-attachments/assets/c73d7d7c-ea27-4be2-8479-b0be7722f9f0" alt="theme-4" width="400"/>
 
 
-
-
 ## Project Status
 
 **Alpha:** Serene Pub is in early development. Expect bugs and breaking changes. If you are a developer or comfortable with manual setup, your testing and feedback are appreciated!
@@ -78,25 +77,24 @@ Toggle night mode on or off with over 20 themes!
 - Manage sampling and context limits (settings can be individually enabled/disabled)
 - Manage roleplay/system prompt instructions
 - Mobile responsive view
+- Day/night mode & themes
+- Chats: create/delete, send persona message, auto character response, edit/delete messages, streaming, regenerate, manual response, hide message, live token/history stats
 
 ### Mostly Functional
-- Create, manage, import & export characters (Image Card Files supported; JSON not yet)
-- Create, manage, import & export personas (import/export not yet implemented)
-- Chats: create/delete, send persona message, auto character response, edit/delete messages, streaming, regenerate, manual response, hide message, live token/history stats
+- Create, manage & import (Image Card Files supported; JSON not yet)
+- Create & manage personas (import/export not yet implemented)
 - Home page setup guide
-- Day/night mode & themes
 - Mobile responsive layout
+- Manage context settings (add your own, only one default provided)
 
 ### In Progress
 - Connect to your favorite API ([see supported options](https://github.com/doolijb/serene-pub/issues/10))
-- Manage context settings (add your own, only one default provided)
-- Instruct support not yet available
 - App/user settings
+- Group chats
 
 ### Pending Priorities
 - Character/chat tags
 - Lorebooks
-- Group chats
 
 ### Considered
 - Multi-user logins & group chats
@@ -105,13 +103,6 @@ Toggle night mode on or off with over 20 themes!
 - User/chat backgrounds
 - Story narration/system instructions
 - Screen reader support
-
-### Software Stack
-- SvelteKit (Svelte 5)
-- Socket.io via [sveltekit-io](https://github.com/cedrictailly/sveltekit-io)
-- Tailwind, themes, and components via [Skeleton UI](https://skeleton.dev)
-- ORM, SQLite, and migrations via [Drizzle ORM](https://orm.drizzle.team/)
-- [Bun](https://bun.sh/) for package management
 
 
 ## Getting Started (Download & Play!)
@@ -125,6 +116,13 @@ Toggle night mode on or off with over 20 themes!
 4. Once launched, the node runtime will download automatically and start Serene Pub.
 5. Access SerenePub on your host machine from http://localhost:3000 or https://0.0.0.0:/3000
 6. You should be able to access Serene Pub from other devices on your local network as well.
+
+## Software Stack
+- SvelteKit (Svelte 5)
+- Socket.io via [sveltekit-io](https://github.com/cedrictailly/sveltekit-io)
+- Tailwind, themes, and components via [Skeleton UI](https://skeleton.dev)
+- ORM, SQLite, and migrations via [Drizzle ORM](https://orm.drizzle.team/)
+- [Bun](https://bun.sh/) for package management
 
 ## Getting Started (Source Code)
 
@@ -142,7 +140,86 @@ Toggle night mode on or off with over 20 themes!
 6. Open `http://localhost:5173` in your browser.
 7. Use the UI to set up connections, characters, personas, and chats.
 
-## Directories and Files
+## Feedback and Contributing
+
+Feel free to clone & contribute! Bug fixes are appreciated. For new features, please propose your strategy before starting work.
+
+### Feedback & Contact
+- [Open an issue](https://github.com/doolijb/serene-pub/issues) for feedback, bugs, or questions
+- [Contact on Reddit](https://reddit.com/u/doolijb)
+- Discord: `285999266088878080`
+
+## Documentation
+Here is a WIP documentation. At the moment, prioritization is focused on adding documentation for features that are fundamentally different than Silly Tavern's paradigms.
+
+### Context Configuration
+#### Context Template
+Serene Pub abstracts how groups of information (i.e. characters, personas) are structured to ensure predictability for the LLMS to parse and understand.
+
+How-ever placement is highly granular and customizable.
+
+```
+{{#systemBlock}}
+Instructions:
+"""
+{{instructions}}
+"""
+
+Assistant Characters (AI-controlled):
+'''json
+{{{characters}}}
+'''
+
+User Characters (player-controlled):
+'''json
+{{{personas}}}
+'''
+
+Scenario:
+"""
+{{scenario}}
+"""
+{{/systemBlock}}
+
+{{#if wiBefore}}
+{{#systemBlock}}
+{{wiBefore}}
+{{/systemBlock}}
+{{/if}}
+
+{{#each chatMessages}}
+  {{#if (eq role "assistant")}}
+{{#assistantBlock}}
+{{name}}: {{{message}}}
+{{/assistantBlock}}
+  {{/if}}
+
+  {{#if (eq role "user")}}
+{{#userBlock}}
+{{name}}: {{{message}}}
+{{/userBlock}}
+  {{/if}}
+{{/each}}
+
+{{#if wiAfter}}
+{{#systemBlock}}
+{{wiAfter}}
+{{/systemBlock}}
+{{/if}}
+```
+Context role blocks, i.e. `{{#systemBlock}}...{{/system}}` can be arranged how-ever you prefer, spliting the contents as you wish.
+
+Information for all characters can be inserted with a label that explains to the assistant what this information represents, i.e. `Assistant Characters (AI-controlled): {{{personas}}}`
+
+Complex information is formatted as JSON. This keeps the data structured and predictable for the model. It also prevents arbitrary text formatting from character descriptions from confusing the overall prompt structure (a common issue with imported cards.)
+
+Simple information, such as prompt instructions, or scenarios are wrapped in triple quotes to help prevent the model from getting confused from arbitrary text formatting.
+
+To create a new Context Config, click the + button and enter a new name. The currently active Context Config will be cloned.
+
+With your Context Config set, you can then select the appropriate Prompt Format in the Connections sidebar. Prompt Format is selected per-connection so you can ensure your model is always using the correct format regardless of context template.
+
+### Directories and Files
 
 Data is saved automatically to the following directory, based on your OS:
 - **macOS:** `~/Library/Application Support/SerenePub`
@@ -156,12 +233,23 @@ Key files:
 
 Avatars must be uploaded through the app; manual placement will not work.
 
-## Feedback and Contributing
+## Troubleshooting
 
-Feel free to clone & contribute! Bug fixes are appreciated. For new features, please propose your strategy before starting work.
+1. Why is my token count exceeding the limit?
+    - Context Tokens set in Sampling is too low, be sure to set a healthy context limit that your model & machine can handle. The oldest messages get truncated when the estimated token count exceeds the threshold. By default, the number of tokens in the compiled prompt are estimated. You can set a more accurate token counter in the Connections sidebar.
+<img src="https://github.com/user-attachments/assets/1d45dfca-3a01-4047-a662-4fad171613e2" alt="theme-4" width="400"/>
 
-### Feedback & Contact
-- [Open an issue](https://github.com/doolijb/serene-pub/issues) for feedback, bugs, or questions
-- [Contact on Reddit](https://reddit.com/u/doolijb)
-- Discord: `285999266088878080`
+
+2. How do I review the compiled prompt before I hit send?
+    1. In the chat input, click the "Statistics" tab, and click the "View Prompt Statistics Button"
+    2. A modal will open where you can review how your prompt is compiled.
+<img src="https://github.com/user-attachments/assets/5c22f18b-9939-455f-96cb-f77a5c227367" alt="theme-4" width="400"/>
+
+3. Why aren't my new settings taking effect?
+    - To enforce clarity on what configuration is being used and sent with your prompt, all settings have to be saved to apply any changes.
+  
+4. Why can't I save my changes?
+    - Default configurations, annotated with an asterisk `*` are system defaults. Clone the configuration to begin customizating.
+    - This is to ensure there are _reasonable_ defaults always available, incase you feel that you've gotten lost or made a mistake.
+
 
