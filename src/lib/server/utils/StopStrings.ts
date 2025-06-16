@@ -1,15 +1,16 @@
 import { PromptFormats } from "$lib/shared/constants/PromptFormats";
 
 export class StopStrings {
-    static get(format: typeof PromptFormats.keys[0]): string[] {
+    static get({format, characters, personas}:{format: typeof PromptFormats.keys[0], characters: SelectCharacter[], personas: SelectPersona[]}): string[] {
+        
+        let stopStrings: string[] = []
+        
         switch (format) {
             case PromptFormats.CHATML:
                 // <|im_end|> is the explicit stop string for ChatML, plus block starters and template markers
-                return [
+                stopStrings = [
                     "<|im_end|>",
                     // "<|im_start|>",
-                    "{{user}}:",
-                    "{{char}}:",
                     // "system:",
                     // "System:",
                     // "user:",
@@ -19,15 +20,11 @@ export class StopStrings {
                 ];
             case PromptFormats.BASIC:
                 // Block starters for Basic, plus template markers
-                return [
+                stopStrings = [
                     // "*** user",
                     // "*** char",
                     // "*** assistant",
                     // "*** system",
-                    // "{{user}}:",
-                    // "{{user}}",
-                    // "{{char}}:",
-                    // "{{char}}",
                     // "system:",
                     // "System:",
                     // "user:",
@@ -37,14 +34,12 @@ export class StopStrings {
                 ];
             case PromptFormats.VICUNA:
                 // Block starters for Vicuna, plus </s> and template markers
-                return [
-                    // "</s>",
+                stopStrings = [
+                    "</s>",
                     // "### User:",
                     // "### Char:",
                     // "### Assistant:",
                     // "### System:",
-                    // "{{user}}:",
-                    // "{{char}}:",
                     // "system:",
                     // "System:",
                     // "user:",
@@ -54,13 +49,11 @@ export class StopStrings {
                 ];
             case PromptFormats.OPENAI:
                 // Block starters for OpenAI, plus template markers
-                return [
+                stopStrings = [
                     // "<|user|>",
                     // "<|char|>",
                     // "<|assistant|>",
                     // "<|system|>",
-                    // "{{user}}:",
-                    // "{{char}}:",
                     // "system:",
                     // "System:",
                     // "user:",
@@ -69,7 +62,28 @@ export class StopStrings {
                     // "Assistant:"
                 ];
             default:
-                return ["<|im_end|>"];
+                stopStrings = [];
         }
+
+
+        // Iterate through characters and personas to add their names
+        characters.forEach(character => {
+            if (character.name) {
+                const charStop = `${character.name}:`
+                stopStrings.push(charStop)
+            }
+            if (character.nickname) {
+                const charStop = `${character.nickname}:`
+                stopStrings.push(charStop)
+            }
+        });
+        personas.forEach(persona => {
+            if (persona.name) {
+                const userStop = `${persona.name}:`
+                stopStrings.push(userStop)
+            }
+        })
+
+        return stopStrings
     }
 }

@@ -1,12 +1,13 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
-import { OllamaAdapter } from "../connectionAdapters/ollama"
 import { and, eq, inArray } from "drizzle-orm"
 import { generateResponse } from "../utils/generateResponse"
 import { getNextCharacterTurn } from "$lib/server/utils/getNextCharacterTurn"
+import type { BaseConnectionAdapter } from "../connectionAdapters/BaseConnectionAdapter"
+import { getConnectionAdapter } from "../utils/getConnectionAdapter"
 
 // --- Global map for active adapters ---
-export const activeAdapters = new Map<string, OllamaAdapter>()
+export const activeAdapters = new Map<string, BaseConnectionAdapter>()
 
 // List all chats for the current user
 export async function chatsList(
@@ -352,17 +353,32 @@ export async function regenerateChatMessage(
 		.update(schema.chatMessages)
 		.set({ isGenerating: true, content: "" })
 		.where(eq(schema.chatMessages.id, chatMessage.id))
-	await generateResponse({
-		socket,
-		emitToUser,
-		chatId: chat.id,
-		userId,
-		generatingMessage: {
-			...chatMessage,
-			isGenerating: true,
-			content: ""
-		} as any
-	})
+
+	try {
+		await generateResponse({
+			socket,
+			emitToUser,
+			chatId: chat.id,
+			userId,
+			generatingMessage: {
+				...chatMessage,
+				isGenerating: true,
+				content: ""
+			} as any
+		})
+	} catch (error) {
+		let [canceledMsg] = await db
+			.update(schema.chatMessages)
+			.set({
+				isGenerating: false
+			})
+			.where(eq(schema.chatMessages.id, message.id))
+			.returning()
+		emitToUser("chatMessage", { chatMessage: canceledMsg })
+		emitToUser("error", {
+			error: "Failed to regenerate message."
+		})
+	}
 }
 
 export async function promptTokenCount(
@@ -424,13 +440,9 @@ export async function promptTokenCount(
 			) as any
 		},
 		{ triggered: true }
-	)!
+	)
 
-	if (!currentCharacterId) {
-		return
-	}
-
-	const adapter = new OllamaAdapter({
+	const adapter = new (getConnectionAdapter(user.activeConnection.type))({
 		chat: chatForPrompt as any,
 		connection: user.activeConnection,
 		sampling: user.activeSamplingConfig,
@@ -529,18 +541,20 @@ export async function triggerGenerateMessage(
 		}
 
 		// Find the next character who should reply (using triggered: true)
-		const nextCharacterId = message.characterId || getNextCharacterTurn(
-			{
-				chatMessages: chat.chatMessages,
-				chatCharacters: chat.chatCharacters.filter(
-					(cc) => cc.character !== null
-				) as any,
-				chatPersonas: chat.chatPersonas.filter(
-					(cp) => cp.persona !== null
-				) as any
-			},
-			{ triggered }
-		)
+		const nextCharacterId =
+			message.characterId ||
+			getNextCharacterTurn(
+				{
+					chatMessages: chat.chatMessages,
+					chatCharacters: chat.chatCharacters.filter(
+						(cc) => cc.character !== null
+					) as any,
+					chatPersonas: chat.chatPersonas.filter(
+						(cp) => cp.persona !== null
+					) as any
+				},
+				{ triggered }
+			)
 
 		if (!nextCharacterId) {
 			break

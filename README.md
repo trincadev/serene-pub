@@ -86,11 +86,11 @@ Toggle night mode on or off with over 20 themes!
 - Home page setup guide
 - Mobile responsive layout
 - Manage context settings (add your own, only one default provided)
+- Group chats, continue conversation, trigger response from specific character
 
 ### In Progress
 - Connect to your favorite API ([see supported options](https://github.com/doolijb/serene-pub/issues/10))
 - App/user settings
-- Group chats
 
 ### Pending Priorities
 - Character/chat tags
@@ -104,15 +104,11 @@ Toggle night mode on or off with over 20 themes!
 - Story narration/system instructions
 - Screen reader support
 
-
 ## Getting Started (Download & Play!)
 
 1. Download the latest release for your operating system [here.](https://github.com/doolijb/serene-pub/releases)
 2. Extract the archive where every you desire, there's nothing to install.
-3. Read the instructions to launch Serene Pub:
-  - Linux instructions: [here](./instructions/INSTRUCTIONS-linux.txt)
-  - MacOS instructions: [here](./instructions/INSTRUCTIONS-macos.txt)
-  - Windows instructions: [here](./instructions/INSTRUCTIONS-windows.txt)
+3. Read the INSTRUCTIONS.txt file to launch Serene Pub on your OS.
 4. Once launched, the node runtime will download automatically and start Serene Pub.
 5. Access SerenePub on your host machine from http://localhost:3000 or https://0.0.0.0:/3000
 6. You should be able to access Serene Pub from other devices on your local network as well.

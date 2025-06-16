@@ -1,9 +1,10 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
-import { OllamaAdapter } from "../connectionAdapters/ollama"
+import { OllamaAdapter } from "../connectionAdapters/OllamaAdapter"
 import { eq } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
 import { activeAdapters, chatMessage } from "../sockets/chats"
+import { getConnectionAdapter } from "./getConnectionAdapter"
 
 export async function generateResponse({
 	socket,
@@ -59,7 +60,7 @@ export async function generateResponse({
 		}
 	})
 
-	const adapter = new OllamaAdapter({
+	const adapter = new (getConnectionAdapter(user!.activeConnection!.type))({
 		chat,
 		connection: user!.activeConnection!,
 		sampling: user!.activeSamplingConfig!,

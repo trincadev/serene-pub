@@ -29,7 +29,7 @@
     }: Props = $props()
 
     let tabGroup: "compose" | "preview" = $state("compose")
-    let contextExceeded = $derived( !!compiledPrompt ? compiledPrompt!.tokenCounts.total > compiledPrompt!.tokenCounts.limit : false )
+    let contextExceeded = $derived( !!compiledPrompt ? compiledPrompt!.meta.tokenCounts.total > compiledPrompt!.meta.tokenCounts.limit : false )
 
     function handleSend(e: KeyboardEvent | MouseEvent | undefined = undefined) {
         if (e) e.preventDefault()
@@ -55,7 +55,7 @@
         {#if compiledPrompt}
             <Tabs.Control value="tokenCount" classes="w-full text-right" disabled>
                 <span title="Token Count" class="text-xs" class:text-error-500={contextExceeded}>
-                    {compiledPrompt.tokenCounts.total} / {compiledPrompt.tokenCounts.limit}
+                    {compiledPrompt.meta.tokenCounts.total} / {compiledPrompt.meta.tokenCounts.limit}
                 </span>
             </Tabs.Control>
         {/if}

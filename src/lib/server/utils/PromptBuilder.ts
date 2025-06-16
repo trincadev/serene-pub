@@ -68,6 +68,8 @@ export class PromptBuilder {
 		this.tokenCounter = tokenCounter
 		this.tokenLimit = tokenLimit
 		this.contextThresholdPercent = contextThresholdPercent
+
+		console.log("chat.chatMessages", chat.chatMessages)
 	}
 
 	private registerHandlebarsHelpers() {
@@ -111,10 +113,14 @@ export class PromptBuilder {
 				"assistantBlock",
 				function (this: any, options: any) {
 					const promptFormat = getPromptFormat(this, options)
+					// If available, check for id property in the context
+					// Handlebars context for each message should have id
+					const messageId = this.id !== undefined ? this.id : (options.data && options.data.id)
 					return PromptBlockFormatter.makeBlock({
 						format: promptFormat,
 						role: "assistant",
-						content: options.fn(this)
+						content: options.fn(this),
+						includeClose: messageId !== -2
 					})
 				}
 			)
@@ -405,8 +411,15 @@ export class PromptBuilder {
 					message: interpolate(msg.content)
 				}
 			})
+		// Always append an empty message for the current character
+		chatMessages.push({
+			id: -2, // Use -2 to indicate this is a generated/empty message
+			role: "assistant",
+			name: _charName,
+			message: ""
+		})
 		const minMessages = 3
-		let includedMessages = chatMessages.length
+		let includedMessages = chatMessages.length // Exclude the last empty message
 		let renderedPrompt = ""
 		let totalTokens = 0
 		let includedIds: number[] = chatMessages.map((m) => m.id)
@@ -441,7 +454,7 @@ export class PromptBuilder {
 			includedMessages = minMessages
 			includedIds = chatMessages.map((m) => m.id)
 		} else {
-			includedMessages = chatMessages.length
+			includedMessages = chatMessages.length - 1 // Exclude the last empty message
 			includedIds = chatMessages.map((m) => m.id)
 		}
 		if (chatMessages.length === 0) {
@@ -577,46 +590,62 @@ export class PromptBuilder {
 		)
 
 		let finalPrompt = renderedPrompt.trimEnd()
-		if ((this.connection.promptFormat || "").toLowerCase() === "chatml") {
-			finalPrompt += `\n<|im_start|>assistant\n${charName}: `
-		}
-
-		// if (process.env.NODE_ENV === "development") {
-		// 	console.log(
-		// 		"\n\nPromptBuilder Rendered Prompt:\n",
-		// 		finalPrompt,
-		// 		"\n\n"
-		// 	)
-		// }
-
-		if (!finalPrompt.trim()) {
-			console.warn(
-				"PromptBuilder: Rendered prompt is empty! Check your template and context."
-			)
-			console.warn(
-				"Template context:",
-				JSON.stringify(templateContext, null, 2)
-			)
-			console.warn("Template string:\n", this.contextConfig.template)
-		}
 
 		const sources = this.buildSources(scenarioSource)
 		const meta = this.buildMeta(excludedIds)
 
+		// --- NEW: Return OpenAI-style message list if requested ---
+		if (!this.connection.extraJson?.prerenderPrompt) {
+			// Split prompt into blocks by '### ' (keep delimiter)
+			const blocks = finalPrompt.split(/(?=^### )/m).map((b: string) => b.trim()).filter(Boolean)
+			const messages: Array<{ role: string; content: string }> = []
+			for (const block of blocks) {
+				const match = block.match(/^### (\w+):?/)
+				let role = "user"
+				if (match) {
+					const header = match[1].toLowerCase()
+					if (header === "assistant") role = "assistant"
+					else if (header === "system") role = "system"
+					else if (header === "user") role = "user"
+					else role = "user"
+				}
+				const content = block.replace(/^### \w+:?\s*/, "").trim()
+				messages.push({ role, content })
+			}
+			return {
+				messages,
+				meta: {
+					tokenCounts: {
+						total: totalTokens as number,
+						limit: this.tokenLimit
+					},
+					messages: {
+						included: includedMessages,
+						total: this.chat.chatMessages.length,
+						includedIds,
+						excludedIds
+					},
+					sources,
+				}
+			}
+		}
+
+		// Default: return as before
 		return {
 			prompt: finalPrompt,
-			tokenCounts: {
-				total: totalTokens as number,
-				limit: this.tokenLimit
-			},
-			messages: {
-				included: includedMessages,
-				total: this.chat.chatMessages.length,
-				includedIds,
-				excludedIds
-			},
-			sources,
-			meta
+			meta: {
+				tokenCounts: {
+					total: totalTokens as number,
+					limit: this.tokenLimit
+				},
+				messages: {
+					included: includedMessages,
+					total: this.chat.chatMessages.length,
+					includedIds,
+					excludedIds
+				},
+				sources,
+			}
 		}
 	}
 }

@@ -5,26 +5,11 @@ import { Ollama } from "ollama"
 import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
 import { TokenCounters } from "../utils/TokenCounterManager"
-import { PromptBuilder, getNextCharacterTurn } from '../utils/PromptBuilder';
+import { BaseConnectionAdapter } from "./BaseConnectionAdapter"
 
-export class OllamaAdapter {
-	connection: SelectConnection
-	sampling: SelectSamplingConfig
-	contextConfig: SelectContextConfig
-	promptConfig: SelectPromptConfig
-	chat: SelectChat & {
-		chatCharacters: (SelectChatCharacter & {
-			character: SelectCharacter
-		})[]
-		chatPersonas: (SelectChatPersona & { persona: SelectPersona })[]
-		chatMessages: SelectChatMessage[]
-	}
-	currentCharacterId: number
-	isAborting = false
-
+export class OllamaAdapter extends BaseConnectionAdapter {
 	private _client?: Ollama
 	private _tokenCounter?: TokenCounters
-	promptBuilder: PromptBuilder
 
 	constructor({
 		connection,
@@ -32,42 +17,36 @@ export class OllamaAdapter {
 		contextConfig,
 		promptConfig,
 		chat,
-		currentCharacterId,
+		currentCharacterId
 	}: {
 		connection: SelectConnection
 		sampling: SelectSamplingConfig
 		contextConfig: SelectContextConfig
 		promptConfig: SelectPromptConfig
 		chat: SelectChat & {
-			chatCharacters?: SelectChatCharacter &
-				{ character: SelectCharacter }[]
-			chatPersonas?: SelectChatPersona & { persona: SelectPersona }[]
+			chatCharacters?: (SelectChatCharacter & {
+				character: SelectCharacter
+			})[]
+			chatPersonas?: (SelectChatPersona & { persona: SelectPersona })[]
 			chatMessages: SelectChatMessage[]
-		},
+		}
 		currentCharacterId: number
 	}) {
-		this.connection = connection
-		this.sampling = sampling
-		this.contextConfig = contextConfig
-		this.promptConfig = promptConfig
-		// Patch: ensure chatCharacters and chatPersonas are always arrays of the correct shape
-		this.chat = {
-			...chat,
-			chatCharacters: (chat.chatCharacters || []).filter((cc: any) => cc && cc.character && cc.chatId !== undefined && cc.characterId !== undefined && cc.position !== undefined && cc.isActive !== undefined),
-			chatPersonas: (chat.chatPersonas || []).filter((cp: any) => cp && cp.persona && cp.chatId !== undefined && cp.personaId !== undefined && cp.position !== undefined && typeof cp.chatId === 'number' && typeof cp.personaId === 'number'),
-			chatMessages: chat.chatMessages || []
-		}
-		this.currentCharacterId = currentCharacterId
-		this.promptBuilder = new PromptBuilder({
-			connection: this.connection,
-			sampling: this.sampling,
-			contextConfig: this.contextConfig,
-			promptConfig: this.promptConfig,
-			chat: this.chat,
-			currentCharacterId: this.currentCharacterId,
-			tokenCounter: this.getTokenCounter(),
-			tokenLimit: this.sampling.contextTokens || this.defaultContextLimit,
-			contextThresholdPercent: this.contextThresholdPercent,
+		super({
+			connection,
+			sampling,
+			contextConfig,
+			promptConfig,
+			chat,
+			currentCharacterId,
+			tokenCounter: new TokenCounters(
+				connection.tokenCounter || TokenCounterOptions.ESTIMATE
+			),
+			tokenLimit:
+				typeof sampling.contextTokens === "number"
+					? sampling.contextTokens
+					: 2048,
+			contextThresholdPercent: 0.9
 		})
 	}
 
@@ -84,11 +63,8 @@ export class OllamaAdapter {
 		}
 	}
 
-	defaultContextLimit = 2048
-	contextThresholdPercent = 0.9 // we don't want to hit the limit, so we stop at 90% of the context size
-
 	// --- SamplingConfig mapping ---
-	static ollamaKeyMap: Record<string, string> = {
+	static samplingKeyMap: Record<string, string> = {
 		temperature: "temperature",
 		topP: "top_p",
 		topK: "top_k",
@@ -152,10 +128,14 @@ export class OllamaAdapter {
 			if (key.endsWith("Enabled")) continue
 			const enabledKey = key + "Enabled"
 			if ((this.sampling as any)[enabledKey] === false) continue
-			if ((this.constructor as typeof OllamaAdapter).ollamaKeyMap[key]) {
+			if (
+				(this.constructor as typeof OllamaAdapter).samplingKeyMap[key]
+			) {
 				if (key === "streaming") continue
 				result[
-					(this.constructor as typeof OllamaAdapter).ollamaKeyMap[key]
+					(this.constructor as typeof OllamaAdapter).samplingKeyMap[
+						key
+					]
 				] = value
 			}
 		}
@@ -214,8 +194,7 @@ export class OllamaAdapter {
 	// --- Ollama client instance ---
 	getClient() {
 		if (!this._client) {
-			const host =
-				this.connection.baseUrl ?? undefined;
+			const host = this.connection.baseUrl ?? undefined
 			this._client = new Ollama({ host: host ?? undefined })
 		}
 		return this._client
@@ -237,7 +216,10 @@ export class OllamaAdapter {
 	}
 
 	async generate(): Promise<
-		[(string | ((cb: (chunk: string) => void) => Promise<void>)), CompiledPrompt]
+		[
+			string | ((cb: (chunk: string) => void) => Promise<void>),
+			CompiledPrompt
+		]
 	> {
 		const model =
 			this.connection.model ?? OllamaAdapter.connectionDefaults.baseUrl
@@ -249,9 +231,12 @@ export class OllamaAdapter {
 			throw new Error("OllamaAdapter: model must be a string")
 
 		// Prepare stop strings for Ollama
-		const stopStrings = StopStrings.get(
-			this.connection.promptFormat || "chatml"
-		)
+		const stopStrings = StopStrings.get({
+			format: this.connection.promptFormat || "chatml",
+			characters:
+				this.chat.chatCharacters?.map((cc) => cc.character) || [],
+			personas: this.chat.chatPersonas?.map((cp) => cp.persona) || []
+		})
 		const characterName =
 			this.chat.chatCharacters?.[0]?.character?.nickname ||
 			this.chat.chatCharacters?.[0]?.character?.name ||
@@ -266,8 +251,9 @@ export class OllamaAdapter {
 		)
 
 		// Use PromptBuilder for prompt construction
-		
-		const compiledPrompt: CompiledPrompt = await this.promptBuilder.compilePrompt()
+
+		const compiledPrompt: CompiledPrompt =
+			await this.promptBuilder.compilePrompt()
 
 		const req = {
 			model,
@@ -282,35 +268,39 @@ export class OllamaAdapter {
 			}
 		}
 		if (stream) {
-			return [async (cb: (chunk: string) => void) => {
-				let content = ""
-				let abortedEarly = false;
-				try {
-					const ollama = this.getClient()
-					const result = await ollama.generate({
-						...req,
-						stream: true
-					})
-					// If abort was requested before streaming started, abort and return immediately
-					if (this.isAborting) {
-						ollama.abort();
-						return
-					}
-					for await (const part of result) {
+			return [
+				async (cb: (chunk: string) => void) => {
+					let content = ""
+					let abortedEarly = false
+					try {
+						const ollama = this.getClient()
+						const result = await ollama.generate({
+							...req,
+							stream: true
+						})
+						// If abort was requested before streaming started, abort and return immediately
 						if (this.isAborting) {
-							ollama.abort();
+							ollama.abort()
 							return
 						}
-						if (part.response) {
-							content += part.response
-							cb(part.response)
+						for await (const part of result) {
+							if (this.isAborting) {
+								ollama.abort()
+								return
+							}
+							if (part.response) {
+								content += part.response
+								cb(part.response)
+							}
 						}
+						// No need to apply stop strings here, Ollama will handle it
+					} catch (e: any) {
+						if (!abortedEarly)
+							cb("FAILURE: " + (e.message || String(e)))
 					}
-					// No need to apply stop strings here, Ollama will handle it
-				} catch (e: any) {
-					if (!abortedEarly) cb("FAILURE: " + (e.message || String(e)))
-				}
-			}, compiledPrompt]
+				},
+				compiledPrompt
+			]
 		} else {
 			const content = await (async () => {
 				let content = ""
@@ -321,7 +311,7 @@ export class OllamaAdapter {
 						stream: false
 					})
 					if (this.isAborting) {
-						return undefined;
+						return undefined
 					}
 					if (
 						result &&

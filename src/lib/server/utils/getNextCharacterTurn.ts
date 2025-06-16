@@ -51,6 +51,7 @@ export function getNextCharacterTurn(
 				return cc.character.id
 			}
 		}
-		return null
+		// If all have replied, default to the first character
+		return sortedCharacters[0].character.id
 	}
 }

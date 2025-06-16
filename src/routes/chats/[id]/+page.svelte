@@ -19,7 +19,7 @@
 	let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
 	let contextExceeded = $derived(
 		!!draftCompiledPrompt
-			? draftCompiledPrompt!.tokenCounts.total > draftCompiledPrompt!.tokenCounts.limit
+			? draftCompiledPrompt!.meta.tokenCounts.total > draftCompiledPrompt!.meta.tokenCounts.limit
 			: false
 	)
 	let openMobileMsgControls: number | undefined = $state(undefined)
@@ -511,12 +511,12 @@
 				<div class="mb-2">
 					<b>Prompt Tokens:</b>
 					<span class:text-error-500={contextExceeded}>
-						{draftCompiledPrompt.tokenCounts.total} / {draftCompiledPrompt.tokenCounts.limit}
+						{draftCompiledPrompt.meta.tokenCounts.total} / {draftCompiledPrompt.meta.tokenCounts.limit}
 					</span>
 				</div>
 				<div class="mb-2">
 					<b>Messages Inserted:</b>
-					{draftCompiledPrompt.messages.included} / {draftCompiledPrompt.messages.total}
+					{draftCompiledPrompt.meta.messages.included} / {draftCompiledPrompt.meta.messages.total}
 				</div>
 				<div class="mb-2">
 					<b>Prompt Format:</b> {draftCompiledPrompt.meta.promptFormat}
@@ -530,7 +530,7 @@
 				<div class="mb-2">
 					<b>Characters Used:</b>
 					<ul class="ml-4 list-disc">
-						{#each draftCompiledPrompt.sources.characters as char}
+						{#each draftCompiledPrompt.meta.sources.characters as char}
 							<li>{char.name} {char.nickname ? `(${char.nickname})` : ''}</li>
 						{/each}
 					</ul>
@@ -538,17 +538,17 @@
 				<div class="mb-2">
 					<b>Personas Used:</b>
 					<ul class="ml-4 list-disc">
-						{#each draftCompiledPrompt.sources.personas as persona}
+						{#each draftCompiledPrompt.meta.sources.personas as persona}
 							<li>{persona.name}</li>
 						{/each}
 					</ul>
 				</div>
 				<div class="mb-2">
-					<b>Scenario Source:</b> {draftCompiledPrompt.sources.scenario || 'None'}
+					<b>Scenario Source:</b> {draftCompiledPrompt.meta.sources.scenario || 'None'}
 				</div>
 				<div class="mb-2">
 					<b>Prompt Preview:</b>
-					<pre class="bg-surface-200-800 rounded p-2 overflow-x-auto text-xs max-h-64 whitespace-pre-wrap">{draftCompiledPrompt.prompt}</pre>
+					<pre class="bg-surface-200-800 rounded p-2 overflow-x-auto text-xs max-h-64 whitespace-pre-wrap">{draftCompiledPrompt.prompt || JSON.stringify(draftCompiledPrompt.messages)}</pre>
 				</div>
 			{:else}
 				<div class="text-muted">No compiled prompt data available.</div>
@@ -744,12 +744,12 @@
 			<div>
 				<b>Prompt Tokens:</b>
 				<span class:text-error-500={contextExceeded}>
-					{draftCompiledPrompt.tokenCounts.total} / {draftCompiledPrompt.tokenCounts.limit}
+					{draftCompiledPrompt.meta.tokenCounts.total} / {draftCompiledPrompt.meta.tokenCounts.limit}
 				</span>
 			</div>
 			<div>
 				<b>Messages Inserted:</b>
-				{draftCompiledPrompt.messages.included} / {draftCompiledPrompt.messages.total}
+				{draftCompiledPrompt.meta.messages.included} / {draftCompiledPrompt.meta.messages.total}
 				<span class="text-surface-500">(Includes current draft)</span>
 			</div>
 		{:else}
