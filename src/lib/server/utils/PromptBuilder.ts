@@ -269,27 +269,37 @@ export class PromptBuilder {
 	}
 
 	// --- Modularized section: scenario interpolation and source ---
-	private getScenarioInterpolated(currentCharacter: SelectCharacter, interpolationContext: any): { scenarioInterpolated: string, scenarioSource: null | 'character' | 'chat' } {
+	private getScenarioInterpolated(
+		currentCharacter: SelectCharacter,
+		interpolationContext: any
+	): {
+		scenarioInterpolated: string
+		scenarioSource: null | "character" | "chat"
+	} {
 		let scenarioInterpolated = ""
-		let scenarioSource: null | 'character' | 'chat' = null
-		const interpolate = (str: string | undefined) => str ? this.handlebars.compile(str)(interpolationContext) : str
+		let scenarioSource: null | "character" | "chat" = null
+		const interpolate = (str: string | undefined) =>
+			str ? this.handlebars.compile(str)(interpolationContext) : str
 		if (this.chat && (this.chat as any).scenario) {
-			scenarioInterpolated = interpolate((this.chat as any).scenario) || ""
-			scenarioSource = 'chat'
+			scenarioInterpolated =
+				interpolate((this.chat as any).scenario) || ""
+			scenarioSource = "chat"
 		} else if (this.chat && (this.chat as any).isGroup) {
 			scenarioInterpolated = ""
 			scenarioSource = null
 		} else {
-			const charScenario = this.contextBuildCharacterScenario(currentCharacter) || ""
+			const charScenario =
+				this.contextBuildCharacterScenario(currentCharacter) || ""
 			scenarioInterpolated = interpolate(charScenario) || ""
-			scenarioSource = charScenario ? 'character' : null
+			scenarioSource = charScenario ? "character" : null
 		}
 		return { scenarioInterpolated, scenarioSource }
 	}
 
 	// --- Modularized section: interpolate characters/personas ---
 	private getInterpolatedCharacters(interpolationContext: any) {
-		const interpolate = (str: string | undefined) => str ? this.handlebars.compile(str)(interpolationContext) : str
+		const interpolate = (str: string | undefined) =>
+			str ? this.handlebars.compile(str)(interpolationContext) : str
 		return this.assistantCharacters.map((c: any) => ({
 			...c,
 			name: interpolate(c.name),
@@ -299,7 +309,8 @@ export class PromptBuilder {
 		}))
 	}
 	private getInterpolatedPersonas(interpolationContext: any) {
-		const interpolate = (str: string | undefined) => str ? this.handlebars.compile(str)(interpolationContext) : str
+		const interpolate = (str: string | undefined) =>
+			str ? this.handlebars.compile(str)(interpolationContext) : str
 		return this.userCharacters.map((p: any) => ({
 			...p,
 			name: interpolate(p.name),
@@ -335,27 +346,80 @@ export class PromptBuilder {
 	}
 
 	// --- Modularized section: message block construction and token limit logic ---
-	private async buildMessageBlocks(templateContext: any, charName: string, personaName: string) {
+	private async buildMessageBlocks(
+		templateContext: any,
+		_charName: string,
+		_personaName: string
+	) {
+		const chatCharacters = this.chat.chatCharacters as
+			| (SelectChatCharacter & { character: SelectCharacter })[]
+			| undefined
+		const chatPersonas = this.chat.chatPersonas as
+			| (SelectChatPersona & { persona: SelectPersona })[]
+			| undefined
 		let chatMessages = this.chat.chatMessages
 			.filter((msg: SelectChatMessage) => !msg.isHidden)
-			.map((msg: SelectChatMessage) => ({
-				id: msg.id,
-				role: msg.role || "assistant",
-				name: msg.role === "assistant" ? charName : personaName,
-				message: msg.content
-			}))
+			.map((msg: SelectChatMessage) => {
+				let charName = _charName
+				let personaName = _personaName
+				let interpolationContext = {
+					char: charName,
+					character: charName,
+					user: personaName,
+					persona: personaName
+				}
+				if (msg.characterId && chatCharacters) {
+					const foundChar = chatCharacters.find(
+						(cc) => cc.character.id === msg.characterId
+					)?.character
+					if (foundChar) {
+						charName = foundChar.nickname || foundChar.name
+						interpolationContext = {
+							...interpolationContext,
+							char: charName,
+							character: charName
+						}
+					}
+				}
+				if (msg.personaId && chatPersonas) {
+					const foundPersona = chatPersonas.find(
+						(cp) => cp.persona.id === msg.personaId
+					)?.persona
+					if (foundPersona) {
+						personaName = foundPersona.name
+						interpolationContext = {
+							...interpolationContext,
+							user: personaName,
+							persona: personaName
+						}
+					}
+				}
+				const interpolate = (str: string | undefined) =>
+					str
+						? this.handlebars.compile(str)(interpolationContext)
+						: str
+				return {
+					id: msg.id,
+					role: msg.role || "assistant",
+					name: msg.role === "assistant" ? charName : personaName,
+					message: interpolate(msg.content)
+				}
+			})
 		const minMessages = 3
 		let includedMessages = chatMessages.length
 		let renderedPrompt = ""
 		let totalTokens = 0
-		let includedIds: number[] = chatMessages.map(m => m.id)
+		let includedIds: number[] = chatMessages.map((m) => m.id)
 		let excludedIds: number[] = []
 		while (chatMessages.length > minMessages) {
 			templateContext.chatMessages = chatMessages
-			renderedPrompt = this.handlebars.compile(this.contextConfig.template)(templateContext)
-			totalTokens = typeof this.tokenCounter.countTokens === "function"
-				? await this.tokenCounter.countTokens(renderedPrompt)
-				: 0
+			renderedPrompt = this.handlebars.compile(
+				this.contextConfig.template
+			)(templateContext)
+			totalTokens =
+				typeof this.tokenCounter.countTokens === "function"
+					? await this.tokenCounter.countTokens(renderedPrompt)
+					: 0
 			if (totalTokens <= this.tokenLimit) break
 			excludedIds.push(chatMessages[0].id)
 			chatMessages.shift()
@@ -363,31 +427,46 @@ export class PromptBuilder {
 		}
 		templateContext.chatMessages = chatMessages
 		// Final check for minMessages
-		renderedPrompt = this.handlebars.compile(this.contextConfig.template)(templateContext)
-		totalTokens = typeof this.tokenCounter.countTokens === "function"
-			? await this.tokenCounter.countTokens(renderedPrompt)
-			: 0
-		if (chatMessages.length === minMessages && totalTokens > this.tokenLimit) {
+		renderedPrompt = this.handlebars.compile(this.contextConfig.template)(
+			templateContext
+		)
+		totalTokens =
+			typeof this.tokenCounter.countTokens === "function"
+				? await this.tokenCounter.countTokens(renderedPrompt)
+				: 0
+		if (
+			chatMessages.length === minMessages &&
+			totalTokens > this.tokenLimit
+		) {
 			includedMessages = minMessages
-			includedIds = chatMessages.map(m => m.id)
+			includedIds = chatMessages.map((m) => m.id)
 		} else {
 			includedMessages = chatMessages.length
-			includedIds = chatMessages.map(m => m.id)
+			includedIds = chatMessages.map((m) => m.id)
 		}
 		if (chatMessages.length === 0) {
 			templateContext.chatMessages = []
-			renderedPrompt = this.handlebars.compile(this.contextConfig.template)(templateContext)
-			totalTokens = typeof this.tokenCounter.countTokens === "function"
-				? await this.tokenCounter.countTokens(renderedPrompt)
-				: 0
+			renderedPrompt = this.handlebars.compile(
+				this.contextConfig.template
+			)(templateContext)
+			totalTokens =
+				typeof this.tokenCounter.countTokens === "function"
+					? await this.tokenCounter.countTokens(renderedPrompt)
+					: 0
 			includedMessages = 0
 			includedIds = []
 		}
-		return { renderedPrompt, totalTokens, includedMessages, includedIds, excludedIds }
+		return {
+			renderedPrompt,
+			totalTokens,
+			includedMessages,
+			includedIds,
+			excludedIds
+		}
 	}
 
 	// --- Modularized section: sources reporting ---
-	private buildSources(scenarioSource: null | 'character' | 'chat') {
+	private buildSources(scenarioSource: null | "character" | "chat") {
 		const chatCharactersArr = this.chat.chatCharacters || []
 		const chatPersonasArr = this.chat.chatPersonas || []
 		return {
@@ -419,10 +498,10 @@ export class PromptBuilder {
 	// --- Modularized section: meta reporting ---
 	private buildMeta(excludedIds: number[]) {
 		return {
-			promptFormat: (this.connection.promptFormat || '').toLowerCase(),
+			promptFormat: (this.connection.promptFormat || "").toLowerCase(),
 			templateName: this.contextConfig?.name || null,
 			timestamp: new Date().toISOString(),
-			truncationReason: excludedIds.length ? 'token_limit' : null,
+			truncationReason: excludedIds.length ? "token_limit" : null,
 			currentTurnCharacterId: this.currentCharacterId
 		}
 	}
@@ -462,10 +541,17 @@ export class PromptBuilder {
 		const wiBefore = interpolate(this.wiBefore)
 		const wiAfter = interpolate(this.wiAfter)
 
-		const { scenarioInterpolated, scenarioSource } = this.getScenarioInterpolated(currentCharacter, interpolationContext)
-		const assistantCharacters = this.getInterpolatedCharacters(interpolationContext)
-		const userCharacters = this.getInterpolatedPersonas(interpolationContext)
-		const charactersInterpolated = JSON.stringify(assistantCharacters, null, 2)
+		const { scenarioInterpolated, scenarioSource } =
+			this.getScenarioInterpolated(currentCharacter, interpolationContext)
+		const assistantCharacters =
+			this.getInterpolatedCharacters(interpolationContext)
+		const userCharacters =
+			this.getInterpolatedPersonas(interpolationContext)
+		const charactersInterpolated = JSON.stringify(
+			assistantCharacters,
+			null,
+			2
+		)
 		const personasInterpolated = JSON.stringify(userCharacters, null, 2)
 		const templateContext = this.buildTemplateContext({
 			instructions,
@@ -484,20 +570,33 @@ export class PromptBuilder {
 			includedMessages,
 			includedIds,
 			excludedIds
-		} = await this.buildMessageBlocks(templateContext, charName, personaName)
+		} = await this.buildMessageBlocks(
+			templateContext,
+			charName,
+			personaName
+		)
 
-		let finalPrompt = renderedPrompt.trimEnd();
+		let finalPrompt = renderedPrompt.trimEnd()
 		if ((this.connection.promptFormat || "").toLowerCase() === "chatml") {
-			finalPrompt += `\n<|im_start|>assistant\n${charName}: `;
+			finalPrompt += `\n<|im_start|>assistant\n${charName}: `
 		}
 
-		if (process.env.NODE_ENV === "development") {
-			console.log("\n\nPromptBuilder Rendered Prompt:\n", finalPrompt, "\n\n")
-		}
+		// if (process.env.NODE_ENV === "development") {
+		// 	console.log(
+		// 		"\n\nPromptBuilder Rendered Prompt:\n",
+		// 		finalPrompt,
+		// 		"\n\n"
+		// 	)
+		// }
 
 		if (!finalPrompt.trim()) {
-			console.warn("PromptBuilder: Rendered prompt is empty! Check your template and context.")
-			console.warn("Template context:", JSON.stringify(templateContext, null, 2))
+			console.warn(
+				"PromptBuilder: Rendered prompt is empty! Check your template and context."
+			)
+			console.warn(
+				"Template context:",
+				JSON.stringify(templateContext, null, 2)
+			)
 			console.warn("Template string:\n", this.contextConfig.template)
 		}
 

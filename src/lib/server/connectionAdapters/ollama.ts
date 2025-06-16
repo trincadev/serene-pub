@@ -20,6 +20,7 @@ export class OllamaAdapter {
 		chatMessages: SelectChatMessage[]
 	}
 	currentCharacterId: number
+	isAborting = false
 
 	private _client?: Ollama
 	private _tokenCounter?: TokenCounters
@@ -283,13 +284,23 @@ export class OllamaAdapter {
 		if (stream) {
 			return [async (cb: (chunk: string) => void) => {
 				let content = ""
+				let abortedEarly = false;
 				try {
 					const ollama = this.getClient()
 					const result = await ollama.generate({
 						...req,
 						stream: true
 					})
+					// If abort was requested before streaming started, abort and return immediately
+					if (this.isAborting) {
+						ollama.abort();
+						return
+					}
 					for await (const part of result) {
+						if (this.isAborting) {
+							ollama.abort();
+							return
+						}
 						if (part.response) {
 							content += part.response
 							cb(part.response)
@@ -297,7 +308,7 @@ export class OllamaAdapter {
 					}
 					// No need to apply stop strings here, Ollama will handle it
 				} catch (e: any) {
-					cb("FAILURE: " + (e.message || String(e)))
+					if (!abortedEarly) cb("FAILURE: " + (e.message || String(e)))
 				}
 			}, compiledPrompt]
 		} else {
@@ -309,6 +320,9 @@ export class OllamaAdapter {
 						...req,
 						stream: false
 					})
+					if (this.isAborting) {
+						return undefined;
+					}
 					if (
 						result &&
 						typeof result === "object" &&
@@ -324,11 +338,12 @@ export class OllamaAdapter {
 					return "FAILURE: " + (e.message || String(e))
 				}
 			})()
-			return [content, compiledPrompt]
+			return [content ?? "", compiledPrompt]
 		}
 	}
 	// --- Abort in-flight Ollama request ---
 	abort() {
+		this.isAborting = true
 		const client = this.getClient()
 		if (typeof client.abort === "function") {
 			client.abort()

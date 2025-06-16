@@ -36,10 +36,14 @@ export async function chatsList(
 	// Lets sort it manually
 	// Order the chatCharacters by position
 	chatsList.forEach((chat) => {
-		chat.chatCharacters.sort((a, b) => a.position - b.position)
+		chat.chatCharacters.sort(
+			(a, b) => (a.position ?? 0) - (b.position ?? 0)
+		)
 		// Sort chatPersonas by position if it exists
 		if (chat.chatPersonas) {
-			chat.chatPersonas.sort((a, b) => a.position - b.position)
+			chat.chatPersonas.sort(
+				(a, b) => (a.position ?? 0) - (b.position ?? 0)
+			)
 		}
 	})
 
@@ -77,22 +81,28 @@ export async function createChat(
 				position
 			})
 		}
-		const firstCharacter = await db.query.characters.findFirst({
-			where: (c, { eq }) => eq(c.id, message.characterIds[0])
+		// Insert a first message for every character assigned to the chat, ordered by position
+		const chatCharacters = await db.query.chatCharacters.findMany({
+			where: (cc, { eq }) => eq(cc.chatId, newChat.id),
+			with: { character: true },
+			orderBy: (cc, { asc }) => asc(cc.position ?? 0)
 		})
-		const firstMessageContent = (firstCharacter?.firstMessage || "").trim()
-		if (firstMessageContent) {
-			const newMessage: InsertChatMessage = {
-				userId,
-				chatId: newChat.id,
-				personaId: null,
-				characterId: firstCharacter!.id,
-				role: "assistant",
-				content: firstMessageContent,
-				createdAt: new Date().toString(),
-				isGenerating: false
+		for (const cc of chatCharacters) {
+			if (!cc.character) continue
+			const firstMessageContent = (cc.character.firstMessage || "").trim()
+			if (firstMessageContent) {
+				const newMessage: InsertChatMessage = {
+					userId,
+					chatId: newChat.id,
+					personaId: null,
+					characterId: cc.character.id,
+					role: "assistant",
+					content: firstMessageContent,
+					createdAt: new Date().toString(),
+					isGenerating: false
+				}
+				await db.insert(schema.chatMessages).values(newMessage)
 			}
-			await db.insert(schema.chatMessages).values(newMessage)
 		}
 		const resChat = await getChatFromDB(newChat.id, userId)
 		if (!resChat) return
@@ -183,28 +193,36 @@ export async function sendPersonaMessage(
 	}
 	emitToUser("sendPersonaMessage", res)
 
-	// Use getNextCharacterTurn to determine which character should reply next
-	const nextCharacterId = getNextCharacterTurn(
-		{
-			chatMessages: [...chat.chatMessages, inserted],
-			chatCharacters: chat.chatCharacters.filter(
-				(cc) => cc.character !== null
-			) as any,
-			chatPersonas: chat.chatPersonas.filter(
-				(cp) => cp.persona !== null
-			) as any
-		},
-		{
-			triggered: false
-		}
-	)
-	console.log("Next character ID:", nextCharacterId)
-	if (chat && chat.chatCharacters.length > 0 && nextCharacterId) {
+	// --- Round-robin character response loop ---
+	let maxTurns = 20 // Prevent infinite loops in case of data issues
+	let currentTurn = 1
+
+	while (chat && chat.chatCharacters.length > 0 && currentTurn <= maxTurns) {
+		currentTurn++
+		// Always fetch the latest chat state at the start of each loop
 		chat = await getChatFromDB(chatId, userId)
-		const nextCharacter = chat?.chatCharacters.find(
+		if (!chat) break
+		const nextCharacterId = getNextCharacterTurn(
+			{
+				chatMessages: chat!.chatMessages,
+				chatCharacters: chat!.chatCharacters.filter(
+					(cc) => cc.character !== null
+				) as any,
+				chatPersonas: chat!.chatPersonas.filter(
+					(cp) => cp.persona !== null
+				) as any
+			},
+			{ triggered: false }
+		)
+		console.log("Next character turn:", nextCharacterId)
+		if (!nextCharacterId) {
+			break
+		}
+		const nextCharacter = chat.chatCharacters.find(
 			(cc) => cc.character && cc.character.id === nextCharacterId
 		)
-		if (!nextCharacter || !nextCharacter.character) return
+
+		if (!nextCharacter || !nextCharacter.character) break
 		const assistantMessage: InsertChatMessage = {
 			userId,
 			chatId,
@@ -395,11 +413,18 @@ export async function promptTokenCount(
 			isGenerating: false
 		})
 	} // TODO fix
-	const currentCharacterId = getNextCharacterTurn({
-		chatMessages: chat.chatMessages,
-		chatCharacters: chat.chatCharacters.filter((cc: any) => cc && cc.character != null) as any,
-		chatPersonas: chat.chatPersonas.filter((cp: any) => cp && cp.persona != null) as any
-	}, { triggered: true })!
+	const currentCharacterId = getNextCharacterTurn(
+		{
+			chatMessages: chat.chatMessages,
+			chatCharacters: chat.chatCharacters.filter(
+				(cc: any) => cc && cc.character != null
+			) as any,
+			chatPersonas: chat.chatPersonas.filter(
+				(cp: any) => cp && cp.persona != null
+			) as any
+		},
+		{ triggered: true }
+	)!
 	const adapter = new OllamaAdapter({
 		chat: chatForPrompt as any,
 		connection: user.activeConnection,
@@ -408,8 +433,12 @@ export async function promptTokenCount(
 		promptConfig: user.activePromptConfig,
 		currentCharacterId
 	})
-	const promptResult: Sockets.PromptTokenCount.Response = await adapter.promptBuilder.compilePrompt();
-	emitToUser("promptTokenCount", promptResult as Sockets.PromptTokenCount.Response);
+	const promptResult: Sockets.PromptTokenCount.Response =
+		await adapter.promptBuilder.compilePrompt()
+	emitToUser(
+		"promptTokenCount",
+		promptResult as Sockets.PromptTokenCount.Response
+	)
 }
 
 export async function abortChatMessage(
@@ -417,33 +446,34 @@ export async function abortChatMessage(
 	message: Sockets.AbortChatMessage.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	const chatMessage = await db.query.chatMessages.findFirst({
+	let chatMsg = await db.query.chatMessages.findFirst({
 		where: (cm, { eq }) => eq(cm.id, message.id)
 	})
-	if (!chatMessage) {
-		const res: Sockets.AbortChatMessage.Response = {
-			id: message.id,
-			success: false,
-			error: "Message not found."
-		}
-		emitToUser("chatMessage", res)
-		emitToUser("abortChatMessage", res)
+
+	if (!chatMsg) {
 		return
 	}
-	const adapterId = chatMessage.adapterId
+
+	const adapterId = chatMsg.adapterId
 	if (!adapterId) {
-		await db
-			.update(schema.chatMessages)
-			.set({ isGenerating: false, adapterId: null })
-			.where(eq(schema.chatMessages.id, message.id))
+		// Already cleared above
 		return
 	}
+
+	[chatMsg] = await db
+		.update(schema.chatMessages)
+		.set({ isGenerating: false, adapterId: null })
+		.where(eq(schema.chatMessages.id, message.id))
+		.returning()
+
+	const req: Sockets.ChatMessage.Call = {
+		chatMessage: chatMsg
+	}
+	// Send updated chatMessage to the user
+	await chatMessage(socket, req, emitToUser)
+
 	const adapter = activeAdapters.get(adapterId)
 	if (!adapter) {
-		await db
-			.update(schema.chatMessages)
-			.set({ isGenerating: false, adapterId: null })
-			.where(eq(schema.chatMessages.id, message.id))
 		const res: Sockets.AbortChatMessage.Response = {
 			id: message.id,
 			success: true,
@@ -486,13 +516,29 @@ export async function triggerGenerateMessage(
 		emitToUser("triggerGenerateMessage", res)
 		return
 	}
-	if (chat.chatCharacters.length > 0) {
-		chat = await getChatFromDB(message.chatId, userId)
+	// Find the next character who should reply (using triggered: true)
+	const nextCharacterId = getNextCharacterTurn(
+		{
+			chatMessages: chat.chatMessages,
+			chatCharacters: chat.chatCharacters.filter(
+				(cc) => cc.character !== null
+			) as any,
+			chatPersonas: chat.chatPersonas.filter(
+				(cp) => cp.persona !== null
+			) as any
+		},
+		{ triggered: true }
+	)
+	if (chat && chat.chatCharacters.length > 0 && nextCharacterId) {
+		const nextCharacter = chat.chatCharacters.find(
+			(cc) => cc.character && cc.character.id === nextCharacterId
+		)
+		if (!nextCharacter || !nextCharacter.character) return
 		const assistantMessage: InsertChatMessage = {
 			userId,
 			chatId: message.chatId,
 			personaId: null,
-			characterId: chat!.chatCharacters[0].character.id,
+			characterId: nextCharacter.character.id,
 			content: "",
 			role: "assistant",
 			createdAt: new Date().toString(),
@@ -514,51 +560,6 @@ export async function triggerGenerateMessage(
 			userId,
 			generatingMessage: generatingMessage as any
 		})
-		const nextCharacterId = getNextCharacterTurn(
-			{
-				chatMessages: chat.chatMessages,
-				chatCharacters: chat.chatCharacters.filter(
-					(cc) => cc.character !== null
-				) as any,
-				chatPersonas: chat.chatPersonas.filter(
-					(cp) => cp.persona !== null
-				) as any
-			},
-			{ triggered: true }
-		)
-		if (chat && chat.chatCharacters.length > 0 && nextCharacterId) {
-			chat = await getChatFromDB(message.chatId, userId)
-			const nextCharacter = chat?.chatCharacters.find(
-				(cc) => cc.character && cc.character.id === nextCharacterId
-			)
-			if (!nextCharacter || !nextCharacter.character) return
-			const assistantMessage: InsertChatMessage = {
-				userId,
-				chatId: message.chatId,
-				personaId: null,
-				characterId: nextCharacter.character.id,
-				content: "",
-				role: "assistant",
-				createdAt: new Date().toString(),
-				isGenerating: true
-			}
-			const [generatingMessage] = await db
-				.insert(schema.chatMessages)
-				.values(assistantMessage)
-				.returning()
-			await chatMessage(
-				socket,
-				{ chatMessage: generatingMessage },
-				emitToUser
-			)
-			await generateResponse({
-				socket,
-				emitToUser,
-				chatId: message.chatId,
-				userId,
-				generatingMessage: generatingMessage as any
-			})
-		}
 	}
 }
 
@@ -747,6 +748,35 @@ export async function updateChat(
 							)
 						)
 					)
+			}
+		}
+
+		// Insert a first message for every new character added to the chat, ordered by position
+		if (newCharacterIds.length > 0) {
+			const newChatCharacters = await db.query.chatCharacters.findMany({
+				where: (cc, { eq }) => eq(cc.chatId, message.chat.id),
+				with: { character: true },
+				orderBy: (cc, { asc }) => asc(cc.position ?? 0)
+			})
+			for (const cc of newChatCharacters) {
+				if (!cc.character) continue
+				if (!newCharacterIds.includes(cc.character.id)) continue
+				const firstMessageContent = (
+					cc.character.firstMessage || ""
+				).trim()
+				if (firstMessageContent) {
+					const newMessage: InsertChatMessage = {
+						userId,
+						chatId: message.chat.id,
+						personaId: null,
+						characterId: cc.character.id,
+						role: "assistant",
+						content: firstMessageContent,
+						createdAt: new Date().toString(),
+						isGenerating: false
+					}
+					await db.insert(schema.chatMessages).values(newMessage)
+				}
 			}
 		}
 
