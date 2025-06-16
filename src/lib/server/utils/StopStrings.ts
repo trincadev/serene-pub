@@ -2,7 +2,7 @@ import { PromptFormats } from "$lib/shared/constants/PromptFormats";
 
 export class StopStrings {
     static get({format, characters, personas}:{format: typeof PromptFormats.keys[0], characters: SelectCharacter[], personas: SelectPersona[]}): string[] {
-        
+        console.log("stop string format:", format)
         let stopStrings: string[] = []
         
         switch (format) {
@@ -18,6 +18,7 @@ export class StopStrings {
                     // "assistant:",
                     // "Assistant:"
                 ];
+                break
             case PromptFormats.BASIC:
                 // Block starters for Basic, plus template markers
                 stopStrings = [
@@ -32,6 +33,7 @@ export class StopStrings {
                     // "assistant:",
                     // "Assistant:"
                 ];
+                break
             case PromptFormats.VICUNA:
                 // Block starters for Vicuna, plus </s> and template markers
                 stopStrings = [
@@ -47,6 +49,7 @@ export class StopStrings {
                     // "assistant:",
                     // "Assistant:"
                 ];
+                break
             case PromptFormats.OPENAI:
                 // Block starters for OpenAI, plus template markers
                 stopStrings = [
@@ -61,6 +64,7 @@ export class StopStrings {
                     // "assistant:",
                     // "Assistant:"
                 ];
+                break
             default:
                 stopStrings = [];
         }

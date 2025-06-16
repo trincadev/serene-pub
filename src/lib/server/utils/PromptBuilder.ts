@@ -68,8 +68,6 @@ export class PromptBuilder {
 		this.tokenCounter = tokenCounter
 		this.tokenLimit = tokenLimit
 		this.contextThresholdPercent = contextThresholdPercent
-
-		console.log("chat.chatMessages", chat.chatMessages)
 	}
 
 	private registerHandlebarsHelpers() {
@@ -595,7 +593,7 @@ export class PromptBuilder {
 		const meta = this.buildMeta(excludedIds)
 
 		// --- NEW: Return OpenAI-style message list if requested ---
-		if (!this.connection.extraJson?.prerenderPrompt) {
+		if (this.connection.type === "openai" && !this.connection.extraJson?.prerenderPrompt) {
 			// Split prompt into blocks by '### ' (keep delimiter)
 			const blocks = finalPrompt.split(/(?=^### )/m).map((b: string) => b.trim()).filter(Boolean)
 			const messages: Array<{ role: string; content: string }> = []

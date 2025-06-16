@@ -6,6 +6,7 @@
 	import OllamaForm from "$lib/client/connectionForms/OllamaForm.svelte"
 	// import ChatGPTForm from "$lib/client/connectionForms/ChatGPTForm.svelte"
 	import OpenAIForm from "$lib/client/connectionForms/OpenAIForm.svelte"
+	import LmStudioForm from "$lib/client/connectionForms/LMStudioForm.svelte"
 	import { CONNECTION_TYPES } from "$lib/shared/constants/ConnectionTypes"
 
 	interface Props {
@@ -192,6 +193,8 @@
 				<OllamaForm bind:connection />
 			{:else if connection.type === "openai"}
 				<OpenAIForm bind:connection />
+			{:else if connection.type === "lmstudio"}
+				<LmStudioForm bind:connection />
 			{/if}
 			<div class="mt-4 flex flex-col gap-2">
 				{#if connection.type === "ollama"}

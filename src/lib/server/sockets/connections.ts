@@ -46,8 +46,8 @@ export async function createConnection(
 	message: Sockets.CreateConnection.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	const Adapter = getConnectionAdapter(data.type)
 	let data = { ...message.connection }
+	const Adapter = getConnectionAdapter(data.type)
 	data = { ...Adapter.connectionDefaults, ...data }
 	// Ensure id is present for SelectConnection
 	// Remove id for insert to avoid UNIQUE constraint error
