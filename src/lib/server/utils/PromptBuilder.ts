@@ -298,15 +298,6 @@ export class PromptBuilder {
 			persona: personaName
 		}
 
-		// Prepare chatMessages for #each
-		const chatMessages = this.chat.chatMessages
-			.filter((msg: SelectChatMessage) => !msg.isHidden)
-			.map((msg: SelectChatMessage) => ({
-				role: msg.role,
-				name: msg.role === "assistant" ? charName : personaName,
-				message: msg.content
-			}))
-
 		// Interpolate all dynamic fields using Handlebars
 		const interpolate = (str: string | undefined) =>
 			str ? this.handlebars.compile(str)(interpolationContext) : str
@@ -346,7 +337,7 @@ export class PromptBuilder {
 			scenario: scenarioInterpolated,
 			wiBefore,
 			wiAfter,
-			chatMessages,
+			chatMessages: [],
 			char: charName,
 			character: charName,
 			user: personaName,
@@ -354,11 +345,64 @@ export class PromptBuilder {
 			__promptBuilderInstance: this
 		}
 
-		// Render the template using the instance's Handlebars
-		let renderedPrompt = this.handlebars.compile(
-			this.contextConfig.template
-		)(templateContext)
-		const totalTokens = await this.tokenCounter.countTokens(renderedPrompt)
+		// --- Message block construction and token limit logic ---
+		// Build prompt blocks (system, scenario, etc.)
+		const promptBlocks: string[] = []
+		if (instructions) promptBlocks.push(instructions)
+		if (wiBefore) promptBlocks.push(wiBefore)
+		if (scenarioInterpolated) promptBlocks.push(scenarioInterpolated)
+		// Optionally add example dialogue block (not shown here, but can be added)
+		let exampleDialogueBlockIndex = -1
+		let thresholdReached = false
+		const alwaysInclude = 0 // You can adjust this if you want to always include N most recent messages
+
+		// Build chatMessages for templateContext (all messages, most recent last)
+		let chatMessages = this.chat.chatMessages
+			.filter((msg: SelectChatMessage) => !msg.isHidden)
+			.map((msg: SelectChatMessage) => ({
+				role: msg.role || "assistant",
+				name: msg.role === "assistant" ? charName : personaName,
+				message: msg.content
+			}))
+
+		// Always include the 3 most recent messages (last 2 full replies + empty response)
+		const minMessages = 3
+		let includedMessages = chatMessages.length
+		let renderedPrompt = ""
+		let totalTokens = 0
+		while (chatMessages.length > minMessages) {
+			templateContext.chatMessages = chatMessages
+			renderedPrompt = this.handlebars.compile(this.contextConfig.template)(templateContext)
+			totalTokens = typeof this.tokenCounter.countTokens === "function"
+				? await this.tokenCounter.countTokens(renderedPrompt)
+				: 0
+			if (totalTokens <= this.tokenLimit) break
+			// Remove oldest message, but never remove the last minMessages
+			chatMessages.shift()
+			includedMessages--
+		}
+		// After loop, check if even the minMessages fit
+		templateContext.chatMessages = chatMessages
+		renderedPrompt = this.handlebars.compile(this.contextConfig.template)(templateContext)
+		totalTokens = typeof this.tokenCounter.countTokens === "function"
+			? await this.tokenCounter.countTokens(renderedPrompt)
+			: 0
+		if (chatMessages.length === minMessages && totalTokens > this.tokenLimit) {
+			// If even the 3 most recent don't fit, forcibly include them and return
+			includedMessages = minMessages
+		} else {
+			includedMessages = chatMessages.length
+		}
+
+		// If no messages fit, set to empty array
+		if (chatMessages.length === 0) {
+			templateContext.chatMessages = []
+			renderedPrompt = this.handlebars.compile(this.contextConfig.template)(templateContext)
+			totalTokens = typeof this.tokenCounter.countTokens === "function"
+				? await this.tokenCounter.countTokens(renderedPrompt)
+				: 0
+			includedMessages = 0
+		}
 
 		// If chatml, append opening assistant block and {{char}}: at the end (no closing tag)
 		if ((this.connection.promptFormat || "").toLowerCase() === "chatml") {
@@ -367,16 +411,14 @@ export class PromptBuilder {
 				`\n<|im_start|>assistant\n${charName}: `
 		}
 
-		// Debug: Show template context and template string for troubleshooting
-		// console.log("\n\nPromptBuilder Debug Context:", JSON.stringify(templateContext, null, 2));
-		// console.log("\nPromptBuilder Template String:\n", contextTemplate);
-		console.log(
-			"\n\nPromptBuilder Rendered Prompt:\n",
-			renderedPrompt,
-			"\n\n"
-		)
+		if (process.env.NODE_ENV === "development") {
+			console.log(
+				"\n\nPromptBuilder Rendered Prompt:\n",
+				renderedPrompt,
+				"\n\n"
+			)
+		}
 
-		// Defensive: If the rendered prompt is empty, log a warning and the context/template
 		if (!renderedPrompt.trim()) {
 			console.warn(
 				"PromptBuilder: Rendered prompt is empty! Check your template and context."
@@ -392,80 +434,8 @@ export class PromptBuilder {
 			renderedPrompt.trimEnd(),
 			totalTokens as number,
 			this.tokenLimit,
-			chatMessages.length,
+			includedMessages,
 			this.chat.chatMessages.length
 		]
 	}
-}
-
-// Helper to determine which character's turn it is
-export function getNextCharacterTurn(
-	chat: {
-		chatMessages: SelectChatMessage[]
-		chatCharacters: (SelectChatCharacter & { character: SelectCharacter })[]
-		chatPersonas: (SelectChatPersona & { persona: SelectPersona })[]
-	},
-	opts: { triggered?: boolean } = {}
-): number | null {
-	const { triggered = false } = opts
-	if (!chat.chatCharacters?.length || !chat.chatPersonas?.length) return null
-
-	// Sort characters by .position (lowest first)
-	const sortedCharacters = [...chat.chatCharacters].sort(
-		(a, b) => (a.position ?? 0) - (b.position ?? 0)
-	)
-	const characterIds = sortedCharacters.map((cc) => cc.character.id)
-	const personaIds = chat.chatPersonas.map((cp) => cp.persona.id)
-
-	// Find the last persona message index
-	const lastPersonaIdx = [...chat.chatMessages]
-		.reverse()
-		.findIndex(
-			(msg) =>
-				msg.role === "user" && personaIds.includes(msg.personaId ?? -1)
-		)
-	const lastPersonaAbsIdx =
-		lastPersonaIdx === -1
-			? -1
-			: chat.chatMessages.length - 1 - lastPersonaIdx
-
-	// Collect all character replies since the last persona message
-	const charsSincePersona = new Set<number>()
-	for (let i = lastPersonaAbsIdx + 1; i < chat.chatMessages.length; ++i) {
-		const msg = chat.chatMessages[i]
-		if (
-			msg.role === "assistant" &&
-			msg.characterId &&
-			characterIds.includes(msg.characterId)
-		) {
-			charsSincePersona.add(msg.characterId)
-		}
-	}
-
-	// If all characters have replied since last persona
-	if (charsSincePersona.size >= characterIds.length) {
-		if (triggered) {
-			// Cycle: return the first character in turn order
-			return sortedCharacters[0]?.character.id ?? null
-		}
-		return null
-	}
-
-	// Find the next character in turn order who hasn't replied
-	for (const cc of sortedCharacters) {
-		if (!charsSincePersona.has(cc.character.id)) {
-			if (triggered) return cc.character.id
-			// If not triggered, only return if the last message was from a persona
-			const lastMsg = chat.chatMessages[chat.chatMessages.length - 1]
-			if (
-				lastMsg &&
-				lastMsg.role === "user" &&
-				personaIds.includes(lastMsg.personaId ?? -1)
-			) {
-				return cc.character.id
-			}
-			return null
-		}
-	}
-	return null
 }

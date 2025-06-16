@@ -3,7 +3,7 @@ import * as schema from "$lib/server/db/schema"
 import { OllamaAdapter } from "../connectionAdapters/ollama"
 import { and, eq, inArray } from "drizzle-orm"
 import { generateResponse } from "../utils/generateResponse"
-import { getNextCharacterTurn } from '../utils/PromptBuilder';
+import { getNextCharacterTurn } from "$lib/server/utils/getNextCharacterTurn"
 
 // --- Global map for active adapters ---
 export const activeAdapters = new Map<string, OllamaAdapter>()
@@ -35,7 +35,7 @@ export async function chatsList(
 	// Drizzle/Sqlite may not properly handle orderby,
 	// Lets sort it manually
 	// Order the chatCharacters by position
-	chatsList.forEach(chat => {
+	chatsList.forEach((chat) => {
 		chat.chatCharacters.sort((a, b) => a.position - b.position)
 		// Sort chatPersonas by position if it exists
 		if (chat.chatPersonas) {
@@ -110,7 +110,7 @@ export async function chat(
 	message: Sockets.Chat.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-    const userId = 1 // Replace with actual user id
+	const userId = 1 // Replace with actual user id
 	const chat = await getChatFromDB(message.id, userId) // Replace with actual user id
 	if (chat) {
 		const res: Sockets.Chat.Response = { chat: chat as any }
@@ -125,10 +125,10 @@ async function getChatFromDB(chatId: number, userId: number) {
 	const res = db.query.chats.findFirst({
 		where: (c, { eq, and }) => and(eq(c.id, chatId), eq(c.userId, userId)),
 		with: {
-			chatPersonas: { 
-                with: { persona: true }, 
-                orderBy: (cp, { asc }) => asc(cp.position)
-            },
+			chatPersonas: {
+				with: { persona: true },
+				orderBy: (cp, { asc }) => asc(cp.position)
+			},
 			chatCharacters: { with: { character: true } },
 			chatMessages: true
 		}
@@ -184,18 +184,27 @@ export async function sendPersonaMessage(
 	emitToUser("sendPersonaMessage", res)
 
 	// Use getNextCharacterTurn to determine which character should reply next
-	const nextCharacterId = getNextCharacterTurn({
-		chatMessages: [...chat.chatMessages, inserted],
-		chatCharacters: chat.chatCharacters.filter(cc => cc.character !== null) as any,
-		chatPersonas: chat.chatPersonas.filter(cp => cp.persona !== null) as any
-	}, { 
-		triggered: false
-	});
-	console.log("Next character ID:", nextCharacterId);
+	const nextCharacterId = getNextCharacterTurn(
+		{
+			chatMessages: [...chat.chatMessages, inserted],
+			chatCharacters: chat.chatCharacters.filter(
+				(cc) => cc.character !== null
+			) as any,
+			chatPersonas: chat.chatPersonas.filter(
+				(cp) => cp.persona !== null
+			) as any
+		},
+		{
+			triggered: false
+		}
+	)
+	console.log("Next character ID:", nextCharacterId)
 	if (chat && chat.chatCharacters.length > 0 && nextCharacterId) {
 		chat = await getChatFromDB(chatId, userId)
-		const nextCharacter = chat?.chatCharacters.find(cc => cc.character && cc.character.id === nextCharacterId);
-		if (!nextCharacter || !nextCharacter.character) return;
+		const nextCharacter = chat?.chatCharacters.find(
+			(cc) => cc.character && cc.character.id === nextCharacterId
+		)
+		if (!nextCharacter || !nextCharacter.character) return
 		const assistantMessage: InsertChatMessage = {
 			userId,
 			chatId,
@@ -386,8 +395,8 @@ export async function promptTokenCount(
 			isGenerating: false
 		})
 	}
-	const currentCharacterId = getNextCharacterTurn(chat, {triggered: true})!
-	console.log("Current character ID for prompt:", currentCharacterId);
+	const currentCharacterId = getNextCharacterTurn(chat, { triggered: true })!
+	console.log("Current character ID for prompt:", currentCharacterId)
 	const adapter = new OllamaAdapter({
 		chat: chatForPrompt as any,
 		connection: user.activeConnection,
@@ -396,7 +405,8 @@ export async function promptTokenCount(
 		promptConfig: user.activePromptConfig,
 		currentCharacterId
 	})
-	const [prompt, tokenCount, tokenLimit, messagesIncluded, totalMessages] = await adapter.promptBuilder.compilePrompt()
+	const [prompt, tokenCount, tokenLimit, messagesIncluded, totalMessages] =
+		await adapter.promptBuilder.compilePrompt()
 	const res: Sockets.PromptTokenCount.Response = {
 		tokenCount,
 		tokenLimit,
@@ -508,15 +518,24 @@ export async function triggerGenerateMessage(
 			userId,
 			generatingMessage: generatingMessage as any
 		})
-		const nextCharacterId = getNextCharacterTurn({
-			chatMessages: chat.chatMessages,
-			chatCharacters: chat.chatCharacters.filter(cc => cc.character !== null) as any,
-			chatPersonas: chat.chatPersonas.filter(cp => cp.persona !== null) as any
-		}, { triggered: true });
+		const nextCharacterId = getNextCharacterTurn(
+			{
+				chatMessages: chat.chatMessages,
+				chatCharacters: chat.chatCharacters.filter(
+					(cc) => cc.character !== null
+				) as any,
+				chatPersonas: chat.chatPersonas.filter(
+					(cp) => cp.persona !== null
+				) as any
+			},
+			{ triggered: true }
+		)
 		if (chat && chat.chatCharacters.length > 0 && nextCharacterId) {
 			chat = await getChatFromDB(message.chatId, userId)
-			const nextCharacter = chat?.chatCharacters.find(cc => cc.character && cc.character.id === nextCharacterId);
-			if (!nextCharacter || !nextCharacter.character) return;
+			const nextCharacter = chat?.chatCharacters.find(
+				(cc) => cc.character && cc.character.id === nextCharacterId
+			)
+			if (!nextCharacter || !nextCharacter.character) return
 			const assistantMessage: InsertChatMessage = {
 				userId,
 				chatId: message.chatId,
@@ -590,12 +609,12 @@ export async function updateChat(
 		// Update chat main fields
 		await db
 			.update(schema.chats)
-			.set({ 
-                ...message.chat,
-                isGroup: message.characterIds.length > 1,
-                userId: undefined,
-                id: undefined
-            })
+			.set({
+				...message.chat,
+				isGroup: message.characterIds.length > 1,
+				userId: undefined,
+				id: undefined
+			})
 			.where(
 				and(
 					eq(schema.chats.id, message.chat.id),
@@ -623,104 +642,117 @@ export async function updateChat(
 					(id): id is number => id !== null && id !== undefined
 				) || []
 
-        // Find new character IDs that are not in the existing chat
-        const newCharacterIds = message.characterIds.filter(
-            (id) => !existingChat?.chatCharacters.some(
-                (c) => c.characterId === id
-            )
-        )
+		// Find new character IDs that are not in the existing chat
+		const newCharacterIds = message.characterIds.filter(
+			(id) =>
+				!existingChat?.chatCharacters.some((c) => c.characterId === id)
+		)
 
-        // Find new persona IDs that are not in the existing chat 
-        const newPersonaIds = message.personaIds.filter(
-            (id) => !existingChat?.chatPersonas.some(
-                (p) => p.personaId === id
-            )
-        )
+		// Find new persona IDs that are not in the existing chat
+		const newPersonaIds = message.personaIds.filter(
+			(id) => !existingChat?.chatPersonas.some((p) => p.personaId === id)
+		)
 
-        console.log("chatId", message.chat.id)
-        
+		console.log("chatId", message.chat.id)
 
-        // Delete characters that are no longer in the chat
-        if (deletedCharacterIds.length > 0) {
-            await db.delete(schema.chatCharacters)
-                .where(
-                    and(
-                        eq(schema.chatCharacters.chatId, message.chat.id),
-                        inArray(
-                            schema.chatCharacters.characterId,
-                            deletedCharacterIds
-                        )
-                    )
-                )
-        }
+		// Delete characters that are no longer in the chat
+		if (deletedCharacterIds.length > 0) {
+			await db
+				.delete(schema.chatCharacters)
+				.where(
+					and(
+						eq(schema.chatCharacters.chatId, message.chat.id),
+						inArray(
+							schema.chatCharacters.characterId,
+							deletedCharacterIds
+						)
+					)
+				)
+		}
 
-        // Delete personas that are no longer in the chat
-        if (deletedPersonaIds.length > 0) {
-            await db.delete(schema.chatPersonas)
-                .where(
-                    and(
-                        eq(schema.chatPersonas.chatId, message.chat.id),
-                        inArray(
-                            schema.chatPersonas.personaId,
-                            deletedPersonaIds
-                        )
-                    )
-                )
-        }
+		// Delete personas that are no longer in the chat
+		if (deletedPersonaIds.length > 0) {
+			await db
+				.delete(schema.chatPersonas)
+				.where(
+					and(
+						eq(schema.chatPersonas.chatId, message.chat.id),
+						inArray(
+							schema.chatPersonas.personaId,
+							deletedPersonaIds
+						)
+					)
+				)
+		}
 
-        // Insert new characters that are not already in the chat
-        if (newCharacterIds.length > 0) {
-            const newChatCharacters = newCharacterIds.map((characterId) => ({
-                chatId: message.chat.id,
-                characterId,
-                position: message.characterPositions[characterId] ?? 0
-            }))
-            await db.insert(schema.chatCharacters).values(newChatCharacters)
-        }
+		// Insert new characters that are not already in the chat
+		if (newCharacterIds.length > 0) {
+			const newChatCharacters = newCharacterIds.map((characterId) => ({
+				chatId: message.chat.id,
+				characterId,
+				position: message.characterPositions[characterId] ?? 0
+			}))
+			await db.insert(schema.chatCharacters).values(newChatCharacters)
+		}
 
-        // Insert new personas that are not already in the chat
-        if (newPersonaIds.length > 0) {
-            const newChatPersonas = newPersonaIds.map((personaId) => ({
-                chatId: message.chat.id,
-                personaId
-            }))
-            await db.insert(schema.chatPersonas).values(newChatPersonas)
-        }
+		// Insert new personas that are not already in the chat
+		if (newPersonaIds.length > 0) {
+			const newChatPersonas = newPersonaIds.map((personaId) => ({
+				chatId: message.chat.id,
+				personaId
+			}))
+			await db.insert(schema.chatPersonas).values(newChatPersonas)
+		}
 
-        // Update positions for all characters in the chat (not just new ones)
-        if (message.characterPositions) {
-            for (const characterId of message.characterIds) {
-                const position = message.characterPositions[characterId]
-				console.log("Updating position for characterId", characterId, "to", position)
-                if (typeof position === 'number') {
-                    await db
-                        .update(schema.chatCharacters)
-                        .set({ position })
-                        .where(
-                            and(
-                                eq(schema.chatCharacters.chatId, message.chat.id),
-                                eq(schema.chatCharacters.characterId, characterId)
-                            )
-                        )
-                }
-            }
-        }
+		// Update positions for all characters in the chat (not just new ones)
+		if (message.characterPositions) {
+			for (const characterId of message.characterIds) {
+				const position = message.characterPositions[characterId]
+				console.log(
+					"Updating position for characterId",
+					characterId,
+					"to",
+					position
+				)
+				if (typeof position === "number") {
+					await db
+						.update(schema.chatCharacters)
+						.set({ position })
+						.where(
+							and(
+								eq(
+									schema.chatCharacters.chatId,
+									message.chat.id
+								),
+								eq(
+									schema.chatCharacters.characterId,
+									characterId
+								)
+							)
+						)
+				}
+			}
+		}
 
 		// After updating character positions in the DB, also update the position field for existing characters
 		if (message.characterPositions) {
-			for (const [characterId, position] of Object.entries(message.characterPositions)) {
+			for (const [characterId, position] of Object.entries(
+				message.characterPositions
+			)) {
 				await db
 					.update(schema.chatCharacters)
 					.set({ position })
 					.where(
 						and(
 							eq(schema.chatCharacters.chatId, message.chat.id),
-							eq(schema.chatCharacters.characterId, Number(characterId))
+							eq(
+								schema.chatCharacters.characterId,
+								Number(characterId)
+							)
 						)
 					)
 			}
 		}
-		
 
 		// Fetch the updated chat with all relations
 		const resChat = await getChatFromDB(message.chat.id, userId)
