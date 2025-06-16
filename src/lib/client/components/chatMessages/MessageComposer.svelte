@@ -1,14 +1,13 @@
 <script lang="ts">
     import { Tabs } from "@skeletonlabs/skeleton-svelte"
     import * as Icons from "@lucide/svelte"
-    import { marked } from "marked"
     import { type Snippet } from "svelte";
     import { renderMarkdownWithQuotedText } from "$lib/client/utils/markdownToHTML"
 
     interface Props {
         markdown: string
         classes?: string
-        promptStats?: Sockets.PromptTokenCount.Response
+        compiledPrompt?: CompiledPrompt
         leftControls?: Snippet
         rightControls?: Snippet
         extraTabs?: {
@@ -21,7 +20,7 @@
     }
     let {
         markdown = $bindable(),
-        promptStats = $bindable(),
+        compiledPrompt = $bindable(),
         classes,
         leftControls,
         rightControls,
@@ -30,7 +29,7 @@
     }: Props = $props()
 
     let tabGroup: "compose" | "preview" = $state("compose")
-    let contextExceeded = $derived( !!promptStats ? promptStats!.tokenCount > promptStats!.tokenLimit : false )
+    let contextExceeded = $derived( !!compiledPrompt ? compiledPrompt!.tokenCounts.total > compiledPrompt!.tokenCounts.limit : false )
 
     function handleSend(e: KeyboardEvent | MouseEvent | undefined = undefined) {
         if (e) e.preventDefault()
@@ -53,10 +52,10 @@
                 </Tabs.Control>
             {/each}
         {/if}
-        {#if promptStats}
+        {#if compiledPrompt}
             <Tabs.Control value="tokenCount" classes="w-full text-right" disabled>
                 <span title="Token Count" class="text-xs" class:text-error-500={contextExceeded}>
-                    {promptStats.tokenCount} / {promptStats.tokenLimit}
+                    {compiledPrompt.tokenCounts.total} / {compiledPrompt.tokenCounts.limit}
                 </span>
             </Tabs.Control>
         {/if}

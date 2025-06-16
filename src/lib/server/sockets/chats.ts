@@ -394,9 +394,12 @@ export async function promptTokenCount(
 			metadata: null,
 			isGenerating: false
 		})
-	}
-	const currentCharacterId = getNextCharacterTurn(chat, { triggered: true })!
-	console.log("Current character ID for prompt:", currentCharacterId)
+	} // TODO fix
+	const currentCharacterId = getNextCharacterTurn({
+		chatMessages: chat.chatMessages,
+		chatCharacters: chat.chatCharacters.filter((cc: any) => cc && cc.character != null) as any,
+		chatPersonas: chat.chatPersonas.filter((cp: any) => cp && cp.persona != null) as any
+	}, { triggered: true })!
 	const adapter = new OllamaAdapter({
 		chat: chatForPrompt as any,
 		connection: user.activeConnection,
@@ -405,15 +408,8 @@ export async function promptTokenCount(
 		promptConfig: user.activePromptConfig,
 		currentCharacterId
 	})
-	const [prompt, tokenCount, tokenLimit, messagesIncluded, totalMessages] =
-		await adapter.promptBuilder.compilePrompt()
-	const res: Sockets.PromptTokenCount.Response = {
-		tokenCount,
-		tokenLimit,
-		messagesIncluded,
-		totalMessages
-	}
-	emitToUser("promptTokenCount", res)
+	const promptResult: Sockets.PromptTokenCount.Response = await adapter.promptBuilder.compilePrompt();
+	emitToUser("promptTokenCount", promptResult as Sockets.PromptTokenCount.Response);
 }
 
 export async function abortChatMessage(

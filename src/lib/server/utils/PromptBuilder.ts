@@ -268,69 +268,57 @@ export class PromptBuilder {
 		}
 	}
 
-	// --- Prompt construction ---
-	async compilePrompt(): Promise<[string, number, number, number, number]> {
-		const chatCharacters = this.chat.chatCharacters as
-			| (SelectChatCharacter & { character: SelectCharacter })[]
-			| undefined
-		const currentCharacter = chatCharacters?.find(
-			(cc) => cc.character.id === this.currentCharacterId
-		)?.character
-		if (!currentCharacter) {
-			throw new Error(
-				`compilePrompt: No character found with ID ${this.currentCharacterId}`
-			)
+	// --- Modularized section: scenario interpolation and source ---
+	private getScenarioInterpolated(currentCharacter: SelectCharacter, interpolationContext: any): { scenarioInterpolated: string, scenarioSource: null | 'character' | 'chat' } {
+		let scenarioInterpolated = ""
+		let scenarioSource: null | 'character' | 'chat' = null
+		const interpolate = (str: string | undefined) => str ? this.handlebars.compile(str)(interpolationContext) : str
+		if (this.chat && (this.chat as any).scenario) {
+			scenarioInterpolated = interpolate((this.chat as any).scenario) || ""
+			scenarioSource = 'chat'
+		} else if (this.chat && (this.chat as any).isGroup) {
+			scenarioInterpolated = ""
+			scenarioSource = null
+		} else {
+			const charScenario = this.contextBuildCharacterScenario(currentCharacter) || ""
+			scenarioInterpolated = interpolate(charScenario) || ""
+			scenarioSource = charScenario ? 'character' : null
 		}
+		return { scenarioInterpolated, scenarioSource }
+	}
 
-		// Build and assign context data as class properties
-		this.buildContextData(currentCharacter)
-
-		// Prepare a Handlebars context for interpolation
-		const charName = currentCharacter.nickname || currentCharacter.name
-		const personaName =
-			(this.chat.chatPersonas &&
-				this.chat.chatPersonas[0]?.persona?.name) ||
-			"user"
-		const interpolationContext = {
-			char: charName,
-			character: charName,
-			user: personaName,
-			persona: personaName
-		}
-
-		// Interpolate all dynamic fields using Handlebars
-		const interpolate = (str: string | undefined) =>
-			str ? this.handlebars.compile(str)(interpolationContext) : str
-
-		const instructions = interpolate(this.instructions)
-		const scenarioInterpolated = interpolate(
-			this.contextBuildCharacterScenario(currentCharacter) || ""
-		)
-		const wiBefore = interpolate(this.wiBefore)
-		const wiAfter = interpolate(this.wiAfter)
-
-		// Interpolate assistant/user characters and personas descriptions
-		const assistantCharacters = this.assistantCharacters.map((c: any) => ({
+	// --- Modularized section: interpolate characters/personas ---
+	private getInterpolatedCharacters(interpolationContext: any) {
+		const interpolate = (str: string | undefined) => str ? this.handlebars.compile(str)(interpolationContext) : str
+		return this.assistantCharacters.map((c: any) => ({
 			...c,
 			name: interpolate(c.name),
 			nickname: interpolate(c.nickname),
 			description: interpolate(c.description),
 			personality: interpolate(c.personality)
 		}))
-		const userCharacters = this.userCharacters.map((p: any) => ({
+	}
+	private getInterpolatedPersonas(interpolationContext: any) {
+		const interpolate = (str: string | undefined) => str ? this.handlebars.compile(str)(interpolationContext) : str
+		return this.userCharacters.map((p: any) => ({
 			...p,
 			name: interpolate(p.name),
 			description: interpolate(p.description)
 		}))
+	}
 
-		const charactersInterpolated = JSON.stringify(
-			assistantCharacters,
-			null,
-			2
-		)
-		const personasInterpolated = JSON.stringify(userCharacters, null, 2)
-
-		const templateContext: Record<string, any> = {
+	// --- Modularized section: build template context ---
+	private buildTemplateContext({
+		instructions,
+		charactersInterpolated,
+		personasInterpolated,
+		scenarioInterpolated,
+		wiBefore,
+		wiAfter,
+		charName,
+		personaName
+	}: any) {
+		return {
 			instructions,
 			characters: charactersInterpolated,
 			personas: personasInterpolated,
@@ -344,32 +332,24 @@ export class PromptBuilder {
 			persona: personaName,
 			__promptBuilderInstance: this
 		}
+	}
 
-		// --- Message block construction and token limit logic ---
-		// Build prompt blocks (system, scenario, etc.)
-		const promptBlocks: string[] = []
-		if (instructions) promptBlocks.push(instructions)
-		if (wiBefore) promptBlocks.push(wiBefore)
-		if (scenarioInterpolated) promptBlocks.push(scenarioInterpolated)
-		// Optionally add example dialogue block (not shown here, but can be added)
-		let exampleDialogueBlockIndex = -1
-		let thresholdReached = false
-		const alwaysInclude = 0 // You can adjust this if you want to always include N most recent messages
-
-		// Build chatMessages for templateContext (all messages, most recent last)
+	// --- Modularized section: message block construction and token limit logic ---
+	private async buildMessageBlocks(templateContext: any, charName: string, personaName: string) {
 		let chatMessages = this.chat.chatMessages
 			.filter((msg: SelectChatMessage) => !msg.isHidden)
 			.map((msg: SelectChatMessage) => ({
+				id: msg.id,
 				role: msg.role || "assistant",
 				name: msg.role === "assistant" ? charName : personaName,
 				message: msg.content
 			}))
-
-		// Always include the 3 most recent messages (last 2 full replies + empty response)
 		const minMessages = 3
 		let includedMessages = chatMessages.length
 		let renderedPrompt = ""
 		let totalTokens = 0
+		let includedIds: number[] = chatMessages.map(m => m.id)
+		let excludedIds: number[] = []
 		while (chatMessages.length > minMessages) {
 			templateContext.chatMessages = chatMessages
 			renderedPrompt = this.handlebars.compile(this.contextConfig.template)(templateContext)
@@ -377,24 +357,23 @@ export class PromptBuilder {
 				? await this.tokenCounter.countTokens(renderedPrompt)
 				: 0
 			if (totalTokens <= this.tokenLimit) break
-			// Remove oldest message, but never remove the last minMessages
+			excludedIds.push(chatMessages[0].id)
 			chatMessages.shift()
 			includedMessages--
 		}
-		// After loop, check if even the minMessages fit
 		templateContext.chatMessages = chatMessages
+		// Final check for minMessages
 		renderedPrompt = this.handlebars.compile(this.contextConfig.template)(templateContext)
 		totalTokens = typeof this.tokenCounter.countTokens === "function"
 			? await this.tokenCounter.countTokens(renderedPrompt)
 			: 0
 		if (chatMessages.length === minMessages && totalTokens > this.tokenLimit) {
-			// If even the 3 most recent don't fit, forcibly include them and return
 			includedMessages = minMessages
+			includedIds = chatMessages.map(m => m.id)
 		} else {
 			includedMessages = chatMessages.length
+			includedIds = chatMessages.map(m => m.id)
 		}
-
-		// If no messages fit, set to empty array
 		if (chatMessages.length === 0) {
 			templateContext.chatMessages = []
 			renderedPrompt = this.handlebars.compile(this.contextConfig.template)(templateContext)
@@ -402,40 +381,143 @@ export class PromptBuilder {
 				? await this.tokenCounter.countTokens(renderedPrompt)
 				: 0
 			includedMessages = 0
+			includedIds = []
+		}
+		return { renderedPrompt, totalTokens, includedMessages, includedIds, excludedIds }
+	}
+
+	// --- Modularized section: sources reporting ---
+	private buildSources(scenarioSource: null | 'character' | 'chat') {
+		const chatCharactersArr = this.chat.chatCharacters || []
+		const chatPersonasArr = this.chat.chatPersonas || []
+		return {
+			characters: chatCharactersArr.map((cc: any) => {
+				const c = cc.character
+				return {
+					id: c.id,
+					name: c.name,
+					nickname: c.nickname,
+					description: Boolean(c.description),
+					personality: Boolean(c.personality),
+					wiBefore: Boolean(this.contextBuildCharacterWiBefore()),
+					wiAfter: Boolean(this.contextBuildCharacterWiAfter()),
+					postHistoryInstructions: Boolean(c.postHistoryInstructions)
+				}
+			}),
+			personas: chatPersonasArr.map((cp: any) => {
+				const p = cp.persona
+				return {
+					id: p.id,
+					name: p.name,
+					description: Boolean(p.description)
+				}
+			}),
+			scenario: scenarioSource
+		}
+	}
+
+	// --- Modularized section: meta reporting ---
+	private buildMeta(excludedIds: number[]) {
+		return {
+			promptFormat: (this.connection.promptFormat || '').toLowerCase(),
+			templateName: this.contextConfig?.name || null,
+			timestamp: new Date().toISOString(),
+			truncationReason: excludedIds.length ? 'token_limit' : null,
+			currentTurnCharacterId: this.currentCharacterId
+		}
+	}
+
+	// --- Main compilePrompt ---
+	async compilePrompt(): Promise<CompiledPrompt> {
+		const chatCharacters = this.chat.chatCharacters as
+			| (SelectChatCharacter & { character: SelectCharacter })[]
+			| undefined
+		const currentCharacter = chatCharacters?.find(
+			(cc) => cc.character.id === this.currentCharacterId
+		)?.character
+		if (!currentCharacter) {
+			throw new Error(
+				`compilePrompt: No character found with ID ${this.currentCharacterId}`
+			)
 		}
 
-		// If chatml, append opening assistant block and {{char}}: at the end (no closing tag)
+		this.buildContextData(currentCharacter)
+
+		const charName = currentCharacter.nickname || currentCharacter.name
+		const personaName =
+			(this.chat.chatPersonas &&
+				this.chat.chatPersonas[0]?.persona?.name) ||
+			"user"
+		const interpolationContext = {
+			char: charName,
+			character: charName,
+			user: personaName,
+			persona: personaName
+		}
+
+		const interpolate = (str: string | undefined) =>
+			str ? this.handlebars.compile(str)(interpolationContext) : str
+
+		const instructions = interpolate(this.instructions)
+		const wiBefore = interpolate(this.wiBefore)
+		const wiAfter = interpolate(this.wiAfter)
+
+		const { scenarioInterpolated, scenarioSource } = this.getScenarioInterpolated(currentCharacter, interpolationContext)
+		const assistantCharacters = this.getInterpolatedCharacters(interpolationContext)
+		const userCharacters = this.getInterpolatedPersonas(interpolationContext)
+		const charactersInterpolated = JSON.stringify(assistantCharacters, null, 2)
+		const personasInterpolated = JSON.stringify(userCharacters, null, 2)
+		const templateContext = this.buildTemplateContext({
+			instructions,
+			charactersInterpolated,
+			personasInterpolated,
+			scenarioInterpolated,
+			wiBefore,
+			wiAfter,
+			charName,
+			personaName
+		})
+
+		const {
+			renderedPrompt,
+			totalTokens,
+			includedMessages,
+			includedIds,
+			excludedIds
+		} = await this.buildMessageBlocks(templateContext, charName, personaName)
+
+		let finalPrompt = renderedPrompt.trimEnd();
 		if ((this.connection.promptFormat || "").toLowerCase() === "chatml") {
-			renderedPrompt =
-				renderedPrompt.trimEnd() +
-				`\n<|im_start|>assistant\n${charName}: `
+			finalPrompt += `\n<|im_start|>assistant\n${charName}: `;
 		}
 
 		if (process.env.NODE_ENV === "development") {
-			console.log(
-				"\n\nPromptBuilder Rendered Prompt:\n",
-				renderedPrompt,
-				"\n\n"
-			)
+			console.log("\n\nPromptBuilder Rendered Prompt:\n", finalPrompt, "\n\n")
 		}
 
-		if (!renderedPrompt.trim()) {
-			console.warn(
-				"PromptBuilder: Rendered prompt is empty! Check your template and context."
-			)
-			console.warn(
-				"Template context:",
-				JSON.stringify(templateContext, null, 2)
-			)
+		if (!finalPrompt.trim()) {
+			console.warn("PromptBuilder: Rendered prompt is empty! Check your template and context.")
+			console.warn("Template context:", JSON.stringify(templateContext, null, 2))
 			console.warn("Template string:\n", this.contextConfig.template)
 		}
 
-		return [
-			renderedPrompt.trimEnd(),
-			totalTokens as number,
-			this.tokenLimit,
-			includedMessages,
-			this.chat.chatMessages.length
-		]
+		const sources = this.buildSources(scenarioSource)
+		const meta = this.buildMeta(excludedIds)
+
+		return {
+			prompt: finalPrompt,
+			tokenCounts: {
+				total: totalTokens as number,
+				limit: this.tokenLimit
+			},
+			messages: {
+				included: includedMessages,
+				total: this.chat.chatMessages.length,
+				includedIds,
+				excludedIds
+			},
+			sources,
+			meta
+		}
 	}
 }

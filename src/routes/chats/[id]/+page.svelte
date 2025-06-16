@@ -14,22 +14,16 @@
 	let showDeleteMessageModal = $state(false)
 	let deleteChatMessage: SelectChatMessage | undefined = $state()
 	let editChatMessage: SelectChatMessage | undefined = $state()
-	let promptStats:
-		| {
-				tokenCount: number
-				tokenLimit: number
-				messagesIncluded: number
-				totalMessages: number
-		  }
-		| undefined = $state()
+	let draftCompiledPrompt: CompiledPrompt | undefined = $state()
 	let userCtx: UserCtx = getContext("userCtx")
 	let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
 	let contextExceeded = $derived(
-		!!promptStats
-			? promptStats!.tokenCount > promptStats!.tokenLimit
+		!!draftCompiledPrompt
+			? draftCompiledPrompt!.tokenCounts.total > draftCompiledPrompt!.tokenCounts.limit
 			: false
 	)
 	let openMobileMsgControls: number | undefined = $state(undefined)
+	let showDraftCompiledPromptModal = $state(false)
 
 	// Get chat id from route params
 	let chatId: number = $derived.by(() => Number(page.params.id))
@@ -243,7 +237,7 @@
 		socket.on(
 			"promptTokenCount",
 			(msg: Sockets.PromptTokenCount.Response) => {
-				promptStats = msg
+				draftCompiledPrompt = msg
 			}
 		)
 	})
@@ -391,7 +385,7 @@
 		<MessageComposer
 			bind:markdown={newMessage}
 			onSend={handleSend}
-			{promptStats}
+			compiledPrompt={draftCompiledPrompt}
 			classes=""
 			extraTabs={[
 				{
@@ -481,6 +475,78 @@
 				onclick={onDeleteMessageConfirm}
 			>
 				Delete
+			</button>
+		</footer>
+	{/snippet}
+</Modal>
+
+<Modal
+	open={showDraftCompiledPromptModal}
+	onOpenChange={(details) => (showDraftCompiledPromptModal = details.open)}
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-md"
+	backdropClasses="backdrop-blur-sm"
+>
+	{#snippet content()}
+		<header class="flex justify-between items-center">
+			<h2 class="h2">Prompt Details</h2>
+			<button class="btn btn-sm" onclick={() => (showDraftCompiledPromptModal = false)}>
+				<Icons.X size={20} />
+			</button>
+		</header>
+		<article class="space-y-2">
+			{#if draftCompiledPrompt}
+				<div class="mb-2">
+					<b>Prompt Tokens:</b>
+					<span class:text-error-500={contextExceeded}>
+						{draftCompiledPrompt.tokenCounts.total} / {draftCompiledPrompt.tokenCounts.limit}
+					</span>
+				</div>
+				<div class="mb-2">
+					<b>Messages Inserted:</b>
+					{draftCompiledPrompt.messages.included} / {draftCompiledPrompt.messages.total}
+				</div>
+				<div class="mb-2">
+					<b>Prompt Format:</b> {draftCompiledPrompt.meta.promptFormat}
+				</div>
+				<div class="mb-2">
+					<b>Truncation Reason:</b> {draftCompiledPrompt.meta.truncationReason || 'None'}
+				</div>
+				<div class="mb-2">
+					<b>Timestamp:</b> {draftCompiledPrompt.meta.timestamp}
+				</div>
+				<div class="mb-2">
+					<b>Characters Used:</b>
+					<ul class="ml-4 list-disc">
+						{#each draftCompiledPrompt.sources.characters as char}
+							<li>{char.name} {char.nickname ? `(${char.nickname})` : ''}</li>
+						{/each}
+					</ul>
+				</div>
+				<div class="mb-2">
+					<b>Personas Used:</b>
+					<ul class="ml-4 list-disc">
+						{#each draftCompiledPrompt.sources.personas as persona}
+							<li>{persona.name}</li>
+						{/each}
+					</ul>
+				</div>
+				<div class="mb-2">
+					<b>Scenario Source:</b> {draftCompiledPrompt.sources.scenario || 'None'}
+				</div>
+				<div class="mb-2">
+					<b>Prompt Preview:</b>
+					<pre class="bg-surface-200-800 rounded p-2 overflow-x-auto text-xs max-h-64 whitespace-pre-wrap">{draftCompiledPrompt.prompt}</pre>
+				</div>
+			{:else}
+				<div class="text-muted">No compiled prompt data available.</div>
+			{/if}
+		</article>
+		<footer class="flex justify-end gap-4">
+			<button
+				class="btn preset-filled-surface-500"
+				onclick={() => (showDraftCompiledPromptModal = false)}
+			>
+				Close
 			</button>
 		</footer>
 	{/snippet}
@@ -580,22 +646,32 @@
 {/snippet}
 
 {#snippet statisticsContent()}
-	<div class="flex flex-col p-2 text-sm">
-		{#if promptStats}
+	<div class="flex gap-2">
+		<button
+			class="btn preset-filled-primary-500"
+			title="View Prompt Statistics"
+			onclick={() => (showDraftCompiledPromptModal = true)}
+			disabled={!draftCompiledPrompt}
+		>
+			<Icons.Info size={24} />
+		</button>
+		<div class="flex flex-col text-sm">
+		{#if draftCompiledPrompt}
 			<div>
 				<b>Prompt Tokens:</b>
 				<span class:text-error-500={contextExceeded}>
-					{promptStats.tokenCount} / {promptStats.tokenLimit}
+					{draftCompiledPrompt.tokenCounts.total} / {draftCompiledPrompt.tokenCounts.limit}
 				</span>
 			</div>
 			<div>
 				<b>Messages Inserted:</b>
-				{promptStats.messagesIncluded} / {promptStats.totalMessages}
+				{draftCompiledPrompt.messages.included} / {draftCompiledPrompt.messages.total}
 				<span class="text-surface-500">(Includes current draft)</span>
 			</div>
 		{:else}
 			<div class="text-muted">No prompt statistics available.</div>
 		{/if}
+	</div>
 	</div>
 {/snippet}
 

@@ -472,12 +472,7 @@ declare global {
                 role?: string
                 personaId?: number
             }
-            interface Response {
-                tokenCount: number
-                tokenLimit: number,
-                messagesIncluded: number
-                totalMessages: number
-            }
+            interface Response extends CompiledPrompt {}
         }
         namespace AbortChatMessage {
             interface Call {
@@ -530,6 +525,39 @@ declare global {
             spec: string
             spec_version: string
         }
+
+    export interface CompiledPrompt {
+		prompt: string
+		tokenCounts: {
+			total: number
+			limit: number
+		}
+		messages: {
+			included: number
+			total: number
+			includedIds: number[]
+			excludedIds: number[]
+		}
+		sources: {
+			characters: Array<{
+				id: number
+				name: string
+				nickname?: string
+				description: boolean
+				personality: boolean
+				wiBefore: boolean
+				wiAfter: boolean
+				postHistoryInstructions: boolean
+			}>
+			personas: Array<{
+				id: number
+				name: string
+				description: boolean
+			}>
+			scenario: null | 'character' | 'chat'
+		}
+		meta: Record<string, unknown>
+	}
 }
 
 export {}

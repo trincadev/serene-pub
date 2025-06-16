@@ -71,7 +71,7 @@ export async function generateResponse({
 	activeAdapters.set(adapterId, adapter)
 
 	// Generate completion
-	let completionResult = await adapter.generate()
+	let [completionResult, compiledPrompt] = await adapter.generate() // TODO: save compiledPrompt to chatMessages
 	let content = ""
 	try {
 		if (typeof completionResult === "function") {

@@ -236,7 +236,7 @@ export class OllamaAdapter {
 	}
 
 	async generate(): Promise<
-		string | ((cb: (chunk: string) => void) => Promise<void>)
+		[(string | ((cb: (chunk: string) => void) => Promise<void>)), CompiledPrompt]
 	> {
 		const model =
 			this.connection.model ?? OllamaAdapter.connectionDefaults.baseUrl
@@ -266,16 +266,11 @@ export class OllamaAdapter {
 
 		// Use PromptBuilder for prompt construction
 		
-		const [prompt, totalTokens, tokenLimit] = await this.promptBuilder.compilePrompt(
-			this.chat.chatCharacters?.[0]?.character?.id || 0,
-			this.getTokenCounter(),
-			this.sampling.contextTokens || OllamaAdapter.defaultContextLimit,
-			this.contextThresholdPercent
-		)
+		const compiledPrompt: CompiledPrompt = await this.promptBuilder.compilePrompt()
 
 		const req = {
 			model,
-			prompt,
+			prompt: compiledPrompt.prompt,
 			stream,
 			think,
 			raw,
@@ -286,7 +281,7 @@ export class OllamaAdapter {
 			}
 		}
 		if (stream) {
-			return async (cb: (chunk: string) => void) => {
+			return [async (cb: (chunk: string) => void) => {
 				let content = ""
 				try {
 					const ollama = this.getClient()
@@ -304,9 +299,9 @@ export class OllamaAdapter {
 				} catch (e: any) {
 					cb("FAILURE: " + (e.message || String(e)))
 				}
-			}
+			}, compiledPrompt]
 		} else {
-			return (async () => {
+			const content = await (async () => {
 				let content = ""
 				try {
 					const ollama = this.getClient()
@@ -329,6 +324,7 @@ export class OllamaAdapter {
 					return "FAILURE: " + (e.message || String(e))
 				}
 			})()
+			return [content, compiledPrompt]
 		}
 	}
 	// --- Abort in-flight Ollama request ---
