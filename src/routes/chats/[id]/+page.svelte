@@ -24,6 +24,8 @@
 	)
 	let openMobileMsgControls: number | undefined = $state(undefined)
 	let showDraftCompiledPromptModal = $state(false)
+	let showTriggerCharacterMessageModal = $state(false)
+	let triggerCharacterSearch = $state("")
 
 	// Get chat id from route params
 	let chatId: number = $derived.by(() => Number(page.params.id))
@@ -184,10 +186,15 @@
 		openMobileMsgControls = undefined
 		if (lastMessage) socket.emit("abortChatMessage", { id: lastMessage.id })
 	}
-	function handleTriggerGenerateMessage(e: Event) {
+	function handleTriggerContinueConversation(e: Event) {
 		e.stopPropagation()
 		openMobileMsgControls = undefined
 		socket.emit("triggerGenerateMessage", { chatId })
+	}
+	function handleTriggerCharacterMessage(e: Event) {
+		e.stopPropagation()
+		openMobileMsgControls = undefined
+		showTriggerCharacterMessageModal = true
 	}
 	function handleRegenerateLastMessage(e: Event) {
 		e.stopPropagation()
@@ -195,6 +202,12 @@
 		if (lastMessage && !lastMessage.isGenerating) {
 			socket.emit("regenerateChatMessage", { id: lastMessage.id })
 		}
+	}
+
+	function onSelectTriggerCharacterMessage(characterId: number) {
+		showTriggerCharacterMessageModal = false
+		openMobileMsgControls = undefined
+		socket.emit("triggerGenerateMessage", { chatId, characterId, once:true })
 	}
 
 	onMount(() => {
@@ -552,6 +565,67 @@
 	{/snippet}
 </Modal>
 
+<Modal
+	open={showTriggerCharacterMessageModal}
+	onOpenChange={(e) => (showTriggerCharacterMessageModal = e.open)}
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-md"
+	backdropClasses="backdrop-blur-sm"
+>
+	{#snippet content()}
+		<header class="mb-2 flex items-center justify-between">
+			<h2 class="h2">Select Character</h2>
+			<button
+				class="btn btn-sm"
+				onclick={() => (showTriggerCharacterMessageModal = false)}
+			>
+				<Icons.X size={20} />
+			</button>
+		</header>
+		<input
+			class="input mb-4 w-full"
+			type="text"
+			placeholder="Search characters..."
+			bind:value={triggerCharacterSearch}
+		/>
+		<div class="flex flex-col gap-2">
+			{#each (chat?.chatCharacters || [])
+				.filter(cc => {
+					const c = cc.character
+					if (!c) return false
+					const s = triggerCharacterSearch.trim().toLowerCase()
+					if (!s) return true
+					return (
+						c.name?.toLowerCase().includes(s) ||
+						c.nickname?.toLowerCase().includes(s) ||
+						c.description?.toLowerCase().includes(s) ||
+						c.creatorNotes?.toLowerCase().includes(s)
+					)
+				}) as any[] as typeof chat.chatCharacters
+				as filtered
+			}
+				<button
+					class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full max-w-[25em] gap-3 overflow-hidden rounded p-3"
+					onclick={() => onSelectTriggerCharacterMessage(filtered.character.id)}
+				>
+					<div class="w-fit">
+						<Avatar char={filtered.character} />
+					</div>
+					<div class="relative flex w-0 min-w-0 flex-1 flex-col">
+						<div class="w-full truncate text-left font-semibold">
+							{filtered.character.nickname || filtered.character.name}
+						</div>
+						<div
+							class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs"
+						>
+							{filtered.character.creatorNotes || filtered.character.description || ""}
+						</div>
+					</div>
+				</button>
+		{/each}
+		</div>
+	{/snippet}
+</Modal>
+
 {#snippet messageControls(msg: SelectChatMessage)}
 	<div class="hidden gap-6 lg:flex">
 		<span class="text-surface-500 mx-6">
@@ -622,8 +696,18 @@
 	<div class="flex gap-2">
 		<button
 			class="btn preset-filled-primary-500"
-			title="Trigger Character Generation"
-			onclick={handleTriggerGenerateMessage}
+			title="Continue Conversation"
+			onclick={handleTriggerContinueConversation}
+			disabled={!chat ||
+				!chat.chatPersonas?.[0]?.personaId ||
+				lastMessage?.isGenerating}
+		>
+			<Icons.MessageSquareMore size={24} />
+		</button>
+		<button
+			class="btn preset-filled-secondary-500"
+			title="Trigger Character"
+			onclick={handleTriggerCharacterMessage}
 			disabled={!chat ||
 				!chat.chatPersonas?.[0]?.personaId ||
 				lastMessage?.isGenerating}

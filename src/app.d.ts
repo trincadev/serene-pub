@@ -487,7 +487,9 @@ declare global {
         }
         namespace TriggerGenerateMessage {
             interface Call {
-                chatId: number
+                chatId: number,
+                characterId?: number,
+                once?: boolean
             }
             interface Response {
                 chatMessage?: SelectChatMessage

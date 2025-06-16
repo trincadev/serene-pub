@@ -425,6 +425,11 @@ export async function promptTokenCount(
 		},
 		{ triggered: true }
 	)!
+
+	if (!currentCharacterId) {
+		return
+	}
+
 	const adapter = new OllamaAdapter({
 		chat: chatForPrompt as any,
 		connection: user.activeConnection,
@@ -460,7 +465,7 @@ export async function abortChatMessage(
 		return
 	}
 
-	[chatMsg] = await db
+	;[chatMsg] = await db
 		.update(schema.chatMessages)
 		.set({ isGenerating: false, adapterId: null })
 		.where(eq(schema.chatMessages.id, message.id))
@@ -508,58 +513,75 @@ export async function triggerGenerateMessage(
 	emitToUser: (event: string, data: any) => void
 ) {
 	const userId = 1 // Replace with actual user id
-	let chat = await getChatFromDB(message.chatId, userId)
-	if (!chat) {
-		const res: Sockets.TriggerGenerateMessage.Response = {
-			error: "Chat not found."
+
+	const msgLimit = 10
+	let currentMsg = 1
+	let triggered = true
+
+	while (currentMsg <= msgLimit) {
+		let chat = await getChatFromDB(message.chatId, userId)
+		if (!chat) {
+			const res: Sockets.TriggerGenerateMessage.Response = {
+				error: "Chat not found."
+			}
+			emitToUser("triggerGenerateMessage", res)
+			return
 		}
-		emitToUser("triggerGenerateMessage", res)
-		return
-	}
-	// Find the next character who should reply (using triggered: true)
-	const nextCharacterId = getNextCharacterTurn(
-		{
-			chatMessages: chat.chatMessages,
-			chatCharacters: chat.chatCharacters.filter(
-				(cc) => cc.character !== null
-			) as any,
-			chatPersonas: chat.chatPersonas.filter(
-				(cp) => cp.persona !== null
-			) as any
-		},
-		{ triggered: true }
-	)
-	if (chat && chat.chatCharacters.length > 0 && nextCharacterId) {
-		const nextCharacter = chat.chatCharacters.find(
-			(cc) => cc.character && cc.character.id === nextCharacterId
+
+		// Find the next character who should reply (using triggered: true)
+		const nextCharacterId = message.characterId || getNextCharacterTurn(
+			{
+				chatMessages: chat.chatMessages,
+				chatCharacters: chat.chatCharacters.filter(
+					(cc) => cc.character !== null
+				) as any,
+				chatPersonas: chat.chatPersonas.filter(
+					(cp) => cp.persona !== null
+				) as any
+			},
+			{ triggered }
 		)
-		if (!nextCharacter || !nextCharacter.character) return
-		const assistantMessage: InsertChatMessage = {
-			userId,
-			chatId: message.chatId,
-			personaId: null,
-			characterId: nextCharacter.character.id,
-			content: "",
-			role: "assistant",
-			createdAt: new Date().toString(),
-			isGenerating: true
+
+		if (!nextCharacterId) {
+			break
 		}
-		const [generatingMessage] = await db
-			.insert(schema.chatMessages)
-			.values(assistantMessage)
-			.returning()
-		await chatMessage(
-			socket,
-			{ chatMessage: generatingMessage },
-			emitToUser
-		)
-		await generateResponse({
-			socket,
-			emitToUser,
-			chatId: message.chatId,
-			userId,
-			generatingMessage: generatingMessage as any
-		})
+		if (chat && chat.chatCharacters.length > 0 && nextCharacterId) {
+			const nextCharacter = chat.chatCharacters.find(
+				(cc) => cc.character && cc.character.id === nextCharacterId
+			)
+			if (!nextCharacter || !nextCharacter.character) return
+			const assistantMessage: InsertChatMessage = {
+				userId,
+				chatId: message.chatId,
+				personaId: null,
+				characterId: nextCharacter.character.id,
+				content: "",
+				role: "assistant",
+				createdAt: new Date().toString(),
+				isGenerating: true
+			}
+			const [generatingMessage] = await db
+				.insert(schema.chatMessages)
+				.values(assistantMessage)
+				.returning()
+			await chatMessage(
+				socket,
+				{ chatMessage: generatingMessage },
+				emitToUser
+			)
+			await generateResponse({
+				socket,
+				emitToUser,
+				chatId: message.chatId,
+				userId,
+				generatingMessage: generatingMessage as any
+			})
+		}
+		if (message.once) {
+			break
+		}
+		currentMsg++
+		triggered = false // After the first message, we don't trigger again
 	}
 }
 
