@@ -77,6 +77,10 @@
 	}
 	function confirmDelete() {
 		if (chatToDelete != null) {
+			if (page.params.id === chatToDelete.toString()) {
+				// If the current chat is being deleted, navigate away
+				goto("/")
+			}
 			socket.emit("deleteChat", { id: chatToDelete })
 			console.log("Deleting chat with ID:", chatToDelete)
 			showDeleteModal = false
