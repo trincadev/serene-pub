@@ -7,7 +7,11 @@
 	// import ChatGPTForm from "$lib/client/connectionForms/ChatGPTForm.svelte"
 	import OpenAIForm from "$lib/client/connectionForms/OpenAIForm.svelte"
 	import LmStudioForm from "$lib/client/connectionForms/LMStudioForm.svelte"
-	import { CONNECTION_TYPES } from "$lib/shared/constants/ConnectionTypes"
+	import {
+		CONNECTION_TYPE,
+		CONNECTION_TYPES
+	} from "$lib/shared/constants/ConnectionTypes"
+	import LlamaCppForm from "$lib/client/connectionForms/LlamaCppForm.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -18,7 +22,7 @@
 	const socket = skio.get()
 
 	// --- State ---
-	let connectionsList = $state([])
+	let connectionsList: SelectConnection[] = $state([])
 	let connection: Sockets.Connection.Response["connection"] | undefined =
 		$state()
 	let originalConnection = $state()
@@ -161,10 +165,10 @@
 		<select
 			class="select bg-background border-muted rounded border"
 			onchange={handleSelectChange}
-			bind:value={userCtx.user.activeConnectionId}
+			bind:value={userCtx!.user!.activeConnectionId}
 		>
 			{#each connectionsList as c}
-				<option value={c.id}>{c.name} ({c.type})</option>
+				<option value={c.id}>{c.name} ({CONNECTION_TYPE.options.find((t) => t.value === c.type)!.label})</option>
 			{/each}
 		</select>
 	</div>
@@ -189,12 +193,14 @@
 					class="input bg-background border-muted w-full rounded border"
 				/>
 			</div>
-			{#if connection.type === "ollama"}
+			{#if connection.type === CONNECTION_TYPE.OLLAMA}
 				<OllamaForm bind:connection />
-			{:else if connection.type === "openai"}
+			{:else if connection.type === CONNECTION_TYPE.OPENAI_CHAT}
 				<OpenAIForm bind:connection />
-			{:else if connection.type === "lmstudio"}
+			{:else if connection.type === CONNECTION_TYPE.LM_STUDIO}
 				<LmStudioForm bind:connection />
+			{:else if connection.type === CONNECTION_TYPE.LLAMACPP_COMPLETION}
+				<LlamaCppForm bind:connection />
 			{/if}
 			<div class="mt-4 flex flex-col gap-2">
 				{#if connection.type === "ollama"}

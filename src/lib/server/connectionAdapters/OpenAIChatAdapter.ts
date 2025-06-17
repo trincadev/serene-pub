@@ -9,7 +9,7 @@ import type {
 	ChatCompletionMessageParam
 } from "../../../../node_modules/openai/src/resources/chat/completions/completions"
 
-export class OpenAIAdapter extends BaseConnectionAdapter {
+export class OpenAIChatAdapter extends BaseConnectionAdapter {
 	constructor({
 		connection,
 		sampling,
@@ -247,7 +247,7 @@ async function testConnection(
 }
 
 const exports: AdapterExports = {
-	Adapter: OpenAIAdapter,
+	Adapter: OpenAIChatAdapter,
 	listModels,
 	testConnection,
 	connectionDefaults,

@@ -186,7 +186,7 @@ export async function refreshModels(
 	message: Sockets.RefreshModels.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	const {Adapter, listModels} = getConnectionAdapter(message.connection.type)
+	const { listModels } = getConnectionAdapter(message.connection.type)
 
 	try {
 		const result = await listModels(message.connection)
