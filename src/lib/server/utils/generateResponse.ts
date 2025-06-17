@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
 import { activeAdapters, chatMessage } from "../sockets/chats"
 import { getConnectionAdapter } from "./getConnectionAdapter"
+import type { AdapterExports } from "../connectionAdapters/BaseConnectionAdapter"
 
 export async function generateResponse({
 	socket,
@@ -60,7 +61,9 @@ export async function generateResponse({
 		}
 	})
 
-	const adapter = new (getConnectionAdapter(user!.activeConnection!.type))({
+	const { Adapter } = getConnectionAdapter(user!.activeConnection!.type)
+
+	const adapter = new Adapter({
 		chat,
 		connection: user!.activeConnection!,
 		sampling: user!.activeSamplingConfig!,

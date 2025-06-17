@@ -442,8 +442,15 @@ export async function promptTokenCount(
 		{ triggered: true }
 	)
 
-	const adapter = new (getConnectionAdapter(user.activeConnection.type))({
-		chat: chatForPrompt as any,
+	if (!currentCharacterId) {
+		emitToUser("error", { error: "No character available for prompt." })
+		return
+	}
+
+	const { Adapter } = getConnectionAdapter(user.activeConnection.type)
+
+	const adapter = new Adapter({
+		chat: chatForPrompt,
 		connection: user.activeConnection,
 		sampling: user.activeSamplingConfig,
 		contextConfig: user.activeContextConfig,

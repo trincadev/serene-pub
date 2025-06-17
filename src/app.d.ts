@@ -546,10 +546,17 @@ declare global {
 		spec_version: string
 	}
 
-	export type CompiledPrompt = (
-		| { prompt: string }
-		| { messages: Array<{ role: string; content: string }> }
-	) & {
+	export type CompiledPrompt =
+		| ({
+				prompt: string
+				messages?: never
+		  } & CompiledPromptMeta)
+		| ({
+				messages: Array<{ role: string; content: string }>
+				prompt?: never
+		  } & CompiledPromptMeta)
+
+	type CompiledPromptMeta = {
 		meta: {
 			tokenCounts: {
 				total: number

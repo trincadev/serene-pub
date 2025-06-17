@@ -4,9 +4,9 @@ import { StopStrings } from "../utils/StopStrings"
 import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
 import { TokenCounters } from "../utils/TokenCounterManager"
-import { BaseConnectionAdapter } from "./BaseConnectionAdapter"
+import {BaseConnectionAdapter, type AdapterExports} from './BaseConnectionAdapter';
 import {
-    type BaseLoadModelOpts,
+	type BaseLoadModelOpts,
 	type LLM,
 	type LLMLoadModelConfig,
 	type LLMPredictionOpts,
@@ -15,7 +15,7 @@ import {
 	type OngoingPrediction
 } from "@lmstudio/sdk"
 
-export class LMStudioAdapter extends BaseConnectionAdapter {
+class LMStudioAdapter extends BaseConnectionAdapter {
 	private _client?: LMStudioClient
 	private _modelClient?: LLM
 	private prediction?: OngoingPrediction<unknown>
@@ -60,32 +60,6 @@ export class LMStudioAdapter extends BaseConnectionAdapter {
 		})
 	}
 
-	// --- Default LM Studio connection config ---
-	static connectionDefaults = {
-		baseUrl: "ws://localhost:1234",
-		promptFormat: PromptFormats.VICUNA,
-		tokenCounter: TokenCounterOptions.ESTIMATE,
-		extraJson: {
-			stream: true,
-			// think: false,
-			keepAlive: "300ms"
-			// raw: true
-		}
-	}
-
-	// --- SamplingConfig mapping ---
-	static samplingKeyMap: Record<string, string> = {
-		temperature: "temperature",
-		topP: "topPSampling",
-		topK: "topKSampling",
-		repetitionPenalty: "repeatPenalty",
-		minP: "minPSampling",
-		xtcProbability: "xtcProbability",
-		xtcThreshold: "xtcThreshold",
-		responseTokens: "maxTokens",
-		stopStrings: "stopStrings"
-	}
-
 	mapSamplingConfig(): Record<string, any> {
 		const result: Record<string, any> = {}
 		for (const [key, value] of Object.entries(this.sampling)) {
@@ -106,52 +80,6 @@ export class LMStudioAdapter extends BaseConnectionAdapter {
 		return result
 	}
 
-	// --- API helpers ---
-	static async testConnection(
-		connection: SelectConnection
-	): Promise<{ ok: boolean; error?: string }> {
-		const client = new LMStudioClient({ baseUrl: connection.baseUrl || "" })
-		const res = await client.system.getLMStudioVersion()
-		if (res && typeof res === "object" && "version" in res) {
-			return {
-				ok: true
-			}
-		} else {
-			return {
-				ok: false
-			}
-		}
-	}
-
-	static async listModels(
-		connection: SelectConnection
-	): Promise<{ models: any[]; error?: string }> {
-		const client = new LMStudioClient({ baseUrl: connection.baseUrl || "" })
-		const res = await client.system.listDownloadedModels()
-        console.log("LM Studio listModels response:", res)
-		if (res && Array.isArray(res)) {
-			const models = res.map((model) => {
-				return {
-					model: model.modelKey,
-					name: model.displayName
-				}
-			})
-			return {
-				models: models,
-				error: undefined
-			}
-		} else {
-			console.error(
-				"LM Studio listModels error: Unexpected response format",
-				res
-			)
-			return {
-				models: [],
-				error: "Unexpected response format from LM Studio API"
-			}
-		}
-	}
-
 	// --- LM Studio client instance ---
 	getClient() {
 		if (!this._client) {
@@ -168,14 +96,16 @@ export class LMStudioAdapter extends BaseConnectionAdapter {
 			if (!name || typeof name !== "string")
 				throw new Error("Model name required for getModelClient")
 			// TODO, keep alive?
-            const opts: BaseLoadModelOpts<LLMLoadModelConfig> = {
-                config: {
-                    contextLength: this.sampling.contextTokensEnabled ? this.sampling.contextTokens || 2048 : 2048,
-                    keepModelInMemory: false, // TODO: make configurable?
-                },
-                ttl: 1 // TODO: TTL is off for now to force reloading models
-            }
-            console.log("LM Studio getModelClient opts", opts)
+			const opts: BaseLoadModelOpts<LLMLoadModelConfig> = {
+				config: {
+					contextLength: this.sampling.contextTokensEnabled
+						? this.sampling.contextTokens || 2048
+						: 2048,
+					keepModelInMemory: false // TODO: make configurable?
+				},
+				ttl: 1 // TODO: TTL is off for now to force reloading models
+			}
+			console.log("LM Studio getModelClient opts", opts)
 			this._modelClient = await client.llm.model(name, opts)
 		}
 		return this._modelClient
@@ -303,3 +233,82 @@ export class LMStudioAdapter extends BaseConnectionAdapter {
 		}
 	}
 }
+
+const connectionDefaults = {
+	baseUrl: "ws://localhost:1234",
+	promptFormat: PromptFormats.VICUNA,
+	tokenCounter: TokenCounterOptions.ESTIMATE,
+	extraJson: {
+		stream: true,
+		// think: false,
+		keepAlive: "300ms"
+		// raw: true
+	}
+}
+
+// --- SamplingConfig mapping ---
+const samplingKeyMap: Record<string, string> = {
+	temperature: "temperature",
+	topP: "topPSampling",
+	topK: "topKSampling",
+	repetitionPenalty: "repeatPenalty",
+	minP: "minPSampling",
+	xtcProbability: "xtcProbability",
+	xtcThreshold: "xtcThreshold",
+	responseTokens: "maxTokens",
+	stopStrings: "stopStrings"
+}
+
+async function testConnection(
+	connection: SelectConnection
+): Promise<{ ok: boolean; error?: string }> {
+	const client = new LMStudioClient({ baseUrl: connection.baseUrl || "" })
+	const res = await client.system.getLMStudioVersion()
+	if (res && typeof res === "object" && "version" in res) {
+		return {
+			ok: true
+		}
+	} else {
+		return {
+			ok: false
+		}
+	}
+}
+
+async function listModels(
+	connection: SelectConnection
+): Promise<{ models: any[]; error?: string }> {
+	const client = new LMStudioClient({ baseUrl: connection.baseUrl || "" })
+	const res = await client.system.listDownloadedModels()
+	if (res && Array.isArray(res)) {
+		const models = res.map((model) => {
+			return {
+				model: model.modelKey,
+				name: model.displayName
+			}
+		})
+		return {
+			models: models,
+			error: undefined
+		}
+	} else {
+		console.error(
+			"LM Studio listModels error: Unexpected response format",
+			res
+		)
+		return {
+			models: [],
+			error: "Unexpected response format from LM Studio API"
+		}
+	}
+}
+
+const exports: AdapterExports = {
+	Adapter: LMStudioAdapter,
+	testConnection,
+	listModels,
+	connectionDefaults,
+	samplingKeyMap
+}
+
+export default exports

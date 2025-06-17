@@ -1,4 +1,4 @@
-import { BaseConnectionAdapter } from "./BaseConnectionAdapter"
+import { BaseConnectionAdapter, type AdapterExports } from "./BaseConnectionAdapter"
 import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
 import { TokenCounters } from "../utils/TokenCounterManager"
 import { OpenAI } from "openai"
@@ -10,28 +10,6 @@ import type {
 } from "../../../../node_modules/openai/src/resources/chat/completions/completions"
 
 export class OpenAIAdapter extends BaseConnectionAdapter {
-	static connectionDefaults = {
-		baseUrl: "",
-		promptFormat: undefined,
-		tokenCounter: undefined,
-		extraJson: {
-			stream: true,
-			prerenderPrompt: false
-		}
-	}
-
-	static samplingKeyMap: Record<string, string> = {
-		temperature: "temperature",
-		topP: "top_p",
-		topK: "top_k",
-		frequencyPenalty: "frequency_penalty",
-		presencePenalty: "presence_penalty",
-		responseTokens: "max_tokens",
-		stop: "stop",
-		logitBias: "logit_bias",
-		seed: "seed"
-	}
-
 	constructor({
 		connection,
 		sampling,
@@ -80,7 +58,7 @@ export class OpenAIAdapter extends BaseConnectionAdapter {
 		console.log("Generating with OpenAIAdapter")
 		const apiKey = this.connection.extraJson?.apiKey
 		const baseURL =
-			this.connection.baseUrl || OpenAIAdapter.connectionDefaults.baseUrl
+			this.connection.baseUrl || connectionDefaults.baseUrl
 		const model = this.connection.model || "gpt-3.5-turbo"
 		const stream = this.connection.extraJson?.stream || false
 		const compiledPrompt: CompiledPrompt =
@@ -106,16 +84,17 @@ export class OpenAIAdapter extends BaseConnectionAdapter {
 				: 2048
 		}
 
-		const promptFormat = this.connection?.extraJson?.prerenderPrompt ? this.connection.promptFormat || "chatml" : PromptFormats.OPENAI
+		const promptFormat = this.connection?.extraJson?.prerenderPrompt
+			? this.connection.promptFormat || "chatml"
+			: PromptFormats.OPENAI
 
 		// Add stop string if present in connection or sampling
-		params["stop"] = StopStrings.get({
-					format: promptFormat,
-					characters: this.chat.chatCharacters?.map(
-						(cc) => cc.character
-					),
-					personas: this.chat.chatPersonas?.map((cp) => cp.persona)
-				}) || []
+		params["stop"] =
+			StopStrings.get({
+				format: promptFormat,
+				characters: this.chat.chatCharacters?.map((cc) => cc.character),
+				personas: this.chat.chatPersonas?.map((cp) => cp.persona)
+			}) || []
 
 		const openaiClient = new OpenAI({
 			apiKey,
@@ -183,64 +162,96 @@ export class OpenAIAdapter extends BaseConnectionAdapter {
 		this.isAborting = true
 		// TODO: OpenAI does not support aborting requests directly.
 	}
+}
 
-	static async listModels(
-		connection: SelectConnection
-	): Promise<{ models: any[]; error?: string }> {
+const connectionDefaults = {
+	baseUrl: "",
+	promptFormat: undefined,
+	tokenCounter: undefined,
+	extraJson: {
+		stream: true,
+		prerenderPrompt: false
+	}
+}
+
+const samplingKeyMap: Record<string, string> = {
+	temperature: "temperature",
+	topP: "top_p",
+	topK: "top_k",
+	frequencyPenalty: "frequency_penalty",
+	presencePenalty: "presence_penalty",
+	responseTokens: "max_tokens",
+	stop: "stop",
+	logitBias: "logit_bias",
+	seed: "seed"
+}
+
+async function listModels(
+	connection: SelectConnection
+): Promise<{ models: any[]; error?: string }> {
+	try {
+		const apiKey = connection.extraJson?.apiKey
+		const baseURL =
+			connection.baseUrl || connectionDefaults.baseUrl
+		const openai = new OpenAI({
+			apiKey,
+			baseURL: baseURL || undefined
+		})
+		const res = await openai.models.list()
+		if (res && Array.isArray(res.data)) {
+			return { models: res.data }
+		} else {
+			return {
+				models: [],
+				error: "Unexpected response format from OpenAI API"
+			}
+		}
+	} catch (e: any) {
+		console.error("OpenAI listModels error:", e)
+		return { models: [], error: e.message || String(e) }
+	}
+}
+
+async function testConnection(
+	connection: SelectConnection
+): Promise<{ ok: boolean; error?: string }> {
+	try {
+		const apiKey = connection.extraJson?.apiKey
+		const baseURL =
+			connection.baseUrl || connectionDefaults.baseUrl
+		const openai = new OpenAI({
+			apiKey,
+			baseURL: baseURL || undefined
+		})
+		console.log("Testing OpenAI connection with baseURL:", baseURL)
+		console.log("Using API key:", apiKey)
+		// Try to list models as a test
 		try {
-			const apiKey = connection.extraJson?.apiKey
-			const baseURL =
-				connection.baseUrl || OpenAIAdapter.connectionDefaults.baseUrl
-			const openai = new OpenAI({
-				apiKey,
-				baseURL: baseURL || undefined
-			})
 			const res = await openai.models.list()
 			if (res && Array.isArray(res.data)) {
-				return { models: res.data }
+				return { ok: true }
 			} else {
 				return {
-					models: [],
+					ok: false,
 					error: "Unexpected response format from OpenAI API"
 				}
-			}
-		} catch (e: any) {
-			console.error("OpenAI listModels error:", e)
-			return { models: [], error: e.message || String(e) }
-		}
-	}
-
-	static async testConnection(
-		connection: SelectConnection
-	): Promise<{ ok: boolean; error?: string }> {
-		try {
-			const apiKey = connection.extraJson?.apiKey
-			const baseURL =
-				connection.baseUrl || OpenAIAdapter.connectionDefaults.baseUrl
-			const openai = new OpenAI({
-				apiKey,
-				baseURL: baseURL || undefined
-			})
-			console.log("Testing OpenAI connection with baseURL:", baseURL)
-			console.log("Using API key:", apiKey)
-			// Try to list models as a test
-			try {
-				const res = await openai.models.list()
-				if (res && Array.isArray(res.data)) {
-					return { ok: true }
-				} else {
-					return {
-						ok: false,
-						error: "Unexpected response format from OpenAI API"
-					}
-				}
-			} catch (e: any) {
-				console.error("OpenAI testConnection error:", e)
-				return { ok: false, error: e.message || String(e) }
 			}
 		} catch (e: any) {
 			console.error("OpenAI testConnection error:", e)
 			return { ok: false, error: e.message || String(e) }
 		}
+	} catch (e: any) {
+		console.error("OpenAI testConnection error:", e)
+		return { ok: false, error: e.message || String(e) }
 	}
 }
+
+const exports: AdapterExports = {
+	Adapter: OpenAIAdapter,
+	listModels,
+	testConnection,
+	connectionDefaults,
+	samplingKeyMap
+}
+
+export default exports

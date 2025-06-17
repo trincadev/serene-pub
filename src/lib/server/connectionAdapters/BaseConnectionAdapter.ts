@@ -1,19 +1,36 @@
 import { PromptBuilder } from "../utils/PromptBuilder"
 import type { TokenCounters } from "../utils/TokenCounterManager"
 
+export interface BaseChat extends SelectChat {
+	chatCharacters: (SelectChatCharacter & { character: SelectCharacter })[]
+	chatPersonas: (SelectChatPersona & { persona: SelectPersona })[]
+	chatMessages: SelectChatMessage[]
+}
+
+// Generic interface for constructor parameters
+export interface BaseConnectionAdapterParams {
+	connection: SelectConnection
+	sampling: SelectSamplingConfig
+	contextConfig: SelectContextConfig
+	promptConfig: SelectPromptConfig
+	chat: BaseChat
+	currentCharacterId: number
+	tokenCounter: TokenCounters
+	tokenLimit: number
+	contextThresholdPercent: number
+}
+
+// Types for abstract functions
+export type ListModelsFn = (connection: SelectConnection) => Promise<{ models: any[]; error?: string }>
+export type TestConnectionFn = (connection: SelectConnection) => Promise<{ ok: boolean; error?: string }>
+
 export abstract class BaseConnectionAdapter {
-	static connectionDefaults: Record<string, any>
-	static samplingKeyMap: Record<string, string>
 
 	connection: SelectConnection
 	sampling: SelectSamplingConfig
 	contextConfig: SelectContextConfig
 	promptConfig: SelectPromptConfig
-	chat: SelectChat & {
-		chatCharacters: (SelectChatCharacter & { character: SelectCharacter })[]
-		chatPersonas: (SelectChatPersona & { persona: SelectPersona })[]
-		chatMessages: SelectChatMessage[]
-	}
+	chat: BaseChat
 	currentCharacterId: number
 	isAborting = false
 	promptBuilder: PromptBuilder
@@ -28,23 +45,7 @@ export abstract class BaseConnectionAdapter {
 		tokenCounter,
 		tokenLimit,
 		contextThresholdPercent
-	}: {
-		connection: SelectConnection
-		sampling: SelectSamplingConfig
-		contextConfig: SelectContextConfig
-		promptConfig: SelectPromptConfig
-		chat: SelectChat & {
-			chatCharacters?: (SelectChatCharacter & {
-				character: SelectCharacter
-			})[]
-			chatPersonas?: (SelectChatPersona & { persona: SelectPersona })[]
-			chatMessages: SelectChatMessage[]
-		}
-		currentCharacterId: number
-		tokenCounter: TokenCounters
-		tokenLimit: number
-		contextThresholdPercent: number
-	}) {
+	}: BaseConnectionAdapterParams) {
 		this.connection = connection
 		this.sampling = sampling
 		this.contextConfig = contextConfig
@@ -83,4 +84,12 @@ export abstract class BaseConnectionAdapter {
 	abort() {
 		this.isAborting = true
 	}
+}
+
+export interface AdapterExports {
+	Adapter: new (args: BaseConnectionAdapterParams) => BaseConnectionAdapter,
+	listModels: ListModelsFn
+	testConnection: TestConnectionFn,
+	connectionDefaults: Record<string, any>
+	samplingKeyMap: Record<string, string>
 }
