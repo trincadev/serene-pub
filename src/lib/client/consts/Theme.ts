@@ -13,7 +13,6 @@ export class Theme {
 	static NOSH = "nosh"
 	static NOUVEAU = "nouveau"
 	static PINE = "pine"
-	static REIGN = "reign"
 	static ROCKET = "rocket"
 	static ROSE = "rose"
 	static SAHARA = "sahara"
@@ -37,7 +36,6 @@ export class Theme {
 		[Theme.NOSH, "Nosh"],
 		[Theme.NOUVEAU, "Nouveau"],
 		[Theme.PINE, "Pine"],
-		[Theme.REIGN, "Reign"],
 		[Theme.ROCKET, "Rocket"],
 		[Theme.ROSE, "Rose"],
 		[Theme.SAHARA, "Sahara"],
