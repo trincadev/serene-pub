@@ -296,7 +296,7 @@
 				id="charName"
 				type="text"
 				bind:value={editCharacterData.name}
-				class="input bg-background border-muted w-full rounded border"
+				class="input"
 			/>
 		</div>
 		<div class="flex flex-col gap-1">
@@ -305,7 +305,7 @@
 				id="charNickname"
 				type="text"
 				bind:value={editCharacterData.nickname}
-				class="input bg-background border-muted w-full rounded border"
+				class="input"
 			/>
 		</div>
 		<div class="flex flex-col gap-1">
@@ -316,7 +316,7 @@
 				id="charVersion"
 				type="text"
 				bind:value={editCharacterData.characterVersion}
-				class="input bg-background border-muted w-full rounded border"
+				class="input"
 				placeholder="1.0"
 			/>
 		</div>
@@ -333,7 +333,7 @@
 				<textarea
 					rows="8"
 					bind:value={editCharacterData.description}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="Description..."
 				></textarea>
 			{/if}
@@ -351,7 +351,7 @@
 				<textarea
 					rows="8"
 					bind:value={editCharacterData.personality}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="Personality..."
 				></textarea>
 			{/if}
@@ -369,7 +369,7 @@
 				<textarea
 					rows="8"
 					bind:value={editCharacterData.scenario}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="Scenario..."
 				></textarea>
 			{/if}
@@ -387,7 +387,7 @@
 				<textarea
 					rows="8"
 					bind:value={editCharacterData.firstMessage}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="First message..."
 				></textarea>
 			{/if}
@@ -455,7 +455,7 @@
 				<textarea
 					rows="4"
 					bind:value={editCharacterData.creatorNotes}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="Notes from the character creator..."
 				></textarea>
 			{/if}
@@ -607,7 +607,7 @@
 				<textarea
 					rows="4"
 					bind:value={editCharacterData.postHistoryInstructions}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="Instructions for post-history processing..."
 				></textarea>
 			{/if}

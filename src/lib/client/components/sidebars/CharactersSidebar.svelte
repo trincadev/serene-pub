@@ -195,7 +195,7 @@
 			<input
 				type="text"
 				placeholder="Search characters..."
-				class="input bg-background border-muted w-full rounded border"
+				class="input"
 				bind:value={search}
 			/>
 		</div>

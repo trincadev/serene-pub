@@ -162,7 +162,7 @@
                 bind:value={connection.baseUrl}
                 placeholder="https://api.openai.com/v1/"
                 required
-                class="input bg-background border-muted w-full rounded border"
+                class="input"
             />
         </div>
         {#if openAIFields}
@@ -173,7 +173,7 @@
                     type="password"
                     bind:value={openAIFields.apiKey}
                     placeholder="sk-..."
-                    class="input bg-background border-muted w-full rounded border"
+                    class="input"
                 />
             </div>
             <div class="mt-2 flex flex-col gap-1">

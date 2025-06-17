@@ -157,7 +157,7 @@
 					bind:value={connection.baseUrl}
 					placeholder="http://localhost:11434/"
 					required
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 				/>
 			</div>
 			<label class="flex items-center gap-2">
@@ -181,7 +181,7 @@
 			id="keepAlive"
 			type="text"
 			bind:value={extraFields.keepAlive}
-			class="input bg-background border-muted w-full rounded border"
+			class="input"
 			placeholder="e.g. 300ms"
 			onchange={() => {
 				connection.extraJson = {

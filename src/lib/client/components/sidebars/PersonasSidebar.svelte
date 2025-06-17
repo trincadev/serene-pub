@@ -146,7 +146,7 @@
 			<input
 				type="text"
 				placeholder="Search personas..."
-				class="input bg-background border-muted w-full rounded border"
+				class="input"
 				bind:value={search}
 			/>
 		</div>

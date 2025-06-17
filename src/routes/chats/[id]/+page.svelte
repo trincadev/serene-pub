@@ -19,7 +19,8 @@
 	let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
 	let contextExceeded = $derived(
 		!!draftCompiledPrompt
-			? draftCompiledPrompt!.meta.tokenCounts.total > draftCompiledPrompt!.meta.tokenCounts.limit
+			? draftCompiledPrompt!.meta.tokenCounts.total >
+					draftCompiledPrompt!.meta.tokenCounts.limit
 			: false
 	)
 	let openMobileMsgControls: number | undefined = $state(undefined)
@@ -207,7 +208,11 @@
 	function onSelectTriggerCharacterMessage(characterId: number) {
 		showTriggerCharacterMessageModal = false
 		openMobileMsgControls = undefined
-		socket.emit("triggerGenerateMessage", { chatId, characterId, once:true })
+		socket.emit("triggerGenerateMessage", {
+			chatId,
+			characterId,
+			once: true
+		})
 	}
 
 	onMount(() => {
@@ -275,29 +280,26 @@
 							editChatMessage?.id !== msg.id}
 					>
 						<div class="flex justify-between gap-2">
-							<div class="flex gap-2">
+							<div class="flex gap-2 group">
 								<span>
-									<!-- <Avatar
-										src={character?.avatar ?? ""}
-										size="w-[4em] h-[4em]"
-										name={character?.nickname ||
-											character?.name ||
-											"Unknown"}
-										background="preset-filled-primary-500"
-										imageClasses="object-cover"
-									>
-										<Icons.User size={36} />
-									</Avatar> -->
 									<Avatar char={character} />
 								</span>
-								<span
-									class="funnel-display text-[1.1em] font-bold"
-								>
-									{character?.nickname ||
-										character?.name ||
-										"Unknown"}
-								</span>
+								<div class="flex flex-col">
+									<button
+										class="funnel-display text-[1.1em] font-bold px-0 mx-0 w-fit"
+									>
+										{character?.nickname ||
+											character?.name ||
+											"Unknown"}
+									</button>
+									<span class="text-surface-500 text-sm opacity-0 group-hover:opacity-100 transition-opacity">
+										{new Date(
+											msg.createdAt
+										).toLocaleString()}
+									</span>
+								</div>
 							</div>
+
 							{#if editChatMessage && editChatMessage.id === msg.id}
 								<div class="flex gap-2">
 									<button
@@ -420,15 +422,6 @@
 					{@const persona = chat?.chatPersonas?.[0]?.persona}
 					<div class="hidden flex-col lg:flex lg:gap-2">
 						<span>
-							<!-- <Avatar
-								src={persona.avatar ?? ""}
-								size="w-[4em] h-[4em]"
-								name={persona?.name ?? "Unknown"}
-								background="preset-filled-primary-500"
-								imageClasses="object-cover"
-							>
-								<Icons.User size={36} />
-							</Avatar> -->
 							<Avatar char={persona} />
 						</span>
 					</div>
@@ -500,9 +493,12 @@
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
-		<header class="flex justify-between items-center">
+		<header class="flex items-center justify-between">
 			<h2 class="h2">Prompt Details</h2>
-			<button class="btn btn-sm" onclick={() => (showDraftCompiledPromptModal = false)}>
+			<button
+				class="btn btn-sm"
+				onclick={() => (showDraftCompiledPromptModal = false)}
+			>
 				<Icons.X size={20} />
 			</button>
 		</header>
@@ -511,27 +507,35 @@
 				<div class="mb-2">
 					<b>Prompt Tokens:</b>
 					<span class:text-error-500={contextExceeded}>
-						{draftCompiledPrompt.meta.tokenCounts.total} / {draftCompiledPrompt.meta.tokenCounts.limit}
+						{draftCompiledPrompt.meta.tokenCounts.total} / {draftCompiledPrompt
+							.meta.tokenCounts.limit}
 					</span>
 				</div>
 				<div class="mb-2">
 					<b>Messages Inserted:</b>
-					{draftCompiledPrompt.meta.messages.included} / {draftCompiledPrompt.meta.messages.total}
+					{draftCompiledPrompt.meta.messages.included} / {draftCompiledPrompt
+						.meta.messages.total}
 				</div>
 				<div class="mb-2">
-					<b>Prompt Format:</b> {draftCompiledPrompt.meta.promptFormat}
+					<b>Prompt Format:</b>
+					{draftCompiledPrompt.meta.promptFormat}
 				</div>
 				<div class="mb-2">
-					<b>Truncation Reason:</b> {draftCompiledPrompt.meta.truncationReason || 'None'}
+					<b>Truncation Reason:</b>
+					{draftCompiledPrompt.meta.truncationReason || "None"}
 				</div>
 				<div class="mb-2">
-					<b>Timestamp:</b> {draftCompiledPrompt.meta.timestamp}
+					<b>Timestamp:</b>
+					{draftCompiledPrompt.meta.timestamp}
 				</div>
 				<div class="mb-2">
 					<b>Characters Used:</b>
 					<ul class="ml-4 list-disc">
 						{#each draftCompiledPrompt.meta.sources.characters as char}
-							<li>{char.name} {char.nickname ? `(${char.nickname})` : ''}</li>
+							<li>
+								{char.name}
+								{char.nickname ? `(${char.nickname})` : ""}
+							</li>
 						{/each}
 					</ul>
 				</div>
@@ -544,11 +548,14 @@
 					</ul>
 				</div>
 				<div class="mb-2">
-					<b>Scenario Source:</b> {draftCompiledPrompt.meta.sources.scenario || 'None'}
+					<b>Scenario Source:</b>
+					{draftCompiledPrompt.meta.sources.scenario || "None"}
 				</div>
 				<div class="mb-2">
 					<b>Prompt Preview:</b>
-					<pre class="bg-surface-200-800 rounded p-2 overflow-x-auto text-xs max-h-64 whitespace-pre-wrap">{draftCompiledPrompt.prompt || JSON.stringify(draftCompiledPrompt.messages)}</pre>
+					<pre
+						class="bg-surface-200-800 max-h-64 overflow-x-auto rounded p-2 text-xs whitespace-pre-wrap">{draftCompiledPrompt.prompt ||
+							JSON.stringify(draftCompiledPrompt.messages)}</pre>
 				</div>
 			{:else}
 				<div class="text-muted">No compiled prompt data available.</div>
@@ -588,50 +595,47 @@
 			bind:value={triggerCharacterSearch}
 		/>
 		<div class="flex flex-col gap-2">
-			{#each (chat?.chatCharacters || [])
-				.filter(cc => {
-					const c = cc.character
-					if (!c) return false
-					const s = triggerCharacterSearch.trim().toLowerCase()
-					if (!s) return true
-					return (
-						c.name?.toLowerCase().includes(s) ||
-						c.nickname?.toLowerCase().includes(s) ||
-						c.description?.toLowerCase().includes(s) ||
-						c.creatorNotes?.toLowerCase().includes(s)
-					)
-				}) as any[] as typeof chat.chatCharacters
-				as filtered
-			}
+			{#each (chat?.chatCharacters || []).filter((cc) => {
+				const c = cc.character
+				if (!c) return false
+				const s = triggerCharacterSearch.trim().toLowerCase()
+				if (!s) return true
+				return c.name?.toLowerCase().includes(s) || c.nickname
+						?.toLowerCase()
+						.includes(s) || c.description
+						?.toLowerCase()
+						.includes(s) || c.creatorNotes
+						?.toLowerCase()
+						.includes(s)
+			}) as any[] as typeof chat.chatCharacters as filtered}
 				<button
 					class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full max-w-[25em] gap-3 overflow-hidden rounded p-3"
-					onclick={() => onSelectTriggerCharacterMessage(filtered.character.id)}
+					onclick={() =>
+						onSelectTriggerCharacterMessage(filtered.character.id)}
 				>
 					<div class="w-fit">
 						<Avatar char={filtered.character} />
 					</div>
 					<div class="relative flex w-0 min-w-0 flex-1 flex-col">
 						<div class="w-full truncate text-left font-semibold">
-							{filtered.character.nickname || filtered.character.name}
+							{filtered.character.nickname ||
+								filtered.character.name}
 						</div>
 						<div
 							class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs"
 						>
-							{filtered.character.creatorNotes || filtered.character.description || ""}
+							{filtered.character.creatorNotes ||
+								filtered.character.description ||
+								""}
 						</div>
 					</div>
 				</button>
-		{/each}
+			{/each}
 		</div>
 	{/snippet}
 </Modal>
 
 {#snippet messageControls(msg: SelectChatMessage)}
-	<div class="hidden gap-6 lg:flex">
-		<span class="text-surface-500 mx-6">
-			{new Date(msg.createdAt).toLocaleString()}
-		</span>
-	</div>
 	<button
 		class="btn btn-sm msg-cntrl-icon hover:preset-filled-secondary-500"
 		class:preset-filled-secondary-500={msg.isHidden}
@@ -740,22 +744,26 @@
 			<Icons.Info size={24} />
 		</button>
 		<div class="flex flex-col text-sm">
-		{#if draftCompiledPrompt}
-			<div>
-				<b>Prompt Tokens:</b>
-				<span class:text-error-500={contextExceeded}>
-					{draftCompiledPrompt.meta.tokenCounts.total} / {draftCompiledPrompt.meta.tokenCounts.limit}
-				</span>
-			</div>
-			<div>
-				<b>Messages Inserted:</b>
-				{draftCompiledPrompt.meta.messages.included} / {draftCompiledPrompt.meta.messages.total}
-				<span class="text-surface-500">(Includes current draft)</span>
-			</div>
-		{:else}
-			<div class="text-muted">No prompt statistics available.</div>
-		{/if}
-	</div>
+			{#if draftCompiledPrompt}
+				<div>
+					<b>Prompt Tokens:</b>
+					<span class:text-error-500={contextExceeded}>
+						{draftCompiledPrompt.meta.tokenCounts.total} / {draftCompiledPrompt
+							.meta.tokenCounts.limit}
+					</span>
+				</div>
+				<div>
+					<b>Messages Inserted:</b>
+					{draftCompiledPrompt.meta.messages.included} / {draftCompiledPrompt
+						.meta.messages.total}
+					<span class="text-surface-500">
+						(Includes current draft)
+					</span>
+				</div>
+			{:else}
+				<div class="text-muted">No prompt statistics available.</div>
+			{/if}
+		</div>
 	</div>
 {/snippet}
 

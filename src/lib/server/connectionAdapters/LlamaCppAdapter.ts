@@ -350,14 +350,31 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 								cancelToken: cancelTokenSource.token
 							}
 						)
-						for await (const chunk of Readable.from(response.data as any)) {
+						const stream = response.data as any
+						let buffer = ""
+						for await (const chunk of Readable.from(stream)) {
 							if (this.isAborting) {
 								cancelTokenSource.cancel("Request aborted by user.");
 								break;
 							}
-							const str = chunk.toString()
-							content += str
-							cb(str)
+							buffer += chunk.toString()
+							let lines = buffer.split(/\r?\n/)
+							buffer = lines.pop() || ""
+							for (const line of lines) {
+								const trimmed = line.trim()
+								if (!trimmed || !trimmed.startsWith("data:")) continue
+								const jsonStr = trimmed.slice(5).trim()
+								if (!jsonStr) continue
+								try {
+									const data = JSON.parse(jsonStr)
+									if (typeof data.content === "string" && data.content.length > 0) {
+										content += data.content
+										cb(data.content)
+									}
+								} catch (err) {
+									// ignore JSON parse errors
+								}
+							}
 						}
 					} catch (e: any) {
 						cb("FAILURE: " + (e.message || String(e)))

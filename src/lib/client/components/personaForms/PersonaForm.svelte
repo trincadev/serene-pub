@@ -239,7 +239,7 @@
                 id="personaName"
                 type="text"
                 bind:value={editPersonaData.name}
-                class="input bg-background border-muted w-full rounded border"
+                class="input"
             />
         </div>
         <div class="flex flex-col gap-2">
@@ -248,7 +248,7 @@
                 id="personaDescription"
                 rows="3"
                 bind:value={editPersonaData.description}
-                class="input bg-background border-muted w-full rounded border"
+                class="input"
                 placeholder="Description..."
             ></textarea>
         </div>

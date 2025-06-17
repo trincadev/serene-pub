@@ -190,7 +190,7 @@
 					id="name"
 					type="text"
 					bind:value={connection.name}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 				/>
 			</div>
 			{#if connection.type === CONNECTION_TYPE.OLLAMA}

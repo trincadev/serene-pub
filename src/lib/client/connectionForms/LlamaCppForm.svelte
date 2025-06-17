@@ -128,7 +128,7 @@
 				bind:value={connection.baseUrl}
 				placeholder="http://localhost:8080/"
 				required
-				class="input bg-background border-muted w-full rounded border"
+				class="input"
 			/>
 		</div>
 		{#if llamaCppFields}
