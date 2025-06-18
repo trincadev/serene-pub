@@ -1,7 +1,18 @@
-# Serene Pub
+<img src="static/logo-w-text.png"/>
 
+Serene Pub is a modern, customizable chat application designed for immersive roleplay and creative conversations. Inspired by Silly Tavern, it aims to be more intuitive, responsive, and simple to configure.
+
+Primary concerns Serene Pub aims to address:
+  1. Reduce the number of nested menus and settings.
+  2. Reduced visual clutter.
+  3. Manage settings server-side to prevent configurations from changing because the user switched windows/devices.
+  4. Make API calls & chat completion requests asyncronously server-side so they process regardless of window/device state.
+  5. Use sockets for all data, the user will see the same information updated across all windows/devices.
+  6. Have compatibility with the majority of Silly Tavern import/exports, i.e. Character Cards
+  7. Overall be a well rounded app with a suite of features. Use SillyTavern if you want the most options, features and plugin-support.
+
+## TOC
 <!-- TOC -->
-- [Project Status](#project-status)
 - [Screenshots](#screenshots)
 - [Features](#features)
   - [Functional](#functional)
@@ -19,17 +30,6 @@
 - [Documentation](#documentation)
 - [Troubleshooting](#troubleshooting)
 <!-- /TOC -->
-
-Serene Pub is a modern, customizable chat application designed for immersive roleplay and creative conversations. Inspired by Silly Tavern, it aims to be more intuitive, responsive, and simple to configure.
-
-Primary concerns Serene Pub aims to address:
-  1. Reduce the number of nested menus and settings.
-  2. Reduced visual clutter.
-  3. Manage settings server-side to prevent configurations from changing because the user switched windows/devices.
-  4. Make API calls & chat completion requests asyncronously server-side so they process regardless of window/device state.
-  5. Use sockets for all data, the user will see the same information updated across all windows/devices.
-  6. Have compatibility with the majority of Silly Tavern import/exports, i.e. Character Cards
-  7. Overall be a well rounded app with a suite of features. Use SillyTavern if you want the most options, features and plugin-support.
 
 ## Screenshots
 
