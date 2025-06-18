@@ -3,6 +3,9 @@
 	import Layout from "$lib/client/components/Layout.svelte"
 	import { loadSocketsClient } from "$lib/client/sockets/loadSockets.svelte"
     import type { Snippet } from "svelte"
+	import { page } from "$app/state"
+	import { onMount } from "svelte"
+	import * as Icons from "@lucide/svelte"
 
 	interface Props {
 		children?: Snippet
@@ -11,16 +14,33 @@
 	let { children }: Props = $props()
 
 	let socketsInitialized = $state(false)
+	let showUpdateBar = $state(true)
 
 	if (browser) {
 		loadSocketsClient().then(() => {
 			socketsInitialized = true
 		})
 	}
+
+	console.log("Page data:", page.data)
 </script>
 
 {#if socketsInitialized}
 	<Layout>
 		{@render children?.()}
 	</Layout>
+{/if}
+{#if page.data?.isNewerReleaseAvailable && showUpdateBar}
+	<div class="sticky bottom-0 left-0 right-0 p-4 bg-surface-200-800 text-center z-100">
+		<span>
+			A newer version of Serene Pub is available!&nbsp;
+			<a href="https://github.com/doolijb/serene-pub/releases" target="_blank" rel="noopener" class="btn preset-filled-success-500">
+				<Icons.Download size={16} />
+				Download here
+			</a>
+		</span>
+		<button onclick={() => showUpdateBar = false} style="margin-left: 2rem; background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">
+			<Icons.X size={16} />
+		</button>
+	</div>
 {/if}

@@ -48,10 +48,8 @@ async function checkForUpdates() {
 				typeof appVersion === "string"
 			) {
 				const isNewer = compareVersions(latestTag, appVersion) === 1
-				// ;(event.locals as any).latestRelease = latestTag
 				latestReleaseTag = latestTag
 				isNewerReleaseAvailable = isNewer
-				// ;(event.locals as any).isNewerReleaseAvailable = isNewer
 				if (isNewer) {
 					console.log(
 						`[VersionCheck] Newer release available: ${latestTag}`
@@ -75,7 +73,7 @@ let isNewerReleaseAvailable: boolean | undefined = undefined
 let hasCheckedForUpdates = false
 
 export const handle: Handle = async ({ event, resolve }) => {
-	if (!dev && !hasCheckedForUpdates) {
+	if ( !dev && !hasCheckedForUpdates ) {
 		hasCheckedForUpdates = true
 		await checkForUpdates()
 	}

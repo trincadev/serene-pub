@@ -12,7 +12,10 @@ declare global {
 			latestReleaseTag?: string
 			isNewerReleaseAvailable?: boolean
 		}
-		// interface PageData {}
+		interface PageData {
+			latestReleaseTag?: string
+			isNewerReleaseAvailable?: boolean
+		}
 		// interface PageState {}
 		// interface Platform {}
 	}
