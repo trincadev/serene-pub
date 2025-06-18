@@ -14,7 +14,7 @@ const version = pkg.version
 const distDir = path.resolve(__dirname, "../dist")
 const buildDir = path.resolve(__dirname, "../build")
 const staticDir = path.resolve(__dirname, "../static")
-const filesToCopy = ["LICENSE", "README.md"]
+const filesToCopy = ["LICENSE", "README.md", "NOTICE.md"]
 
 function copyRecursive(src, dest) {
 	if (!fs.existsSync(src)) return
