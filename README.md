@@ -13,7 +13,7 @@ Primary concerns Serene Pub aims to address:
   6. Have compatibility with the majority of Silly Tavern import/exports, i.e. Character Cards
   7. Overall be a well rounded app with a suite of features. Use SillyTavern if you want the most options, features and plugin-support.
 
-> 📄 See the <a href="NOTICE">NOTICE</a> file for attributions, contributors, and licensing details.
+> 📄 See the <a href="NOTICE.md">NOTICE</a> file for attributions, contributors, and licensing details.
 
 ## TOC
 <!-- TOC -->
