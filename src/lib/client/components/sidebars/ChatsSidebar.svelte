@@ -269,7 +269,7 @@
 										{:else}
 											{#each avatars.slice(0, 3) as avatar, i}
 												<div
-													class="ml-[-3em] inline-block first:ml-0"
+													class="ml-[-2.25em] inline-block first:ml-0"
 													style="z-index: {10 - i};"
 												>
 													<Avatar

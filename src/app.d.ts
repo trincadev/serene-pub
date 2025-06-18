@@ -8,7 +8,10 @@ import type { Schema } from "inspector/promises"
 declare global {
 	namespace App {
 		// interface Error {}
-		// interface Locals {}
+		interface Locals {
+			latestReleaseTag?: string
+			isNewerReleaseAvailable?: boolean
+		}
 		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}

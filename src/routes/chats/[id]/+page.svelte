@@ -7,6 +7,7 @@
 	import { renderMarkdownWithQuotedText } from "$lib/client/utils/markdownToHTML"
 	import { getContext, onMount } from "svelte"
 	import Avatar from "$lib/client/components/Avatar.svelte"
+	import { goto } from "$app/navigation"
 
 	let chat: Sockets.Chat.Response["chat"] | undefined = $state()
 	let newMessage = $state("")
@@ -16,6 +17,7 @@
 	let editChatMessage: SelectChatMessage | undefined = $state()
 	let draftCompiledPrompt: CompiledPrompt | undefined = $state()
 	let userCtx: UserCtx = getContext("userCtx")
+	let panelsCtx: PanelsCtx | undefined = getContext("panelsCtx")
 	let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
 	let contextExceeded = $derived(
 		!!draftCompiledPrompt
@@ -215,6 +217,32 @@
 		})
 	}
 
+	function handleCharacterNameClick(msg: SelectChatMessage): void {
+		if (msg.characterId) {
+			// add characterId to search params
+			const url = new URL(window.location.href)
+			url.searchParams.set("characterId", msg.characterId.toString())
+			// Remove if personaId is present
+			url.searchParams.delete("personaId")
+			goto(url.toString(), {
+				replaceState: false,
+				noScroll: true
+			})
+			panelsCtx?.openPanel("characters")
+		} else if (msg.personaId) {
+			// add personaId to search params
+			const url = new URL(window.location.href)
+			url.searchParams.set("personaId", msg.personaId.toString())
+			// Remove if characterId is present
+			url.searchParams.delete("characterId")
+			goto(url.toString(), {
+				replaceState: false,
+				noScroll: true
+			})
+			panelsCtx?.openPanel("personas")
+		}
+	}
+
 	onMount(() => {
 		socket.on("chat", (msg: Sockets.Chat.Response) => {
 			if (msg.chat.id === Number.parseInt(page.params.id)) {
@@ -259,6 +287,17 @@
 			}
 		)
 	})
+
+	let showAvatarModal = $state(false)
+	let avatarModalSrc: string | undefined = $state(undefined)
+
+	function handleAvatarClick(char: SelectCharacter | SelectPersona | undefined) {
+		if (!char) return
+		if (char.avatar) {
+			avatarModalSrc = char.avatar
+			showAvatarModal = true
+		}
+	}
 </script>
 
 <svelte:head>
@@ -282,11 +321,16 @@
 						<div class="flex justify-between gap-2">
 							<div class="flex gap-2 group">
 								<span>
-									<Avatar char={character} />
+									<!-- Make avatar clickable -->
+									<button class="w-fit m-0 p-0" onclick={() => handleAvatarClick(character)} title="View Avatar">
+										<Avatar char={character} />
+									</button>
 								</span>
 								<div class="flex flex-col">
 									<button
-										class="funnel-display text-[1.1em] font-bold px-0 mx-0 w-fit"
+										class="funnel-display text-[1.1em] font-bold px-0 mx-0 w-fit hover:underline"
+										onclick={(e) => handleCharacterNameClick(msg)}
+										title="Edit"
 									>
 										{character?.nickname ||
 											character?.name ||
@@ -632,6 +676,29 @@
 				</button>
 			{/each}
 		</div>
+	{/snippet}
+</Modal>
+
+<Modal
+	open={showAvatarModal}
+	onOpenChange={(e) => (showAvatarModal = e.open)}
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-md flex flex-col items-center"
+	backdropClasses="backdrop-blur-sm"
+>
+	{#snippet content()}
+		<header class="flex justify-between w-full">
+			<h2 class="h2">Avatar</h2>
+			<button class="btn btn-sm" onclick={() => (showAvatarModal = false)}>
+				<Icons.X size={20} />
+			</button>
+		</header>
+		<article class="flex flex-col items-center w-full">
+			{#if avatarModalSrc}
+				<img src={avatarModalSrc} alt="Avatar" class="max-h-[60vh] max-w-full rounded-lg border border-surface-300" />
+			{:else}
+				<div class="text-muted">No avatar image available.</div>
+			{/if}
+		</article>
 	{/snippet}
 </Modal>
 

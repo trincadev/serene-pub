@@ -118,6 +118,22 @@
 			panelsCtx.openPanel("chats")
 		}
 	}
+
+		// // If personaId is set in the URL, open the persona form
+		// const url = new URL(window.location.href)
+		// const personaIdParam = url.searchParams.get("personaId")
+		// if (personaIdParam) {
+		// 	const id = parseInt(personaIdParam, 10)
+		// 	if (!isNaN(id)) {
+		// 		personaId = id
+		// 	}
+		// }
+		// // Remove personaId from URL to avoid confusion
+		// url.searchParams.delete("personaId")
+		// history.replaceState({}, "", url.toString())
+		// if (personaId) {
+		// 	handleEditClick(personaId)
+		// }
 </script>
 
 <div class="text-foreground h-full p-4">
