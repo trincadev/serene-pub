@@ -18,7 +18,7 @@
 	const socket = skio.get()
 	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 
-	let personasList = $state([])
+	let personasList: Sockets.PersonasList.Response["personasList"] = $state([])
 	let search = $state("")
 	let personaId: number | undefined = $state()
 	let isCreating = $state(false)
@@ -27,13 +27,14 @@
 	let personaToDelete: number | undefined = $state(undefined)
 	let showUnsavedChangesModal = $state(false)
 	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
+	let onEditFormCancel: (() => void) | undefined = $state()
 
 	onMount(() => {
 		socket.emit("personasList", {})
 		onclose = handleOnClose
 	})
 
-	socket.on("personasList", (msg) => {
+	socket.on("personasList", (msg: Sockets.PersonasList.Response) => {
 		personasList = msg.personasList
 	})
 
@@ -41,10 +42,22 @@
 		if (!search) return personasList
 		return personasList.filter(
 			(p) =>
-				p.name.toLowerCase().includes(search.toLowerCase()) ||
+				p.name!.toLowerCase().includes(search.toLowerCase()) ||
 				(p.description &&
 					p.description.toLowerCase().includes(search.toLowerCase()))
 		)
+	})
+
+	$effect(() => {
+		if (panelsCtx.digest.personaId) {
+			// Check if we have unsaved changes
+			if (personaId !== panelsCtx.digest.characterId && !isSafeToClosePersonasForm) {
+				onEditFormCancel?.()
+			} else { // If no unsaved changes, just set the characterId
+				personaId = panelsCtx.digest.personaId
+			}
+			delete panelsCtx.digest.personaId
+		}
 	})
 
 	function handleCreateClick() {
@@ -110,30 +123,10 @@
 	function handlePersonaClick(
 		persona: Sockets.PersonasList.Response["personasList"][0]
 	) {
-		const url = new URL(window.location.href)
-		if (persona.id !== undefined) {
-			url.searchParams.set("chats-by-personaId", persona.id.toString())
-			goto(url.pathname + url.search, {replaceState: true})
-			// Open chat sidebar
-			panelsCtx.openPanel("chats")
-		}
+		panelsCtx.digest.chatPersonaId = persona.id
+		panelsCtx.openPanel({key:"chats", toggle: false})
 	}
 
-		// // If personaId is set in the URL, open the persona form
-		// const url = new URL(window.location.href)
-		// const personaIdParam = url.searchParams.get("personaId")
-		// if (personaIdParam) {
-		// 	const id = parseInt(personaIdParam, 10)
-		// 	if (!isNaN(id)) {
-		// 		personaId = id
-		// 	}
-		// }
-		// // Remove personaId from URL to avoid confusion
-		// url.searchParams.delete("personaId")
-		// history.replaceState({}, "", url.toString())
-		// if (personaId) {
-		// 	handleEditClick(personaId)
-		// }
 </script>
 
 <div class="text-foreground h-full p-4">
@@ -141,12 +134,14 @@
 		<PersonaForm
 			bind:isSafeToClose={isSafeToClosePersonasForm}
 			closeForm={closePersonasForm}
+			bind:onCancel={onEditFormCancel}
 		/>
 	{:else if personaId}
 		<PersonaForm
 			bind:isSafeToClose={isSafeToClosePersonasForm}
 			{personaId}
 			closeForm={closePersonasForm}
+			bind:onCancel={onEditFormCancel}
 		/>
 	{:else}
 		<div class="mb-2 flex gap-2">
@@ -206,7 +201,7 @@
 								class="btn btn-sm text-primary-500 px-0"
 								onclick={(e) => {
 									e.stopPropagation()
-									handleEditClick(p.id)
+									handleEditClick(p.id!)
 								}}
 								title="Edit Persona"
 							>
@@ -216,7 +211,7 @@
 								class="btn btn-sm text-error-500 px-0"
 								onclick={(e) => {
 									e.stopPropagation()
-									handleDeleteClick(p.id)
+									handleDeleteClick(p.id!)
 								}}
 								title="Delete Personar"
 							>

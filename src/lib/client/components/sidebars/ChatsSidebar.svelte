@@ -131,11 +131,22 @@
 		})
 	})
 
-	$effect.pre(() => {
-		const characterId = page.url.searchParams.get("chats-by-characterId")
-		if (characterId) {
-			searchByCharacterId = parseInt(characterId)
+	$effect(() => {
+		if (panelsCtx.digest.chatCharacterId) {
+			console.log(
+				"Searching chats by character ID:",
+				panelsCtx.digest.chatCharacterId
+			)
+			searchByCharacterId = panelsCtx.digest.chatCharacterId
 		}
+		if (panelsCtx.digest.chatPersonaId) {
+			searchByPersonaId = panelsCtx.digest.chatPersonaId
+		}
+		delete panelsCtx.digest.chatCharacterId
+		delete panelsCtx.digest.chatPersonaId
+	})
+
+	$effect(() => {
 		if (searchByCharacterId) {
 			socket.once("character", (msg: Sockets.Character.Response) => {
 				searchCharacter = msg.character
@@ -145,11 +156,9 @@
 			}
 			socket.emit("character", charIdReq)
 		}
+	})
 
-		const personaId = page.url.searchParams.get("chats-by-personaId")
-		if (personaId) {
-			searchByPersonaId = parseInt(personaId)
-		}
+	$effect(() => {
 		if (searchByPersonaId) {
 			socket.once("persona", (msg: Sockets.Persona.Response) => {
 				searchPersona = msg.persona
@@ -231,9 +240,9 @@
 						<li
 							class="sidebar-list-item flex items-center"
 							onclick={() => handleChatClick(chat)}
-                            title="Open Chat"
+							title="Open Chat"
 						>
-							<div class="w-fit relative">
+							<div class="relative w-fit">
 								{#if chat}
 									{@const avatars = [
 										...(chat.chatCharacters || []).map(
@@ -279,7 +288,7 @@
 											{/each}
 											{#if avatars.length > 3}
 												<div
-													class="px-1 text-xs aspect-square pt-[0.15em] select-none preset-tonal-secondary relative z-1 mb-auto rounded-full"
+													class="preset-tonal-secondary relative z-1 mb-auto aspect-square rounded-full px-1 pt-[0.15em] text-xs select-none"
 												>
 													+{avatars.length - 3}
 												</div>

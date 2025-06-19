@@ -3,6 +3,7 @@
 import type { Component } from "@lucide/svelte"
 import * as schema from "$lib/server/db/schema"
 import type { Schema } from "inspector/promises"
+import type { P } from "ollama/dist/shared/ollama.d792a03f.mjs"
 
 // for information about these interfaces
 declare global {
@@ -29,7 +30,7 @@ declare global {
 		rightPanel: string | null
 		mobilePanel: string | null
 		isMobileMenuOpen: boolean
-		openPanel: (key: string) => void
+		openPanel: (args:{key: string, toggle?: boolean}) => void
 		closePanel: (args: {
 			panel: "left" | "right" | "mobile"
 		}) => Promise<boolean>
@@ -44,6 +45,12 @@ declare global {
 			string,
 			{ icon: Component<Icons.IconProps, {}, "">; title: string }
 		>
+		digest: {
+			characterId?: number
+			personaId?: number
+			chatPersonaId?: number
+			chatCharacterId?: number
+		}
 	}
 
 	interface UserCtx {

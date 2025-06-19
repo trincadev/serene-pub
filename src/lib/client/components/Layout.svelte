@@ -55,63 +55,73 @@
 			lorebooks: { icon: Icons.BookMarked, title: "Lorebooks" },
 			tags: { icon: Icons.Tag, title: "Tags" },
 			chats: { icon: Icons.MessageSquare, title: "Chats" }
-		}
+		},
+		digest: {}
 	})
 	let themeCtx: ThemeCtx = $state({
 		mode: localStorage.getItem("mode") as "light" | "dark" || "dark",
 		theme: localStorage.getItem("theme") || Theme.CERBERUS
 	})
 
-	function openPanel(which: string) {
+	function openPanel({key, toggle = true}: { key: string; toggle?: boolean }): void {
 		// Determine which nav the key belongs to
 		const isLeft = Object.prototype.hasOwnProperty.call(
 			panelsCtx.leftNav,
-			which
+			key
 		)
 		const isRight = Object.prototype.hasOwnProperty.call(
 			panelsCtx.rightNav,
-			which
+			key
 		)
 		const isMobile = window.innerWidth < 768
 		if (isMobile) {
-			if (panelsCtx.mobilePanel === which) {
-				closePanel({ panel: "mobile" })
+			if (panelsCtx.mobilePanel === key) {
+				if (toggle) {
+					closePanel({ panel: "mobile" })
+				}
+				// else do nothing (leave open)
 			} else if (panelsCtx.mobilePanel) {
 				closePanel({ panel: "mobile" }).then((res) => {
 					if (res) {
-						panelsCtx.mobilePanel = which
+						panelsCtx.mobilePanel = key
 						panelsCtx.leftPanel = null
 						panelsCtx.rightPanel = null
 					}
 				})
 			} else {
-				panelsCtx.mobilePanel = which
+				panelsCtx.mobilePanel = key
 				panelsCtx.leftPanel = null
 				panelsCtx.rightPanel = null
 			}
 		} else if (isLeft) {
-			if (panelsCtx.leftPanel === which) {
-				closePanel({ panel: "left" })
+			if (panelsCtx.leftPanel === key) {
+				if (toggle) {
+					closePanel({ panel: "left" })
+				}
+				// else do nothing (leave open)
 			} else if (panelsCtx.leftPanel) {
 				closePanel({ panel: "left" }).then((res) => {
 					if (res) {
-						panelsCtx.leftPanel = which
+						panelsCtx.leftPanel = key
 					}
 				})
 			} else {
-				panelsCtx.leftPanel = which
+				panelsCtx.leftPanel = key
 			}
 		} else if (isRight) {
-			if (panelsCtx.rightPanel === which) {
-				closePanel({ panel: "right" })
+			if (panelsCtx.rightPanel === key) {
+				if (toggle) {
+					closePanel({ panel: "right" })
+				}
+				// else do nothing (leave open)
 			} else if (panelsCtx.rightPanel) {
 				closePanel({ panel: "right" }).then((res) => {
 					if (res) {
-						panelsCtx.rightPanel = which
+						panelsCtx.rightPanel = key
 					}
 				})
 			} else {
-				panelsCtx.rightPanel = which
+				panelsCtx.rightPanel = key
 			}
 		}
 	}
@@ -136,7 +146,7 @@
 	}
 
 	function handleMobilePanelClick(key: string) {
-		panelsCtx.openPanel(key)
+		panelsCtx.openPanel({key})
 		panelsCtx.isMobileMenuOpen = false
 	}
 

@@ -7,6 +7,7 @@
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import { goto } from "$app/navigation"
+	import { page } from "$app/state"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -28,13 +29,26 @@
 	let showUnsavedChangesModal = $state(false)
 	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 	let showImportModal = $state(false)
+	let onEditFormCancel: (() => void) | undefined = $state()
 
 	let unsavedChanges = $derived.by(() => {
 		return !isCreating && !characterId ? false : !isSafeToCloseCharacterForm
 	})
 
 	$effect(() => {
-		console.log("Unsaved changes:", unsavedChanges)
+		if (panelsCtx.digest.characterId) {
+			// Check if we have unsaved changes
+			if (
+				characterId !== panelsCtx.digest.characterId &&
+				unsavedChanges
+			) {
+				onEditFormCancel?.()
+			} else {
+				// If no unsaved changes, just set the characterId
+				characterId = panelsCtx.digest.characterId
+			}
+			delete panelsCtx.digest.characterId
+		}
 	})
 
 	// Filtered list
@@ -139,11 +153,8 @@
 	function handleCharacterClick(
 		character: Sockets.CharactersList.Response["charactersList"][0]
 	) {
-		const url = new URL(window.location.href)
-		url.searchParams.set("chats-by-characterId", character.id.toString())
-		goto(url.pathname + url.search, {replaceState: true})
-		// Open chat sidebar
-		panelsCtx.openPanel("chats")
+		panelsCtx.digest.chatCharacterId = character.id
+		panelsCtx.openPanel({ key: "chats", toggle: false })
 	}
 
 	onMount(() => {
@@ -162,11 +173,14 @@
 			closeForm={closeCharacterForm}
 		/>
 	{:else if characterId}
-		<CharacterForm
-			bind:isSafeToClose={isSafeToCloseCharacterForm}
-			{characterId}
-			closeForm={closeCharacterForm}
-		/>
+		{#key characterId}
+			<CharacterForm
+				bind:isSafeToClose={isSafeToCloseCharacterForm}
+				{characterId}
+				closeForm={closeCharacterForm}
+				bind:onCancel={onEditFormCancel}
+			/>
+		{/key}
 	{:else}
 		<div class="mb-2 flex gap-2">
 			<button

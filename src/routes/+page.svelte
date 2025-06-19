@@ -31,29 +31,29 @@
 	})
 
 	function openSettings() {
-		panelsCtx.openPanel("settings")
+		panelsCtx.openPanel({key: "settings"})
 	}
 
 	function openSamplingConfig() {
-		panelsCtx.openPanel("sampling")
+		panelsCtx.openPanel({key: "sampling"})
 	}
 	function openContextConfig() {
-		panelsCtx.openPanel("context")
+		panelsCtx.openPanel({key: "context"})
 	}
 	function openPromptConfig() {
-		panelsCtx.openPanel("prompts")
+		panelsCtx.openPanel({key: "prompts"})
 	}
 	function openConnections() {
-		panelsCtx.openPanel("connections")
+		panelsCtx.openPanel({key: "connections"})
 	}
 	function openCharacters() {
-		panelsCtx.openPanel("characters")
+		panelsCtx.openPanel({key: "characters"})
 	}
 	function openPersonas() {
-		panelsCtx.openPanel("personas")
+		panelsCtx.openPanel({key: "personas"})
 	}
 	function openChats() {
-		panelsCtx.openPanel("chats")
+		panelsCtx.openPanel({key: "chats"})
 	}
 </script>
 

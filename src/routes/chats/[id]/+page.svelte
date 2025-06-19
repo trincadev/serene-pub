@@ -17,7 +17,7 @@
 	let editChatMessage: SelectChatMessage | undefined = $state()
 	let draftCompiledPrompt: CompiledPrompt | undefined = $state()
 	let userCtx: UserCtx = getContext("userCtx")
-	let panelsCtx: PanelsCtx | undefined = getContext("panelsCtx")
+	let panelsCtx: PanelsCtx = getContext("panelsCtx")
 	let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
 	let contextExceeded = $derived(
 		!!draftCompiledPrompt
@@ -219,27 +219,11 @@
 
 	function handleCharacterNameClick(msg: SelectChatMessage): void {
 		if (msg.characterId) {
-			// add characterId to search params
-			const url = new URL(window.location.href)
-			url.searchParams.set("characterId", msg.characterId.toString())
-			// Remove if personaId is present
-			url.searchParams.delete("personaId")
-			goto(url.toString(), {
-				replaceState: false,
-				noScroll: true
-			})
-			panelsCtx?.openPanel("characters")
+			panelsCtx.openPanel({key: "characters", toggle: false})
+			panelsCtx.digest.characterId = msg.characterId
 		} else if (msg.personaId) {
-			// add personaId to search params
-			const url = new URL(window.location.href)
-			url.searchParams.set("personaId", msg.personaId.toString())
-			// Remove if characterId is present
-			url.searchParams.delete("characterId")
-			goto(url.toString(), {
-				replaceState: false,
-				noScroll: true
-			})
-			panelsCtx?.openPanel("personas")
+			panelsCtx.openPanel({key: "personas", toggle: false})
+			panelsCtx.digest.personaId = msg.personaId
 		}
 	}
 

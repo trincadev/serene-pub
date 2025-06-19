@@ -30,12 +30,14 @@
 		characterId?: number
 		isSafeToClose: boolean
 		closeForm: () => void
+		onCancel?: () => void
 	}
 
 	let {
 		characterId,
 		isSafeToClose = $bindable(),
-		closeForm
+		closeForm = $bindable(),
+		onCancel = $bindable()
 	}: Props = $props()
 
 	const socket = skio.get()
@@ -156,6 +158,7 @@
 	}
 
 	onMount(() => {
+		onCancel = handleCancel
 		socket.on("createCharacter", (res) => {
 			if (!res.error) {
 				closeForm()
@@ -211,7 +214,7 @@
 </script>
 
 <div
-	class="border-primary bg-background animate-fade-in min-h-full rounded-lg border p-4 shadow-lg"
+	class="border-primary bg-background animate-fade-in min-h-full rounded-lg border border-surface-400-600 p-4 shadow-lg"
 >
 	<h2 class="mb-4 text-lg font-bold">
 		{mode === "edit"

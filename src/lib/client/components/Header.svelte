@@ -39,7 +39,7 @@
                 <button
                     class="btn-ghost"
                     title={item.title}
-                    onclick={() => panelsCtx.openPanel(key)}
+                    onclick={() => panelsCtx.openPanel({key})}
                 >
                     <item.icon class="text-foreground h-5 w-5" />
                 </button>
@@ -61,7 +61,7 @@
                 <button
                     class="btn-ghost"
                     title={item.title}
-                    onclick={() => panelsCtx.openPanel(key)}
+                    onclick={() => panelsCtx.openPanel({key})}
                 >
                     <item.icon class="text-foreground h-5 w-5" />
                 </button>
