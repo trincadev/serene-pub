@@ -82,8 +82,12 @@ declare global {
 	type InsertPromptConfig = typeof schema.promptConfigs.$inferInsert
 	type SelectLorebook = typeof schema.lorebooks.$inferSelect
 	type InsertLorebook = typeof schema.lorebooks.$inferInsert
-	type SelectLorebookEntry = typeof schema.lorebookEntries.$inferSelect
-	type InsertLorebookEntry = typeof schema.lorebookEntries.$inferInsert
+	type SelectWorldLoreEntry = typeof schema.worldLoreEntries.$inferSelect
+	type InsertWorldLoreEntry = typeof schema.worldLoreEntries.$inferInsert
+	type SelectCharacterLoreEntry = typeof schema.characterLoreEntries.$inferSelect
+	type InsertCharacterLoreEntry = typeof schema.characterLoreEntries.$inferInsert
+	type SelectHistoryEntry = typeof schema.historyEntries.$inferSelect
+	type InsertHistoryEntry = typeof schema.historyEntries.$inferInsert
 	type SelectTag = typeof schema.tags.$inferSelect
 	type InsertTag = typeof schema.tags.$inferInsert
 	type SelectCharacterTag = typeof schema.characterTags.$inferSelect
@@ -100,6 +104,8 @@ declare global {
 	type InsertChatPersona = typeof schema.chatPersonas.$inferInsert
 	type SelectChatCharacter = typeof schema.chatCharacters.$inferSelect
 	type InsertChatCharacter = typeof schema.chatCharacters.$inferInsert
+	type SelectChatLorebook = typeof schema.chatLorebooks.$inferSelect
+	type InsertChatLorebook = typeof schema.chatLorebooks.$inferInsert
 
 	namespace Sockets {
 		namespace SamplingConfig {

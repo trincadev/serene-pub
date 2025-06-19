@@ -52,7 +52,7 @@
 		rightNav: {
 			personas: { icon: Icons.UserCog, title: "Personas" },
 			characters: { icon: Icons.Users, title: "Characters" },
-			lorebooks: { icon: Icons.BookMarked, title: "Lorebooks" },
+			lorebooks: { icon: Icons.BookMarked, title: "Lorebooks+" },
 			tags: { icon: Icons.Tag, title: "Tags" },
 			chats: { icon: Icons.MessageSquare, title: "Chats" }
 		},
