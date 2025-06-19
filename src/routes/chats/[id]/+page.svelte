@@ -264,6 +264,42 @@
 			}
 		})
 
+		socket.on("updateCharacter", (msg: Sockets.UpdateCharacter.Response) => {
+			const charId = msg.character?.id
+			if (!charId || !chat) return
+			
+			// Update chat characters if the character is in the chat
+			const chatCharacterIndex = chat.chatCharacters.findIndex(
+				(c: SelectChatCharacter) => c.characterId === charId
+			)
+			if (chatCharacterIndex !== -1) {
+				const updatedChatCharacters = [...chat.chatCharacters]
+				updatedChatCharacters[chatCharacterIndex] = {
+					...updatedChatCharacters[chatCharacterIndex],
+					character: msg.character
+				}
+				chat = { ...chat, chatCharacters: updatedChatCharacters }
+			}
+		})
+
+		socket.on("updatePersona", (msg: Sockets.UpdatePersona.Response) => {
+			const personaId = msg.persona?.id
+			if (!personaId || !chat) return
+			
+			// Update chat personas if the persona is in the chat
+			const chatPersonaIndex = chat.chatPersonas.findIndex(
+				(p: SelectChatPersona) => p.personaId === personaId
+			)
+			if (chatPersonaIndex !== -1) {
+				const updatedChatPersonas = [...chat.chatPersonas]
+				updatedChatPersonas[chatPersonaIndex] = {
+					...updatedChatPersonas[chatPersonaIndex],
+					persona: msg.persona
+				}
+				chat = { ...chat, chatPersonas: updatedChatPersonas }
+			}
+		})
+
 		socket.on(
 			"promptTokenCount",
 			(msg: Sockets.PromptTokenCount.Response) => {
