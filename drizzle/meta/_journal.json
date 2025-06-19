@@ -99,6 +99,13 @@
       "when": 1749979196073,
       "tag": "0013_perfect_amazoness",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1750316707702,
+      "tag": "0014_shallow_silver_fox",
+      "breakpoints": true
     }
   ]
 }

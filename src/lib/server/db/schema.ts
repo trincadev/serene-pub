@@ -7,10 +7,9 @@ import {
     numeric,
     real,
     blob,
-    SQLiteBoolean
+    SQLiteBoolean,
+    uniqueIndex
 } from "drizzle-orm/sqlite-core"
-import { TokenCounterManager } from "../utils/TokenCounterManager"
-import { group } from "console"
 import { GroupReplyStrategies } from "../../shared/constants/GroupReplyStrategies"
 
 export const users = sqliteTable("users", {
@@ -130,67 +129,110 @@ export const promptConfigsRelations = relations(promptConfigs, () => ({}))
 
 export const lorebooks = sqliteTable("lorebooks", {
     id: integer("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    characterBindings: text("character_bindings", { mode: "json" }).notNull().default("[]").$type<Array<{binding: string, characterId?: number, personaId?: number}>>(),
+    extraJson: text("extra_json", { mode: "json" }).notNull().default({})
+        .$type<Record<string, any>>(),
     userId: integer("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }), // FK to users.id
-    name: text("name").notNull(), // Lorebook name
-    description: text("description"), // Lorebook description
-    tags: text("tags"), // JSON array of tags
-    entries: text("entries"), // JSON array of lorebook entries (for compatibility with SillyTavern)
-    metadata: text("metadata"), // JSON object for any extra SillyTavern/world/lorebook fields
-    createdAt: text("created_at"), // ISO date string
-    updatedAt: text("updated_at") // ISO date string
+    createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at").$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
 })
 
 export const lorebooksRelations = relations(lorebooks, ({ many, one }) => ({
-    entries: many(lorebookEntries),
+    worldLoreEntries: many(worldLoreEntries),
+    characterLoreEntries: many(characterLoreEntries),
+    historyEntries: many(historyEntries),
     user: one(users, {
         fields: [lorebooks.userId],
         references: [users.id]
     })
 }))
 
-export const lorebookEntries = sqliteTable("lorebook_entries", {
+export const worldLoreEntries = sqliteTable("world_lore_entries", {
     id: integer("id").primaryKey(),
-    lorebookId: integer("lorebook_id")
-        .notNull()
-        .references(() => lorebooks.id, { onDelete: "cascade" }), // FK to lorebooks.id
-    key: text("key"), // JSON array of keys
-    keySecondary: text("key_secondary"), // JSON array of secondary keys
-    comment: text("comment"),
-    content: text("content"),
-    constant: integer("constant", { mode: "boolean" }).default(false), // Is this entry a constant value?
-    vectorized: integer("vectorized"),
-    selective: integer("selective"),
-    selectiveLogic: integer("selective_logic"),
-    addMemo: integer("add_memo"),
-    order: integer("order"),
-    position: integer("position"),
-    disable: integer("disable", { mode: "boolean" }).default(false), // Is this entry disabled?
-    excludeRecursion: integer("exclude_recursion"),
-    preventRecursion: integer("prevent_recursion"),
-    delayUntilRecursion: integer("delay_until_recursion"),
-    probability: integer("probability"),
-    useProbability: integer("use_probability"),
-    depth: integer("depth"),
-    group: text("group"),
-    groupOverride: integer("group_override"),
-    groupWeight: integer("group_weight"),
-    scanDepth: integer("scan_depth"),
-    caseSensitive: integer("case_sensitive"),
-    matchWholeWords: integer("match_whole_words"),
-    useGroupScoring: integer("use_group_scoring"),
-    automationId: text("automation_id"),
-    role: text("role"),
-    sticky: integer("sticky"),
-    cooldown: integer("cooldown"),
-    delay: integer("delay"),
-    displayIndex: integer("display_index")
-})
+    lorebookId: integer("lorebook_id").notNull().references(() => lorebooks.id, { onDelete: "cascade" }),
+    name: text("name"),
+    category: text("category"),
+    keys: text("keys", { mode: "json" }).notNull().default([]).$type<string[]>(),
+    useRegex: integer("use_regex", { mode: "boolean" }).default(false),
+    caseSensitive: integer("case_sensitive", { mode: "boolean" }).notNull().default(false),
+    content: text("content").notNull().default(""),
+    priority: integer("priority").notNull().default(1),
+    constant: integer("constant", { mode: "boolean" }).notNull().default(false),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    extraJson: text("extra_json", { mode: "json" }).notNull().default({}).$type<Record<string, any>>(),
+    createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at").$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+    position: integer("position").notNull().default(0)
+},
+    (table) => ({
+        uniqueLorebookPosition: uniqueIndex("worldLoreEntries_lorebookId_position_unique").on(table.lorebookId, table.position)
+    })
+)
 
-export const lorebookEntriesRelations = relations(lorebookEntries, ({ one }) => ({
+export const worldLoreEntriesRelations = relations(worldLoreEntries, ({ one }) => ({
     lorebook: one(lorebooks, {
-        fields: [lorebookEntries.lorebookId],
+        fields: [worldLoreEntries.lorebookId],
+        references: [lorebooks.id]
+    })
+}))
+
+export const characterLoreEntries = sqliteTable("character_lore_entries", {
+    id: integer("id").primaryKey(),
+    lorebookId: integer("lorebook_id").notNull().references(() => lorebooks.id, { onDelete: "cascade" }),
+    characterBinding: text("character_binding").notNull(),
+    name: text("name"),
+    keys: text("keys", { mode: "json" }).notNull().default([]).$type<string[]>(),
+    useRegex: integer("use_regex", { mode: "boolean" }).default(false),
+    caseSensitive: integer("case_sensitive", { mode: "boolean" }).notNull().default(false),
+    content: text("content").notNull().default(""),
+    priority: integer("priority").notNull().default(1),
+    constant: integer("constant", { mode: "boolean" }).notNull().default(false),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    extraJson: text("extra_json", { mode: "json" }).notNull().default({}).$type<Record<string, any>>(),
+    createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at").$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+    position: integer("position").notNull().default(0)
+},
+    (table) => ({
+        uniqueLorebookPosition: uniqueIndex("characterLoreEntries_lorebookId_position_unique").on(table.lorebookId, table.position)
+    })
+)
+
+export const characterLoreEntriesRelations = relations(characterLoreEntries, ({ one }) => ({
+    lorebook: one(lorebooks, {
+        fields: [characterLoreEntries.lorebookId],
+        references: [lorebooks.id]
+    })
+}))
+
+export const historyEntries = sqliteTable("history_entries", {
+    id: integer("id").primaryKey(),
+    lorebookId: integer("lorebook_id").notNull().references(() => lorebooks.id, { onDelete: "cascade" }),
+    date: text("date", { mode: "json"}).notNull().default({day: 1, month: 1, year: 1}).$type<{day: number, month: number, year: number}>(),
+    keys: text("keys", { mode: "json" }).notNull().default([]).$type<string[]>(),
+    useRegex: integer("use_regex", { mode: "boolean" }).default(false),
+    caseSensitive: integer("case_sensitive", { mode: "boolean" }).notNull().default(false),
+    content: text("content").notNull().default(""),
+    priority: integer("priority").notNull().default(1),
+    constant: integer("constant", { mode: "boolean" }).notNull().default(false),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    extraJson: text("extra_json", { mode: "json" }).notNull().default({}).$type<Record<string, any>>(),
+    createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at").$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+    position: integer("position").notNull().default(0)
+},
+    (table) => ({
+        uniqueLorebookPosition: uniqueIndex("historyEntries_lorebookId_position_unique").on(table.lorebookId, table.position)
+    })
+)
+
+export const historyEntriesRelations = relations(historyEntries, ({ one }) => ({
+    lorebook: one(lorebooks, {
+        fields: [historyEntries.lorebookId],
         references: [lorebooks.id]
     })
 }))
@@ -313,7 +355,8 @@ export const chats = sqliteTable("chats", {
     updatedAt: text("updated_at"),
     scenario: text("scenario"),
     metadata: text("metadata"), // JSON for extra settings
-    group_reply_strategy: text("group_reply_strategy").default(GroupReplyStrategies.ORDERED)
+    group_reply_strategy: text("group_reply_strategy").default(GroupReplyStrategies.ORDERED),
+    lorebookId: integer("lorebook_id").references(() => lorebooks.id, { onDelete: "set null" }), // Primary lorebook for this chat
 })
 
 export const chatsRelations = relations(chats, ({ one, many }) => ({
@@ -407,5 +450,31 @@ export const chatCharactersRelations = relations(chatCharacters, ({ one }) => ({
     character: one(characters, {
         fields: [chatCharacters.characterId],
         references: [characters.id]
+    })
+}))
+
+// Many-to-many: chats <-> lorebooks
+export const chatLorebooks = sqliteTable("chat_lorebooks", {
+    chatId: integer("chat_id")
+        .notNull()
+        .references(() => chats.id, { onDelete: "cascade" }),
+    lorebookId: integer("lorebook_id")
+        .notNull()
+        .references(() => lorebooks.id, { onDelete: "cascade" }),
+    position: integer("position").default(0), // Optional: position/order in the chat
+},
+    (table) => ({
+        uniqueChatPosition: uniqueIndex("chatLorebooks_chatId_position_unique").on(table.chatId, table.position)
+    })
+)
+
+export const chatLorebooksRelations = relations(chatLorebooks, ({ one }) => ({
+    chat: one(chats, {
+        fields: [chatLorebooks.chatId],
+        references: [chats.id]
+    }),
+    lorebook: one(lorebooks, {
+        fields: [chatLorebooks.lorebookId],
+        references: [lorebooks.id]
     })
 }))
