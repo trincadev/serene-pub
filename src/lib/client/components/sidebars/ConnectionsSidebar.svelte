@@ -300,6 +300,16 @@
 					{/each}
 				</select>
 			</div>
+			{#if !!newConnectionType}
+			{@const connectionType = CONNECTION_TYPES.find(
+					(t) => t.value === newConnectionType
+				)}
+			<div class="rounded bg-surface-500/25 p-4 flex flex-col gap-2">
+				
+				<span class="p-2 preset-filled-primary-500">Difficulty: {connectionType?.difficulty}</span>
+				{@html connectionType?.description}
+			</div>
+			{/if}
 		</article>
 		<footer class="mt-4 flex justify-end gap-4">
 			<button

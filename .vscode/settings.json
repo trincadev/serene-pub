@@ -4,6 +4,7 @@
         "chatml",
         "cooldown",
         "dynatemp",
+        "GGUF",
         "LLAMACPP",
         "lmstudio",
         "logit",
