@@ -116,6 +116,9 @@ Toggle night mode on or off with over 20 themes!
 4. Once launched, the node runtime will download automatically and start Serene Pub.
 5. Access SerenePub on your host machine from http://localhost:3000 or https://0.0.0.0:/3000
 6. You should be able to access Serene Pub from other devices on your local network as well.
+7. Add your first API connection, via cloud services like ChatGPT or by locally hosting your own.
+<img src="https://github.com/user-attachments/assets/9a74ae9c-0cb8-4b3b-932d-acfe22c77349" width="300px"/>
+
 
 ## Software Stack
 - SvelteKit (Svelte 5)
