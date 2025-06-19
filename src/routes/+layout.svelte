@@ -21,8 +21,6 @@
 			socketsInitialized = true
 		})
 	}
-
-	console.log("Page data:", page.data)
 </script>
 
 {#if socketsInitialized}
