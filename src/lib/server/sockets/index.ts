@@ -43,7 +43,7 @@ import {
     setUserActivePromptConfig
 } from "./promptConfigs"
 import { user } from "./users"
-import { lorebook, lorebookList } from "./lorebooks"
+import { createLorebook, lorebook, lorebookList } from "./lorebooks"
 
 const userId = 1 // Replace with actual user id
 
@@ -123,6 +123,7 @@ export function connectSockets(io: {
         // Lorebooks
         register(socket, lorebookList, emitToUser)
         register(socket, lorebook, emitToUser)
+        register(socket, createLorebook, emitToUser)
         console.log(`Socket connected: ${socket.id} for user ${userId}`)
     })
 }

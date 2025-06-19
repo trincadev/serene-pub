@@ -148,10 +148,6 @@
 		}
 	})
 
-    $effect(() => {
-        console.log("data:", $state.snapshot(data))
-    })
-
 	function handleAddCharacter(char: SelectCharacter) {
 		if (!selectedCharacters.some((c) => c.id === char.id))
 			selectedCharacters = [...selectedCharacters, char]
@@ -223,23 +219,18 @@
 		// TODO handle unsaved changes if any
 		showEditChatForm = false
 	}
-
-	$effect(() => {
-		console.log("can save:", canSave)
-		console.log("is dirty:", isDirty)
-	})
 </script>
 
-<div class="flex flex-col gap-6 p-6">
+<div class="flex flex-col gap-6 rounded-lg border border-surface-500/25 p-2 min-h-full">
 	<div class="mt-4 flex gap-2">
 		<button
-			class="btn preset-filled-surface-500 w-full"
+			class="btn btn-sm preset-filled-surface-500 w-full"
 			onclick={handleCloseForm}
 		>
 			Cancel
 		</button>
 		<button
-			class="btn preset-filled-success-500 w-full"
+			class="btn btn-sm preset-filled-success-500 w-full"
 			onclick={handleSave}
 			disabled={!canSave}
 		>

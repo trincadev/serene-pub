@@ -156,7 +156,7 @@
         </button>
     </div>
     <div class="mb-6 flex items-center gap-2">
-        <select class="select w-full" bind:value={selectedConfigId}>
+        <select class="select w-full" bind:value={selectedConfigId} disabled={unsavedChanges}>
             {#each configsList.filter((c) => c.isImmutable) as c}
                 <option value={c.id}>{c.name}{c.isImmutable ? "*" : ""}</option>
             {/each}
@@ -168,10 +168,12 @@
     {#if contextConfig}
         <div class="mt-4 mb-4 flex w-full justify-end gap-2">
             <button
-                class="btn preset-filled-primary-500 w-full"
+                class="btn btn-sm preset-filled-success-500 w-full"
                 onclick={handleSave}
-                disabled={contextConfig.isImmutable || !unsavedChanges}>Save</button
-            >
+                disabled={contextConfig.isImmutable || !unsavedChanges}>
+                <Icons.Save size={16} />
+                Save
+                </button>
         </div>
         <div class="flex flex-col gap-4">
             <div class="flex flex-col gap-1">

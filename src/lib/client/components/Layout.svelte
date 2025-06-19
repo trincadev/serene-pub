@@ -190,6 +190,7 @@
 			<!-- Left Sidebar -->
 			<aside class="desktop-sidebar">
 				{#if panelsCtx.leftPanel}
+					{@const title = panelsCtx.leftNav[panelsCtx.leftPanel]?.title || panelsCtx.leftPanel}
 					<div
 						class="bg-surface-50-950 me-2 flex h-full w-full flex-col rounded-r-lg"
 						in:fly={{ x: -100, duration: 200 }}
@@ -199,7 +200,7 @@
 							<span
 								class="text-foreground text-lg font-semibold capitalize"
 							>
-								{panelsCtx.leftPanel}
+								{title}
 							</span>
 							<button
 								class="btn-ghost"
@@ -241,6 +242,7 @@
 			<!-- Right Sidebar -->
 			<aside class="desktop-sidebar">
 				{#if panelsCtx.rightPanel}
+					{@const title = panelsCtx.rightNav[panelsCtx.rightPanel]?.title || panelsCtx.rightPanel}
 					<div
 						class="bg-surface-50-950 flex h-full w-full flex-col rounded-l-lg"
 						in:fly={{ x: 100, duration: 200 }}
@@ -250,7 +252,7 @@
 							<span
 								class="text-foreground text-lg font-semibold capitalize"
 							>
-								{panelsCtx.rightPanel}
+								{title}
 							</span>
 							<button
 								class="btn-ghost"
@@ -287,6 +289,7 @@
 			</aside>
 		</div>
 		{#if panelsCtx.mobilePanel}
+		{@const title = {...panelsCtx.leftNav, ...panelsCtx.rightNav}[panelsCtx.mobilePanel]?.title || panelsCtx.mobilePanel}
 			<div
 				class="bg-surface-100-900 fixed inset-0 z-[51] flex flex-col lg:hidden"
 			>

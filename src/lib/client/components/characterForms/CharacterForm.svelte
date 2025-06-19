@@ -214,7 +214,7 @@
 </script>
 
 <div
-	class="border-primary bg-background animate-fade-in min-h-full rounded-lg border border-surface-400-600 p-4 shadow-lg"
+	class="border-primary bg-background animate-fade-in border-surface-500/25 min-h-full rounded-lg border p-2 shadow-lg"
 >
 	<h2 class="mb-4 text-lg font-bold">
 		{mode === "edit"
@@ -231,10 +231,11 @@
 		</button>
 		<button
 			type="button"
-			class="btn btn-sm preset-filled-primary-500 w-full"
+			class="btn btn-sm preset-filled-success-500 w-full"
 			onclick={onSave}
 			disabled={!isDataValid || isSafeToClose}
 		>
+			<Icons.Save size={16} />
 			{mode === "edit" ? "Update" : "Create"}
 		</button>
 	</div>

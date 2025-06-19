@@ -161,10 +161,12 @@
     {#if promptConfig}
         <div class="mt-4 mb-4 flex w-full justify-end gap-2">
             <button
-                class="btn preset-filled-primary-500 w-full"
+                class="btn btn-sm preset-filled-success-500 w-full"
                 onclick={handleSave}
-                disabled={promptConfig.isImmutable || !unsavedChanges}>Save</button
-            >
+                disabled={promptConfig.isImmutable || !unsavedChanges}>
+                <Icons.Save size={16} />
+                Save
+                </button>
         </div>
         <div class="flex flex-col gap-4">
             <div class="flex flex-col gap-1">

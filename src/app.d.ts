@@ -533,6 +533,35 @@ declare global {
 				error?: string
 			}
 		}
+		// Lorebook List
+		namespace LorebookList {
+			interface Call {
+				userId?: number
+			}
+			interface Response {
+				lorebookList: SelectLorebook[]
+			}
+		}
+
+		// Single Lorebook
+		namespace Lorebook {
+			interface Call {
+				id: number
+			}
+			interface Response {
+				lorebook: SelectLorebook
+			}
+		}
+
+		// Create Lorebook
+		namespace CreateLorebook {
+			interface Call {
+				name: string
+			}
+			interface Response {
+				lorebook: SelectLorebook
+			}
+		}
 	}
 
 	export interface CharaImportMetadata {

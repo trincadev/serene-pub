@@ -158,7 +158,7 @@
 </script>
 
 <div
-	class="bg-background animate-fade-in h-full rounded-lg border border-surface-400-600 p-4 shadow-lg"
+	class="bg-background animate-fade-in h-full rounded-lg border border-surface-500/25 p-2 shadow-lg"
 >
 	<h2 class="mb-4 text-lg font-bold">
 		{mode === "edit" ? `Edit: ${editPersonaData.name}` : "Create Persona"}
@@ -173,27 +173,17 @@
 		</button>
 		<button
 			type="button"
-			class="btn btn-sm preset-filled-primary-500 w-full"
+			class="btn btn-sm preset-filled-success-500 w-full"
 			onclick={onSave}
 			disabled={!isDataValid || isSafeToClose}
 		>
+			<Icons.Save size={16} />
 			{mode === "edit" ? "Update" : "Create"}
 		</button>
 	</div>
 	<div class="flex flex-col gap-4">
 		<div class="flex items-center gap-4">
 			<span>
-				<!-- <Avatar
-                    src={editPersonaData._avatar || editPersonaData.avatar}
-                    size="w-[4em] h-[4em]"
-                    name={editPersonaData.name ??
-                        (mode === "edit" ? "Edit Character" : "New Character")}
-                    background="preset-filled-primary-500"
-                    imageClasses="object-cover"
-                >
-                    <Icons.User size={36} />
-                </Avatar> -->
-
 				<Avatar
 					src={editPersonaData._avatar || editPersonaData.avatar}
 					char={editPersonaData}

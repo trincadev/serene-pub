@@ -95,7 +95,6 @@ export async function updateSamplingConfig(
     message: { sampling: any },
     emitToUser: (event: string, data: any) => void
 ) {
-    console.log("updateSamplingConfig", message)
     const id = message.sampling.id
     delete message.sampling.id // Remove id from sampling object to avoid conflicts
     const currentSamplingConfig = await db.query.samplingConfigs.findFirst({

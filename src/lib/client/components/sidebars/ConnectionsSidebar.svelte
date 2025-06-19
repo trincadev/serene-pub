@@ -166,6 +166,7 @@
 			class="select bg-background border-muted rounded border"
 			onchange={handleSelectChange}
 			bind:value={userCtx!.user!.activeConnectionId}
+			disabled={unsavedChanges}
 		>
 			{#each connectionsList as c}
 				<option value={c.id}>{c.name} ({CONNECTION_TYPE.options.find((t) => t.value === c.type)!.label})</option>
@@ -177,10 +178,11 @@
 			<div class="my-4 flex">
 				<button
 					type="button"
-					class="btn preset-filled-primary-500 w-full"
+					class="btn btn-sm preset-filled-success-500 w-full"
 					onclick={handleUpdate}
 					disabled={!unsavedChanges}
 				>
+				<Icons.Save size={16} />
 					Save
 				</button>
 			</div>
