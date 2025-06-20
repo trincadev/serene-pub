@@ -2,7 +2,7 @@
     import { PromptFormats } from "$lib/shared/constants/PromptFormats"
     import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
     import { onMount } from "svelte"
-    import skio from "sveltekit-io"
+    import * as skio from "sveltekit-io"
 
     interface ExtraFieldData {
         stream: boolean

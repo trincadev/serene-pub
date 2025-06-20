@@ -13,7 +13,7 @@
 	import ChatsSidebar from "./sidebars/ChatsSidebar.svelte"
 	import PromptsSidebar from "./sidebars/PromptsSidebar.svelte"
 	import TagsSidebar from "./sidebars/TagsSidebar.svelte"
-	import skio from "sveltekit-io"
+	import * as skio from "sveltekit-io"
 	import { Toaster } from "@skeletonlabs/skeleton-svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import SettingsSidebar from "$lib/client/components/sidebars/SettingsSidebar.svelte"

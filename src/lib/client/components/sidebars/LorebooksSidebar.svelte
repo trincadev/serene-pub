@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte"
-	import skio from "sveltekit-io"
+	import * as skio from "sveltekit-io"
 	import * as Icons from "@lucide/svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
 	import EditLorebookForm from "../lorebookForms/EditLorebookForm.svelte"
@@ -36,8 +36,10 @@
 	})
 
 	let filteredLorebooks = $derived.by(() => {
-		if (!search) return lorebookList
-		return lorebookList.filter(
+		let list = [...lorebookList]
+		list.sort((a, b) => a.id - b.id)
+		if (!search) return list
+		return list.filter(
 			(l) =>
 				l.name.toLowerCase().includes(search.toLowerCase()) ||
 				(l.description &&
@@ -66,10 +68,10 @@
 	})
 </script>
 
-<div class="p-4 min-h-full">
+<div class="min-h-full p-4">
 	{#if showEditLorebookForm}
 		<EditLorebookForm
-			editLorebook={selectedLorebook}
+			lorebookId={selectedLorebook.id}
 			bind:showEditLorebookForm
 		/>
 	{:else}
@@ -98,6 +100,10 @@
 			{:else}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				{#each filteredLorebooks as l}
+					{@const hasWorldLore = l.worldLoreEntries?.length > 0}
+					{@const hasCharacterLore =
+						l.characterLoreEntries?.length > 0}
+					{@const hasHistory = l.historyEntries?.length > 0}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<div
 						class="sidebar-list-item"
@@ -110,13 +116,32 @@
 							<div class="truncate font-semibold">
 								{l.name}
 							</div>
-							{#if l.description}
-								<div
-									class="text-muted-foreground truncate text-xs"
-								>
-									{l.description}
-								</div>
-							{/if}
+							<div
+								class="text-muted-foreground line-clamp-2 h-[3em] text-xs"
+							>
+								{l.description || "No description provided."}
+							</div>
+							<span
+								class="badge preset-filled-primary-500"
+								class:disabled={!hasWorldLore}
+                                title={hasWorldLore ? "World Lore Entries" : "No World Lore Entries"}
+							>
+								World
+							</span>
+							<span
+								class="badge preset-filled-primary-500"
+								class:disabled={!hasCharacterLore}
+                                title={hasCharacterLore ? "Character Lore Entries" : "No Character Lore Entries"}
+							>
+								Character
+							</span>
+							<span
+								class="badge preset-filled-primary-500"
+								class:disabled={!hasHistory}
+                                title={hasHistory ? "History Entries" : "No History Entries"}
+							>
+								History
+							</span>
 						</div>
 					</div>
 				{/each}

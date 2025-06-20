@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
-	import skio from "sveltekit-io"
+	import * as skio from "sveltekit-io"
 	import { onMount } from "svelte"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import Avatar from "../Avatar.svelte"

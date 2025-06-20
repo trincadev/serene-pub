@@ -1,5 +1,5 @@
 <script lang="ts">
-	import skio from "sveltekit-io"
+	import * as skio from "sveltekit-io"
 	import { getContext, onMount, tick } from "svelte"
 	import * as Icons from "@lucide/svelte"
 	import SamplingConfigUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"

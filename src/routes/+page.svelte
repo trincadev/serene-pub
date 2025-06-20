@@ -1,32 +1,32 @@
 <script lang="ts">
 	import * as Icons from "@lucide/svelte"
 	import { getContext, onMount } from "svelte"
-	import skio from "sveltekit-io"
+	import * as skio from "sveltekit-io"
 
 	let userCtx: UserCtx = $state(getContext("userCtx"))
 	let panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 	const socket = skio.get()
 
 	// Data for lists
-	let characters: Sockets.CharactersList.Response["charactersList"] = $state(
+	let characters: Sockets.CharacterList.Response["characterList"] = $state(
 		[]
 	)
-	let personas: Sockets.PersonasList.Response["personasList"] = $state([])
+	let personas: Sockets.PersonaList.Response["personaList"] = $state([])
 	let chats: Sockets.ChatsList.Response["chatsList"] = $state([])
 
 	// Listen for lists
 	onMount(() => {
-		socket.on("charactersList", (msg: Sockets.CharactersList.Response) => {
-			characters = msg.charactersList || []
+		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
+			characters = msg.characterList || []
 		})
-		socket.on("personasList", (msg: Sockets.PersonasList.Response) => {
-			personas = msg.personasList || []
+		socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
+			personas = msg.personaList || []
 		})
 		socket.on("chatsList", (msg: Sockets.ChatsList.Response) => {
 			chats = msg.chatsList || []
 		})
-		socket.emit("charactersList", {})
-		socket.emit("personasList", {})
+		socket.emit("characterList", {})
+		socket.emit("personaList", {})
 		socket.emit("chatsList", {})
 	})
 
@@ -297,7 +297,8 @@
 	</div>
 </main>
 
-<style>
+<style lang="postcss">
+	@reference "tailwindcss";
 	ol {
 		margin-left: 1em;
 	}

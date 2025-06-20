@@ -82,7 +82,9 @@
     </div>
 </header>
 
-<style>
+<style lang="postcss">
+	@reference "tailwindcss";
+    
     header {
         display: flex;
         justify-content: space-between;

@@ -106,6 +106,8 @@ declare global {
 	type InsertChatCharacter = typeof schema.chatCharacters.$inferInsert
 	type SelectChatLorebook = typeof schema.chatLorebooks.$inferSelect
 	type InsertChatLorebook = typeof schema.chatLorebooks.$inferInsert
+	type SelectLorebookBinding = typeof schema.lorebookBindings.$inferSelect
+	type InsertLorebookBinding = typeof schema.lorebookBindings.$inferInsert
 
 	namespace Sockets {
 		namespace SamplingConfig {
@@ -169,10 +171,10 @@ declare global {
 			}
 		}
 		// PERSONAS
-		namespace PersonasList {
+		namespace PersonaList {
 			interface Call {}
 			interface Response {
-				personasList: Partial<SelectPersona>[]
+				personaList: Partial<SelectPersona>[]
 			}
 		}
 		namespace Persona {
@@ -210,10 +212,10 @@ declare global {
 			}
 		}
 		// CHARACTERS
-		namespace CharactersList {
+		namespace CharacterList {
 			interface Call {}
 			interface Response {
-				charactersList: Partial<SelectCharacter>[]
+				characterList: Partial<SelectCharacter>[]
 			}
 		}
 		namespace Character {
@@ -549,7 +551,12 @@ declare global {
 				id: number
 			}
 			interface Response {
-				lorebook: SelectLorebook
+				lorebook: SelectLorebook & {
+					worldLoreEntries: SelectWorldLoreEntry[]
+					characterLoreEntries: SelectCharacterLoreEntry[]
+					historyEntries: SelectHistoryEntry[]
+					lorebookBindings: SelectLorebookBinding[]
+				}
 			}
 		}
 
@@ -560,6 +567,44 @@ declare global {
 			}
 			interface Response {
 				lorebook: SelectLorebook
+			}
+		}
+
+		// Create Lorebook Binding
+		namespace CreateLorebookBinding {
+			interface Call {
+				lorebookBinding: {
+					lorebookId: number
+					characterId?: number | null
+					personaId?: number | null
+				}
+			}
+			interface Response {
+				lorebookBinding: SelectLorebookBinding
+			}
+		}
+
+		// Lorebook Binding List
+		namespace LorebookBindingList {
+			interface Call {
+				lorebookId: number
+			}
+			interface Response {
+				lorebookBindingList: SelectLorebookBinding[]
+			}
+		}
+
+		// Update Lorebook Binding
+		namespace UpdateLorebookBinding {
+			interface Call {
+				lorebookBinding: {
+					id: number
+					characterId?: number | null
+					personaId?: number | null
+				}
+			}
+			interface Response {
+				lorebookBinding: SelectLorebookBinding
 			}
 		}
 	}

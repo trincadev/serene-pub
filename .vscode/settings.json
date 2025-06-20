@@ -3,6 +3,7 @@
         "Chara",
         "chatml",
         "cooldown",
+        "dndzone",
         "dynatemp",
         "GGUF",
         "LLAMACPP",
@@ -14,7 +15,10 @@
         "Ngram",
         "nsigma",
         "Ollama",
+        "onconsider",
+        "onfinalize",
         "Roleplay",
+        "skeletonlabs",
         "skio"
     ]
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import skio from "sveltekit-io"
+	import * as skio from "sveltekit-io"
 	import { getContext, onMount } from "svelte"
 	import { Avatar, FileUpload, Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
@@ -18,7 +18,7 @@
 	const socket = skio.get()
 	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 
-	let charactersList: Sockets.CharactersList.Response["charactersList"] =
+	let characterList: Sockets.CharacterList.Response["characterList"] =
 		$state([])
 	let search = $state("")
 	let characterId: number | undefined = $state()
@@ -52,11 +52,11 @@
 	})
 
 	// Filtered list
-	let filteredCharacters: Sockets.CharactersList.Response["charactersList"] =
+	let filteredCharacters: Sockets.CharacterList.Response["characterList"] =
 		$derived.by(() => {
-			if (!search) return charactersList
-			return charactersList.filter(
-				(c: Sockets.CharactersList.Response["charactersList"][0]) =>
+			if (!search) return characterList
+			return characterList.filter(
+				(c: Sockets.CharacterList.Response["characterList"][0]) =>
 					c.name!.toLowerCase().includes(search.toLowerCase()) ||
 					(c.description &&
 						c.description
@@ -151,17 +151,17 @@
 	}
 
 	function handleCharacterClick(
-		character: Sockets.CharactersList.Response["charactersList"][0]
+		character: Sockets.CharacterList.Response["characterList"][0]
 	) {
 		panelsCtx.digest.chatCharacterId = character.id
 		panelsCtx.openPanel({ key: "chats", toggle: false })
 	}
 
 	onMount(() => {
-		socket.on("charactersList", (msg: Sockets.CharactersList.Response) => {
-			charactersList = msg.charactersList
+		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
+			characterList = msg.characterList
 		})
-		socket.emit("charactersList", {})
+		socket.emit("characterList", {})
 		onclose = handleOnClose
 	})
 </script>

@@ -7,12 +7,12 @@ import { CharacterCard } from "@lenml/char-card-reader"
 import fs from "fs"
 import { fileTypeFromBuffer } from "file-type"
 
-export async function charactersList(
+export async function characterList(
 	socket: any,
-	message: Sockets.CharactersList.Call,
+	message: Sockets.CharacterList.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	const charactersList = await db.query.characters.findMany({
+	const characterList = await db.query.characters.findMany({
 		columns: {
 			id: true,
 			name: true,
@@ -24,8 +24,8 @@ export async function charactersList(
 		},
 		where: (c, { eq }) => eq(c.userId, 1) // TODO: Replace with actual user id
 	})
-	const res: Sockets.CharactersList.Response = { charactersList }
-	emitToUser("charactersList", res)
+	const res: Sockets.CharacterList.Response = { characterList }
+	emitToUser("characterList", res)
 }
 
 export async function character(
@@ -62,7 +62,7 @@ export async function createCharacter(
 			})
 		}
 
-		await charactersList(socket, {}, emitToUser)
+		await characterList(socket, {}, emitToUser)
 
 		const res: Sockets.CreateCharacter.Response = { character }
 		emitToUser("createCharacter", res)
@@ -107,7 +107,7 @@ export async function updateCharacter(
 	}
 
 	const res: Sockets.UpdateCharacter.Response = { character: updated }
-	await charactersList(socket, {}, emitToUser)
+	await characterList(socket, {}, emitToUser)
 	emitToUser("updateCharacter", res)
 }
 
@@ -125,7 +125,7 @@ export async function deleteCharacter(
 				eq(schema.characters.userId, userId)
 			)
 		)
-	await charactersList(socket, {}, emitToUser)
+	await characterList(socket, {}, emitToUser)
 	// Delete the character data directory if it exists
 	const avatarDir = getCharacterDataDir({
 		characterId: message.characterId,
@@ -138,7 +138,7 @@ export async function deleteCharacter(
 	}
 	// Emit the delete event
 	const res: Sockets.DeleteCharacter.Response = { id: message.characterId }
-	await charactersList(socket, {}, emitToUser)
+	await characterList(socket, {}, emitToUser)
 	emitToUser("deleteCharacter", res)
 }
 
@@ -229,7 +229,7 @@ export async function characterCardImport(
 
         const res: Sockets.CharacterCardImport.Response = { character }
         emitToUser("createCharacter", res)
-        await charactersList(socket, {}, emitToUser)
+        await characterList(socket, {}, emitToUser)
     } catch (e: any) {
         console.error("Error importing character card:", e)
         emitToUser("error", {

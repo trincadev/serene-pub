@@ -1,5 +1,5 @@
 <script lang="ts">
-	import skio from "sveltekit-io"
+	import * as skio from "sveltekit-io"
 	import { getContext, onMount } from "svelte"
 	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
@@ -18,7 +18,7 @@
 	const socket = skio.get()
 	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 
-	let personasList: Sockets.PersonasList.Response["personasList"] = $state([])
+	let personaList: Sockets.PersonaList.Response["personaList"] = $state([])
 	let search = $state("")
 	let personaId: number | undefined = $state()
 	let isCreating = $state(false)
@@ -30,17 +30,17 @@
 	let onEditFormCancel: (() => void) | undefined = $state()
 
 	onMount(() => {
-		socket.emit("personasList", {})
+		socket.emit("personaList", {})
 		onclose = handleOnClose
 	})
 
-	socket.on("personasList", (msg: Sockets.PersonasList.Response) => {
-		personasList = msg.personasList
+	socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
+		personaList = msg.personaList
 	})
 
 	let filteredPersonas = $derived.by(() => {
-		if (!search) return personasList
-		return personasList.filter(
+		if (!search) return personaList
+		return personaList.filter(
 			(p) =>
 				p.name!.toLowerCase().includes(search.toLowerCase()) ||
 				(p.description &&
@@ -121,7 +121,7 @@
 	}
 
 	function handlePersonaClick(
-		persona: Sockets.PersonasList.Response["personasList"][0]
+		persona: Sockets.PersonaList.Response["personaList"][0]
 	) {
 		panelsCtx.digest.chatPersonaId = persona.id
 		panelsCtx.openPanel({key:"chats", toggle: false})

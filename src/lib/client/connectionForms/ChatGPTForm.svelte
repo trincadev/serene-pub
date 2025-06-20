@@ -1,5 +1,5 @@
 <script lang="ts">
-    import skio from "sveltekit-io"
+    import * as skio from "sveltekit-io"
 
     interface Props {
         connection: SelectConnection

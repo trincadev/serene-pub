@@ -17,14 +17,14 @@ import {
     updateSamplingConfig
 } from "./samplingConfigs"
 import {
-    charactersList,
+    characterList,
     character,
     createCharacter,
     updateCharacter,
     deleteCharacter,
     characterCardImport
 } from "./characters"
-import { personasList, persona, createPersona, updatePersona, deletePersona } from "./personas"
+import { personaList, persona, createPersona, updatePersona, deletePersona } from "./personas"
 import {
     contextConfigsList,
     contextConfig,
@@ -43,7 +43,7 @@ import {
     setUserActivePromptConfig
 } from "./promptConfigs"
 import { user } from "./users"
-import { createLorebook, lorebook, lorebookList } from "./lorebooks"
+import { createLorebook, createLorebookBinding, lorebook, lorebookBindingList, lorebookList, updateLorebookBinding } from "./lorebooks"
 
 const userId = 1 // Replace with actual user id
 
@@ -80,13 +80,13 @@ export function connectSockets(io: {
         register(socket, testConnection, emitToUser)
         register(socket, refreshModels, emitToUser)
         // Characters
-        register(socket, charactersList, emitToUser)
+        register(socket, characterList, emitToUser)
         register(socket, character, emitToUser)
         register(socket, createCharacter, emitToUser)
         register(socket, updateCharacter, emitToUser)
         register(socket, deleteCharacter, emitToUser)
         // Personas
-        register(socket, personasList, emitToUser)
+        register(socket, personaList, emitToUser)
         register(socket, persona, emitToUser)
         register(socket, createPersona, emitToUser)
         register(socket, updatePersona, emitToUser)
@@ -124,6 +124,9 @@ export function connectSockets(io: {
         register(socket, lorebookList, emitToUser)
         register(socket, lorebook, emitToUser)
         register(socket, createLorebook, emitToUser)
+        register(socket, createLorebookBinding, emitToUser)
+        register(socket, updateLorebookBinding, emitToUser)
+        register(socket, lorebookBindingList, emitToUser)
         console.log(`Socket connected: ${socket.id} for user ${userId}`)
     })
 }

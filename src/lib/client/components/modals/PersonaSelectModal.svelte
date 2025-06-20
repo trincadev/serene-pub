@@ -7,7 +7,7 @@
 		open: boolean
 		personas: Partial<SelectPersona>[]
 		onOpenChange: (e: { open: boolean }) => void
-		onSelect: (persona: Partial<SelectPersona>) => void
+		onSelect: (persona: Partial<SelectPersona> & {id: number}) => void
 	}
 
 	let {

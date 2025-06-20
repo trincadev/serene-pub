@@ -3,12 +3,12 @@ import { and, eq } from "drizzle-orm"
 import * as schema from "$lib/server/db/schema"
 import { handlePersonaAvatarUpload } from "../utils"
 
-export async function personasList(
+export async function personaList(
     socket: any,
-    message: Sockets.PersonasList.Call,
+    message: Sockets.PersonaList.Call,
     emitToUser: (event: string, data: any) => void
 ) {
-    const personasList = await db.query.personas.findMany({
+    const personaList = await db.query.personas.findMany({
         columns: {
             id: true,
             name: true,
@@ -19,8 +19,8 @@ export async function personasList(
         },
         where: (p, { eq }) => eq(p.userId, 1) // TODO: Replace with actual user id
     })
-    const res: Sockets.PersonasList.Response = { personasList }
-    emitToUser("personasList", res)
+    const res: Sockets.PersonaList.Response = { personaList }
+    emitToUser("personaList", res)
 }
 
 export async function persona(
@@ -55,7 +55,7 @@ export async function createPersona(
             })
         }
 
-        await personasList(socket, {}, emitToUser)
+        await personaList(socket, {}, emitToUser)
         const res: Sockets.CreatePersona.Response = { persona }
         emitToUser("createPersona", res)
     } catch (e: any) {
@@ -90,7 +90,7 @@ export async function updatePersona(
     }
 
     await persona(socket, { id }, emitToUser)
-    await personasList(socket, {}, emitToUser)
+    await personaList(socket, {}, emitToUser)
     const res: Sockets.UpdatePersona.Response = { persona: updated }
     emitToUser("updatePersona", res)
 }
@@ -104,7 +104,7 @@ export async function deletePersona(
     await db
         .delete(schema.personas)
         .where(and(eq(schema.personas.id, message.id), eq(schema.personas.userId, userId)))
-    await personasList(socket, {}, emitToUser)
+    await personaList(socket, {}, emitToUser)
     const res: Sockets.DeletePersona.Response = { id: message.id }
     emitToUser("deletePersona", res)
 }

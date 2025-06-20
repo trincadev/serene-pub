@@ -131,7 +131,6 @@ export const lorebooks = sqliteTable("lorebooks", {
     id: integer("id").primaryKey(),
     name: text("name").notNull(),
     description: text("description").notNull().default(""),
-    characterBindings: text("character_bindings", { mode: "json" }).notNull().default("[]").$type<Array<{binding: string, characterId?: number, personaId?: number}>>(),
     extraJson: text("extra_json", { mode: "json" }).notNull().default({})
         .$type<Record<string, any>>(),
     userId: integer("user_id")
@@ -148,6 +147,34 @@ export const lorebooksRelations = relations(lorebooks, ({ many, one }) => ({
     user: one(users, {
         fields: [lorebooks.userId],
         references: [users.id]
+    }),
+    lorebookBindings: many(lorebookBindings),
+}))
+
+export const lorebookBindings = sqliteTable("lorebook_bindings", {
+    id: integer("id").primaryKey(),
+    lorebookId: integer("lorebook_id").notNull().references(() => lorebooks.id, { onDelete: "cascade" }),
+    characterId: integer("character_id").references(() => characters.id, { onDelete: "set null"}),
+    personaId: integer("persona_id").references(() => personas.id, { onDelete: "set null" }),
+    binding: text("binding").notNull(), // e.g. "{char:1}"
+},
+    (table) => ({
+        uniqueBinding: uniqueIndex("lorebook_bindings_unique").on(table.lorebookId, table.characterId, table.personaId)
+    })
+)
+
+export const lorebookBindingsRelations = relations(lorebookBindings, ({ one }) => ({
+    lorebook: one(lorebooks, {
+        fields: [lorebookBindings.lorebookId],
+        references: [lorebooks.id]
+    }),
+    character: one(characters, {
+        fields: [lorebookBindings.characterId],
+        references: [characters.id]
+    }),
+    persona: one(personas, {
+        fields: [lorebookBindings.personaId],
+        references: [personas.id]
     })
 }))
 
@@ -183,7 +210,7 @@ export const worldLoreEntriesRelations = relations(worldLoreEntries, ({ one }) =
 export const characterLoreEntries = sqliteTable("character_lore_entries", {
     id: integer("id").primaryKey(),
     lorebookId: integer("lorebook_id").notNull().references(() => lorebooks.id, { onDelete: "cascade" }),
-    characterBinding: text("character_binding").notNull(),
+    characterBindingId: integer("character_binding_id").references(() => lorebookBindings.id, { onDelete: "set null" }),
     name: text("name"),
     keys: text("keys", { mode: "json" }).notNull().default([]).$type<string[]>(),
     useRegex: integer("use_regex", { mode: "boolean" }).default(false),

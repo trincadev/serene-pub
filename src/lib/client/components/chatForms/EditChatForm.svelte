@@ -37,10 +37,10 @@
 		  })
 		| undefined = $state()
 	let isCreating = $state(!chat)
-	let characters: Sockets.CharactersList.Response["charactersList"] = $state(
+	let characters: Sockets.CharacterList.Response["characterList"] = $state(
 		[]
 	)
-	let personas: Sockets.PersonasList.Response["personasList"] = $state([])
+	let personas: Sockets.PersonaList.Response["personaList"] = $state([])
 	let data: {
         chat: {
 			id: number | undefined,
@@ -97,14 +97,14 @@
 
     // SOCKET LISTENERS
 
-	socket.on("charactersList", (msg: Sockets.CharactersList.Response) => {
-		characters = msg.charactersList || []
+	socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
+		characters = msg.characterList || []
 	})
-	socket.on("personasList", (msg: Sockets.PersonasList.Response) => {
-		personas = msg.personasList || []
+	socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
+		personas = msg.personaList || []
 	})
-	socket.emit("charactersList", {})
-	socket.emit("personasList", {})
+	socket.emit("characterList", {})
+	socket.emit("personaList", {})
 
     $effect(() => {
         const _name = name.trim()
@@ -148,7 +148,7 @@
 		}
 	})
 
-	function handleAddCharacter(char: SelectCharacter) {
+	function handleAddCharacter(char: SelectCharacter & { id: number }) {
 		if (!selectedCharacters.some((c) => c.id === char.id))
 			selectedCharacters = [...selectedCharacters, char]
 		showCharacterModal = false
@@ -156,7 +156,7 @@
 	function handleRemoveCharacter(id: number) {
 		selectedCharacters = selectedCharacters.filter((c) => c.id !== id)
 	}
-	function handleAddPersona(p: SelectPersona) {
+	function handleAddPersona(p: SelectPersona & { id: number }) {
 		if (!selectedPersonas.some((pp) => pp.id === p.id))
 			selectedPersonas = [...selectedPersonas, p]
 		showPersonaModal = false

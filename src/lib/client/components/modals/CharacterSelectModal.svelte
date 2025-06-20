@@ -7,7 +7,7 @@
 		open: boolean
 		characters: Partial<SelectCharacter>[]
 		onOpenChange: (e: { open: boolean }) => void
-		onSelect: (character: Partial<SelectCharacter>) => void
+		onSelect: (character: Partial<SelectCharacter> & {id:number}) => void
 	}
 
 	let {
