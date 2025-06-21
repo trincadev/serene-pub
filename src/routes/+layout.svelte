@@ -6,6 +6,8 @@
 	import { page } from "$app/state"
 	import { onMount } from "svelte"
 	import * as Icons from "@lucide/svelte"
+	import { Toaster } from "@skeletonlabs/skeleton-svelte"
+	import { toaster } from "$lib/client/utils/toaster"
 
 	interface Props {
 		children?: Snippet
@@ -42,3 +44,5 @@
 		</button>
 	</div>
 {/if}
+
+<Toaster {toaster}></Toaster>

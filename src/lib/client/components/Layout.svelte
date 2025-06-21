@@ -14,7 +14,6 @@
 	import PromptsSidebar from "./sidebars/PromptsSidebar.svelte"
 	import TagsSidebar from "./sidebars/TagsSidebar.svelte"
 	import * as skio from "sveltekit-io"
-	import { Toaster } from "@skeletonlabs/skeleton-svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import SettingsSidebar from "$lib/client/components/sidebars/SettingsSidebar.svelte"
 	import type { Snippet } from "svelte"
@@ -395,8 +394,6 @@
 		{/if}
 	</div>
 {/if}
-
-<Toaster {toaster}></Toaster>
 
 <style lang="postcss">
 	@reference "tailwindcss";

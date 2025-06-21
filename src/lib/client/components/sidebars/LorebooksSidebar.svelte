@@ -4,10 +4,20 @@
 	import * as Icons from "@lucide/svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
 	import EditLorebookForm from "../lorebookForms/EditLorebookForm.svelte"
+	import { Tabs } from "@skeletonlabs/skeleton-svelte"
+	import LorebookBindingsForm from "../lorebookForms/LorebookBindingsForm.svelte"
+	import WorldLoreForm from "../lorebookForms/WorldLoreForm.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
 	}
+
+	type EditGroup =
+		| "lorebook"
+		| "bindings"
+		| "world"
+		| "characters"
+		| "history"
 
 	let { onclose = $bindable() }: Props = $props()
 
@@ -15,8 +25,9 @@
 	let lorebookList: any[] = $state([])
 	let search: string = $state("")
 	let isCreating: boolean = $state(false)
-	let showEditLorebookForm: boolean = $state(false)
+	let isEditingLorebook: boolean = $state(false)
 	let selectedLorebook: any = $state(undefined)
+	let editGroup: EditGroup = $state("lorebook")
 
 	async function handleOnClose() {
 		return true
@@ -28,7 +39,7 @@
 
 	function handleLorebookClick(lorebook: any) {
 		selectedLorebook = lorebook
-		showEditLorebookForm = true
+		isEditingLorebook = true
 	}
 
 	$effect(() => {
@@ -69,11 +80,81 @@
 </script>
 
 <div class="min-h-full p-4">
-	{#if showEditLorebookForm}
-		<EditLorebookForm
-			lorebookId={selectedLorebook.id}
-			bind:showEditLorebookForm
-		/>
+	{#if isEditingLorebook}
+		<h2 class="mb-4 text-lg font-bold">
+			{selectedLorebook?.name || "Lorebook"}
+		</h2>
+		<button
+			onclick={() => {
+				isEditingLorebook = false
+			}}
+			class="mb-4"
+		>
+			<Icons.ArrowLeft size={20} class="inline" /> Back
+		</button>
+		<Tabs
+			value={editGroup}
+			onValueChange={(e) => (editGroup = e.value as EditGroup)}
+		>
+			{#snippet list()}
+				<Tabs.Control value="lorebook">
+					<Icons.Book size={20} class="inline" />
+					{#if editGroup === "lorebook"}
+						Lorebook
+					{/if}
+				</Tabs.Control>
+				<Tabs.Control value="bindings">
+					<Icons.Link size={20} class="inline" />
+					{#if editGroup === "bindings"}
+						Bindings
+					{/if}
+				</Tabs.Control>
+				<Tabs.Control value="world">
+					<Icons.Globe size={20} class="inline" />
+					{#if editGroup === "world"}
+						World Lore
+					{/if}
+				</Tabs.Control>
+				<Tabs.Control value="characters">
+					<Icons.User size={20} class="inline" />
+					{#if editGroup === "characters"}
+						Characters
+					{/if}
+				</Tabs.Control>
+				<Tabs.Control value="history">
+					<Icons.Calendar size={20} class="inline" />
+					{#if editGroup === "history"}
+						History
+					{/if}
+				</Tabs.Control>
+			{/snippet}
+			{#snippet content()}
+				<Tabs.Panel value="lorebook">
+					{#if editGroup === "lorebook"}
+						<EditLorebookForm
+							lorebookId={selectedLorebook.id}
+							bind:showEditLorebookForm={isEditingLorebook}
+						/>
+					{/if}
+				</Tabs.Panel>
+				<Tabs.Panel value="bindings">
+					{#if editGroup === "bindings"}
+						<LorebookBindingsForm
+							lorebookId={selectedLorebook.id}
+							bind:showEditLorebookForm={isEditingLorebook}
+						/>
+					{/if}
+				</Tabs.Panel>
+				<Tabs.Panel value="world">
+					{#if editGroup === "world"}
+						<WorldLoreForm
+							lorebookId={selectedLorebook.id}
+							bind:showEditLorebookForm={isEditingLorebook}
+						/>
+					{/if}
+				</Tabs.Panel>
+			{/snippet}
+		</Tabs>
 	{:else}
 		<div class="mb-2 flex gap-2">
 			<button
@@ -124,21 +205,27 @@
 							<span
 								class="badge preset-filled-primary-500"
 								class:disabled={!hasWorldLore}
-                                title={hasWorldLore ? "World Lore Entries" : "No World Lore Entries"}
+								title={hasWorldLore
+									? "World Lore Entries"
+									: "No World Lore Entries"}
 							>
 								World
 							</span>
 							<span
 								class="badge preset-filled-primary-500"
 								class:disabled={!hasCharacterLore}
-                                title={hasCharacterLore ? "Character Lore Entries" : "No Character Lore Entries"}
+								title={hasCharacterLore
+									? "Character Lore Entries"
+									: "No Character Lore Entries"}
 							>
 								Character
 							</span>
 							<span
 								class="badge preset-filled-primary-500"
 								class:disabled={!hasHistory}
-                                title={hasHistory ? "History Entries" : "No History Entries"}
+								title={hasHistory
+									? "History Entries"
+									: "No History Entries"}
 							>
 								History
 							</span>

@@ -219,10 +219,10 @@
 
 	function handleCharacterNameClick(msg: SelectChatMessage): void {
 		if (msg.characterId) {
-			panelsCtx.openPanel({key: "characters", toggle: false})
+			panelsCtx.openPanel({ key: "characters", toggle: false })
 			panelsCtx.digest.characterId = msg.characterId
 		} else if (msg.personaId) {
-			panelsCtx.openPanel({key: "personas", toggle: false})
+			panelsCtx.openPanel({ key: "personas", toggle: false })
 			panelsCtx.digest.personaId = msg.personaId
 		}
 	}
@@ -264,28 +264,31 @@
 			}
 		})
 
-		socket.on("updateCharacter", (msg: Sockets.UpdateCharacter.Response) => {
-			const charId = msg.character?.id
-			if (!charId || !chat) return
-			
-			// Update chat characters if the character is in the chat
-			const chatCharacterIndex = chat.chatCharacters.findIndex(
-				(c: SelectChatCharacter) => c.characterId === charId
-			)
-			if (chatCharacterIndex !== -1) {
-				const updatedChatCharacters = [...chat.chatCharacters]
-				updatedChatCharacters[chatCharacterIndex] = {
-					...updatedChatCharacters[chatCharacterIndex],
-					character: msg.character
+		socket.on(
+			"updateCharacter",
+			(msg: Sockets.UpdateCharacter.Response) => {
+				const charId = msg.character?.id
+				if (!charId || !chat) return
+
+				// Update chat characters if the character is in the chat
+				const chatCharacterIndex = chat.chatCharacters.findIndex(
+					(c: SelectChatCharacter) => c.characterId === charId
+				)
+				if (chatCharacterIndex !== -1) {
+					const updatedChatCharacters = [...chat.chatCharacters]
+					updatedChatCharacters[chatCharacterIndex] = {
+						...updatedChatCharacters[chatCharacterIndex],
+						character: msg.character
+					}
+					chat = { ...chat, chatCharacters: updatedChatCharacters }
 				}
-				chat = { ...chat, chatCharacters: updatedChatCharacters }
 			}
-		})
+		)
 
 		socket.on("updatePersona", (msg: Sockets.UpdatePersona.Response) => {
 			const personaId = msg.persona?.id
 			if (!personaId || !chat) return
-			
+
 			// Update chat personas if the persona is in the chat
 			const chatPersonaIndex = chat.chatPersonas.findIndex(
 				(p: SelectChatPersona) => p.personaId === personaId
@@ -311,7 +314,9 @@
 	let showAvatarModal = $state(false)
 	let avatarModalSrc: string | undefined = $state(undefined)
 
-	function handleAvatarClick(char: SelectCharacter | SelectPersona | undefined) {
+	function handleAvatarClick(
+		char: SelectCharacter | SelectPersona | undefined
+	) {
 		if (!char) return
 		if (char.avatar) {
 			avatarModalSrc = char.avatar
@@ -339,24 +344,32 @@
 							editChatMessage?.id !== msg.id}
 					>
 						<div class="flex justify-between gap-2">
-							<div class="flex gap-2 group">
+							<div class="group flex gap-2">
 								<span>
 									<!-- Make avatar clickable -->
-									<button class="w-fit m-0 p-0" onclick={() => handleAvatarClick(character)} title="View Avatar">
+									<button
+										class="m-0 w-fit p-0"
+										onclick={() =>
+											handleAvatarClick(character)}
+										title="View Avatar"
+									>
 										<Avatar char={character} />
 									</button>
 								</span>
 								<div class="flex flex-col">
 									<button
-										class="funnel-display text-[1.1em] font-bold px-0 mx-0 w-fit hover:underline"
-										onclick={(e) => handleCharacterNameClick(msg)}
+										class="funnel-display mx-0 w-fit px-0 text-[1.1em] font-bold hover:underline"
+										onclick={(e) =>
+											handleCharacterNameClick(msg)}
 										title="Edit"
 									>
 										{character?.nickname ||
 											character?.name ||
 											"Unknown"}
 									</button>
-									<span class="text-surface-500 text-sm opacity-0 group-hover:opacity-100 transition-opacity">
+									<span
+										class="text-surface-500 text-sm opacity-0 transition-opacity group-hover:opacity-100"
+									>
 										{new Date(
 											msg.createdAt
 										).toLocaleString()}
@@ -706,15 +719,22 @@
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
-		<header class="flex justify-between w-full">
+		<header class="flex w-full justify-between">
 			<h2 class="h2">Avatar</h2>
-			<button class="btn btn-sm" onclick={() => (showAvatarModal = false)}>
+			<button
+				class="btn btn-sm"
+				onclick={() => (showAvatarModal = false)}
+			>
 				<Icons.X size={20} />
 			</button>
 		</header>
-		<article class="flex flex-col items-center w-full">
+		<article class="flex w-full flex-col items-center">
 			{#if avatarModalSrc}
-				<img src={avatarModalSrc} alt="Avatar" class="max-h-[60vh] max-w-full rounded-lg border border-surface-300" />
+				<img
+					src={avatarModalSrc}
+					alt="Avatar"
+					class="border-surface-300 max-h-[60vh] max-w-full rounded-lg border"
+				/>
 			{:else}
 				<div class="text-muted">No avatar image available.</div>
 			{/if}

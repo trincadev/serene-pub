@@ -607,6 +607,52 @@ declare global {
 				lorebookBinding: SelectLorebookBinding
 			}
 		}
+
+		// World Lore Entry List
+		namespace WorldLoreEntryList {
+			interface Call {
+				lorebookId: number
+			}
+			interface Response {
+				worldLoreEntryList: SelectWorldLoreEntry[]
+			}
+		}
+
+		// Create World Lore Entry
+		namespace CreateWorldLoreEntry {
+			interface Call {
+				name: string
+				content: string
+			}
+			interface Response {
+				worldLoreEntry: SelectWorldLoreEntry
+			}
+		}
+
+		// Update World Lore Entry
+		namespace UpdateWorldLoreEntry {
+			interface Call {
+				worldLoreEntry: {
+					id: number
+					name: string
+					content: string
+				}
+			}
+			interface Response {
+				worldLoreEntry: SelectWorldLoreEntry
+			}
+		}
+
+		// Delete World Lore Entry
+		namespace DeleteWorldLoreEntry {
+			interface Call {
+				id: number
+			}
+			interface Response {
+				id: number,
+				lorebookId: number
+			}
+		}
 	}
 
 	export interface CharaImportMetadata {
