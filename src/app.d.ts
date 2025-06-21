@@ -587,9 +587,14 @@ declare global {
 		// Lorebook Binding List
 		namespace LorebookBindingList {
 			interface Call {
-				lorebookId: number
+				lorebookId: number,
+				with?: {
+					character?: boolean,
+					persona?: boolean
+				}
 			}
 			interface Response {
+				lorebookId: number
 				lorebookBindingList: SelectLorebookBinding[]
 			}
 		}

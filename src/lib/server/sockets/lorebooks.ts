@@ -149,7 +149,9 @@ export async function lorebookBindingList(
 			id: true,
 		},
 		with: {
-			lorebookBindings: true
+			lorebookBindings: !!message.with ? {
+				with: message.with
+			} : true
 		}
 	})
 
@@ -158,7 +160,10 @@ export async function lorebookBindingList(
 		return socket.emit("error", { error: "Lorebook not found." })
 	}
 
-	const res: Sockets.LorebookBindingList.Response = { lorebookBindingList: book.lorebookBindings }
+	const res: Sockets.LorebookBindingList.Response = { 
+		lorebookId: book.id,
+		lorebookBindingList: book.lorebookBindings 
+	}
 	emitToUser("lorebookBindingList", res)
 }
 
