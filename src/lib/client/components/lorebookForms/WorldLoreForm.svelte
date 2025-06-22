@@ -2,8 +2,10 @@
 	import * as Icons from "@lucide/svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import * as skio from "sveltekit-io"
-	import { onMount, tick } from "svelte"
+	import { onDestroy, onMount, tick } from "svelte"
 	import LoreEntryField from "./LoreEntryField.svelte"
+	import { Switch } from "@skeletonlabs/skeleton-svelte"
+	import { v4 as uuid } from "uuid"
 
 	interface Props {
 		lorebookId: number
@@ -12,95 +14,179 @@
 	const socket = skio.get()
 
 	let { lorebookId = $bindable() }: Props = $props()
-	let worldLoreEntries: any[] = $state([])
+	let worldLoreEntryList: Sockets.WorldLoreEntryList.Response["worldLoreEntryList"] =
+		$state([])
 	let lorebookBindingList: SelectLorebookBinding[] = $state([])
+	let editEntriesData: Record<number, SelectWorldLoreEntry> = $state({})
+	let newEntriesData: (InsertWorldLoreEntry & {_uuid: string})[] = $state([])
 
-	function handleSave() {
-		if (!name.trim()) {
+	const PRIORITIES = [
+		{ value: 1, label: "Normal" },
+		{ value: 2, label: "High" },
+		{ value: 3, label: "Very High" }
+	]
+
+	const DefaultWorldEntry: InsertWorldLoreEntry = {
+		name: "",
+		content: "",
+		keys: [],
+		useRegex: false,
+		caseSensitive: false,
+		constant: false,
+		enabled: true,
+		priority: 1, // Default priority
+		lorebookId,
+	}
+
+	let orderBy: string = $state("position-asc")
+
+	function getSortedEntries() {
+		return worldLoreEntryList.slice().sort((a, b) => {
+			const getPinned = (e) => e.constant ? 1 : 0
+			const getPriority = (e) => e.priority || 1
+			const getCreated = (e) => new Date(e.createdAt || 0).getTime()
+			const getUpdated = (e) => new Date(e.updatedAt || 0).getTime()
+			const getPosition = (e) => typeof e.position === 'number' ? e.position : 0
+			switch (orderBy) {
+				case "position-asc":
+					return getPosition(a) - getPosition(b)
+				case "position-desc":
+					return getPosition(b) - getPosition(a)
+				case "priority-desc":
+					// Pinned > 3 > 2 > 1
+					if (getPinned(a) !== getPinned(b)) return getPinned(b) - getPinned(a)
+					return getPriority(b) - getPriority(a)
+				case "priority-asc":
+					if (getPinned(a) !== getPinned(b)) return getPinned(a) - getPinned(b)
+					return getPriority(a) - getPriority(b)
+				case "created-desc":
+					return getCreated(b) - getCreated(a)
+				case "created-asc":
+					return getCreated(a) - getCreated(b)
+				case "updated-desc":
+					return getUpdated(b) - getUpdated(a)
+				case "updated-asc":
+					return getUpdated(a) - getUpdated(b)
+				default:
+					return 0
+			}
+		})
+	}
+
+	function handleSave({entry}: { entry: SelectWorldLoreEntry | (InsertWorldLoreEntry & {_uuid: string}) }) {
+		if (!entry.name.trim()) {
 			toaster.error({ title: "Name is required" })
 			return
 		}
-		// dispatch("save", {
-		// 	...entry,
-		// 	name,
-		// 	content,
-		// 	keys: keys.split(",").map(k => k.trim()).filter(Boolean),
-		// 	useRegex,
-		// 	caseSensitive,
-		// 	priority,
-		// 	constant,
-		// 	enabled,
-		// 	lorebookId
-		// });
-		// showWorldLoreForm = false;
+		if (!entry.content.trim()) {
+			toaster.error({ title: "Content is required" })
+			return
+		}
+
+		if (entry._uuid) {
+			// New entry, send create request
+			const req: Sockets.CreateWorldLoreEntry.Call = {
+				worldLoreEntry: {...entry, lorebookId, _uuid: undefined}
+			}
+			socket.emit("createWorldLoreEntry", req)
+			newEntriesData = newEntriesData.filter((e) => e._uuid !== entry._uuid)
+		} else {
+			// Existing entry, send update request
+			const req: Sockets.UpdateWorldLoreEntry.Call = {
+				worldLoreEntry: {...entry, lorebookId}
+			}
+			socket.emit("updateWorldLoreEntry", req)
+			delete editEntriesData[entry.id]
+		}
+		// tick().then(() => {
+		// 	const el = document.getElementById(`entry-${entry.id}`)
+		// 	if (el) {
+		// 		el.scrollIntoView({ behavior: "smooth" })
+		// 	}
+		// })
 	}
 
-	function handleCancel() {
-		// dispatch("cancel");
-		// showWorldLoreForm = false;
+	function handleCancel({entry}: { entry: SelectWorldLoreEntry | (InsertWorldLoreEntry & {_uuid: string}) }) {
+		if (entry._uuid) {
+			// If it's a new entry, just remove it from the newEntriesData
+			newEntriesData = newEntriesData.filter((e) => e._uuid !== entry._uuid)
+		} else {
+			// If it's an existing entry, remove it from editEntriesData
+			delete editEntriesData[entry.id]
+		}
 	}
 
-	socket.on(
-		"worldLoreEntryList",
-		(msg: Sockets.WorldLoreEntryList.Response) => {
-			if (
-				msg.worldLoreEntryList.length &&
-				msg.worldLoreEntryList[0].lorebookId === lorebookId
-			) {
-				worldLoreEntries = msg.worldLoreEntryList
+	function onClickCreateEntry() {
+		const newEntry: InsertWorldLoreEntry & {_uuid: string} = {...DefaultWorldEntry, _uuid: uuid()}
+		newEntriesData.push(newEntry)
+		tick().then(() => {
+			const el = document.getElementById(`entry-${newEntry.id}`)
+			if (el) {
+				el.scrollIntoView({ behavior: "smooth" })
 			}
-		}
-	)
-
-	socket.on(
-		"createWorldLoreEntry",
-		(msg: Sockets.CreateWorldLoreEntry.Response) => {
-			if (
-				msg.worldLoreEntry &&
-				msg.worldLoreEntry.lorebookId === lorebookId
-			) {
-				toaster.success({ title: "World Lore Entry created" })
-			}
-		}
-	)
-
-	socket.on(
-		"updateWorldLoreEntry",
-		(msg: Sockets.UpdateWorldLoreEntry.Response) => {
-			if (
-				msg.worldLoreEntry &&
-				msg.worldLoreEntry.lorebookId === lorebookId
-			) {
-				toaster.success({ title: "World Lore Entry updated" })
-			}
-		}
-	)
-	socket.on(
-		"deleteWorldLoreEntry",
-		(msg: Sockets.DeleteWorldLoreEntry.Response) => {
-			if (
-				msg.worldLoreEntryId &&
-				worldLoreEntries.some((e) => e.id === msg.worldLoreEntryId)
-			) {
-				toaster.success({ title: "World Lore Entry deleted" })
-				worldLoreEntries = worldLoreEntries.filter(
-					(e) => e.id !== msg.worldLoreEntryId
-				)
-			}
-		}
-	)
-	socket.on(
-		"lorebookBindingList",
-		(msg: Sockets.LorebookBindingList.Response) => {
-			if (
-				msg.lorebookId === lorebookId
-			) {
-				lorebookBindingList = msg.lorebookBindingList
-			}
-		}
-	)
+		})
+	}
 
 	onMount(() => {
+		socket.on(
+			"worldLoreEntryList",
+			(msg: Sockets.WorldLoreEntryList.Response) => {
+				if (
+					msg.worldLoreEntryList.length &&
+					msg.worldLoreEntryList[0].lorebookId === lorebookId
+				) {
+					// Use spread to ensure Svelte reactivity
+					console.log(
+						"Received world lore entry list:",
+						msg.worldLoreEntryList
+					)
+					worldLoreEntryList = msg.worldLoreEntryList
+				}
+			}
+		)
+
+		socket.on(
+			"createWorldLoreEntry",
+			(msg: Sockets.CreateWorldLoreEntry.Response) => {
+				if (
+					msg.worldLoreEntry &&
+					msg.worldLoreEntry.lorebookId === lorebookId
+				) {
+					toaster.success({ title: "World Lore Entry created" })
+				}
+			}
+		)
+
+		socket.on(
+			"updateWorldLoreEntry",
+			(msg: Sockets.UpdateWorldLoreEntry.Response) => {
+				if (
+					msg.worldLoreEntry &&
+					msg.worldLoreEntry.lorebookId === lorebookId
+				) {
+					toaster.success({ title: "World Lore Entry updated" })
+				}
+			}
+		)
+		socket.on(
+			"deleteWorldLoreEntry",
+			(msg: Sockets.DeleteWorldLoreEntry.Response) => {
+				if (msg.id && worldLoreEntryList.some((e) => e.id === msg.id)) {
+					toaster.success({ title: "World Lore Entry deleted" })
+					// worldLoreEntryList = worldLoreEntryList.filter(
+					// 	(e) => e.id !== msg.id
+					// )
+				}
+			}
+		)
+		socket.on(
+			"lorebookBindingList",
+			(msg: Sockets.LorebookBindingList.Response) => {
+				if (msg.lorebookId === lorebookId) {
+					lorebookBindingList = [...msg.lorebookBindingList]
+				}
+			}
+		)
 		const req: Sockets.WorldLoreEntryList.Call = { lorebookId: lorebookId }
 		socket.emit("worldLoreEntryList", req)
 		const bindingReq: Sockets.LorebookBindingList.Call = {
@@ -109,116 +195,258 @@
 		}
 		socket.emit("lorebookBindingList", bindingReq)
 	})
+
+	onDestroy(() => {
+		socket.off("worldLoreEntryList")
+		socket.off("createWorldLoreEntry")
+		socket.off("updateWorldLoreEntry")
+		socket.off("deleteWorldLoreEntry")
+		socket.off("lorebookBindingList")
+	})
 </script>
 
-{#each worldLoreEntries as entry, i (entry.id)}
-	<div class="flex flex-col gap-4">
-		<div class="flex items-center gap-2">
-			<h3 class="text-lg font-semibold">{entry.name}</h3>
-			<button
-				class="btn btn-sm preset-filled-surface-500"
-				onclick={() => {}}
-			>
-				<Icons.Edit size={16} />
-			</button>
-			<button
-				class="btn btn-sm preset-filled-error-500"
-				onclick={() => {
-					worldLoreEntries = worldLoreEntries.filter(
-						(e) => e.id !== entry.id
-					)
-				}}
-			>
-				<Icons.Trash size={16} />
-			</button>
-		</div>
-		<div>
-			<label class="font-semibold" for="entryName">Name</label>
-			<input
-				id="entryName"
-				class="input input-lg w-full"
-				type="text"
-				bind:value={entry.name}
-				required
-			/>
-		</div>
-		<div>
-			<label class="font-semibold" for="entryContent">Content</label>
-			<LoreEntryField bind:content={entry.content} bind:lorebookBindingList />
-		</div>
-		<div>
-			<label class="font-semibold" for="entryKeys">
-				Keys (comma-separated)
-			</label>
-			<input
-				id="entryKeys"
-				class="input input-lg w-full"
-				type="text"
-				placeholder="key1, key2, key3"
-				bind:value={entry.keys}
-			/>
-		</div>
-		<div class="flex items-center gap-4">
-			<label class="flex items-center">
-				<input
-					type="checkbox"
-					bind:checked={entry.useRegex}
-					class="checkbox"
-				/>
-				<span class="ml-2">Use Regex</span>
-			</label>
-			<label class="flex items-center">
-				<input
-					type="checkbox"
-					bind:checked={entry.caseSensitive}
-					class="checkbox"
-				/>
-				<span class="ml-2">Case Sensitive</span>
-			</label>
-			<label class="flex items-center">
-				<input
-					type="checkbox"
-					bind:checked={entry.constant}
-					class="checkbox"
-				/>
-				<span class="ml-2">Constant</span>
-			</label>
-			<label class="flex items-center">
-				<input
-					type="checkbox"
-					bind:checked={entry.enabled}
-					class="checkbox"
-				/>
-				<span class="ml-2">Enabled</span>
-			</label>
-			<div>
-				<label for="entryPriority" class="font-semibold">
-					Priority
-				</label>
-				<input
-					id="entryPriority"
-					type="number"
-					min="0"
-					max="1000"
-					bind:value={entry.priority}
-					class="input input-lg w-full max-w-xs"
-				/>
-			</div>
-		</div>
+<div class="flex flex-col gap-4">
+	<div class="flex flex-wrap items-center justify-between mb-2 gap-2">
 		<div class="flex gap-2">
-			<button
-				class="btn btn-sm preset-filled-surface-500 w-full"
-				onclick={handleCancel}
-			>
-				Cancel
-			</button>
-			<button
-				class="btn btn-sm preset-filled-success-500 w-full"
-				onclick={handleSave}
-			>
-				<Icons.Save size={16} />
-				Save
-			</button>
+			<select id="orderBy" class="select text-sm compact" bind:value={orderBy}>
+				<option value="position-asc">Position ↑</option>
+				<option value="position-desc">Position ↓</option>
+				<option value="priority-desc">Priority ↑</option>
+				<option value="priority-asc">Priority ↓</option>
+				<option value="created-desc">Date Created ↑</option>
+				<option value="created-asc">Date Created ↓</option>
+				<option value="updated-desc">Date Updated ↑</option>
+				<option value="updated-asc">Date Updated ↓</option>
+			</select>
 		</div>
+		<button
+			class="btn btn-sm preset-filled-success-500"
+			onclick={onClickCreateEntry}
+		>
+			<Icons.Plus size={16} /> Create Entry
+		</button>
 	</div>
-{/each}
+	{#each [...newEntriesData, ...getSortedEntries()] as oe}
+		{@const entry = !!oe._uuid || !Object.values(editEntriesData).find(e => e.id === oe.id) ? oe : Object.values(editEntriesData).find(e => e.id === oe.id) || oe}
+		{@const isEditing = (entry.id in editEntriesData) || !entry.id}
+		{#key entry}
+		{#if isEditing}
+			<!-- Edit mode: show the form -->
+			<div
+				class="flex flex-col gap-4 rounded-lg p-2 preset-filled-surface-100-900 border-2 border-success-500"
+				class:border-success-500={!entry.id}
+			>
+				<div>
+					<label
+						class="flex items-center gap-1 font-semibold"
+						for="entryName"
+					>
+						<span>Name</span>
+						<span
+							class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+							title="This field will be visible in prompts"
+						>
+							<Icons.ScanEye
+								size={16}
+								class="relative top-[1px] inline"
+							/>
+						</span>
+					</label>
+
+					<input
+						id="entryName"
+						class="input preset-filled-surface-200-800 w-full rounded-lg"
+						type="text"
+						bind:value={entry.name}
+						required
+						placeholder="Umber City"
+					/>
+				</div>
+				<div>
+					<label
+						class="flex items-center gap-1 font-semibold"
+						for="entryContent"
+					>
+						<span>Content</span>
+						<span
+							class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+							title="This field will be visible in prompts"
+						>
+							<Icons.ScanEye
+								size={16}
+								class="relative top-[1px] inline"
+							/>
+						</span>
+					</label>
+					<LoreEntryField
+						bind:content={entry.content}
+						bind:lorebookBindingList
+					/>
+				</div>
+				<div>
+					<label
+						class="flex items-center gap-1 font-semibold"
+						for="entryKeys"
+					>
+						<span>Content</span>
+						<span
+							class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+							title="Words or phrases that will trigger this entry"
+						>
+							<Icons.MessageCircleQuestion
+								size={16}
+								class="relative top-[1px] inline"
+							/>
+						</span>
+					</label>
+					<input
+						id="entryKeys"
+						class="input preset-filled-surface-200-800 w-full rounded-lg"
+						type="text"
+						bind:value={entry.keys}
+						placeholder="umber, umber city"
+					/>
+				</div>
+				<details>
+					<summary class="cursor-pointer font-semibold">
+						Advanced Settings
+					</summary>
+					<div class="flex flex-col gap-2 mt-2">
+						<div class="flex w-full justify-between">
+							<span>Use Regex</span>
+							<Switch
+								name="useRegex"
+								label="Use Regex"
+								checked={entry.useRegex || false}
+								onCheckedChange={(e) =>
+									(entry.useRegex = e.checked)}
+							/>
+						</div>
+						<div class="flex w-full justify-between">
+							<span>Case Sensitive</span>
+							<Switch
+								name="caseSensitive"
+								checked={entry.caseSensitive}
+								onCheckedChange={(e) =>
+									(entry.caseSensitive = e.checked)}
+							/>
+						</div>
+						<div class="flex w-full justify-between">
+							<span>Pinned</span>
+							<Switch
+								name="constant"
+								checked={entry.constant}
+								onCheckedChange={(e) =>
+									(entry.constant = e.checked)}
+							/>
+						</div>
+						<div class="flex w-full justify-between">
+							<span>Enabled</span>
+							<Switch
+								name="enabled"
+								checked={entry.enabled}
+								onCheckedChange={(e) => (entry.enabled = e.checked)}
+							/>
+						</div>
+						<div class="flex w-full justify-between">
+							<label for="entryPriority" class="font-semibold" class:disabled={entry.constant}>
+								Priority
+							</label>
+							<select
+								id="entryPriority"
+								bind:value={entry.priority}
+								class="select text-sm preset-filled-surface-200-800 w-full max-w-xs rounded-lg w-max"
+								disabled={entry.constant}
+							>
+								{#each PRIORITIES as priority}
+									<option value={priority.value}>
+										{priority.label}
+									</option>
+								{/each}
+							</select>
+						</div>
+					</div>
+				</details>
+
+				<div class="flex gap-2">
+					<button
+						class="btn btn-sm preset-filled-surface-500 w-full"
+						onclick={() => { handleCancel({entry}); }}
+					>
+						Cancel
+					</button>
+					<button
+						class="btn btn-sm preset-filled-success-500 w-full"
+						onclick={() => handleSave({ entry })}
+					>
+						<Icons.Save size={16} />
+						Save
+					</button>
+				</div>
+			</div>
+		{:else}
+			<!-- View mode: show entry details -->
+			<div class="preset-filled-surface-100-900 flex flex-col gap-4 rounded-lg p-2" class:opacity-50={!entry.enabled}>
+				<div>
+					<strong>Name:</strong> {entry.name}
+				</div>
+				<div>
+					<strong>Content:</strong>
+					<div class="whitespace-pre-line">{entry.content}</div>
+				</div>
+				<div>
+					<strong>Keys:</strong> {Array.isArray(entry.keys) ? entry.keys.join(", ") : entry.keys}
+				</div>
+				<div class="flex gap-1">
+					{#if !entry.enabled}
+					<span class="py-1 rounded px-2 preset-filled-error-500" title="This entry is disabled and will not be used in prompts">
+						<Icons.Ghost size={16} class="inline" />
+					</span>
+					{/if}
+					{#if entry.useRegex}
+					<span class="py-1 rounded px-2 preset-filled-primary-500" title="This entry's keys use a regex pattern">
+						<Icons.Regex size={16} class="inline" />
+					</span>
+					{/if}
+					{#if entry.constant}
+					<span class="py-1 rounded px-2 preset-filled-warning-500" title="This entry is pinned and will always be included in prompts">
+						<Icons.Pin size={16} class="inline" />
+					</span>
+					{:else}
+						<span 
+						class="py-1 rounded px-2"
+						class:preset-filled-success-500={entry.priority === 1}
+						class:preset-filled-primary-500={entry.priority === 2}
+						class:preset-filled-tertiary-500={entry.priority === 3}
+						title={`${PRIORITIES[entry.priority - 1].label} Priority`}
+						>
+							{#if entry.priority === 1}
+								<Icons.Plus size={16} class="inline" />
+							{:else if entry.priority === 2}
+								<Icons.Plus size={16} class="inline" /><Icons.Plus size={16} class="inline" />
+							{:else if entry.priority === 3}
+								<Icons.Plus size={16} class="inline" /><Icons.Plus size={16} class="inline" /><Icons.Plus size={16} class="inline" />
+							{/if}
+						</span>
+					{/if}
+				</div>
+				<div class="flex gap-2 mt-2">
+					<button
+						class="btn btn-sm preset-filled-primary-500"
+						onclick={() => { editEntriesData[entry.id] = {...entry} }}
+					>
+						<Icons.Edit size={16} /> Edit
+					</button>
+					<button
+						class="btn btn-sm preset-filled-error-500"
+						onclick={() => socket.emit("deleteWorldLoreEntry", { id: entry.id, lorebookId })}
+						title="Delete Entry"
+					>
+						<Icons.Trash2 size={16} /> Delete
+					</button>
+				</div>
+			</div>
+		{/if}
+		{/key}
+	{/each}
+</div>

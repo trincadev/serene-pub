@@ -626,8 +626,7 @@ declare global {
 		// Create World Lore Entry
 		namespace CreateWorldLoreEntry {
 			interface Call {
-				name: string
-				content: string
+				worldLoreEntry: InsertWorldLoreEntry
 			}
 			interface Response {
 				worldLoreEntry: SelectWorldLoreEntry

@@ -6,6 +6,7 @@
 	import * as Icons from "@lucide/svelte"
 	import { dndzone } from "svelte-dnd-action"
 	import RemoveFromChatModal from "../modals/RemoveFromChatModal.svelte"
+	import { onDestroy } from "svelte"
 
 	interface Props {
 		editChatId?: number | null // If provided, edit mode; else create mode
@@ -219,6 +220,11 @@
 		// TODO handle unsaved changes if any
 		showEditChatForm = false
 	}
+
+	onDestroy(() => {
+		socket.off("characterList")
+		socket.off("personaList")
+	})
 </script>
 
 <div class="flex flex-col gap-6 rounded-lg border border-surface-500/25 p-2 min-h-full">

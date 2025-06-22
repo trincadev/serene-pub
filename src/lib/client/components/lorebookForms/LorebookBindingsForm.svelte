@@ -5,7 +5,7 @@
 	import Avatar from "../Avatar.svelte"
 	import * as Icons from "@lucide/svelte"
 	import { toaster } from "$lib/client/utils/toaster"
-	import { onMount } from "svelte"
+	import { onMount, onDestroy } from "svelte"
 
 	interface Props {
 		lorebookId: number // ID of the lorebook to edit
@@ -194,6 +194,15 @@
 		}
 		socket.emit("lorebookBindingList", bindingReq)
 	})
+
+	onDestroy(() => {
+		socket.off("characterList")
+		socket.off("personaList")
+		socket.off("lorebookBindingList")
+		socket.off("createLorebookBinding")
+		socket.off("updateLorebookBinding")
+		socket.off("deleteLorebookBinding")
+	})
 </script>
 
 <div>
@@ -213,9 +222,11 @@
 			</button>
 		</div>
 		<div class="bindings-list">
+			{#key lorebookBindingList.length}
 			{#each lorebookBindingList as binding, i}
 				{@render bindingCard(binding)}
 			{/each}
+			{/key}
 		</div>
 	</div>
 </div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 	import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
-	import { onMount } from "svelte"
+	import { onMount, onDestroy } from "svelte"
 	import * as skio from "sveltekit-io"
 
 	interface Props {
@@ -51,6 +51,11 @@
 		if (connection.baseUrl) {
 			handleRefreshModels()
 		}
+	})
+
+	onDestroy(() => {
+		socket.off("refreshModels")
+		socket.off("testConnection")
 	})
 </script>
 

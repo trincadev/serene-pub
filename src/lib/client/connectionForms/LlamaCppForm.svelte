@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 	import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
-	import { onMount } from "svelte"
+	import { onMount, onDestroy } from "svelte"
 	import * as skio from "sveltekit-io"
 
 	interface ExtraFieldData {
@@ -73,6 +73,10 @@
 		} else {
 			llamaCppFields = extraJsonToExtraFields(defaultExtraJson)
 		}
+	})
+
+	onDestroy(() => {
+		socket.off("testConnection")
 	})
 </script>
 

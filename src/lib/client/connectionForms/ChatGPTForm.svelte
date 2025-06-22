@@ -1,5 +1,6 @@
 <script lang="ts">
     import * as skio from "sveltekit-io"
+    import { onDestroy } from "svelte"
 
     interface Props {
         connection: SelectConnection
@@ -21,6 +22,10 @@
         return () => {
             socket.off && socket.off("testConnection", handleTest)
         }
+    })
+
+    onDestroy(() => {
+        socket.off && socket.off("testConnection", handleTest)
     })
 </script>
 

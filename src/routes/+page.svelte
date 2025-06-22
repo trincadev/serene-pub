@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Icons from "@lucide/svelte"
-	import { getContext, onMount } from "svelte"
+	import { getContext, onMount, onDestroy } from "svelte"
 	import * as skio from "sveltekit-io"
 
 	let userCtx: UserCtx = $state(getContext("userCtx"))
@@ -13,22 +13,6 @@
 	)
 	let personas: Sockets.PersonaList.Response["personaList"] = $state([])
 	let chats: Sockets.ChatsList.Response["chatsList"] = $state([])
-
-	// Listen for lists
-	onMount(() => {
-		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
-			characters = msg.characterList || []
-		})
-		socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
-			personas = msg.personaList || []
-		})
-		socket.on("chatsList", (msg: Sockets.ChatsList.Response) => {
-			chats = msg.chatsList || []
-		})
-		socket.emit("characterList", {})
-		socket.emit("personaList", {})
-		socket.emit("chatsList", {})
-	})
 
 	function openSettings() {
 		panelsCtx.openPanel({key: "settings"})
@@ -55,6 +39,28 @@
 	function openChats() {
 		panelsCtx.openPanel({key: "chats"})
 	}
+
+	// Listen for lists
+	onMount(() => {
+		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
+			characters = msg.characterList || []
+		})
+		socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
+			personas = msg.personaList || []
+		})
+		socket.on("chatsList", (msg: Sockets.ChatsList.Response) => {
+			chats = msg.chatsList || []
+		})
+		socket.emit("characterList", {})
+		socket.emit("personaList", {})
+		socket.emit("chatsList", {})
+	})
+
+	onDestroy(() => {
+		socket.off("characterList")
+		socket.off("personaList")
+		socket.off("chatsList")
+	})
 </script>
 
 <svelte:head>

@@ -138,7 +138,6 @@ export async function lorebookBindingList(
 	message: Sockets.LorebookBindingList.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	console.log("Fetching lorebook binding list for message:", message)
 	const userId = 1 // TODO: Replace with actual user ID from socket data
 	if (!userId) return socket.emit("error", { error: "User not found." })
 
@@ -260,21 +259,109 @@ export async function createWorldLoreEntry(
 	try {
 		const userId = 1 // TODO: Replace with actual user ID from socket data
 
+		const data: InsertWorldLoreEntry = message.worldLoreEntry
+		data.name = data.name!.trim()
+		data.content = data.content!.trim()
+		// data.keys = data.keys
+
+		// Get next available position for the lore entry
+		const existingEntries = await db.query.worldLoreEntries.findMany({
+			where: (e, { eq }) => eq(e.lorebookId, data.lorebookId),
+			columns: {
+				id: true,
+				position: true
+			},
+			orderBy: (e, { asc }) => asc(e.position) // Don't trust this to be ordered in sqlite
+		})
+
+		let nextPosition = 1
+		if (existingEntries.length > 0) {
+			// Find the first available position
+			const positions = existingEntries.map(e => e.position)
+			while (positions.includes(nextPosition)) {
+				nextPosition++
+			}
+		}
+
+		data.position = nextPosition
+
 		const [newEntry] = await db
 			.insert(schema.worldLoreEntries)
-			.values({
-				name: message.name,
-				content: message.content,
-				userId
-			})
+			.values(data)
 			.returning()
+
+		await syncLorebookBindings({ lorebookId: newEntry.lorebookId })
+		await lorebookBindingList(socket, { lorebookId: newEntry.lorebookId }, emitToUser)
 
 		const res: Sockets.CreateWorldLoreEntry.Response = { worldLoreEntry: newEntry }
 		emitToUser("createWorldLoreEntry", res)
-		await worldLoreEntryList(socket, {}, emitToUser)
+		const entryListReq: Sockets.WorldLoreEntryList.Call = { lorebookId: newEntry.lorebookId }
+		await worldLoreEntryList(socket, entryListReq, emitToUser)
 	} catch (error) {
 		console.error("Error creating world lore entry:", error)
 		socket.emit("error", { error: "Failed to create world lore entry." })
+	}
+}
+
+async function syncLorebookBindings({lorebookId}:{ lorebookId: number }) {
+	const queries: (() => Promise<any>)[] = []
+	// Query all lorebook bindings for the given lorebook
+	const existingBindings = await db.query.lorebookBindings.findMany({
+		where: (b, { eq }) => eq(b.lorebookId, lorebookId),
+	})
+	// Query all world, character and history entries for the given lorebook
+	const worldEntries = await db.query.worldLoreEntries.findMany({
+		where: (e, { eq }) => eq(e.lorebookId, lorebookId),
+	})
+	const characterEntries = await db.query.characterLoreEntries.findMany({
+		where: (e, { eq }) => eq(e.lorebookId, lorebookId),
+	})
+	const historyEntries = await db.query.historyEntries.findMany({
+		where: (e, { eq }) => eq(e.lorebookId, lorebookId),
+	})
+	// Create a list of all unique lorebook bindings from the entries
+	const foundBindings: string[] = []
+	for (const entry of [...worldEntries, ...characterEntries, ...historyEntries]) {
+        const keys = Array.isArray(entry.keys)
+            ? entry.keys
+            : (typeof entry.keys === "string" && entry.keys.length > 0
+                ? [entry.keys]
+                : []);
+    const matches = keys.filter(key => key.startsWith("{char:") && key.endsWith("}"));
+    for (const match of matches) {
+        if (!foundBindings.includes(match)) {
+            foundBindings.push(match);
+        }
+    }
+	}
+	// If a binding does not exist in the lorebook bindings, create it without a character or persona
+	existingBindings.forEach(binding => {
+		const bindingExists = foundBindings.some(fb => fb === binding.binding)
+		if (!bindingExists) {
+			const newBinding = {
+				lorebookId,
+				binding: binding.binding,
+				characterId: null,
+				personaId: null
+			}
+			queries.push(
+				db.insert(schema.lorebookBindings).values(newBinding) as any as () => Promise<any>
+			)
+		}
+	})
+	// If a binding exists in the lorebook bindings without a bound character or persona, consider it orphaned and delete it
+	existingBindings.forEach(eb => {
+		if (!!eb.characterId || !!eb.personaId) {return} // Skip bindings that are still in use
+		const isBindingUsed = foundBindings.some(fb => fb === eb.binding)
+		if (!isBindingUsed) {
+			queries.push(
+				db.delete(schema.lorebookBindings).where(eq(schema.lorebookBindings.id, eb.id)) as any as () => Promise<any>
+			)
+		}
+	})
+	// Execute all queries in parallel
+	if (queries.length > 0) {
+		await Promise.all(queries)
 	}
 }
 
@@ -286,26 +373,45 @@ export async function updateWorldLoreEntry(
 	try {
 		const userId = 1 // TODO: Replace with actual user ID from socket data
 
+		const lorebook = await db.query.lorebooks.findFirst({
+			where: (l, { and, eq }) =>
+				and(eq(l.id, message.worldLoreEntry.lorebookId), eq(l.userId, userId)),
+			columns: {
+				id: true,
+				userId: true
+			}
+		})
+
+		if (!lorebook) {
+			return socket.emit("error", { error: "Lorebook not found or you do not have permission to edit it." })
+		}
+
 		const entry = await db.query.worldLoreEntries.findFirst({
 			where: (e, { eq }) => eq(e.id, message.worldLoreEntry.id)
 		})
 
-		if (!entry || entry.userId !== userId) {
-			return socket.emit("error", { error: "World lore entry not found or you do not have permission to edit it." })
+		if (!entry) {
+			return socket.emit("error", { error: "World lore entry not found." })
 		}
+
+		const data: SelectWorldLoreEntry = {...message.worldLoreEntry}
+		data.name = data.name!.trim()
+		data.content = data.content!.trim()
+		// data.keys = data.keys
 
 		const [updatedEntry] = await db
 			.update(schema.worldLoreEntries)
-			.set({
-				name: message.worldLoreEntry.name,
-				content: message.worldLoreEntry.content
-			})
+			.set(data)
 			.where(eq(schema.worldLoreEntries.id, entry.id))
 			.returning()
 
+		await syncLorebookBindings({ lorebookId: entry.lorebookId })
+		await lorebookBindingList(socket, { lorebookId: entry.lorebookId }, emitToUser)
+
 		const res: Sockets.UpdateWorldLoreEntry.Response = { worldLoreEntry: updatedEntry }
 		emitToUser("updateWorldLoreEntry", res)
-		await worldLoreEntryList(socket, {}, emitToUser)
+		const entryListReq: Sockets.WorldLoreEntryList.Call = { lorebookId: updatedEntry.lorebookId }
+		await worldLoreEntryList(socket, entryListReq, emitToUser)
 	} catch (error) {
 		console.error("Error updating world lore entry:", error)
 		socket.emit("error", { error: "Failed to update world lore entry." })

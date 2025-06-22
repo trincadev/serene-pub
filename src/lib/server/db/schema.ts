@@ -181,7 +181,7 @@ export const lorebookBindingsRelations = relations(lorebookBindings, ({ one }) =
 export const worldLoreEntries = sqliteTable("world_lore_entries", {
     id: integer("id").primaryKey(),
     lorebookId: integer("lorebook_id").notNull().references(() => lorebooks.id, { onDelete: "cascade" }),
-    name: text("name"),
+    name: text("name").notNull(),
     category: text("category"),
     keys: text("keys", { mode: "json" }).notNull().default([]).$type<string[]>(),
     useRegex: integer("use_regex", { mode: "boolean" }).default(false),

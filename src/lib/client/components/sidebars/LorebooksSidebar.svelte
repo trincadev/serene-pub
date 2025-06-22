@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from "svelte"
+	import { onDestroy, onMount } from "svelte"
 	import * as skio from "sveltekit-io"
 	import * as Icons from "@lucide/svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
@@ -67,15 +67,19 @@
 		socket.emit("createLorebook", req)
 	}
 
-	socket.on("lorebookList", (msg: Sockets.LorebookList.Response) => {
+	onMount(() => {
+		socket.on("lorebookList", (msg: Sockets.LorebookList.Response) => {
 		if (msg.lorebookList) {
 			lorebookList = msg.lorebookList
 		}
 	})
-
-	onMount(() => {
 		onclose = handleOnClose
 		socket.emit("lorebookList", {})
+	})
+
+	onDestroy(() => {
+		socket.off("lorebookList")
+		onclose = undefined
 	})
 </script>
 
@@ -130,28 +134,22 @@
 			{/snippet}
 			{#snippet content()}
 				<Tabs.Panel value="lorebook">
-					{#if editGroup === "lorebook"}
-						<EditLorebookForm
-							lorebookId={selectedLorebook.id}
-							bind:showEditLorebookForm={isEditingLorebook}
-						/>
-					{/if}
+					<EditLorebookForm
+						lorebookId={selectedLorebook.id}
+						bind:showEditLorebookForm={isEditingLorebook}
+					/>
 				</Tabs.Panel>
 				<Tabs.Panel value="bindings">
-					{#if editGroup === "bindings"}
 						<LorebookBindingsForm
 							lorebookId={selectedLorebook.id}
 							bind:showEditLorebookForm={isEditingLorebook}
 						/>
-					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="world">
-					{#if editGroup === "world"}
 						<WorldLoreForm
 							lorebookId={selectedLorebook.id}
 							bind:showEditLorebookForm={isEditingLorebook}
 						/>
-					{/if}
 				</Tabs.Panel>
 			{/snippet}
 		</Tabs>

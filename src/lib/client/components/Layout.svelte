@@ -3,7 +3,7 @@
 	import "../../../app.css"
 	import * as Icons from "@lucide/svelte"
 	import { fly, fade } from "svelte/transition"
-	import { onMount, setContext } from "svelte"
+	import { onMount, setContext, onDestroy } from "svelte"
 	import SamplingSidebar from "./sidebars/SamplingSidebar.svelte"
 	import ConnectionsSidebar from "./sidebars/ConnectionsSidebar.svelte"
 	import ContextSidebar from "./sidebars/ContextSidebar.svelte"
@@ -175,6 +175,11 @@
 		})
 
 		socket.emit("user", {})
+	})
+
+	onDestroy(() => {
+		socket.off("user")
+		socket.off("error")
 	})
 </script>
 

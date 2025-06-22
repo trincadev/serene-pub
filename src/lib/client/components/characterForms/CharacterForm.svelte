@@ -2,7 +2,7 @@
 	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import * as skio from "sveltekit-io"
-	import { onMount } from "svelte"
+	import { onMount, onDestroy } from "svelte"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import Avatar from "../Avatar.svelte"
 
@@ -157,6 +157,32 @@
 		showCancelModal = false
 	}
 
+	// Helper for editing arrays
+	function addToArray(arr: string[], value = "") {
+		arr.push(value)
+	}
+	function removeFromArray(arr: string[], idx: number) {
+		arr.splice(idx, 1)
+	}
+	// Helper for editing object
+	function setObjectKey(
+		obj: Record<string, string>,
+		key: string,
+		value: string
+	) {
+		obj[key] = value
+	}
+	function removeObjectKey(obj: Record<string, string>, key: string) {
+		delete obj[key]
+	}
+
+	$effect(() => {
+		isSafeToClose =
+			JSON.stringify(editCharacterData) ===
+			JSON.stringify(originalCharacterData)
+	})
+
+
 	onMount(() => {
 		onCancel = handleCancel
 		socket.on("createCharacter", (res) => {
@@ -187,30 +213,9 @@
 		}
 	})
 
-	$effect(() => {
-		isSafeToClose =
-			JSON.stringify(editCharacterData) ===
-			JSON.stringify(originalCharacterData)
+	onDestroy(() => {
+		socket.off("createCharacter")
 	})
-
-	// Helper for editing arrays
-	function addToArray(arr: string[], value = "") {
-		arr.push(value)
-	}
-	function removeFromArray(arr: string[], idx: number) {
-		arr.splice(idx, 1)
-	}
-	// Helper for editing object
-	function setObjectKey(
-		obj: Record<string, string>,
-		key: string,
-		value: string
-	) {
-		obj[key] = value
-	}
-	function removeObjectKey(obj: Record<string, string>, key: string) {
-		delete obj[key]
-	}
 </script>
 
 <div
