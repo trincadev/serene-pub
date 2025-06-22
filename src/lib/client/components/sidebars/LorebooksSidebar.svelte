@@ -69,10 +69,10 @@
 
 	onMount(() => {
 		socket.on("lorebookList", (msg: Sockets.LorebookList.Response) => {
-		if (msg.lorebookList) {
-			lorebookList = msg.lorebookList
-		}
-	})
+			if (msg.lorebookList) {
+				lorebookList = msg.lorebookList
+			}
+		})
 		onclose = handleOnClose
 		socket.emit("lorebookList", {})
 	})
@@ -85,17 +85,19 @@
 
 <div class="min-h-full p-4">
 	{#if isEditingLorebook}
-		<h2 class="mb-4 text-lg font-bold">
-			{selectedLorebook?.name || "Lorebook"}
-		</h2>
-		<button
-			onclick={() => {
-				isEditingLorebook = false
-			}}
-			class="mb-4"
-		>
-			<Icons.ArrowLeft size={20} class="inline" /> Back
-		</button>
+		<div class="flex justify-between">
+			<h2 class="mb-4 text-lg font-bold">
+				{selectedLorebook?.name || "Lorebook"}
+			</h2>
+			<button
+				onclick={() => {
+					isEditingLorebook = false
+				}}
+				class="mb-4"
+			>
+				<Icons.ArrowLeft size={20} class="inline" /> Back
+			</button>
+		</div>
 		<Tabs
 			value={editGroup}
 			onValueChange={(e) => (editGroup = e.value as EditGroup)}
@@ -140,16 +142,16 @@
 					/>
 				</Tabs.Panel>
 				<Tabs.Panel value="bindings">
-						<LorebookBindingsForm
-							lorebookId={selectedLorebook.id}
-							bind:showEditLorebookForm={isEditingLorebook}
-						/>
+					<LorebookBindingsForm
+						lorebookId={selectedLorebook.id}
+						bind:showEditLorebookForm={isEditingLorebook}
+					/>
 				</Tabs.Panel>
 				<Tabs.Panel value="world">
-						<WorldLoreForm
-							lorebookId={selectedLorebook.id}
-							bind:showEditLorebookForm={isEditingLorebook}
-						/>
+					<WorldLoreForm
+						lorebookId={selectedLorebook.id}
+						bind:showEditLorebookForm={isEditingLorebook}
+					/>
 				</Tabs.Panel>
 			{/snippet}
 		</Tabs>
