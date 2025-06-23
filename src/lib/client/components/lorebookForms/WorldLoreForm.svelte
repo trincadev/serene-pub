@@ -229,7 +229,6 @@
 		socket.emit("worldLoreEntryList", req)
 		const bindingReq: Sockets.LorebookBindingList.Call = {
 			lorebookId: lorebookId,
-			with: { character: true, persona: true }
 		}
 		socket.emit("lorebookBindingList", bindingReq)
 	})

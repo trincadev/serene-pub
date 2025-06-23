@@ -4,8 +4,7 @@
 	import { onMount } from "svelte"
 	import CharacterTag from "../../utils/tiptapCharacterTag"
 	import * as Icons from "@lucide/svelte"
-	import { Popover, Tooltip } from "@skeletonlabs/skeleton-svelte"
-	import { char } from "drizzle-orm/mysql-core"
+	import { Popover } from "@skeletonlabs/skeleton-svelte"
     import Placeholder from '@tiptap/extension-placeholder'
 	import LegacyTag from "$lib/client/utils/tiptapLegacyTag"
 
@@ -16,7 +15,6 @@
 
 	let { content = $bindable(), lorebookBindingList = $bindable() }: Props =
 		$props()
-
 		
 	let editor: Editor
 	let editorEl: HTMLDivElement
@@ -25,18 +23,19 @@
 	let canRedo = $state(false)
 	let addBindingOpenState = $state(false)
 
-	function getLabel(id: string) {
-		const binding = lorebookBindingList.find((b) => b.id == +id)
+	function getLabel(tag: string) {
+		const binding = lorebookBindingList.find((b) => b.binding == tag)
+		console.log("getLabel called for tag:", tag, "found binding:", $state.snapshot(binding))
 		return (
 			binding?.character?.nickname ||
 			binding?.character?.name ||
 			binding?.persona?.name ||
-			`{char:${id}}`
+			tag
 		)
 	}
 
-	function getCharType(id: string): "character" | "persona" | "unknown" {
-		const binding = lorebookBindingList.find((b) => b.id == +id)
+	function getCharType(tag: string): "character" | "persona" | "unknown" {
+		const binding = lorebookBindingList.find((b) => b.binding == tag)
 		return binding?.characterId
 			? "character"
 			: binding?.personaId
@@ -58,6 +57,8 @@
 		doc.descendants((node) => {
 			if (node.type.name === "characterTag") {
 				result += `{char:${node.attrs.id}}`;
+			} else if (node.type.name === "legacyTag") {
+				result += node.attrs.original
 			} else if (node.isText) {
 				result += node.text;
 			} else if (node.isBlock) {
@@ -114,12 +115,32 @@
 		})
 		editor.on("selectionUpdate", updateToolbarStates)
 		updateToolbarStates()
+
+		// Ensure copying from tiptap always copies the raw textarea content
+		forceRawContentCopy(editor.view, () => content)
 	})
 
 	$effect(() => {
 		const _content = content.trim()
 		console.log("Content updated:", content)
 	})
+
+
+	import type { EditorView } from "prosemirror-view"
+
+
+	function forceRawContentCopy(view: EditorView, arg1: () => string) {
+		const originalCopy = view.dom.addEventListener("copy", (event) => {
+			const text = arg1()
+			event.clipboardData.setData("text/plain", text)
+			event.preventDefault()
+		})
+
+		// Clean up the event listener when the component is destroyed
+		return () => {
+			view.dom.removeEventListener("copy", originalCopy)
+		}
+	}
 </script>
 
 <div
@@ -159,12 +180,12 @@
 								addBindingOpenState = false
 							}}
 							title={char
-								? `${char.name} (${binding.id})`
-								: `char:${binding.id}`}
+								? `${char.nickname || char.name}`
+								: binding.binding}
 						>
 							{char
 								? char.nickname || char.name
-								: `char:${binding.id}`}
+								: binding.binding}
 						</button>
 					{/each}
 				</div>

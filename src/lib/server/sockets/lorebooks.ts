@@ -148,9 +148,12 @@ export async function lorebookBindingList(
 			id: true,
 		},
 		with: {
-			lorebookBindings: !!message.with ? {
-				with: message.with
-			} : true
+			lorebookBindings: {
+				with: {
+					character: true,
+					persona: true
+				}
+			}
 		}
 	})
 

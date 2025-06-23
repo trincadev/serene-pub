@@ -3,8 +3,8 @@ import { Plugin, PluginKey } from "prosemirror-state"
 import { Fragment } from "prosemirror-model"
 
 interface CharacterTagOptions {
-	getLabel: (id: string) => string
-	getCharType: (id: string) => "character" | "persona" | "unknown"
+	getLabel: (raw: string) => string
+	getCharType: (raw: string) => "character" | "persona" | "unknown"
 }
 
 declare module "@tiptap/core" {
@@ -112,8 +112,8 @@ const CharacterTag = Node.create<CharacterTagOptions>({
 
 	addOptions() {
 		return {
-			getLabel: (id: string) => `char:${id}`,
-            getCharType: (id: string) => {
+			getLabel: (raw: string) => `{char:${id}}`,
+            getCharType: (raw: string) => {
                 return "unknown"
             }
 		}
@@ -138,7 +138,8 @@ const CharacterTag = Node.create<CharacterTagOptions>({
 	},
 
 	renderHTML({ node, HTMLAttributes }) {
-		const charType = this.options.getCharType(node.attrs.id);
+		const raw = `{char:${node.attrs.id}}`;
+		const charType = this.options.getCharType(raw);
 		let typeClass = '';
 		if (charType === 'character') typeClass = 'preset-filled-primary-500';
 		else if (charType === 'persona') typeClass = 'preset-filled-secondary-500';
@@ -149,9 +150,9 @@ const CharacterTag = Node.create<CharacterTagOptions>({
 				class: `badge ${typeClass} character-tag`,
 				"data-id": node.attrs.id,
 				contenteditable: "false",
-                "title": charType === 'character' ? `Character: ${this.options.getLabel(node.attrs.id)}` : charType === 'persona' ?  `Persona: ${this.options.getLabel(node.attrs.id)}` : `Unbound character`
+				"title": charType === 'character' ? `Character: ${this.options.getLabel(raw)}` : charType === 'persona' ?  `Persona: ${this.options.getLabel(node.attrs.id)}` : `Unbound character`
 			}),
-			this.options.getLabel(node.attrs.id)
+			this.options.getLabel(raw)
 		]
 	},
 
@@ -190,5 +191,6 @@ const CharacterTag = Node.create<CharacterTagOptions>({
 		return [characterTagInputRule(this.type)]
 	}
 })
+// Usage: Call forceRawContentCopy(editor.view, () => rawContent) after editor is mounted.
 
 export default CharacterTag
