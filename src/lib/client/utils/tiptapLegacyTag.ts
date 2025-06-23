@@ -1,8 +1,19 @@
-import { Node, mergeAttributes, nodeInputRule } from "@tiptap/core"
+import { Node, mergeAttributes, nodeInputRule, InputRule } from "@tiptap/core"
 import { Plugin, PluginKey } from "prosemirror-state"
 import { Fragment, NodeType } from "prosemirror-model"
 
 const LEGACY_TAG_REGEX = /\{(user|char|persona|character)\}/g
+
+// Custom input rule: replace all {user}, {char}, {persona}, {character} in the changed text node
+function legacyTagInputRule(type: any) {
+  return new InputRule({
+    find: /\{(user|char|persona|character)\}/g,
+    handler: ({ range, match, commands }) => {
+      commands.deleteRange(range)
+      commands.insertContent({ type: type.name, attrs: { tag: match[0] } })
+    }
+  });
+}
 
 function createClipboardTextSerializerPlugin(type: NodeType): Plugin<any> {
     return new Plugin({
@@ -44,7 +55,7 @@ const createPasteTransformPlugin = (type: any) => {
                         if (m.index > lastIndex) {
                             parts.push(node.text.slice(lastIndex, m.index))
                         }
-                        parts.push({ tag: m[0] })// store tag without extra chars outside
+                        parts.push({ tag: m[0] })
                         lastIndex = m.index + m[0].length
                     }
                     if (parts.length > 0) {
@@ -114,8 +125,40 @@ const LegacyTag = Node.create({
             createPasteTransformPlugin(this.type),
             createClipboardTextSerializerPlugin(this.type)
         ]
+    },
+    addInputRules() {
+        return [legacyTagInputRule(this.type)]
+    },
+    addGlobalAttributes() {
+        return [
+            {
+                types: [this.name],
+                attributes: {},
+                renderText({ node }: { node: any }) {
+                    return node.attrs.tag;
+                }
+            }
+        ];
     }
 })
+
+// Helper: serialize legacy tags as text (for use in Svelte, not in the node itself)
+export function getContentWithLegacyTags(editor: any): string {
+    if (!editor) return "";
+    const doc = editor.state.doc;
+    let result = "";
+    doc.descendants((node: any) => {
+        if (node.type.name === "legacyTag") {
+            result += node.attrs.tag;
+        } else if (node.isText) {
+            result += node.text;
+        } else if (node.isBlock) {
+            result += "\n";
+        }
+        return true;
+    });
+    return result;
+}
 
 export default LegacyTag
 

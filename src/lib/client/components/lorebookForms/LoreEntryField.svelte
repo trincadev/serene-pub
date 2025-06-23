@@ -17,6 +17,7 @@
 	let { content = $bindable(), lorebookBindingList = $bindable() }: Props =
 		$props()
 
+		
 	let editor: Editor
 	let editorEl: HTMLDivElement
 	let isBold = $state(false)
@@ -50,10 +51,54 @@
 		canRedo = editor.can().redo()
 	}
 
+	function getContentWithCharTags(editor: Editor): string {
+		if (!editor) return "";
+		const doc = editor.state.doc;
+		let result = "";
+		doc.descendants((node) => {
+			if (node.type.name === "characterTag") {
+				result += `{char:${node.attrs.id}}`;
+			} else if (node.isText) {
+				result += node.text;
+			} else if (node.isBlock) {
+				result += "\n";
+			}
+			return true;
+		});
+		return result;
+	}
+
+	// Helper: parse {char:N} tags in plain text to Tiptap doc JSON
+	function parseCharTagsToTiptapDoc(text: string) {
+		const parts = [];
+		let lastIndex = 0;
+		const regex = /\{char:(\d+)\}/g;
+		let match;
+		while ((match = regex.exec(text)) !== null) {
+			if (match.index > lastIndex) {
+				parts.push({ type: 'text', text: text.slice(lastIndex, match.index) });
+			}
+			parts.push({ type: 'characterTag', attrs: { id: match[1] } });
+			lastIndex = match.index + match[0].length;
+		}
+		if (lastIndex < text.length) {
+			parts.push({ type: 'text', text: text.slice(lastIndex) });
+		}
+		return {
+			type: 'doc',
+			content: [
+				{
+					type: 'paragraph',
+					content: parts
+				}
+			]
+		};
+	}
+
 	onMount(() => {
 		editor = new Editor({
 			element: editorEl,
-			content,
+			content: parseCharTagsToTiptapDoc(content),
 			extensions: [
 				StarterKit,
 				CharacterTag.configure({ getLabel, getCharType }),
@@ -63,12 +108,17 @@
                 }),
 			],
 			onUpdate: ({ editor }) => {
-				content = editor.getText()
+				content = getContentWithCharTags(editor)
 				updateToolbarStates()
 			}
 		})
 		editor.on("selectionUpdate", updateToolbarStates)
 		updateToolbarStates()
+	})
+
+	$effect(() => {
+		const _content = content.trim()
+		console.log("Content updated:", content)
 	})
 </script>
 
@@ -105,7 +155,7 @@
 							class:preset-filled-surface-500={!!binding.personaId}
 							class:preset-filled-warning-500={!char}
 							onclick={() => {
-								editor.commands.insertCharacterTag(binding.id)
+								editor.commands.insertCharacterTag(binding.binding)
 								addBindingOpenState = false
 							}}
 							title={char
@@ -140,7 +190,7 @@
 
 	<textarea
 		bind:value={content}
-		class="textarea textarea-lg hidden w-full"
+		class="textarea textarea-lg w-full"
         placeholder="A subterranean metropolis carved into the bones of a long-dead titan..."
 	></textarea>
 

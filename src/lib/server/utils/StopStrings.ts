@@ -64,6 +64,14 @@ export class StopStrings {
                     // "Assistant:"
                 ];
                 break
+            case PromptFormats.LLAMA2_INST:
+                stopStrings = [
+                    "</s>",
+                    // "User:",
+                    // "Assistant:",
+                    // "System:",
+                ]
+                break
             default:
                 stopStrings = [];
         }

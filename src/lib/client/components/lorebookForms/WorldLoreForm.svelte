@@ -460,7 +460,7 @@
 					</div>
 					<div>
 						<strong>Content:</strong>
-						<div class="whitespace-pre-line">{entry.content}</div>
+						<div class="whitespace-pre-line line-clamp-3">{entry.content}</div>
 					</div>
 					<div>
 						<strong>Keys:</strong>

@@ -1,4 +1,4 @@
-import { Node, mergeAttributes, nodeInputRule } from "@tiptap/core"
+import { Node, mergeAttributes, nodeInputRule, InputRule } from "@tiptap/core"
 import { Plugin, PluginKey } from "prosemirror-state"
 import { Fragment } from "prosemirror-model"
 
@@ -16,6 +16,17 @@ declare module "@tiptap/core" {
 }
 
 const CHAR_TAG_REGEX = /\{char:(\d+)\}/g
+
+// Custom input rule: replace all {char:N} in the changed text node
+function characterTagInputRule(type: any) {
+  return new InputRule({
+    find: /\{char:(\d+)\}/g,
+    handler: ({ range, match, commands }) => {
+      commands.deleteRange(range)
+      commands.insertContent({ type: type.name, attrs: { id: match[1] } })
+    }
+  });
+}
 
 const createPasteTransformPlugin = (type: any) => {
 	return new Plugin({
@@ -161,7 +172,8 @@ const CharacterTag = Node.create<CharacterTagOptions>({
 		return [
 			{
 				types: [this.name],
-				renderText({ node }) {
+				attributes: {},
+				renderText({ node }: { node: any }) {
 					return `{char:${node.attrs.id}}`;
 				}
 			}
@@ -173,6 +185,9 @@ const CharacterTag = Node.create<CharacterTagOptions>({
 			createPasteTransformPlugin(this.type),
 			createClipboardTextSerializerPlugin(this.type)
 		]
+	},
+	addInputRules() {
+		return [characterTagInputRule(this.type)]
 	}
 })
 
