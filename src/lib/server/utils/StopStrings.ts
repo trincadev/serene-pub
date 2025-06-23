@@ -2,7 +2,6 @@ import { PromptFormats } from "$lib/shared/constants/PromptFormats";
 
 export class StopStrings {
     static get({format, characters, personas}:{format: typeof PromptFormats.keys[0], characters: SelectCharacter[], personas: SelectPersona[]}): string[] {
-        console.log("stop string format:", format)
         let stopStrings: string[] = []
         
         switch (format) {

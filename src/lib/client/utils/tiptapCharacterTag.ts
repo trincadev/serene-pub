@@ -157,6 +157,17 @@ const CharacterTag = Node.create<CharacterTagOptions>({
 		}
 	},
 
+	addGlobalAttributes() {
+		return [
+			{
+				types: [this.name],
+				renderText({ node }) {
+					return `{char:${node.attrs.id}}`;
+				}
+			}
+		];
+	},
+
 	addProseMirrorPlugins() {
 		return [
 			createPasteTransformPlugin(this.type),

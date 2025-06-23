@@ -215,7 +215,6 @@ export async function sendPersonaMessage(
 			},
 			{ triggered: false }
 		)
-		console.log("Next character turn:", nextCharacterId)
 		if (!nextCharacterId) {
 			break
 		}

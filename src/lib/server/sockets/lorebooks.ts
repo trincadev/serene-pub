@@ -335,17 +335,16 @@ async function syncLorebookBindings({lorebookId}:{ lorebookId: number }) {
     }
 	}
 	// If a binding does not exist in the lorebook bindings, create it without a character or persona
-	existingBindings.forEach(binding => {
-		const bindingExists = foundBindings.some(fb => fb === binding.binding)
-		if (!bindingExists) {
-			const newBinding = {
-				lorebookId,
-				binding: binding.binding,
-				characterId: null,
-				personaId: null
-			}
+	foundBindings.forEach(fb => {
+		const existingBinding = existingBindings.find(eb => eb.binding === fb)
+		if (!existingBinding) {
 			queries.push(
-				db.insert(schema.lorebookBindings).values(newBinding) as any as () => Promise<any>
+				db.insert(schema.lorebookBindings).values({
+					lorebookId,
+					binding: fb,
+					characterId: null,
+					personaId: null
+				}) as any as () => Promise<any>
 			)
 		}
 	})

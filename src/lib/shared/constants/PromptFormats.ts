@@ -22,11 +22,11 @@ export class PromptFormats {
 		{ value: PromptFormats.CHATML, label: "ChatML" },
 		{ value: PromptFormats.BASIC, label: "Basic / Legacy" },
 		{ value: PromptFormats.OPENAI, label: "OpenAI" },
-		{ value: PromptFormats.LLAMA2_INST, label: "LLaMA2 Instruct ([INST])" },
+		{ value: PromptFormats.LLAMA2_INST, label: "LLaMA2/Mistral Instruct" },
 		{ value: PromptFormats.CLAUDE, label: "Claude (Human/Assistant)" },
 		{
 			value: PromptFormats.INSTRUCT,
-			label: "Instruct (Alpaca/Mistral Style)"
+			label: "Instruct (Alpaca)"
 		}
 	]
 }
