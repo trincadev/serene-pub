@@ -651,10 +651,11 @@ declare global {
 		namespace DeleteWorldLoreEntry {
 			interface Call {
 				id: number
+				lorebookId: number
 			}
 			interface Response {
-				id: number,
-				lorebookId: number
+				// id: number,
+				// lorebookId: number
 			}
 		}
 
@@ -683,6 +684,58 @@ declare global {
 
 		// Update World Lore Entry Positions
 		namespace UpdateWorldLoreEntryPositions {
+			interface Call {
+				lorebookId: number
+				positions: Array<{ id: number; position: number }>
+			}
+			interface Response {
+				lorebookId: number
+			}
+		}
+
+		// Character Lore Entry List
+		namespace CharacterLoreEntryList {
+			interface Call {
+				lorebookId: number
+			}
+			interface Response {
+				characterLoreEntryList: SelectCharacterLoreEntry[]
+			}
+		}
+
+		// Create Character Lore Entry
+		namespace CreateCharacterLoreEntry {
+			interface Call {
+				characterLoreEntry: InsertCharacterLoreEntry
+			}
+			interface Response {
+				characterLoreEntry: SelectCharacterLoreEntry
+			}
+		}
+
+		// Update Character Lore Entry
+		namespace UpdateCharacterLoreEntry {
+			interface Call {
+				characterLoreEntry: SelectCharacterLoreEntry
+			}
+			interface Response {
+				characterLoreEntry: SelectCharacterLoreEntry
+			}
+		}
+
+		// Delete Character Lore Entry
+		namespace DeleteCharacterLoreEntry {
+			interface Call {
+				id: number
+			}
+			interface Response {
+				id: number
+				lorebookId: number
+			}
+		}
+
+		// Update Character Lore Entry Positions
+		namespace UpdateCharacterLoreEntryPositions {
 			interface Call {
 				lorebookId: number
 				positions: Array<{ id: number; position: number }>

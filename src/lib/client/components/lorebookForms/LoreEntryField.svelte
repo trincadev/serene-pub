@@ -26,7 +26,6 @@
 
 	function getLabel(tag: string) {
 		const binding = lorebookBindingList.find((b) => b.binding == tag)
-		console.log("getLabel called for tag:", tag, "found binding:", $state.snapshot(binding))
 		return (
 			binding?.character?.nickname ||
 			binding?.character?.name ||
@@ -70,17 +69,24 @@
 		return result;
 	}
 
-	// Helper: parse {char:N} tags in plain text to Tiptap doc JSON
+	// Helper: parse {char:N} and legacy tags in plain text to Tiptap doc JSON
 	function parseCharTagsToTiptapDoc(text: string) {
 		const parts = [];
 		let lastIndex = 0;
-		const regex = /\{char:(\d+)\}/g;
+		// Regex for {char:N} and legacy tags ({user}, {char}, {persona}, {character})
+		const regex = /\{char:(\d+)\}|\{(user|char|persona|character)\}/g;
 		let match;
 		while ((match = regex.exec(text)) !== null) {
 			if (match.index > lastIndex) {
 				parts.push({ type: 'text', text: text.slice(lastIndex, match.index) });
 			}
-			parts.push({ type: 'characterTag', attrs: { id: match[1] } });
+			if (match[1]) {
+				// {char:N}
+				parts.push({ type: 'characterTag', attrs: { id: match[1] } });
+			} else if (match[2]) {
+				// legacy tags: {user}, {char}, {persona}, {character}
+				parts.push({ type: 'legacyTag', attrs: { tag: `{${match[2]}}`, original: `{${match[2]}}` } });
+			}
 			lastIndex = match.index + match[0].length;
 		}
 		if (lastIndex < text.length) {
