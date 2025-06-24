@@ -5,14 +5,13 @@
 	import Avatar from "../Avatar.svelte"
 	import * as Icons from "@lucide/svelte"
 	import { toaster } from "$lib/client/utils/toaster"
-	import { onMount, onDestroy } from "svelte"
+	import { onMount, onDestroy, tick } from "svelte"
 
 	interface Props {
 		lorebookId: number // ID of the lorebook to edit
-		showEditLorebookForm: boolean // Controls visibility of the form
 	}
 
-	let { lorebookId, showEditLorebookForm = $bindable() }: Props = $props()
+	let { lorebookId }: Props = $props()
 
 	const socket = skio.get()
 
@@ -143,50 +142,50 @@
 				: null
 	}
 
-	socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
-		characterList = msg.characterList || []
-	})
-
-	socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
-		personaList = msg.personaList || []
-	})
-
-	socket.on(
-		"lorebookBindingList",
-		(msg: Sockets.LorebookBindingList.Response) => {
-			lorebookBindingList = msg.lorebookBindingList || []
-		}
-	)
-
-	socket.on(
-		"createLorebookBinding",
-		(msg: Sockets.CreateLorebookBinding.Response) => {
-			toaster.success({
-				title: "Binding Created",
-				description: "Lorebook binding created successfully."
-			})
-		}
-	)
-
-	socket.on(
-		"updateLorebookBinding",
-		(msg: Sockets.UpdateLorebookBinding.Response) => {
-			toaster.success({
-				title: "Binding Updated",
-				description: "Lorebook binding updated successfully."
-			})
-		}
-	)
-
-	socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
-		characterList = msg.characterList || []
-	})
-
-	socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
-		personaList = msg.personaList || []
-	})
-
 	onMount(() => {
+		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
+			characterList = msg.characterList || []
+		})
+
+		socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
+			personaList = msg.personaList || []
+		})
+
+		socket.on(
+			"lorebookBindingList",
+			async (msg: Sockets.LorebookBindingList.Response) => {
+				lorebookBindingList = msg.lorebookBindingList || []
+				await tick()
+			}
+		)
+
+		socket.on(
+			"createLorebookBinding",
+			(msg: Sockets.CreateLorebookBinding.Response) => {
+				toaster.success({
+					title: "Binding Created",
+					description: "Lorebook binding created successfully."
+				})
+			}
+		)
+
+		socket.on(
+			"updateLorebookBinding",
+			(msg: Sockets.UpdateLorebookBinding.Response) => {
+				toaster.success({
+					title: "Binding Updated",
+					description: "Lorebook binding updated successfully."
+				})
+			}
+		)
+
+		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
+			characterList = msg.characterList || []
+		})
+
+		socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
+			personaList = msg.personaList || []
+		})
 		socket.emit("characterList", {})
 		socket.emit("personaList", {})
 		const bindingReq: Sockets.LorebookBindingList.Call = {
@@ -223,9 +222,9 @@
 		</div>
 		<div class="bindings-list">
 			{#key lorebookBindingList.length}
-			{#each lorebookBindingList as binding, i}
-				{@render bindingCard(binding)}
-			{/each}
+				{#each lorebookBindingList as binding, i}
+					{@render bindingCard(binding)}
+				{/each}
 			{/key}
 		</div>
 	</div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount } from "svelte"
+	import { onDestroy, onMount, tick } from "svelte"
 	import * as skio from "sveltekit-io"
 	import * as Icons from "@lucide/svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
@@ -7,6 +7,8 @@
 	import { Tabs } from "@skeletonlabs/skeleton-svelte"
 	import LorebookBindingsForm from "../lorebookForms/LorebookBindingsForm.svelte"
 	import WorldLoreForm from "../lorebookForms/WorldLoreForm.svelte"
+	import type { ValueChangeDetails } from "@zag-js/tabs"
+	import LorebookUnsavedChangesModal from "../modals/LorebookUnsavedChangesModal.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -28,23 +30,91 @@
 	let isEditingLorebook: boolean = $state(false)
 	let selectedLorebook: any = $state(undefined)
 	let editGroup: EditGroup = $state("lorebook")
+	let nextEditGroup: EditGroup | undefined = $state()
+	let tabHasUnsavedChanges: boolean = $state(false)
+	let showUnsavedChangesModal: boolean = $state(false)
+	let showUnsavedTabChangesModal: boolean = $state(false)
+	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 
 	async function handleOnClose() {
-		return true
-	}
+        if (tabHasUnsavedChanges) {
+            showUnsavedChangesModal = true
+            return new Promise<boolean>((resolve) => {
+                confirmCloseSidebarResolve = resolve
+            })
+        } else {
+            return true
+        }
+    }
 
 	function handleCreateClick() {
 		isCreating = true
 	}
 
-	function handleLorebookClick(lorebook: any) {
+	function handleLorebookClick(e: Event, {lorebook, tab}: {lorebook: SelectLorebook, tab?: EditGroup}) {
+		e.preventDefault()
+		e.stopPropagation()
 		selectedLorebook = lorebook
 		isEditingLorebook = true
+		if (tab) {
+			editGroup = tab
+		} else {
+			editGroup = "lorebook"
+		}
 	}
 
-	$effect(() => {
-		// Filtered list effect if needed
-	})
+	// UNSAVED CHANGES MODAL HANDLERS
+
+	function handleUnsavedChangesModalConfirm() {
+        showUnsavedChangesModal = false
+        if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(true)
+    }
+    function handleUnsavedChangesModalCancel() {
+        showUnsavedChangesModal = false
+        if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
+    }
+    function handleUnsavedChangesModalOpenChange(e: OpenChangeDetails) {
+        if (!e.open) {
+            showUnsavedChangesModal = false
+            if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
+        }
+    }
+
+	// UNSAVED TAB CHANGES MODAL HANDLERS
+
+	function handleUnsavedTabChangesModalOpenChange(details: { open: boolean }) {
+		showUnsavedTabChangesModal = details.open
+	}
+
+	function handleUnsavedTabChangesModalConfirm() {
+		showUnsavedTabChangesModal = false
+		editGroup = nextEditGroup || "lorebook"
+		nextEditGroup = undefined
+	}
+
+	function handleUnsavedTabChangesModalCancel() {
+		showUnsavedTabChangesModal = false
+		nextEditGroup = undefined
+	}
+
+	async function handleOnCreateConfirm(name: string) {
+		if (!name.trim()) return
+		isCreating = false
+		const req: Sockets.CreateLorebook.Call = {
+			name: name.trim()
+		}
+		socket.emit("createLorebook", req)
+	}
+
+	async function handleSwitchTabGroup(e: ValueChangeDetails): void {
+		if (!tabHasUnsavedChanges) {
+			editGroup = e.value as EditGroup
+			await tick()
+		} else {
+			nextEditGroup = e.value as EditGroup
+			showUnsavedTabChangesModal = true
+		}
+	}
 
 	let filteredLorebooks = $derived.by(() => {
 		let list = [...lorebookList]
@@ -58,18 +128,10 @@
 		)
 	})
 
-	async function handleOnCreateConfirm(name: string) {
-		if (!name.trim()) return
-		isCreating = false
-		const req: Sockets.CreateLorebook.Call = {
-			name: name.trim()
-		}
-		socket.emit("createLorebook", req)
-	}
-
 	onMount(() => {
 		socket.on("lorebookList", (msg: Sockets.LorebookList.Response) => {
 			if (msg.lorebookList) {
+				console.log("Received lorebook list:", msg.lorebookList)
 				lorebookList = msg.lorebookList
 			}
 		})
@@ -81,6 +143,7 @@
 		socket.off("lorebookList")
 		onclose = undefined
 	})
+
 </script>
 
 <div class="min-h-full p-4">
@@ -100,7 +163,7 @@
 		</div>
 		<Tabs
 			value={editGroup}
-			onValueChange={(e) => (editGroup = e.value as EditGroup)}
+			onValueChange={(e) => (handleSwitchTabGroup(e))}
 		>
 			{#snippet list()}
 				<Tabs.Control value="lorebook">
@@ -136,22 +199,26 @@
 			{/snippet}
 			{#snippet content()}
 				<Tabs.Panel value="lorebook">
-					<EditLorebookForm
-						lorebookId={selectedLorebook.id}
-						bind:showEditLorebookForm={isEditingLorebook}
-					/>
+					{#if editGroup == "lorebook"}
+						<EditLorebookForm
+							lorebookId={selectedLorebook.id}
+						/>
+					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="bindings">
-					<LorebookBindingsForm
-						lorebookId={selectedLorebook.id}
-						bind:showEditLorebookForm={isEditingLorebook}
-					/>
+					{#if editGroup == "bindings"}
+						<LorebookBindingsForm
+							lorebookId={selectedLorebook.id}
+						/>
+					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="world">
-					<WorldLoreForm
+					{#if editGroup == "world"}
+						<WorldLoreForm
 						lorebookId={selectedLorebook.id}
-						bind:showEditLorebookForm={isEditingLorebook}
+						bind:hasUnsavedChanges={tabHasUnsavedChanges}
 					/>
+					{/if}
 				</Tabs.Panel>
 			{/snippet}
 		</Tabs>
@@ -181,14 +248,11 @@
 			{:else}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				{#each filteredLorebooks as l}
-					{@const hasWorldLore = l.worldLoreEntries?.length > 0}
-					{@const hasCharacterLore =
-						l.characterLoreEntries?.length > 0}
-					{@const hasHistory = l.historyEntries?.length > 0}
+				{console.log($state.snapshot(l))}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<div
 						class="sidebar-list-item"
-						onclick={() => handleLorebookClick(l)}
+						onclick={(e) => handleLorebookClick(e, {lorebook: l})}
 					>
 						<span class="text-muted-foreground w-[2.5em] text-xs">
 							#{l.id}
@@ -202,33 +266,54 @@
 							>
 								{l.description || "No description provided."}
 							</div>
-							<span
-								class="badge preset-filled-primary-500"
-								class:disabled={!hasWorldLore}
-								title={hasWorldLore
+							<button
+								class="btn btn-sm"
+								class:preset-filled-primary-500={l.lorebookBindings.length > 0}
+								class:preset-filled-primary-300-700={l.lorebookBindings.length === 0}
+								title={l.lorebookBindings?.length
+									? "Lorebook Bindings"
+									: "No Lorebook Bindings"}
+								onclick={(e) => handleLorebookClick(e, {lorebook: l, tab: "bindings"})}
+							>
+								<Icons.Link size={16} class="inline" />
+								{l.lorebookBindings?.length ? l.lorebookBindings.length : ""}
+							</button>
+							<button
+								class="btn btn-sm"
+								class:preset-filled-primary-500={l.worldLoreEntries.length > 0}
+								class:preset-filled-primary-300-700={l.worldLoreEntries.length === 0}
+								title={l.worldLoreEntries?.length
 									? "World Lore Entries"
 									: "No World Lore Entries"}
+								onclick={(e) => handleLorebookClick(e, {lorebook: l, tab: "world"})}
 							>
-								World
-							</span>
-							<span
-								class="badge preset-filled-primary-500"
-								class:disabled={!hasCharacterLore}
-								title={hasCharacterLore
+								<Icons.Globe size={16} class="inline" />
+								{l.worldLoreEntries.length ? l.worldLoreEntries.length : ""}
+							</button>
+							<button
+								class="btn btn-sm"
+								class:preset-filled-primary-500={l.characterLoreEntries.length > 0}
+								class:preset-filled-primary-300-700={l.characterLoreEntries.length === 0}
+								title={l.characterLoreEntries
 									? "Character Lore Entries"
 									: "No Character Lore Entries"}
+								onclick={(e) => handleLorebookClick(e, {lorebook: l, tab: "characters"})}
 							>
-								Character
-							</span>
-							<span
-								class="badge preset-filled-primary-500"
-								class:disabled={!hasHistory}
-								title={hasHistory
+								<Icons.User size={16} class="inline" />
+								{l.characterLoreEntries?.length ? l.characterLoreEntries.length : ""}
+							</button>
+							<button
+								class="btn btn-sm"
+								class:preset-filled-primary-500={l.historyEntries.length > 0}
+								class:preset-filled-primary-300-700={l.historyEntries.length === 0}
+								title={l.historyEntries.length
 									? "History Entries"
 									: "No History Entries"}
+								onclick={(e) => handleLorebookClick(e, {lorebook: l, tab: "history"})}
 							>
-								History
-							</span>
+								<Icons.Calendar size={16} class="inline" />
+								{l.historyEntries?.length ? l.historyEntries.length : ""}
+							</button>
 						</div>
 					</div>
 				{/each}
@@ -244,4 +329,18 @@
 	onCancel={() => (isCreating = false)}
 	title="Create New Lorebook"
 	description="What would you like to call it?"
+/>
+
+<LorebookUnsavedChangesModal
+    open={showUnsavedChangesModal}
+    onOpenChange={handleUnsavedChangesModalOpenChange}
+    onConfirm={handleUnsavedChangesModalConfirm}
+    onCancel={handleUnsavedChangesModalCancel}
+/>
+
+<LorebookUnsavedChangesModal
+    open={showUnsavedTabChangesModal}
+    onOpenChange={handleUnsavedTabChangesModalOpenChange}
+    onConfirm={handleUnsavedTabChangesModalConfirm}
+    onCancel={handleUnsavedTabChangesModalCancel}
 />

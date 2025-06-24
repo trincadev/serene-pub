@@ -657,6 +657,40 @@ declare global {
 				lorebookId: number
 			}
 		}
+
+		// Update Lorebook
+		namespace UpdateLorebook {
+			interface Call {
+				lorebook: {
+					id: number
+					name: string
+				}
+			}
+			interface Response {
+				lorebook: SelectLorebook
+			}
+		}
+
+		// Delete Lorebook
+		namespace DeleteLorebook {
+			interface Call {
+				id: number
+			}
+			interface Response {
+				id: number
+			}
+		}
+
+		// Update World Lore Entry Positions
+		namespace UpdateWorldLoreEntryPositions {
+			interface Call {
+				lorebookId: number
+				positions: Array<{ id: number; position: number }>
+			}
+			interface Response {
+				lorebookId: number
+			}
+		}
 	}
 
 	export interface CharaImportMetadata {

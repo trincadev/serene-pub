@@ -7,6 +7,7 @@
 	import { Popover } from "@skeletonlabs/skeleton-svelte"
     import Placeholder from '@tiptap/extension-placeholder'
 	import LegacyTag from "$lib/client/utils/tiptapLegacyTag"
+	import type { EditorView } from "prosemirror-view"
 
 	interface Props {
 		content: string
@@ -96,6 +97,19 @@
 		};
 	}
 
+	function forceRawContentCopy(view: EditorView, arg1: () => string) {
+		const originalCopy = view.dom.addEventListener("copy", (event) => {
+			const text = arg1()
+			event.clipboardData.setData("text/plain", text)
+			event.preventDefault()
+		})
+
+		// Clean up the event listener when the component is destroyed
+		return () => {
+			view.dom.removeEventListener("copy", originalCopy)
+		}
+	}
+
 	onMount(() => {
 		editor = new Editor({
 			element: editorEl,
@@ -124,23 +138,6 @@
 		const _content = content.trim()
 		console.log("Content updated:", content)
 	})
-
-
-	import type { EditorView } from "prosemirror-view"
-
-
-	function forceRawContentCopy(view: EditorView, arg1: () => string) {
-		const originalCopy = view.dom.addEventListener("copy", (event) => {
-			const text = arg1()
-			event.clipboardData.setData("text/plain", text)
-			event.preventDefault()
-		})
-
-		// Clean up the event listener when the component is destroyed
-		return () => {
-			view.dom.removeEventListener("copy", originalCopy)
-		}
-	}
 </script>
 
 <div

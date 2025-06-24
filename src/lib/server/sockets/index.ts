@@ -43,7 +43,7 @@ import {
     setUserActivePromptConfig
 } from "./promptConfigs"
 import { user } from "./users"
-import { createLorebook, createLorebookBinding, createWorldLoreEntry, deleteWorldLoreEntry, lorebook, lorebookBindingList, lorebookList, updateLorebookBinding, updateWorldLoreEntry, worldLoreEntryList } from "./lorebooks"
+import {createLorebook, createLorebookBinding, createWorldLoreEntry, deleteWorldLoreEntry, lorebook, lorebookBindingList, lorebookList, updateLorebookBinding, updateWorldLoreEntry, worldLoreEntryList, updateWorldLoreEntryPositions, deleteLorebook} from './lorebooks';
 
 const userId = 1 // Replace with actual user id
 
@@ -130,7 +130,9 @@ export function connectSockets(io: {
         register(socket, worldLoreEntryList, emitToUser),
         register(socket, createWorldLoreEntry, emitToUser),
         register(socket, updateWorldLoreEntry, emitToUser),
-        register(socket, deleteWorldLoreEntry, emitToUser)
+        register(socket, deleteWorldLoreEntry, emitToUser),
+        register(socket, deleteLorebook, emitToUser),
+        register(socket, updateWorldLoreEntryPositions, emitToUser)
         console.log(`Socket connected: ${socket.id} for user ${userId}`)
     })
 }
