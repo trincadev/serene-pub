@@ -42,16 +42,35 @@ export class PromptBuilder {
 		sampling: SelectSamplingConfig
 		contextConfig: SelectContextConfig
 		promptConfig: SelectPromptConfig
-		chat: SelectChat &
-			SelectChat & {
-				chatCharacters?: (SelectChatCharacter & {
-					character: SelectCharacter
-				})[]
-				chatPersonas?: (SelectChatPersona & {
-					persona: SelectPersona
-				})[]
-				chatMessages: SelectChatMessage[]
+		chat: SelectChat & {
+			chatCharacters?: (SelectChatCharacter & {
+				character: SelectCharacter & {
+					lorebook?: SelectLorebook & {
+						worldLoreEntries: SelectWorldLoreEntry[]
+						characterLoreEntries: SelectCharacterLoreEntry[]
+						historyEntries: SelectHistoryEntry[]
+						lorebookBindings: SelectLorebookBinding[]
+					}
+				}
+			})[]
+			chatPersonas?: (SelectChatPersona & {
+				persona: SelectPersona & {
+					lorebook?: SelectLorebook & {
+						worldLoreEntries: SelectWorldLoreEntry[]
+						characterLoreEntries: SelectCharacterLoreEntry[]
+						historyEntries: SelectHistoryEntry[]
+						lorebookBindings: SelectLorebookBinding[]
+					}
+				}
+			})[]
+			chatMessages: SelectChatMessage[]
+			lorebook?: SelectLorebook & {
+				worldLoreEntries: SelectWorldLoreEntry[]
+				characterLoreEntries: SelectCharacterLoreEntry[]
+				historyEntries: SelectHistoryEntry[]
+				lorebookBindings: SelectLorebookBinding[]
 			}
+		}
 		currentCharacterId: number
 		tokenCounter: TokenCounters
 		tokenLimit: number
@@ -113,7 +132,10 @@ export class PromptBuilder {
 					const promptFormat = getPromptFormat(this, options)
 					// If available, check for id property in the context
 					// Handlebars context for each message should have id
-					const messageId = this.id !== undefined ? this.id : (options.data && options.data.id)
+					const messageId =
+						this.id !== undefined
+							? this.id
+							: options.data && options.data.id
 					return PromptBlockFormatter.makeBlock({
 						format: promptFormat,
 						role: "assistant",
@@ -410,41 +432,343 @@ export class PromptBuilder {
 				}
 			})
 		// Always append an empty message for the current character
+		// if (this.contextConfig?.alwaysForceName) {
 		chatMessages.push({
 			id: -2, // Use -2 to indicate this is a generated/empty message
 			role: "assistant",
 			name: _charName,
 			message: ""
 		})
-		const minMessages = 3
+		// }
+
+		// const minMessages = 3
 		let includedMessages = chatMessages.length // Exclude the last empty message
 		let renderedPrompt = ""
 		let totalTokens = 0
 		let includedIds: number[] = chatMessages.map((m) => m.id)
 		let excludedIds: number[] = []
-		while (chatMessages.length > minMessages) {
+		// while (chatMessages.length > minMessages) {
+		// 	templateContext.chatMessages = chatMessages
+		// 	renderedPrompt = this.handlebars.compile(
+		// 		this.contextConfig.template
+		// 	)(templateContext)
+		// 	totalTokens =
+		// 		typeof this.tokenCounter.countTokens === "function"
+		// 			? await this.tokenCounter.countTokens(renderedPrompt)
+		// 			: 0
+		// 	if (totalTokens <= this.tokenLimit) break
+		// 	excludedIds.push(chatMessages[0].id)
+		// 	chatMessages.shift()
+		// 	includedMessages--
+		// }
+
+		let completed = false
+		let priority = 4
+		let messagesIterator:
+			| IterableIterator<SelectChatMessage>
+			| undefined
+			| null
+		let worldLoreEntryIterator:
+			| IterableIterator<SelectWorldLoreEntry>
+			| undefined
+			| null
+		let characterLoreEntryIterator:
+			| IterableIterator<SelectCharacterLoreEntry>
+			| undefined
+			| null
+		let historyEntryIterator:
+			| IterableIterator<SelectHistoryEntry>
+			| undefined
+			| null
+		let consideredWorldLoreEntries: SelectWorldLoreEntry[] = []
+		let consideredCharacterLoreEntries: SelectCharacterLoreEntry[] = []
+		let consideredHistoryEntries: SelectHistoryEntry[] = []
+		const includedWorldLoreEntries: SelectWorldLoreEntry[] = []
+		const includedCharacterLoreEntries: SelectCharacterLoreEntry[] = []
+		const includedHistoryEntries: SelectHistoryEntry[] = []
+		const messageFailedWorldLoreMatches: Record<number, number[]> = {} // {messageId: [entryId1, entryId2, ...]}
+		const messageFailedCharacterLoreMatches: Record<number, number[]> = {} // {messageId: [entryId1, entryId2, ...]}
+		const messageFailedHistoryMatches: Record<number, number[]> = {} // {messageId: [entryId1, entryId2, ...]}
+
+		while (!completed && totalTokens <= this.tokenLimit) {
+			switch (priority) {
+				case 4:
+					if (messagesIterator === undefined) {
+						messagesIterator = this.chatMessageIterator({
+							priority
+						})
+						worldLoreEntryIterator = this.worldLoreEntryIterator({
+							priority
+						})
+						characterLoreEntryIterator =
+							this.characterLoreEntryIterator({ priority })
+						historyEntryIterator = this.historyEntryIterator({
+							priority
+						})
+					} else if (
+						messagesIterator === null &&
+						worldLoreEntryIterator === null &&
+						characterLoreEntryIterator === null &&
+						historyEntryIterator === null
+					) {
+						// If all iterators are exhausted, move to next priority
+						priority = 3
+						continue
+					}
+					break
+				case 3:
+					if (
+						messagesIterator === null &&
+						characterLoreEntryIterator === null &&
+						worldLoreEntryIterator === null
+					) {
+						messagesIterator = this.chatMessageIterator({
+							priority
+						})
+						worldLoreEntryIterator = this.worldLoreEntryIterator({
+							priority
+						})
+						characterLoreEntryIterator =
+							this.characterLoreEntryIterator({ priority })
+						priority = 2 // Move to next priority after initialization
+					}
+					break
+				case 2:
+					if (
+						historyEntryIterator === null &&
+						characterLoreEntryIterator === null &&
+						worldLoreEntryIterator === null
+					) {
+						worldLoreEntryIterator = this.worldLoreEntryIterator({
+							priority
+						})
+						characterLoreEntryIterator =
+							this.characterLoreEntryIterator({ priority })
+						historyEntryIterator = this.historyEntryIterator({
+							priority
+						})
+						priority = 1 // Move to next priority after initialization
+					}
+					break
+				case 1:
+					if (
+						characterLoreEntryIterator === null &&
+						worldLoreEntryIterator === null
+					) {
+						worldLoreEntryIterator = this.worldLoreEntryIterator({
+							priority
+						})
+						characterLoreEntryIterator =
+							this.characterLoreEntryIterator({ priority })
+						priority = 0 // Move to next priority after initialization
+					}
+					break
+				case 0:
+					if (
+						historyEntryIterator === null &&
+						characterLoreEntryIterator === null &&
+						worldLoreEntryIterator === null &&
+						messagesIterator === null
+					) {
+						completed = true // All iterators are exhausted, exit loop
+					}
+					break
+				default:
+					throw new Error(`Unknown priority: ${priority}`)
+			}
+
+			const nextMessageVal = messagesIterator?.next()
+			const nextWorldLoreEntryVal = worldLoreEntryIterator?.next()
+			const nextCharacterLoreEntryVal = characterLoreEntryIterator?.next()
+			const nextHistoryEntryVal = historyEntryIterator?.next()
+
+			// MESSAGES
+			if (!nextMessageVal || nextMessageVal.done) {
+				messagesIterator = null
+			} else if (nextMessageVal.value) {
+				chatMessages.push(nextMessageVal.value)
+			}
+
+			// WORLD LORE ENTRIES
+			if (!nextWorldLoreEntryVal || nextWorldLoreEntryVal.done) {
+				worldLoreEntryIterator = null
+			} else if (nextWorldLoreEntryVal.value && priority === 4) {
+				// Always include priority 4 entries
+				includedWorldLoreEntries.push(nextWorldLoreEntryVal.value)
+			} else if (nextWorldLoreEntryVal.value) {
+				consideredWorldLoreEntries.push(nextWorldLoreEntryVal.value)
+			}
+
+			// CHARACTER LORE ENTRIES
+			if (!nextCharacterLoreEntryVal || nextCharacterLoreEntryVal.done) {
+				characterLoreEntryIterator = null
+			} else if (nextCharacterLoreEntryVal.value && priority === 4) {
+				// Always include priority 4 entries
+				includedCharacterLoreEntries.push(
+					nextCharacterLoreEntryVal.value
+				)
+			} else if (nextCharacterLoreEntryVal.value) {
+				consideredCharacterLoreEntries.push(
+					nextCharacterLoreEntryVal.value
+				)
+			}
+
+			// HISTORY ENTRIES
+			if (!nextHistoryEntryVal || nextHistoryEntryVal.done) {
+				historyEntryIterator = null
+			} else if (nextHistoryEntryVal.value && priority === 4) {
+				// Always include priority 4 entries
+				includedHistoryEntries.push(nextHistoryEntryVal.value)
+			} else if (nextHistoryEntryVal.value) {
+				consideredHistoryEntries.push(nextHistoryEntryVal.value)
+			}
+
+			chatMessages.forEach((msg) => {
+				// 1. Process World Lore Matches
+				// Loop over consideredWorldLoreEntries
+				consideredWorldLoreEntries.forEach((entry) => {
+					// Skip if entry is in failed matches for this message
+					if (
+						messageFailedWorldLoreMatches[msg.id] &&
+						messageFailedWorldLoreMatches[msg.id].includes(entry.id)
+					) {
+						return
+					}
+					let msgContent = entry.caseSensitive
+						? msg.message || ""
+						: msg.message?.toLowerCase() || ""
+					let matchFound = entry.keys.some((key) => {
+						const keyToCheck = entry.caseSensitive
+							? key
+							: key.toLowerCase()
+
+						if (entry.useRegex) {
+							const regex = new RegExp(keyToCheck, "g")
+							return regex.test(msgContent)
+						} else {
+							return msgContent.includes(keyToCheck)
+						}
+					})
+					if (matchFound) {
+						// Add to included, remove from considered
+						includedWorldLoreEntries.push(entry)
+						consideredHistoryEntries =
+							consideredHistoryEntries.filter(
+								(e) => e.id !== entry.id
+							)
+					} else {
+						// Add to failed matches for this message
+						if (!messageFailedWorldLoreMatches[msg.id]) {
+							messageFailedWorldLoreMatches[msg.id] = []
+						}
+						messageFailedWorldLoreMatches[msg.id].push(entry.id)
+					}
+				})
+				// 2. Process Character Lore Matches
+				// Loop over consideredCharacterLoreEntries
+				consideredCharacterLoreEntries.forEach((entry) => {
+					// Skip if entry is in failed matches for this message
+					if (
+						messageFailedCharacterLoreMatches[msg.id] &&
+						messageFailedCharacterLoreMatches[msg.id].includes(
+							entry.id
+						)
+					) {
+						return
+					}
+					let msgContent = entry.caseSensitive
+						? msg.message || ""
+						: msg.message?.toLowerCase() || ""
+					let matchFound = entry.keys.some((key) => {
+						const keyToCheck = entry.caseSensitive
+							? key
+							: key.toLowerCase()
+
+						if (entry.useRegex) {
+							const regex = new RegExp(keyToCheck, "g")
+							return regex.test(msgContent)
+						} else {
+							return msgContent.includes(keyToCheck)
+						}
+					})
+					if (matchFound) {
+						// Add to included, remove from considered
+						includedCharacterLoreEntries.push(entry)
+						consideredCharacterLoreEntries =
+							consideredCharacterLoreEntries.filter(
+								(e) => e.id !== entry.id
+							)
+					} else {
+						// Add to failed matches for this message
+						if (!messageFailedCharacterLoreMatches[msg.id]) {
+							messageFailedCharacterLoreMatches[msg.id] = []
+						}
+						messageFailedCharacterLoreMatches[msg.id].push(entry.id)
+					}
+				})
+
+				// 3. Process History Matches
+				// Loop over consideredHistoryEntries
+				consideredHistoryEntries.forEach((entry) => {
+					// Skip if entry is in failed matches for this message
+					if (
+						messageFailedHistoryMatches[msg.id] &&
+						messageFailedHistoryMatches[msg.id].includes(entry.id)
+					) {
+						return
+					}
+					let msgContent = entry.caseSensitive
+						? msg.message || ""
+						: msg.message?.toLowerCase() || ""
+					let matchFound = entry.keys.some((key) => {
+						const keyToCheck = entry.caseSensitive
+							? key
+							: key.toLowerCase()
+
+						if (entry.useRegex) {
+							const regex = new RegExp(keyToCheck, "g")
+							return regex.test(msgContent)
+						} else {
+							return msgContent.includes(keyToCheck)
+						}
+					})
+					if (matchFound) {
+						// Add to included, remove from considered
+						includedHistoryEntries.push(entry)
+						consideredHistoryEntries =
+							consideredHistoryEntries.filter(
+								(e) => e.id !== entry.id
+							)
+					} else {
+						// Add to failed matches for this message
+						if (!messageFailedHistoryMatches[msg.id]) {
+							messageFailedHistoryMatches[msg.id] = []
+						}
+						messageFailedHistoryMatches[msg.id].push(entry.id)
+					}
+				})
+			})
+
 			templateContext.chatMessages = chatMessages
+			// Final check for minMessages
 			renderedPrompt = this.handlebars.compile(
 				this.contextConfig.template
 			)(templateContext)
 			totalTokens =
-				typeof this.tokenCounter.countTokens === "function"
-					? await this.tokenCounter.countTokens(renderedPrompt)
-					: 0
-			if (totalTokens <= this.tokenLimit) break
-			excludedIds.push(chatMessages[0].id)
-			chatMessages.shift()
-			includedMessages--
-		}
-		templateContext.chatMessages = chatMessages
-		// Final check for minMessages
-		renderedPrompt = this.handlebars.compile(this.contextConfig.template)(
-			templateContext
-		)
-		totalTokens =
 			typeof this.tokenCounter.countTokens === "function"
 				? await this.tokenCounter.countTokens(renderedPrompt)
 				: 0
+		}
+
+		// templateContext.chatMessages = chatMessages
+		// // Final check for minMessages
+		// renderedPrompt = this.handlebars.compile(this.contextConfig.template)(
+		// 	templateContext
+		// )
+		// totalTokens =
+		// 	typeof this.tokenCounter.countTokens === "function"
+		// 		? await this.tokenCounter.countTokens(renderedPrompt)
+		// 		: 0
 		if (
 			chatMessages.length === minMessages &&
 			totalTokens > this.tokenLimit
@@ -593,9 +917,15 @@ export class PromptBuilder {
 		const meta = this.buildMeta(excludedIds)
 
 		// --- NEW: Return OpenAI-style message list if requested ---
-		if (this.connection.type === "openai" && !this.connection.extraJson?.prerenderPrompt) {
+		if (
+			this.connection.type === "openai" &&
+			!this.connection.extraJson?.prerenderPrompt
+		) {
 			// Split prompt into blocks by '### ' (keep delimiter)
-			const blocks = finalPrompt.split(/(?=^### )/m).map((b: string) => b.trim()).filter(Boolean)
+			const blocks = finalPrompt
+				.split(/(?=^### )/m)
+				.map((b: string) => b.trim())
+				.filter(Boolean)
 			const messages: Array<{ role: string; content: string }> = []
 			for (const block of blocks) {
 				const match = block.match(/^### (\w+):?/)
@@ -623,7 +953,7 @@ export class PromptBuilder {
 						includedIds,
 						excludedIds
 					},
-					sources,
+					sources
 				}
 			}
 		}
@@ -642,7 +972,135 @@ export class PromptBuilder {
 					includedIds,
 					excludedIds
 				},
-				sources,
+				sources
+			}
+		}
+	}
+
+	/**
+	 * Abstract: Iterate over items of a given type and priority from the class instance.
+	 * Each subclass should implement its own logic.
+	 */
+	*chatMessageIterator({
+		priority
+	}: {
+		priority: number
+	}): IterableIterator<SelectChatMessage> {
+		const messages = this.chat.chatMessages || []
+		// Always include the last 3 messages as priority 2 (highest for chat)
+		if (priority === 2) {
+			for (const msg of messages.slice(-3)) {
+				yield msg
+			}
+		} else if (priority === 1) {
+			// All other messages except the last 3
+			for (const msg of messages.slice(0, -3)) {
+				yield msg
+			}
+		}
+	}
+
+	*worldLoreEntryIterator({
+		priority
+	}: {
+		priority: number
+	}): IterableIterator<SelectWorldLoreEntry> {
+		const chatWithLorebook = this.chat as typeof this.chat & {
+			lorebook?: { worldLoreEntries: SelectWorldLoreEntry[] }
+		}
+		const entries: SelectWorldLoreEntry[] =
+			chatWithLorebook.lorebook?.worldLoreEntries || []
+		let filtered: SelectWorldLoreEntry[] = []
+		if (priority === 4) {
+			filtered = entries.filter(
+				(e: SelectWorldLoreEntry) => e.constant === true
+			)
+		} else if ([3, 2, 1].includes(priority)) {
+			filtered = entries.filter(
+				(e: SelectWorldLoreEntry) => e.priority === priority
+			)
+		}
+		filtered.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+		for (const entry of filtered) {
+			// TODO: populate lorebook bindings
+			yield entry
+		}
+	}
+
+	*characterLoreEntryIterator({
+		priority
+	}: {
+		priority: number
+	}): IterableIterator<SelectCharacterLoreEntry> {
+		const chatWithLorebook = this.chat as typeof this.chat & {
+			lorebook?: { characterLoreEntries: SelectCharacterLoreEntry[] }
+		}
+		const entries: SelectCharacterLoreEntry[] =
+			chatWithLorebook.lorebook?.characterLoreEntries || []
+		let filtered: SelectCharacterLoreEntry[] = []
+		if (priority === 4) {
+			filtered = entries.filter(
+				(e: SelectCharacterLoreEntry) => e.constant === true
+			)
+		} else if ([3, 2, 1].includes(priority)) {
+			filtered = entries.filter(
+				(e: SelectCharacterLoreEntry) => e.priority === priority
+			)
+		}
+		filtered.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+		for (const entry of filtered) {
+			// TODO: Filter out entries bound to invalid lorebook bindings
+			// TODO: populate lorebook bindings
+			yield entry
+		}
+	}
+
+	*historyEntryIterator({
+		priority
+	}: {
+		priority: number
+	}): IterableIterator<SelectHistoryEntry> {
+		const chatWithLorebook = this.chat as typeof this.chat & {
+			lorebook?: { historyEntries: SelectHistoryEntry[] }
+		}
+		const entries: SelectHistoryEntry[] =
+			chatWithLorebook.lorebook?.historyEntries || []
+		// Sort by date: year, month, day (descending)
+		const sorted = entries.slice().sort((a, b) => {
+			const aVal =
+				(a.date?.year ?? 0) * 10000 +
+				(a.date?.month ?? 0) * 100 +
+				(a.date?.day ?? 0)
+			const bVal =
+				(b.date?.year ?? 0) * 10000 +
+				(b.date?.month ?? 0) * 100 +
+				(b.date?.day ?? 0)
+			return bVal - aVal
+		})
+		if (priority === 4) {
+			// Last 2 most recent entries
+			const mostRecent = sorted.slice(0, 2)
+			for (const entry of mostRecent) {
+				yield entry
+			}
+			// All pinned (constant === true), skip if already yielded
+			for (const entry of sorted) {
+				if (entry.constant === true && !mostRecent.includes(entry)) {
+					// TODO: populate lorebook bindings
+					yield entry
+				}
+			}
+		} else if (priority === 2) {
+			// All others, excluding those already yielded
+			const yielded = new Set<any>(sorted.slice(0, 2))
+			for (const entry of sorted) {
+				if (entry.constant === true) yielded.add(entry)
+			}
+			for (const entry of sorted) {
+				if (!yielded.has(entry)) {
+					// TODO: populate lorebook bindings
+					yield entry
+				}
 			}
 		}
 	}

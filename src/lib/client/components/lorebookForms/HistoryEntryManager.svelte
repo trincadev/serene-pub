@@ -41,7 +41,6 @@
 		caseSensitive: false,
 		constant: false,
 		enabled: true,
-		priority: 1, // Default priority
 		lorebookId
 	}
 

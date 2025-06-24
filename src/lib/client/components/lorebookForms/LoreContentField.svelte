@@ -139,11 +139,6 @@
 		// Ensure copying from tiptap always copies the raw textarea content
 		forceRawContentCopy(editor.view, () => content)
 	})
-
-	$effect(() => {
-		const _content = content.trim()
-		console.log("Content updated:", content)
-	})
 </script>
 
 <div

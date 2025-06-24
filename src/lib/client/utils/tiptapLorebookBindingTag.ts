@@ -10,7 +10,7 @@ interface LorebookBindingTagOptions {
 declare module "@tiptap/core" {
 	interface Commands<ReturnType> {
 		LorebookBindingTag: {
-			insertLorebookBindingTag: (id: string) => ReturnType
+			insertLorebookBindingTag: (raw: string) => ReturnType
 		}
 	}
 }
@@ -159,12 +159,9 @@ const LorebookBindingTag = Node.create<LorebookBindingTagOptions>({
 	addCommands() {
 		return {
 			insertLorebookBindingTag:
-				(id) =>
+				(raw) =>
 				({ commands }) => {
-					return commands.insertContent({
-						type: this.name,
-						attrs: { id }
-					})
+					return commands.insertContent(raw)
 				}
 		}
 	},

@@ -68,6 +68,7 @@
 			<button
 				class="btn btn-sm preset-filled-success-500 w-full"
 				onclick={handleSave}
+				disabled={!hasUnsavedChanges}
 			>
 				<Icons.Save size={16} />
 				Save

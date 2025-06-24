@@ -8,6 +8,7 @@
 	import { v4 as uuid } from "uuid"
 	import { dndzone } from "svelte-dnd-action"
 	import DeleteLorebookEntryConfirmModal from "../modals/DeleteLorebookEntryConfirmModal.svelte"
+	import { Priorities } from "$lib/shared/constants/Priorities"
 
 	interface Props {
 		lorebookId: number
@@ -20,12 +21,6 @@
 		lorebookId = $bindable(),
 		hasUnsavedChanges = $bindable(false)
 	}: Props = $props()
-
-	const PRIORITIES = [
-		{ value: 1, label: "Normal" },
-		{ value: 2, label: "High" },
-		{ value: 3, label: "Very High" }
-	]
 
 	const DefaultCharacterEntry: InsertCharacterLoreEntry = {
 		name: "",
@@ -611,7 +606,7 @@
 											class="select preset-filled-surface-200-800 w-full w-max max-w-xs rounded-lg text-sm"
 											disabled={entry.constant}
 										>
-											{#each PRIORITIES as priority}
+											{#each Priorities as priority}
 												<option value={priority.value}>
 													{priority.label}
 												</option>
@@ -726,7 +721,7 @@
 											2}
 										class:preset-filled-tertiary-500={entry.priority ===
 											3}
-										title={`${PRIORITIES[entry.priority - 1].label} Priority`}
+										title={`${Priorities[entry.priority! - 1].label} Priority`}
 									>
 										{#if entry.priority === 1}
 											<Icons.Plus
