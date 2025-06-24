@@ -3,10 +3,11 @@
 	import { toaster } from "$lib/client/utils/toaster"
 	import * as skio from "sveltekit-io"
 	import { onDestroy, onMount, tick } from "svelte"
-	import LoreEntryField from "./LoreEntryField.svelte"
+	import LoreContentField from "./LoreContentField.svelte"
 	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import { v4 as uuid } from "uuid"
 	import { dndzone } from "svelte-dnd-action"
+	import DeleteLorebookEntryConfirmModal from "../modals/DeleteLorebookEntryConfirmModal.svelte"
 
 	interface Props {
 		lorebookId: number
@@ -49,6 +50,8 @@
 	let orderBy: string = $state("position-asc")
 	let search = $state("")
 	let isReordering = $state(false)
+	let deleteEntryId: number | null = $state(null)
+	let showDeleteConfirmModal = $state(false)
 
 	$effect(() => {
 		let populatedNewEntries = false
@@ -122,17 +125,38 @@
 		})
 	}
 
+	function entryIsValid({
+		entry,
+		warn = false
+	}: {
+		entry: SelectWorldLoreEntry
+		warn?: boolean
+	}): boolean {
+
+		if (!entry.name.trim()) {
+			if (warn) {
+				toaster.error({ title: "Name is required" })
+			}
+			return false
+		}
+
+		if (!entry.content.trim()) {
+			if (warn) {
+				toaster.error({ title: "Content is required" })
+			}
+			return false
+		}
+
+		return true
+	}
+
 	function handleSave({
 		entry
 	}: {
 		entry: SelectWorldLoreEntry | (InsertWorldLoreEntry & { _uuid: string })
 	}) {
-		if (!entry.name.trim()) {
-			toaster.error({ title: "Name is required" })
-			return
-		}
-		if (!entry.content.trim()) {
-			toaster.error({ title: "Content is required" })
+		
+		if (!entryIsValid({ entry, warn: true })) {
 			return
 		}
 
@@ -225,18 +249,42 @@
 		}
 	}
 
-	function handleUpdateReorder({entries}:{entries: Sockets.WorldLoreEntryList.Response["worldLoreEntryList"]}) {
+	function handleUpdateReorder({
+		entries
+	}: {
+		entries: Sockets.WorldLoreEntryList.Response["worldLoreEntryList"]
+	}) {
 		console.log("Reordering entries:", $state.snapshot(entries))
 		// Map id's to positions
-		const positionMap: Sockets.UpdateWorldLoreEntryPositions.Call["positions"] = []
+		const positionMap: Sockets.UpdateWorldLoreEntryPositions.Call["positions"] =
+			[]
 		entries.forEach((entry, index) => {
-			positionMap.push({id: entry.id, position: index + 1})
+			positionMap.push({ id: entry.id, position: index + 1 })
 		})
 		const req: Sockets.UpdateWorldLoreEntryPositions.Call = {
 			lorebookId,
 			positions: positionMap
 		}
 		socket.emit("updateWorldLoreEntryPositions", req)
+	}
+
+	function onDeleteClick(id: number) {
+		deleteEntryId = id
+		showDeleteConfirmModal = true
+	}
+
+	function onDeleteConfirm() {
+		showDeleteConfirmModal = false
+		socket.emit("deleteWorldLoreEntry", {
+			id: deleteEntryId,
+			lorebookId
+		})
+		deleteEntryId = null
+	}
+
+	function onDeleteCancel() {
+		showDeleteConfirmModal = false
+		deleteEntryId = null
 	}
 
 	onMount(() => {
@@ -427,7 +475,7 @@
 										/>
 									</span>
 								</label>
-								<LoreEntryField
+								<LoreContentField
 									bind:content={entry.content}
 									bind:lorebookBindingList
 								/>
@@ -437,7 +485,7 @@
 									class="flex items-center gap-1 font-semibold"
 									for="entryKeys"
 								>
-									<span>Content</span>
+									<span>Keywords (comma separated)</span>
 									<span
 										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
 										title="Words or phrases that will trigger this entry"
@@ -535,6 +583,7 @@
 								<button
 									class="btn btn-sm preset-filled-success-500 w-full"
 									onclick={() => handleSave({ entry })}
+									disabled={!entryIsValid({ entry })}
 								>
 									<Icons.Save size={16} />
 									Save
@@ -637,11 +686,7 @@
 								</button>
 								<button
 									class="btn btn-sm preset-filled-error-500"
-									onclick={() =>
-										socket.emit("deleteWorldLoreEntry", {
-											id: entry.id,
-											lorebookId
-										})}
+									onclick={() => onDeleteClick(entry.id!)}
 									title="Delete Entry"
 								>
 									<Icons.Trash2 size={16} /> Delete
@@ -726,3 +771,13 @@
 		{/if}
 	</div>
 {/if}
+
+<DeleteLorebookEntryConfirmModal
+	open={showDeleteConfirmModal}
+	onOpenChange={(e) => {
+		showDeleteConfirmModal = e.open
+		deleteEntryId = null
+	}}
+	onConfirm={onDeleteConfirm}
+	onCancel={onDeleteCancel}
+/>

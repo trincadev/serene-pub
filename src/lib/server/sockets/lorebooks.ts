@@ -227,11 +227,7 @@ export async function createLorebookBinding(
 		}
 		emitToUser("createLorebookBinding", res)
 		await getLorebook(socket, { id: book.id }, emitToUser)
-		await lorebookBindingList(
-			socket,
-			{ lorebookId: book.id },
-			emitToUser
-		)
+		await lorebookBindingList(socket, { lorebookId: book.id }, emitToUser)
 	} catch (error) {
 		console.error("Error creating lorebook binding:", error)
 		socket.emit("error", { error: "Failed to create lorebook binding." })
@@ -590,7 +586,8 @@ export async function deleteWorldLoreEntry(
 		const userId = 1 // TODO: Replace with actual user ID from socket data
 
 		const book = await db.query.lorebooks.findFirst({
-			where: (e, { eq }) => and(eq(e.id, message.lorebookId), eq(e.userId, userId)),
+			where: (e, { eq }) =>
+				and(eq(e.id, message.lorebookId), eq(e.userId, userId)),
 			with: {
 				worldLoreEntries: {
 					where: (we, { eq }) => eq(we.id, message.id),
@@ -616,7 +613,11 @@ export async function deleteWorldLoreEntry(
 			// worldLoreEntry: lorebook.worldLoreEntries[0]
 		}
 		emitToUser("deleteWorldLoreEntry", res)
-		await worldLoreEntryList(socket, { lorebookId: message.id }, emitToUser)
+		await worldLoreEntryList(
+			socket,
+			{ lorebookId: message.lorebookId },
+			emitToUser
+		)
 	} catch (error) {
 		console.error("Error deleting world lore entry:", error)
 		socket.emit("error", { error: "Failed to delete world lore entry." })
@@ -710,7 +711,9 @@ export async function characterLoreEntryList(
 		emitToUser("characterLoreEntryList", res)
 	} catch (error) {
 		console.error("Error fetching character lore entries:", error)
-		socket.emit("error", { error: "Failed to fetch character lore entries." })
+		socket.emit("error", {
+			error: "Failed to fetch character lore entries."
+		})
 	}
 }
 
@@ -767,7 +770,9 @@ export async function createCharacterLoreEntry(
 		await characterLoreEntryList(socket, entryListReq, emitToUser)
 	} catch (error) {
 		console.error("Error creating character lore entry:", error)
-		socket.emit("error", { error: "Failed to create character lore entry." })
+		socket.emit("error", {
+			error: "Failed to create character lore entry."
+		})
 	}
 }
 
@@ -834,7 +839,9 @@ export async function updateCharacterLoreEntry(
 		await characterLoreEntryList(socket, entryListReq, emitToUser)
 	} catch (error) {
 		console.error("Error updating character lore entry:", error)
-		socket.emit("error", { error: "Failed to update character lore entry." })
+		socket.emit("error", {
+			error: "Failed to update character lore entry."
+		})
 	}
 }
 
@@ -846,11 +853,21 @@ export async function deleteCharacterLoreEntry(
 	try {
 		const userId = 1 // TODO: Replace with actual user ID from socket data
 
-		const entry = await db.query.characterLoreEntries.findFirst({
-			where: (e, { eq }) => eq(e.id, message.id)
+		const book = await db.query.lorebooks.findFirst({
+			where: (e, { eq }) =>
+				and(eq(e.id, message.lorebookId), eq(e.userId, userId)),
+			with: {
+				characterLoreEntries: {
+					where: (we, { eq }) => eq(we.id, message.id),
+					columns: {
+						id: true,
+						lorebookId: true
+					}
+				}
+			}
 		})
 
-		if (!entry || entry.userId !== userId) {
+		if (!book || !book.characterLoreEntries.length) {
 			return socket.emit("error", {
 				error: "Character lore entry not found or you do not have permission to delete it."
 			})
@@ -858,17 +875,22 @@ export async function deleteCharacterLoreEntry(
 
 		await db
 			.delete(schema.characterLoreEntries)
-			.where(eq(schema.characterLoreEntries.id, entry.id))
+			.where(eq(schema.characterLoreEntries.id, message.id))
 
 		const res: Sockets.DeleteCharacterLoreEntry.Response = {
-			id: entry.id,
-			lorebookId: entry.lorebookId
+			// worldLoreEntry: lorebook.worldLoreEntries[0]
 		}
 		emitToUser("deleteCharacterLoreEntry", res)
-		await characterLoreEntryList(socket, { lorebookId: message.id }, emitToUser)
+		await characterLoreEntryList(
+			socket,
+			{ lorebookId: message.lorebookId },
+			emitToUser
+		)
 	} catch (error) {
 		console.error("Error deleting character lore entry:", error)
-		socket.emit("error", { error: "Failed to delete character lore entry." })
+		socket.emit("error", {
+			error: "Failed to delete character lore entry."
+		})
 	}
 }
 
@@ -920,6 +942,289 @@ export async function updateCharacterLoreEntryPositions(
 		console.error("Error updating character lore entry positions:", error)
 		socket.emit("error", {
 			error: "Failed to update character lore entry positions."
+		})
+	}
+}
+
+// --- History Entry Endpoints ---
+
+export async function historyEntryList(
+	socket: any,
+	message: Sockets.HistoryEntryList.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		const userId = 1 // TODO: Replace with actual user ID from socket data
+		if (!userId) return socket.emit("error", { error: "User not found." })
+
+		const book = await db.query.lorebooks.findFirst({
+			where: (l, { and, eq }) =>
+				and(eq(l.id, message.lorebookId), eq(l.userId, userId)),
+			columns: {
+				id: true,
+				userId: true
+			},
+			with: {
+				historyEntries: true
+			}
+		})
+
+		if (!book) {
+			return socket.emit("error", { error: "Lorebook not found." })
+		}
+
+		const res: Sockets.HistoryEntryList.Response = {
+			historyEntryList: book.historyEntries
+		}
+		emitToUser("historyEntryList", res)
+	} catch (error) {
+		console.error("Error fetching history entries:", error)
+		socket.emit("error", { error: "Failed to fetch history entries." })
+	}
+}
+
+export async function createHistoryEntry(
+	socket: any,
+	message: Sockets.CreateHistoryEntry.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		const userId = 1 // TODO: Replace with actual user ID from socket data
+
+		const data: InsertHistoryEntry = message.historyEntry
+		if (typeof data.content === "string") data.content = data.content.trim()
+
+		const [newEntry] = await db
+			.insert(schema.historyEntries)
+			.values(data)
+			.returning()
+
+		await syncLorebookBindings({ lorebookId: newEntry.lorebookId })
+		await lorebookBindingList(
+			socket,
+			{ lorebookId: newEntry.lorebookId },
+			emitToUser
+		)
+
+		const res: Sockets.CreateHistoryEntry.Response = {
+			historyEntry: newEntry
+		}
+		emitToUser("createHistoryEntry", res)
+		const entryListReq: Sockets.HistoryEntryList.Call = {
+			lorebookId: newEntry.lorebookId
+		}
+		await historyEntryList(socket, entryListReq, emitToUser)
+	} catch (error) {
+		console.error("Error creating history entry:", error)
+		socket.emit("error", { error: "Failed to create history entry." })
+	}
+}
+
+export async function updateHistoryEntry(
+	socket: any,
+	message: Sockets.UpdateHistoryEntry.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		const userId = 1 // TODO: Replace with actual user ID from socket data
+
+		const lorebook = await db.query.lorebooks.findFirst({
+			where: (l, { and, eq }) =>
+				and(
+					eq(l.id, message.historyEntry.lorebookId),
+					eq(userId, l.userId)
+				),
+			columns: {
+				id: true,
+				userId: true
+			}
+		})
+
+		if (!lorebook) {
+			return socket.emit("error", {
+				error: "Lorebook not found or you do not have permission to edit it."
+			})
+		}
+
+		const entry = await db.query.historyEntries.findFirst({
+			where: (e, { eq }) => eq(e.id, message.historyEntry.id)
+		})
+
+		if (!entry) {
+			return socket.emit("error", {
+				error: "History entry not found."
+			})
+		}
+
+		const data: SelectHistoryEntry = { ...message.historyEntry }
+		if (typeof data.content === "string") data.content = data.content.trim()
+
+		const [updatedEntry] = await db
+			.update(schema.historyEntries)
+			.set(data)
+			.where(eq(schema.historyEntries.id, entry.id))
+			.returning()
+
+		await syncLorebookBindings({ lorebookId: entry.lorebookId })
+		await lorebookBindingList(
+			socket,
+			{ lorebookId: entry.lorebookId },
+			emitToUser
+		)
+
+		const res: Sockets.UpdateHistoryEntry.Response = {
+			historyEntry: updatedEntry
+		}
+		emitToUser("updateHistoryEntry", res)
+		const entryListReq: Sockets.HistoryEntryList.Call = {
+			lorebookId: updatedEntry.lorebookId
+		}
+		await historyEntryList(socket, entryListReq, emitToUser)
+	} catch (error) {
+		console.error("Error updating history entry:", error)
+		socket.emit("error", { error: "Failed to update history entry." })
+	}
+}
+
+export async function deleteHistoryEntry(
+	socket: any,
+	message: Sockets.DeleteHistoryEntry.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		const userId = 1 // TODO: Replace with actual user ID from socket data
+
+		const book = await db.query.lorebooks.findFirst({
+			where: (e, { and, eq }) =>
+				and(eq(e.id, message.lorebookId), eq(e.userId, userId)),
+			with: {
+				historyEntries: {
+					where: (we, { eq }) => eq(we.id, message.id),
+					columns: {
+						id: true,
+						lorebookId: true
+					}
+				}
+			}
+		})
+
+		if (!book || !book.historyEntries.length) {
+			return socket.emit("error", {
+				error: "History entry not found or you do not have permission to delete it."
+			})
+		}
+
+		await db
+			.delete(schema.historyEntries)
+			.where(eq(schema.historyEntries.id, message.id))
+
+		const res: Sockets.DeleteHistoryEntry.Response = {
+			id: message.id,
+			lorebookId: message.lorebookId
+		}
+		emitToUser("deleteHistoryEntry", res)
+		await historyEntryList(
+			socket,
+			{ lorebookId: message.lorebookId },
+			emitToUser
+		)
+	} catch (error) {
+		console.error("Error deleting history entry:", error)
+		socket.emit("error", { error: "Failed to delete history entry." })
+	}
+}
+
+export async function iterateNextHistoryEntry(
+	socket: any,
+	message: Sockets.IterateNextHistoryEntry.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		const userId = 1 // TODO: Replace with actual user ID from socket data
+
+		const book = await db.query.lorebooks.findFirst({
+			where: (e, { and, eq }) =>
+				and(eq(e.id, message.lorebookId), eq(e.userId, userId)),
+			with: {
+				historyEntries: {
+					orderBy: (e, { asc }) => asc(e.date),
+					columns: {
+						id: true,
+						lorebookId: true,
+						date: true
+					}
+				}
+			}
+		})
+
+		if (!book) {
+			return socket.emit("error", {
+				error: "Lorebook not found."
+			})
+		}
+
+		const mostRecentEntry = book.historyEntries.sort((a, b) => {
+			// Compare by entry.date.year, entry.date.month, entry.date.day, month or day might be undefined/null
+			const dateA = new Date(
+				a.date.year,
+				a.date.month || 0,
+				a.date.day || 1
+			)
+			const dateB = new Date(
+				b.date.year,
+				b.date.month || 0,
+				b.date.day || 1
+			)
+			return dateB.getTime() - dateA.getTime() // Sort in descending order
+		})[0]
+
+		const nextDate: {
+			year: number
+			month: number | null
+			day: number | null
+		} = {
+			year: 1,
+			month: null,
+			day: null
+		}
+
+		// If mostRecent entry exists, iterate on the day?, month? or year!
+		if (mostRecentEntry) {
+			if (mostRecentEntry.date.day) {
+				nextDate.year = mostRecentEntry.date.year
+				nextDate.month = mostRecentEntry.date.month
+				nextDate.day = (mostRecentEntry.date.day || 1) + 1 // Increment day
+			} else if (mostRecentEntry.date.month) {
+				nextDate.year = mostRecentEntry.date.year
+				nextDate.month = (mostRecentEntry.date.month || 1) + 1 // Increment month
+			} else {
+				nextDate.year = mostRecentEntry.date.year + 1 // Increment year
+			}
+		}
+
+		const data: InsertHistoryEntry = {
+			lorebookId: book.id,
+			date: nextDate,
+			content: ""
+		}
+
+		const [newEntry] = await db
+			.insert(schema.historyEntries)
+			.values(data)
+			.returning()
+
+		const res: Sockets.IterateNextHistoryEntry.Response = {
+			historyEntry: newEntry
+		}
+		emitToUser("iterateNextHistoryEntry", res)
+		const historyEntryListReq: Sockets.HistoryEntryList.Call = {
+			lorebookId: book.id
+		}
+		await historyEntryList(socket, historyEntryListReq, emitToUser)
+	} catch (error) {
+		console.error("Error iterating to next history entry:", error)
+		socket.emit("error", {
+			error: "Failed to iterate to next history entry."
 		})
 	}
 }

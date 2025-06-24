@@ -41,7 +41,7 @@
 		leftNav: {
 			sampling: {
 				icon: Icons.SlidersHorizontal,
-				title: "SamplingConfig"
+				title: "Sampling"
 			},
 			connections: { icon: Icons.Cable, title: "Connections" },
 			contexts: { icon: Icons.BookOpenText, title: "Contexts" },

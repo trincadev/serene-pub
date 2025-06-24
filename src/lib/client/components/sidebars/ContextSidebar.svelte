@@ -44,10 +44,6 @@
         }
     })
 
-    $effect(() => {
-        console.log("Context config changed:", $state.snapshot(contextConfig))
-    })
-
     function handleDelete() {
         if (contextConfig.isImmutable) {
             socket.emit("deleteContextConfig", { id: contextConfig.id })

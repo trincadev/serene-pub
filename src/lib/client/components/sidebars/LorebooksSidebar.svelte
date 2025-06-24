@@ -5,10 +5,12 @@
 	import NewNameModal from "../modals/NewNameModal.svelte"
 	import EditLorebookForm from "../lorebookForms/EditLorebookForm.svelte"
 	import { Tabs } from "@skeletonlabs/skeleton-svelte"
-	import LorebookBindingsForm from "../lorebookForms/LorebookBindingsForm.svelte"
-	import WorldLoreForm from "../lorebookForms/WorldLoreForm.svelte"
+	import LorebookBindingsManager from "../lorebookForms/LorebookBindingsManager.svelte"
+	import WorldLoreManager from "../lorebookForms/WorldLoreManager.svelte"
 	import type { ValueChangeDetails } from "@zag-js/tabs"
 	import LorebookUnsavedChangesModal from "../modals/LorebookUnsavedChangesModal.svelte"
+	import CharacterLoreManager from "../lorebookForms/CharacterLoreManager.svelte"
+	import HistoryEntryManager from "../lorebookForms/HistoryEntryManager.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -187,7 +189,7 @@
 				<Tabs.Control value="characters">
 					<Icons.User size={20} class="inline" />
 					{#if editGroup === "characters"}
-						Characters
+						Character Lore
 					{/if}
 				</Tabs.Control>
 				<Tabs.Control value="history">
@@ -207,17 +209,33 @@
 				</Tabs.Panel>
 				<Tabs.Panel value="bindings">
 					{#if editGroup == "bindings"}
-						<LorebookBindingsForm
+						<LorebookBindingsManager
 							lorebookId={selectedLorebook.id}
 						/>
 					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="world">
 					{#if editGroup == "world"}
-						<WorldLoreForm
+						<WorldLoreManager
 						lorebookId={selectedLorebook.id}
 						bind:hasUnsavedChanges={tabHasUnsavedChanges}
 					/>
+					{/if}
+				</Tabs.Panel>
+				<Tabs.Panel value="characters">
+					{#if editGroup == "characters"}
+						<CharacterLoreManager
+							lorebookId={selectedLorebook.id}
+							bind:hasUnsavedChanges={tabHasUnsavedChanges}
+						/>
+					{/if}
+				</Tabs.Panel>
+				<Tabs.Panel value="history">
+					{#if editGroup == "history"}
+						<HistoryEntryManager
+							lorebookId={selectedLorebook.id}
+							bind:hasUnsavedChanges={tabHasUnsavedChanges}
+						/>
 					{/if}
 				</Tabs.Panel>
 			{/snippet}

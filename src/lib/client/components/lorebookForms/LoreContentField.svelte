@@ -2,7 +2,7 @@
 	import { Editor } from "@tiptap/core"
 	import StarterKit from "@tiptap/starter-kit"
 	import { onMount } from "svelte"
-	import CharacterTag from "../../utils/tiptapCharacterTag"
+	import LorebookBindingTag from "../../utils/tiptapLorebookBindingTag"
 	import * as Icons from "@lucide/svelte"
 	import { Popover } from "@skeletonlabs/skeleton-svelte"
     import Placeholder from '@tiptap/extension-placeholder'
@@ -55,7 +55,7 @@
 		const doc = editor.state.doc;
 		let result = "";
 		doc.descendants((node) => {
-			if (node.type.name === "characterTag") {
+			if (node.type.name === "LorebookBindingTag") {
 				result += `{char:${node.attrs.id}}`;
 			} else if (node.type.name === "legacyTag") {
 				result += node.attrs.original
@@ -82,7 +82,7 @@
 			}
 			if (match[1]) {
 				// {char:N}
-				parts.push({ type: 'characterTag', attrs: { id: match[1] } });
+				parts.push({ type: 'LorebookBindingTag', attrs: { id: match[1] } });
 			} else if (match[2]) {
 				// legacy tags: {user}, {char}, {persona}, {character}
 				parts.push({ type: 'legacyTag', attrs: { tag: `{${match[2]}}`, original: `{${match[2]}}` } });
@@ -122,7 +122,7 @@
 			content: parseCharTagsToTiptapDoc(content),
 			extensions: [
 				StarterKit,
-				CharacterTag.configure({ getLabel, getCharType }),
+				LorebookBindingTag.configure({ getLabel, getCharType }),
                 LegacyTag.configure({}),
                 Placeholder.configure({
                     placeholder: ({ node }) => "A subterranean metropolis carved into the bones of a long-dead titan..."
@@ -179,7 +179,7 @@
 							class:preset-filled-surface-500={!!binding.personaId}
 							class:preset-filled-warning-500={!char}
 							onclick={() => {
-								editor.commands.insertCharacterTag(binding.binding)
+								editor.commands.insertLorebookBindingTag(binding.binding)
 								addBindingOpenState = false
 							}}
 							title={char
@@ -212,11 +212,11 @@
 		</button>
 	</div>
 
-	<textarea
+	<!-- <textarea
 		bind:value={content}
 		class="textarea textarea-lg w-full"
         placeholder="A subterranean metropolis carved into the bones of a long-dead titan..."
-	></textarea>
+	></textarea> -->
 
 	<div
 		bind:this={editorEl}

@@ -316,7 +316,7 @@ export const historyEntries = sqliteTable("history_entries", {
 	date: text("date", { mode: "json" })
 		.notNull()
 		.default({ day: 1, month: 1, year: 1 })
-		.$type<{ day: number; month: number; year: number }>(),
+		.$type<{ day: number | null; month: number | null; year: number }>(),
 	keys: text("keys", { mode: "json" })
 		.notNull()
 		.default([])
@@ -326,7 +326,6 @@ export const historyEntries = sqliteTable("history_entries", {
 		.notNull()
 		.default(false),
 	content: text("content").notNull().default(""),
-	priority: integer("priority").notNull().default(1),
 	constant: integer("constant", { mode: "boolean" }).notNull().default(false),
 	enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
 	extraJson: text("extra_json", { mode: "json" })

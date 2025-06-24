@@ -2,15 +2,15 @@ import { Node, mergeAttributes, nodeInputRule, InputRule } from "@tiptap/core"
 import { Plugin, PluginKey } from "prosemirror-state"
 import { Fragment } from "prosemirror-model"
 
-interface CharacterTagOptions {
+interface LorebookBindingTagOptions {
 	getLabel: (raw: string) => string
 	getCharType: (raw: string) => "character" | "persona" | "unknown"
 }
 
 declare module "@tiptap/core" {
 	interface Commands<ReturnType> {
-		characterTag: {
-			insertCharacterTag: (id: string) => ReturnType
+		LorebookBindingTag: {
+			insertLorebookBindingTag: (id: string) => ReturnType
 		}
 	}
 }
@@ -18,7 +18,7 @@ declare module "@tiptap/core" {
 const CHAR_TAG_REGEX = /\{char:(\d+)\}/g
 
 // Custom input rule: replace all {char:N} in the changed text node
-function characterTagInputRule(type: any) {
+function LorebookBindingTagInputRule(type: any) {
   return new InputRule({
     find: /\{char:(\d+)\}/g,
     handler: ({ range, match, commands }) => {
@@ -30,7 +30,7 @@ function characterTagInputRule(type: any) {
 
 const createPasteTransformPlugin = (type: any) => {
 	return new Plugin({
-		key: new PluginKey("characterTagPasteTransform"),
+		key: new PluginKey("LorebookBindingTagPasteTransform"),
 		appendTransaction(transactions, oldState, newState) {
 			// Only run on paste or if doc changed
 			const docChanged = transactions.some((tr) => tr.docChanged)
@@ -56,7 +56,7 @@ const createPasteTransformPlugin = (type: any) => {
 						if (lastIndex < node.text.length) {
 							parts.push(node.text.slice(lastIndex))
 						}
-						// Replace the text node with a fragment of text and characterTag nodes
+						// Replace the text node with a fragment of text and LorebookBindingTag nodes
 						let frag = Fragment.empty
 						for (const part of parts) {
 							if (typeof part === "string") {
@@ -83,7 +83,7 @@ const createPasteTransformPlugin = (type: any) => {
 
 const createClipboardTextSerializerPlugin = (type: any) => {
 	return new Plugin({
-		key: new PluginKey("characterTagClipboardTextSerializer"),
+		key: new PluginKey("LorebookBindingTagClipboardTextSerializer"),
 		props: {
 			clipboardTextSerializer: (slice) => {
 				let text = ""
@@ -103,8 +103,8 @@ const createClipboardTextSerializerPlugin = (type: any) => {
 	})
 }
 
-const CharacterTag = Node.create<CharacterTagOptions>({
-	name: "characterTag",
+const LorebookBindingTag = Node.create<LorebookBindingTagOptions>({
+	name: "LorebookBindingTag",
 	inline: true,
 	group: "inline",
 	atom: true,
@@ -150,7 +150,7 @@ const CharacterTag = Node.create<CharacterTagOptions>({
 				class: `badge ${typeClass} character-tag`,
 				"data-id": node.attrs.id,
 				contenteditable: "false",
-				"title": charType === 'character' ? `Character: ${this.options.getLabel(raw)}` : charType === 'persona' ?  `Persona: ${this.options.getLabel(node.attrs.id)}` : `Unbound character`
+				"title": charType === 'character' ? `Character: ${this.options.getLabel(raw)}` : charType === 'persona' ?  `Persona: ${this.options.getLabel(raw)}` : `Unbound character`
 			}),
 			this.options.getLabel(raw)
 		]
@@ -158,7 +158,7 @@ const CharacterTag = Node.create<CharacterTagOptions>({
 
 	addCommands() {
 		return {
-			insertCharacterTag:
+			insertLorebookBindingTag:
 				(id) =>
 				({ commands }) => {
 					return commands.insertContent({
@@ -188,9 +188,9 @@ const CharacterTag = Node.create<CharacterTagOptions>({
 		]
 	},
 	addInputRules() {
-		return [characterTagInputRule(this.type)]
+		return [LorebookBindingTagInputRule(this.type)]
 	}
 })
 // Usage: Call forceRawContentCopy(editor.view, () => rawContent) after editor is mounted.
 
-export default CharacterTag
+export default LorebookBindingTag

@@ -219,11 +219,21 @@
 			"samplingConfigsList",
 			(message: Sockets.SamplingConfigList.Response) => {
 				samplingConfigsList = message.samplingConfigsList
+				if (!userCtx.user.activeSamplingConfigId &&
+					samplingConfigsList.length > 0) {
+					socket.emit("setUserActiveSamplingConfig", {
+						id: samplingConfigsList[0].id
+					})
+				}
 			}
 		)
 
 		socket.emit("sampling", { id: userCtx.user.activeSamplingConfigId })
 		socket.emit("samplingConfigsList", {})
+	})
+
+	$effect(() => {
+		console.log("SamplingSidebar list", $state.snapshot(samplingConfigsList))
 	})
 </script>
 
@@ -251,7 +261,7 @@
 						>
 							<input
 								type="checkbox"
-								bind:checked={sampling[key + "Enabled"]}
+								bind:checked={sampling[key + "Enabled"]!}
 								class="accent-primary"
 								disabled={sampling[key + "Enabled"] ===
 									undefined}

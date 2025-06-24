@@ -43,7 +43,7 @@ import {
     setUserActivePromptConfig
 } from "./promptConfigs"
 import { user } from "./users"
-import {createLorebook, createLorebookBinding, createWorldLoreEntry, deleteWorldLoreEntry, lorebook, lorebookBindingList, lorebookList, updateLorebookBinding, updateWorldLoreEntry, worldLoreEntryList, updateWorldLoreEntryPositions, deleteLorebook} from './lorebooks';
+import {createLorebook, createLorebookBinding, createWorldLoreEntry, deleteWorldLoreEntry, lorebook, lorebookBindingList, lorebookList, updateLorebookBinding, updateWorldLoreEntry, worldLoreEntryList, updateWorldLoreEntryPositions, deleteLorebook, characterLoreEntryList, createCharacterLoreEntry, deleteCharacterLoreEntry, updateCharacterLoreEntry, updateCharacterLoreEntryPositions, historyEntryList, createHistoryEntry, deleteHistoryEntry, updateHistoryEntry, iterateNextHistoryEntry} from './lorebooks';
 
 const userId = 1 // Replace with actual user id
 
@@ -124,15 +124,25 @@ export function connectSockets(io: {
         register(socket, lorebookList, emitToUser)
         register(socket, lorebook, emitToUser)
         register(socket, createLorebook, emitToUser)
+        register(socket, deleteLorebook, emitToUser),
+        register(socket, lorebookBindingList, emitToUser)
         register(socket, createLorebookBinding, emitToUser)
         register(socket, updateLorebookBinding, emitToUser)
-        register(socket, lorebookBindingList, emitToUser)
-        register(socket, worldLoreEntryList, emitToUser),
-        register(socket, createWorldLoreEntry, emitToUser),
-        register(socket, updateWorldLoreEntry, emitToUser),
-        register(socket, deleteWorldLoreEntry, emitToUser),
-        register(socket, deleteLorebook, emitToUser),
+        register(socket, worldLoreEntryList, emitToUser)
+        register(socket, createWorldLoreEntry, emitToUser)
+        register(socket, updateWorldLoreEntry, emitToUser)
+        register(socket, deleteWorldLoreEntry, emitToUser)
         register(socket, updateWorldLoreEntryPositions, emitToUser)
+        register(socket, characterLoreEntryList, emitToUser)
+        register(socket, createCharacterLoreEntry, emitToUser)
+        register(socket, updateCharacterLoreEntry, emitToUser)
+        register(socket, deleteCharacterLoreEntry, emitToUser)
+        register(socket, updateCharacterLoreEntryPositions, emitToUser)
+        register(socket, historyEntryList, emitToUser)
+        register(socket, createHistoryEntry, emitToUser)
+        register(socket, updateHistoryEntry, emitToUser)
+        register(socket, deleteHistoryEntry, emitToUser)
+        register(socket, iterateNextHistoryEntry, emitToUser)
         console.log(`Socket connected: ${socket.id} for user ${userId}`)
     })
 }

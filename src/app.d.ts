@@ -727,6 +727,7 @@ declare global {
 		namespace DeleteCharacterLoreEntry {
 			interface Call {
 				id: number
+				lorebookId: number
 			}
 			interface Response {
 				id: number
@@ -742,6 +743,53 @@ declare global {
 			}
 			interface Response {
 				lorebookId: number
+			}
+		}
+
+		namespace HistoryEntryList {
+			interface Call {
+				lorebookId: number
+			}
+			interface Response {
+				historyEntryList: SelectHistoryEntry[]
+			}
+		}
+
+		namespace CreateHistoryEntry {
+			interface Call {
+				historyEntry: InsertHistoryEntry
+			}
+			interface Response {
+				historyEntry: SelectHistoryEntry
+			}
+		}
+
+		namespace UpdateHistoryEntry {
+			interface Call {
+				historyEntry: SelectHistoryEntry
+			}
+			interface Response {
+				historyEntry: SelectHistoryEntry
+			}
+		}
+
+		namespace DeleteHistoryEntry {
+			interface Call {
+				id: number
+				lorebookId: number
+			}
+			interface Response {
+				id: number
+				lorebookId: number
+			}
+		}
+
+		namespace IterateNextHistoryEntry {
+			interface Call {
+				lorebookId: number
+			}
+			interface Response {
+				historyEntry: SelectHistoryEntry
 			}
 		}
 	}
