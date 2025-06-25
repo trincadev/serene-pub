@@ -1,11 +1,21 @@
 import { PromptBuilder } from "../utils/PromptBuilder"
 import type { TokenCounters } from "../utils/TokenCounterManager"
 
-export interface BaseChat extends SelectChat {
-	chatCharacters: (SelectChatCharacter & { character: SelectCharacter })[]
-	chatPersonas: (SelectChatPersona & { persona: SelectPersona })[]
-	chatMessages: SelectChatMessage[]
-}
+export interface BasePromptChat extends SelectChat {
+		chatCharacters?: (SelectChatCharacter & {
+			character: SelectCharacter & { lorebook?: SelectLorebook }
+		})[]
+		chatPersonas?: (SelectChatPersona & {
+			persona: SelectPersona & { lorebook?: SelectLorebook }
+		})[]
+		chatMessages: SelectChatMessage[]
+		lorebook: SelectLorebook & {
+			lorebookBindings: (SelectLorebookBinding & {
+				character?: SelectCharacter
+				persona?: SelectPersona
+			})[]
+		}
+	}
 
 // Generic interface for constructor parameters
 export interface BaseConnectionAdapterParams {
@@ -50,16 +60,7 @@ export abstract class BaseConnectionAdapter {
 		this.sampling = sampling
 		this.contextConfig = contextConfig
 		this.promptConfig = promptConfig
-		this.chat = {
-			...chat,
-			chatCharacters: (chat.chatCharacters || []).filter(
-				(cc: any) => cc && cc.character
-			),
-			chatPersonas: (chat.chatPersonas || []).filter(
-				(cp: any) => cp && cp.persona
-			),
-			chatMessages: chat.chatMessages || []
-		}
+		this.chat = chat
 		this.currentCharacterId = currentCharacterId
 		this.promptBuilder = new PromptBuilder({
 			connection: this.connection,

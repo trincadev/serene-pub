@@ -1,0 +1,1 @@
+ALTER TABLE `personas` ADD `lorebook_id` integer REFERENCES lorebooks(id);

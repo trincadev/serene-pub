@@ -5,6 +5,8 @@ import { generateResponse } from "../utils/generateResponse"
 import { getNextCharacterTurn } from "$lib/server/utils/getNextCharacterTurn"
 import type { BaseConnectionAdapter } from "../connectionAdapters/BaseConnectionAdapter"
 import { getConnectionAdapter } from "../utils/getConnectionAdapter"
+import { historyEntries } from "../db/schema"
+import { TokenCounters } from "$lib/server/utils/TokenCounterManager"
 
 // --- Global map for active adapters ---
 export const activeAdapters = new Map<string, BaseConnectionAdapter>()
@@ -150,10 +152,66 @@ async function getChatFromDB(chatId: number, userId: number) {
 	const chat = await res
 	if (chat) {
 		// Order the chatCharacters by position
-		chat.chatCharacters.sort((a, b) => a.position - b.position)
+		chat.chatCharacters.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 		// Sort chatPersonas by position if it exists
 		if (chat.chatPersonas) {
-			chat.chatPersonas.sort((a, b) => a.position - b.position)
+			chat.chatPersonas.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+		}
+	}
+	return chat
+}
+
+// Returns complete chat data for prompt compilation
+async function getPromptChatFromDb(chatId: number, userId: number) {
+	const chat = await db.query.chats.findFirst({
+		where: (c, { eq, and }) =>
+			and(eq(c.id, chatId), eq(c.userId, userId)),
+		with: {
+			chatMessages: true,
+			chatCharacters: {
+				with: {
+					character: {
+						with: { lorebook: true }
+					}
+				},
+				orderBy: (cc, { asc }) => asc(cc.position ?? 0)
+			},
+			chatPersonas: {
+				with: {
+					persona: {
+						with: { lorebook: true }
+					}
+				},
+				orderBy: (cp, { asc }) => asc(cp.position ?? 0)
+			},
+			lorebook: {
+				with: {
+					lorebookBindings: {
+						with: { character: true, persona: true }
+					},
+					worldLoreEntries: true,
+					characterLoreEntries: {
+						with: {
+							lorebookBinding: {
+								with: {
+									character: true,
+									persona: true
+								}
+							}
+						}
+					},
+					historyEntries: true
+				}
+			}
+		}
+	})
+
+	if (chat) {
+		// Order the chatCharacters by position
+		chat.chatCharacters.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+		// Sort chatPersonas by position if it exists
+		if (chat.chatPersonas) {
+			chat.chatPersonas.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 		}
 	}
 	return chat
@@ -166,7 +224,7 @@ export async function sendPersonaMessage(
 ) {
 	const { chatId, personaId, content } = message
 	const userId = 1 // Replace with actual user id
-	let chat = await getChatFromDB(chatId, userId)
+	let chat = await getPromptChatFromDb(chatId, userId)
 	if (!chat) {
 		// Return a valid but empty chatMessage object with required fields set to null or default
 		const res: Sockets.SendPersonaMessage.Response = {
@@ -201,7 +259,7 @@ export async function sendPersonaMessage(
 	while (chat && chat.chatCharacters.length > 0 && currentTurn <= maxTurns) {
 		currentTurn++
 		// Always fetch the latest chat state at the start of each loop
-		chat = await getChatFromDB(chatId, userId)
+		chat = await getPromptChatFromDb(chatId, userId)
 		if (!chat) break
 		const nextCharacterId = getNextCharacterTurn(
 			{
@@ -339,7 +397,7 @@ export async function regenerateChatMessage(
 		emitToUser("regenerateChatMessage", res)
 		return
 	}
-	const chat = await getChatFromDB(chatMessage.chatId, userId)
+	const chat = await getPromptChatFromDb(chatMessage.chatId, userId)
 	if (!chat) {
 		const res: Sockets.RegenerateChatMessage.Response = {
 			error: "Chat not found."
@@ -386,7 +444,7 @@ export async function promptTokenCount(
 	emitToUser: (event: string, data: any) => void
 ) {
 	const userId = 1 // Replace with actual user id
-	const chat = await getChatFromDB(message.chatId, userId)
+	const chat = await getPromptChatFromDb(message.chatId, userId)
 	if (!chat) {
 		emitToUser("error", { error: "Chat not found." })
 		return
@@ -425,9 +483,11 @@ export async function promptTokenCount(
 			updatedAt: new Date().toISOString(),
 			isEdited: 0,
 			metadata: null,
-			isGenerating: false
+			isGenerating: false,
+			adapterId: null,
+			isHidden: null
 		})
-	} // TODO fix
+	}
 	const currentCharacterId = getNextCharacterTurn(
 		{
 			chatMessages: chat.chatMessages,
@@ -448,13 +508,21 @@ export async function promptTokenCount(
 
 	const { Adapter } = getConnectionAdapter(user.activeConnection.type)
 
+	// Provide required params for Adapter (use defaults if not available)
+	const tokenCounter = new TokenCounters("estimate")
+	const tokenLimit = 4096
+	const contextThresholdPercent = 0.8
+
 	const adapter = new Adapter({
 		chat: chatForPrompt,
 		connection: user.activeConnection,
 		sampling: user.activeSamplingConfig,
 		contextConfig: user.activeContextConfig,
 		promptConfig: user.activePromptConfig,
-		currentCharacterId
+		currentCharacterId,
+		tokenCounter,
+		tokenLimit,
+		contextThresholdPercent
 	})
 	const promptResult: Sockets.PromptTokenCount.Response =
 		await adapter.promptBuilder.compilePrompt()
@@ -537,7 +605,7 @@ export async function triggerGenerateMessage(
 	let triggered = true
 
 	while (currentMsg <= msgLimit) {
-		let chat = await getChatFromDB(message.chatId, userId)
+		let chat = await getPromptChatFromDb(message.chatId, userId)
 		if (!chat) {
 			const res: Sockets.TriggerGenerateMessage.Response = {
 				error: "Chat not found."
@@ -640,10 +708,11 @@ export async function updateChat(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
+		console.log("Updating chat with message:", message)
 		const userId = 1 // Replace with actual user id
 
 		//  Select the chat to compare data
-		const existingChat = await getChatFromDB(message.chat.id, userId)
+		const existingChat = await getPromptChatFromDb(message.chat.id, userId)
 
 		// Update chat main fields
 		await db

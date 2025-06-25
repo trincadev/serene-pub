@@ -446,14 +446,21 @@ export const personas = sqliteTable("personas", {
 	position: integer("position").default(0),
 	connections: text("connections"), // JSON array of connection IDs or objects
 	createdAt: text("created_at"),
-	updatedAt: text("updated_at")
+	updatedAt: text("updated_at"),
+	lorebookId: integer("lorebook_id").references(() => lorebooks.id, {
+		onDelete: "set null"
+	}), // Optional lorebook for this persona
 })
 
 export const personasRelations = relations(personas, ({ one, many }) => ({
 	user: one(users, {
 		fields: [personas.userId],
 		references: [users.id]
-	})
+	}),
+	lorebook: one(lorebooks, {
+		fields: [personas.lorebookId],
+		references: [lorebooks.id]
+	}),
 }))
 
 // Chats (group or 1:1)
@@ -483,7 +490,11 @@ export const chatsRelations = relations(chats, ({ one, many }) => ({
 	}),
 	chatMessages: many(chatMessages),
 	chatPersonas: many(chatPersonas),
-	chatCharacters: many(chatCharacters)
+	chatCharacters: many(chatCharacters),
+	lorebook: one(lorebooks, {
+		fields: [chats.lorebookId],
+		references: [lorebooks.id]
+	}),
 }))
 
 // Chat messages
