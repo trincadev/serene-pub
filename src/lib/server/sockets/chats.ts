@@ -167,7 +167,9 @@ async function getPromptChatFromDb(chatId: number, userId: number) {
 		where: (c, { eq, and }) =>
 			and(eq(c.id, chatId), eq(c.userId, userId)),
 		with: {
-			chatMessages: true,
+			chatMessages: {
+				where: (cm, { eq }) => eq(cm.isHidden, false),
+			},
 			chatCharacters: {
 				with: {
 					character: {

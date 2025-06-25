@@ -1,4 +1,4 @@
-import { PromptBuilder } from "../utils/PromptBuilder"
+import { PromptBuilder } from "../utils/promptBuilder"
 import type { TokenCounters } from "../utils/TokenCounterManager"
 
 export interface BasePromptChat extends SelectChat {

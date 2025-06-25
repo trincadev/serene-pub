@@ -232,10 +232,9 @@ export const worldLoreEntries = sqliteTable("world_lore_entries", {
 		.references(() => lorebooks.id, { onDelete: "cascade" }),
 	name: text("name").notNull(),
 	category: text("category"),
-	keys: text("keys", { mode: "json" })
+	keys: text("keys")
 		.notNull()
-		.default([])
-		.$type<string[]>(),
+		.default(""),
 	useRegex: integer("use_regex", { mode: "boolean" }).default(false),
 	caseSensitive: integer("case_sensitive", { mode: "boolean" })
 		.notNull()
@@ -273,10 +272,9 @@ export const characterLoreEntries = sqliteTable("character_lore_entries", {
 		{ onDelete: "set null" }
 	),
 	name: text("name"),
-	keys: text("keys", { mode: "json" })
+	keys: text("keys")
 		.notNull()
-		.default([])
-		.$type<string[]>(),
+		.default(""),
 	useRegex: integer("use_regex", { mode: "boolean" }).default(false),
 	caseSensitive: integer("case_sensitive", { mode: "boolean" })
 		.notNull()
@@ -317,10 +315,9 @@ export const historyEntries = sqliteTable("history_entries", {
 		.notNull()
 		.default({ day: 1, month: 1, year: 1 })
 		.$type<{ day: number | null; month: number | null; year: number }>(),
-	keys: text("keys", { mode: "json" })
+	keys: text("keys")
 		.notNull()
-		.default([])
-		.$type<string[]>(),
+		.default(""),
 	useRegex: integer("use_regex", { mode: "boolean" }).default(false),
 	caseSensitive: integer("case_sensitive", { mode: "boolean" })
 		.notNull()

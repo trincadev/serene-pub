@@ -1,7 +1,15 @@
-import { PromptBlockFormatter } from "./PromptBlockFormatter"
+import { PromptBlockFormatter } from "../PromptBlockFormatter"
 import Handlebars from "handlebars"
-import type { TokenCounters } from "./TokenCounterManager"
-import type { BasePromptChat } from "../connectionAdapters/BaseConnectionAdapter"
+import type { TokenCounters } from "../TokenCounterManager"
+import type { BasePromptChat } from "../../connectionAdapters/BaseConnectionAdapter"
+import {
+	attachCharacterLoreToCharacters,
+	populateLorebookEntryBindings
+} from "./LorebookBindingUtils"
+import {
+	characterLoreEntryIterator,
+	historyEntryIterator
+} from "./PromptIterators"
 
 export class PromptBuilder {
 	connection: SelectConnection
@@ -346,7 +354,7 @@ export class PromptBuilder {
 	}
 
 	// --- Modularized section: message block construction and token limit logic ---
-	private async buildMessageBlocks(
+	private async infillContent(
 		templateContext: TemplateContext,
 		_charName: string,
 		_personaName: string
@@ -361,11 +369,11 @@ export class PromptBuilder {
 			| IterableIterator<SelectWorldLoreEntry>
 			| undefined
 			| null
-		let characterLoreEntryIterator:
+		let characterLoreIter:
 			| IterableIterator<SelectCharacterLoreEntry>
 			| undefined
 			| null
-		let historyEntryIterator:
+		let historyEntryIter:
 			| IterableIterator<SelectHistoryEntry>
 			| undefined
 			| null
@@ -376,7 +384,6 @@ export class PromptBuilder {
 		const messageFailedCharacterLoreMatches: Record<number, number[]> = {}
 		const messageFailedHistoryMatches: Record<number, number[]> = {}
 
-		// --- NEW: Efficient context assembly and token counting ---
 		let chatMessages: {
 			id: number
 			role: "assistant" | "user"
@@ -404,8 +411,6 @@ export class PromptBuilder {
 			persona: _personaName
 		}
 
-		// --- Track included entries for worldLore/history objects ---
-		// Accept both entry and binding types for lore arrays
 		let includedWorldLoreEntries: any[] = []
 		let includedCharacterLoreEntries: any[] = []
 		let includedHistoryEntries: SelectHistoryEntry[] = []
@@ -415,33 +420,33 @@ export class PromptBuilder {
 
 		// --- DEBUG: Start timing ---
 		const debugTimings: any[] = []
-		const overallStart = Date.now()
 
 		let iterationCount = 0
 		while (!completed) {
 			iterationCount++
 			const iterStart = Date.now()
-			// 1. Advance iterators and update pools
 			switch (priority) {
 				case 4:
 					if (messagesIterator === undefined) {
-						// console.log("Initializing iterators for priority 4")
 						messagesIterator = this.chatMessageIterator({
 							priority
 						})
 						worldLoreEntryIterator = this.worldLoreEntryIterator({
 							priority
 						})
-						characterLoreEntryIterator =
-							this.characterLoreEntryIterator({ priority })
-						historyEntryIterator = this.historyEntryIterator({
+						characterLoreIter = characterLoreEntryIterator({
+							chat: this.chat,
+							priority
+						})
+						historyEntryIter = historyEntryIterator({
+							chat: this.chat,
 							priority
 						})
 					} else if (
 						messagesIterator === null &&
 						worldLoreEntryIterator === null &&
-						characterLoreEntryIterator === null &&
-						historyEntryIterator === null
+						characterLoreIter === null &&
+						historyEntryIter === null
 					) {
 						priority = 3
 						continue
@@ -450,35 +455,38 @@ export class PromptBuilder {
 				case 3:
 					if (
 						messagesIterator === null &&
-						characterLoreEntryIterator === null &&
+						characterLoreIter === null &&
 						worldLoreEntryIterator === null
 					) {
-						// console.log("Switching to priority 3")
 						messagesIterator = this.chatMessageIterator({
 							priority
 						})
 						worldLoreEntryIterator = this.worldLoreEntryIterator({
 							priority
 						})
-						characterLoreEntryIterator =
-							this.characterLoreEntryIterator({ priority })
+						characterLoreIter = characterLoreEntryIterator({
+							chat: this.chat,
+							priority
+						})
 						priority = 2
 					}
 					break
 				case 2:
 					if (
-						historyEntryIterator === null &&
-						characterLoreEntryIterator === null &&
+						historyEntryIter === null &&
+						characterLoreIter === null &&
 						worldLoreEntryIterator === null &&
 						messagesIterator === null
 					) {
-						// console.log("Switching to priority 2")
 						worldLoreEntryIterator = this.worldLoreEntryIterator({
 							priority
 						})
-						characterLoreEntryIterator =
-							this.characterLoreEntryIterator({ priority })
-						historyEntryIterator = this.historyEntryIterator({
+						characterLoreIter = characterLoreEntryIterator({
+							chat: this.chat,
+							priority
+						})
+						historyEntryIter = historyEntryIterator({
+							chat: this.chat,
 							priority
 						})
 						messagesIterator = this.chatMessageIterator({
@@ -489,26 +497,26 @@ export class PromptBuilder {
 					break
 				case 1:
 					if (
-						characterLoreEntryIterator === null &&
+						characterLoreIter === null &&
 						worldLoreEntryIterator === null
 					) {
-						// console.log("Switching to priority 1")
 						worldLoreEntryIterator = this.worldLoreEntryIterator({
 							priority
 						})
-						characterLoreEntryIterator =
-							this.characterLoreEntryIterator({ priority })
+						characterLoreIter = characterLoreEntryIterator({
+							chat: this.chat,
+							priority
+						})
 						priority = 0
 					}
 					break
 				case 0:
 					if (
-						historyEntryIterator === null &&
-						characterLoreEntryIterator === null &&
+						historyEntryIter === null &&
+						characterLoreIter === null &&
 						worldLoreEntryIterator === null &&
 						messagesIterator === null
 					) {
-						// console.log("Completed all priorities")
 						completed = true
 						continue
 					}
@@ -525,14 +533,10 @@ export class PromptBuilder {
 				nextMessageVal = messagesIterator?.next()
 
 				if (isBelowThreshold) {
-					// console.log("worldLoreEntryIterator", worldLoreEntryIterator)
 					nextWorldLoreEntryVal = worldLoreEntryIterator?.next()
-					nextCharacterLoreEntryVal =
-						characterLoreEntryIterator?.next()
-					nextHistoryEntryVal = historyEntryIterator?.next()
+					nextCharacterLoreEntryVal = characterLoreIter?.next()
+					nextHistoryEntryVal = historyEntryIter?.next()
 				}
-
-				// console.log("nextWorldLoreEntryVal:", nextWorldLoreEntryVal)
 
 				// MESSAGES
 				if (!nextMessageVal || nextMessageVal.done) {
@@ -577,7 +581,10 @@ export class PromptBuilder {
 							: str
 					chatMessages.push({
 						id: msg.id,
-						role: msg.role || "assistant",
+						role:
+							msg.role === "user" || msg.role === "assistant"
+								? msg.role
+								: "assistant",
 						name: msg.role === "assistant" ? charName : personaName,
 						message: interpolate(msg.content)
 					})
@@ -589,7 +596,10 @@ export class PromptBuilder {
 						worldLoreEntryIterator = null
 					} else if (nextWorldLoreEntryVal.value && priority === 4) {
 						includedWorldLoreEntries.push(
-							nextWorldLoreEntryVal.value
+							populateLorebookEntryBindings(
+								nextWorldLoreEntryVal.value,
+								this.chat
+							)
 						)
 					} else if (nextWorldLoreEntryVal.value) {
 						consideredWorldLoreEntries.push(
@@ -602,13 +612,16 @@ export class PromptBuilder {
 						!nextCharacterLoreEntryVal ||
 						nextCharacterLoreEntryVal.done
 					) {
-						characterLoreEntryIterator = null
+						characterLoreIter = null
 					} else if (
 						nextCharacterLoreEntryVal.value &&
 						priority === 4
 					) {
 						includedCharacterLoreEntries.push(
-							nextCharacterLoreEntryVal.value
+							populateLorebookEntryBindings(
+								nextCharacterLoreEntryVal.value,
+								this.chat
+							)
 						)
 					} else if (nextCharacterLoreEntryVal.value) {
 						consideredCharacterLoreEntries.push(
@@ -618,9 +631,14 @@ export class PromptBuilder {
 
 					// HISTORY ENTRIES
 					if (!nextHistoryEntryVal || nextHistoryEntryVal.done) {
-						historyEntryIterator = null
+						historyEntryIter = null
 					} else if (nextHistoryEntryVal.value && priority === 4) {
-						includedHistoryEntries.push(nextHistoryEntryVal.value)
+						includedHistoryEntries.push(
+							populateLorebookEntryBindings(
+								nextHistoryEntryVal.value,
+								this.chat
+							)
+						)
 					} else if (nextHistoryEntryVal.value) {
 						consideredHistoryEntries.push(nextHistoryEntryVal.value)
 					}
@@ -640,20 +658,28 @@ export class PromptBuilder {
 							let msgContent = entry.caseSensitive
 								? msg.message || ""
 								: msg.message?.toLowerCase() || ""
-							let matchFound = entry.keys.split(",").some((key) => {
-								const keyToCheck = entry.caseSensitive
-									? key.trim()
-									: key.toLowerCase().trim()
-								if (entry.useRegex) {
-									const regex = new RegExp(keyToCheck, "g")
-									return regex.test(msgContent)
-								} else {
-									return msgContent.includes(keyToCheck)
-								}
-							})
+							let matchFound = entry.keys
+								.split(",")
+								.some((key) => {
+									const keyToCheck = entry.caseSensitive
+										? key.trim()
+										: key.toLowerCase().trim()
+									if (entry.useRegex) {
+										const regex = new RegExp(
+											keyToCheck,
+											"g"
+										)
+										return regex.test(msgContent)
+									} else {
+										return msgContent.includes(keyToCheck)
+									}
+								})
 							if (matchFound) {
 								includedWorldLoreEntries.push(
-									this.populateLorebookEntryBindings(entry)
+									populateLorebookEntryBindings(
+										entry,
+										this.chat
+									)
 								)
 								consideredWorldLoreEntries =
 									consideredWorldLoreEntries.filter(
@@ -680,20 +706,28 @@ export class PromptBuilder {
 							let msgContent = entry.caseSensitive
 								? msg.message || ""
 								: msg.message?.toLowerCase() || ""
-							let matchFound = entry.keys.split(",").some((key) => {
-								const keyToCheck = entry.caseSensitive
-									? key.trim()
-									: key.toLowerCase().trim()
-								if (entry.useRegex) {
-									const regex = new RegExp(keyToCheck, "g")
-									return regex.test(msgContent)
-								} else {
-									return msgContent.includes(keyToCheck)
-								}
-							})
+							let matchFound = entry.keys
+								.split(",")
+								.some((key) => {
+									const keyToCheck = entry.caseSensitive
+										? key.trim()
+										: key.toLowerCase().trim()
+									if (entry.useRegex) {
+										const regex = new RegExp(
+											keyToCheck,
+											"g"
+										)
+										return regex.test(msgContent)
+									} else {
+										return msgContent.includes(keyToCheck)
+									}
+								})
 							if (matchFound) {
 								includedCharacterLoreEntries.push(
-									this.populateLorebookEntryBindings(entry)
+									populateLorebookEntryBindings(
+										entry,
+										this.chat
+									)
 								)
 								consideredCharacterLoreEntries =
 									consideredCharacterLoreEntries.filter(
@@ -721,19 +755,29 @@ export class PromptBuilder {
 							let msgContent = entry.caseSensitive
 								? msg.message || ""
 								: msg.message?.toLowerCase() || ""
-							let matchFound = entry.keys.split(",").some((key) => {
-								const keyToCheck = entry.caseSensitive
-									? key
-									: key.toLowerCase()
-								if (entry.useRegex) {
-									const regex = new RegExp(keyToCheck, "g")
-									return regex.test(msgContent)
-								} else {
-									return msgContent.includes(keyToCheck)
-								}
-							})
+							let matchFound = entry.keys
+								.split(",")
+								.some((key) => {
+									const keyToCheck = entry.caseSensitive
+										? key
+										: key.toLowerCase()
+									if (entry.useRegex) {
+										const regex = new RegExp(
+											keyToCheck,
+											"g"
+										)
+										return regex.test(msgContent)
+									} else {
+										return msgContent.includes(keyToCheck)
+									}
+								})
 							if (matchFound) {
-								includedHistoryEntries.push(entry)
+								includedHistoryEntries.push(
+									populateLorebookEntryBindings(
+										entry,
+										this.chat
+									)
+								)
 								consideredHistoryEntries =
 									consideredHistoryEntries.filter(
 										(e) => e.id !== entry.id
@@ -753,18 +797,17 @@ export class PromptBuilder {
 			// --- Rebuild the entire template context for this iteration ---
 			const assistantCharacters =
 				this.getInterpolatedCharacters(interpolationContext)
-			const assistantCharactersWithLore =
-				this.attachCharacterLoreToCharacters(
-					assistantCharacters,
-					includedCharacterLoreEntries,
-					this.chat
-				)
+			const assistantCharactersWithLore = attachCharacterLoreToCharacters(
+				assistantCharacters,
+				includedCharacterLoreEntries,
+				this.chat
+			)
 			const charactersInterpolated = JSON.stringify(
 				assistantCharactersWithLore,
 				null,
 				2
 			)
-			const userCharactersWithLore = this.attachCharacterLoreToPersonas(
+			const userCharactersWithLore = attachCharacterLoreToCharacters(
 				this.getInterpolatedPersonas(interpolationContext),
 				includedCharacterLoreEntries,
 				this.chat
@@ -796,16 +839,29 @@ export class PromptBuilder {
 					// Only populate bindings if the entry has the required lorebook fields
 					let populatedEntry = entry
 					if ((entry as any).name && (entry as any).keys) {
-						const lorePopulated = this.populateLorebookEntryBindings(entry as any)
-						// Only update content if the function returns a content property
-						if (lorePopulated && typeof lorePopulated.content === "string") {
-							populatedEntry = { ...entry, content: lorePopulated.content }
+						const lorePopulated = populateLorebookEntryBindings(
+							entry as any,
+							this.chat
+						)
+						if (
+							lorePopulated &&
+							typeof lorePopulated.content === "string"
+						) {
+							populatedEntry = {
+								...entry,
+								content: lorePopulated.content
+							}
 						}
 					}
-					// Format date as LLM-friendly string: year:YYYY,month:M,day:D (omit month/day if undefined)
-					let dateKey = `year:${populatedEntry.date.year}`
-					if (populatedEntry.date.month !== undefined && populatedEntry.date.month !== null) dateKey += `,month:${populatedEntry.date.month}`
-					if (populatedEntry.date.day !== undefined && populatedEntry.date.day !== null) dateKey += `,day:${populatedEntry.date.day}`
+					// Format date as year-month-day, year-month, or year only
+					const y = populatedEntry.date.year
+					const m = populatedEntry.date.month
+					const d = populatedEntry.date.day
+					let dateKey = String(y)
+					if (m !== undefined && m !== null)
+						dateKey += `-${String(m).padStart(2, "0")}`
+					if (d !== undefined && d !== null)
+						dateKey += `-${String(d).padStart(2, "0")}`
 					historyObj[dateKey] = populatedEntry.content
 				}
 			})
@@ -825,11 +881,16 @@ export class PromptBuilder {
 						: undefined
 				}
 			}
-			// Format currentDate as LLM-friendly string: year:YYYY,month:M,day:D (omit month/day if undefined)
+			// Format currentDate as year-month-day, year-month, or year only
 			if (mostRecentDate) {
-				let dateKey = `year:${mostRecentDate.year}`
-				if (mostRecentDate.month !== undefined && mostRecentDate.month !== null) dateKey += `,month:${mostRecentDate.month}`
-				if (mostRecentDate.day !== undefined && mostRecentDate.day !== null) dateKey += `,day:${mostRecentDate.day}`
+				const y = mostRecentDate.year
+				const m = mostRecentDate.month
+				const d = mostRecentDate.day
+				let dateKey = String(y)
+				if (m !== undefined && m !== null)
+					dateKey += `-${String(m).padStart(2, "0")}`
+				if (d !== undefined && d !== null)
+					dateKey += `-${String(d).padStart(2, "0")}`
 				templateContext.currentDate = dateKey
 			} else {
 				templateContext.currentDate = undefined
@@ -838,32 +899,8 @@ export class PromptBuilder {
 				? JSON.stringify(historyObj)
 				: undefined
 
-			// // Always ensure exactly one empty message for the current character, and it is last
-			// let emptyMsgIdx = chatMessages.findIndex((m) => m.id === -2)
-			// if (emptyMsgIdx === -1) {
-			// 	// chatMessages.push({
-			// 	// 	id: -2,
-			// 	// 	role: "assistant",
-			// 	// 	name: _charName,
-			// 	// 	message: ""
-			// 	// })
-			// } else {
-			// 	// Remove any duplicate empty messages
-			// 	for (let i = chatMessages.length - 1; i >= 0; i--) {
-			// 		if (chatMessages[i].id === -2 && i !== emptyMsgIdx) {
-			// 			chatMessages.splice(i, 1)
-			// 		}
-			// 	}
-			// 	// Move the empty message to the end if not already
-			// 	if (emptyMsgIdx !== chatMessages.length - 1) {
-			// 		const [emptyMsg] = chatMessages.splice(emptyMsgIdx, 1)
-			// 		chatMessages.push(emptyMsg)
-			// 	}
-			// }
-
 			// --- Over-limit logic: remove last non-placeholder message and re-count tokens ---
 			if (isOverLimit) {
-				// console.log("[PromptBuilder] Over token limit, removing last non-placeholder message")
 				if (chatMessages.length > 3) {
 					const popped = chatMessages.pop()
 				} else {
@@ -878,7 +915,10 @@ export class PromptBuilder {
 					: isOverLimit
 						? 1
 						: 1
-			if ((priority !== 4 && iterationCount % iterationRate === 0) || isOverLimit) {
+			if (
+				(priority !== 4 && iterationCount % iterationRate === 0) ||
+				isOverLimit
+			) {
 				includedMessages = chatMessages.length - 1 // Exclude the last empty message
 				includedIds = chatMessages
 					.filter((m) => m.id !== -2)
@@ -916,18 +956,10 @@ export class PromptBuilder {
 				})
 			}
 
-			// console.log("totalTokens:", totalTokens)
 			if (isOverLimit && totalTokens <= this.tokenLimit) {
-				// console.log("completing")
 				completed = true
 			}
 		}
-		// console.log("Total iterations:", iterationCount)
-		const overallEnd = Date.now()
-		// console.log("[PromptBuilder] buildMessageBlocks timings:", debugTimings)
-		// console.log(
-		// 	`[PromptBuilder] buildMessageBlocks total time: ${overallEnd - overallStart}ms, iterations: ${debugTimings.length}`
-		// )
 
 		return {
 			renderedPrompt,
@@ -1018,18 +1050,17 @@ export class PromptBuilder {
 			this.getScenarioInterpolated(currentCharacter, interpolationContext)
 		const assistantCharacters =
 			this.getInterpolatedCharacters(interpolationContext)
-		const assistantCharactersWithLore =
-			this.attachCharacterLoreToCharacters(
-				assistantCharacters,
-				this.includedCharacterLoreEntries,
-				this.chat
-			)
+		const assistantCharactersWithLore = attachCharacterLoreToCharacters(
+			assistantCharacters,
+			this.includedCharacterLoreEntries,
+			this.chat
+		)
 		const charactersInterpolated = JSON.stringify(
 			assistantCharactersWithLore,
 			null,
 			2
 		)
-		const userCharactersWithLore = this.attachCharacterLoreToPersonas(
+		const userCharactersWithLore = attachCharacterLoreToCharacters(
 			this.getInterpolatedPersonas(interpolationContext),
 			this.includedCharacterLoreEntries,
 			this.chat
@@ -1056,7 +1087,7 @@ export class PromptBuilder {
 			includedMessages,
 			includedIds,
 			excludedIds
-		} = await this.buildMessageBlocks(
+		} = await this.infillContent(
 			templateContext,
 			charName,
 			personaName
@@ -1127,6 +1158,29 @@ export class PromptBuilder {
 			}
 		}
 	}
+	attachCharacterLoreToPersonas(
+		arg0: any[],
+		includedCharacterLoreEntries: {
+			id: number
+			name: string | null
+			extraJson: Record<string, any>
+			createdAt: string | null
+			updatedAt: string | null
+			lorebookId: number
+			keys: string
+			useRegex: boolean | null
+			caseSensitive: boolean
+			content: string
+			constant: boolean
+			enabled: boolean
+			position: number
+			priority: number
+			lorebookBindingId: number | null
+		}[],
+		chat: BasePromptChat
+	) {
+		throw new Error("Method not implemented.")
+	}
 
 	/**
 	 * Abstract: Iterate over items of a given type and priority from the class instance.
@@ -1178,222 +1232,6 @@ export class PromptBuilder {
 			// TODO: populate lorebook bindings
 			yield entry
 		}
-	}
-
-	*characterLoreEntryIterator({
-		priority
-	}: {
-		priority: number
-	}): IterableIterator<SelectCharacterLoreEntry> {
-		const chatWithLorebook = this.chat as typeof this.chat & {
-			lorebook?: { characterLoreEntries: SelectCharacterLoreEntry[] }
-		}
-		const entries: SelectCharacterLoreEntry[] =
-			chatWithLorebook.lorebook?.characterLoreEntries || []
-		let filtered: SelectCharacterLoreEntry[] = []
-		if (priority === 4) {
-			filtered = entries.filter(
-				(e: SelectCharacterLoreEntry) => e.constant === true
-			)
-		} else if ([3, 2, 1].includes(priority)) {
-			filtered = entries.filter(
-				(e: SelectCharacterLoreEntry) => e.priority === priority
-			)
-		}
-		// Remove entries for characters not in the chat
-		filtered = filtered.filter((e: SelectCharacterLoreEntry) => {
-			if (!e.lorebookBindingId) {
-				return false
-			}
-			const lorebook =
-				this.chat.lorebookId === e.lorebookId
-					? this.chat.lorebook
-					: undefined
-			if (!lorebook) {
-				return false
-			} // Todo: search other lorebooks?
-			const binding = lorebook.lorebookBindings.find(
-				(b: SelectLorebookBinding) => b.id === e.lorebookBindingId
-			)
-			if (!binding) {
-				return false
-			}
-			if (binding.characterId) {
-				return this.chat.chatCharacters?.some(
-					(cc) => cc.character.id === binding.characterId
-				)
-			} else if (binding.personaId) {
-				return this.chat.chatPersonas?.some(
-					(cp) => cp.persona.id === binding.personaId
-				)
-			}
-			return false
-		})
-		filtered.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-		for (const entry of filtered) {
-			// TODO: Filter out entries bound to invalid lorebook bindings
-			// TODO: populate lorebook bindings
-			yield entry
-		}
-	}
-
-	*historyEntryIterator({
-		priority
-	}: {
-		priority: number
-	}): IterableIterator<SelectHistoryEntry> {
-		const chatWithLorebook = this.chat as typeof this.chat & {
-			lorebook?: { historyEntries: SelectHistoryEntry[] }
-		}
-		const entries: SelectHistoryEntry[] =
-			chatWithLorebook.lorebook?.historyEntries || []
-		// Sort by date: year, month, day (descending)
-		const sorted = entries.slice().sort((a, b) => {
-			const aVal =
-				(a.date?.year ?? 0) * 10000 +
-				(a.date?.month ?? 0) * 100 +
-				(a.date?.day ?? 0)
-			const bVal =
-				(b.date?.year ?? 0) * 10000 +
-				(b.date?.month ?? 0) * 100 +
-				(b.date?.day ?? 0)
-			return bVal - aVal
-		})
-		if (priority === 4) {
-			// Last 2 most recent entries
-			const mostRecent = sorted.slice(0, 2)
-			for (const entry of mostRecent) {
-				yield entry
-			}
-			// All pinned (constant === true), skip if already yielded
-			for (const entry of sorted) {
-				if (entry.constant === true && !mostRecent.includes(entry)) {
-					// TODO: populate lorebook bindings
-					yield entry
-				}
-			}
-		} else if (priority === 2) {
-			// All others, excluding those already yielded
-			const yielded = new Set<any>(sorted.slice(0, 2))
-			for (const entry of sorted) {
-				if (entry.constant === true) yielded.add(entry)
-			}
-			for (const entry of sorted) {
-				if (!yielded.has(entry)) {
-					// TODO: populate lorebook bindings
-					yield entry
-				}
-			}
-		}
-	}
-
-	populateLorebookEntryBindings(
-		entry: SelectWorldLoreEntry | SelectCharacterLoreEntry
-	): SelectWorldLoreEntry | SelectCharacterLoreEntry {
-		// TODO properly choose the correct lorebook
-		const lorebook:
-			| (SelectLorebook & {
-					lorebookBindings: (SelectLorebookBinding & {
-						character?: SelectCharacter
-						persona?: SelectPersona
-					})[]
-			  })
-			| undefined =
-			this.chat.lorebook && this.chat.lorebook.id === entry.lorebookId
-				? this.chat.lorebook
-				: undefined
-		if (!lorebook) return entry
-
-		lorebook.lorebookBindings.forEach((binding) => {
-			if (binding.character) {
-				const name =
-					binding.character.nickname || binding.character.name
-				entry.content = entry.content.replaceAll(binding.binding, name)
-			} else if (binding.persona) {
-				const name = binding.persona.name
-				entry.content = entry.content.replaceAll(binding.binding, name)
-			} else {
-				return
-			}
-		})
-		return entry
-	}
-
-	private attachCharacterLoreToCharacters(
-		characters: TemplateContextCharacter[],
-		includedCharacterLoreEntries: SelectCharacterLoreEntry[],
-		chat: BasePromptChat
-	): TemplateContextCharacter[] {
-		// Build a map of characterId to lore entries
-		const loreMap: Record<number, Record<string, string>> = {}
-		includedCharacterLoreEntries.forEach((entry) => {
-			// Find the binding for this entry
-			const lorebook =
-				chat.lorebook && chat.lorebook.id === entry.lorebookId
-					? chat.lorebook
-					: undefined
-			if (!lorebook) return
-			const binding = lorebook.lorebookBindings.find(
-				(b: SelectLorebookBinding) => b.id === entry.lorebookBindingId
-			)
-			if (binding && binding.characterId) {
-				if (!loreMap[binding.characterId])
-					loreMap[binding.characterId] = {}
-				loreMap[binding.characterId][entry.name!] = entry.content
-			}
-		})
-		// Attach loreEntries to each character
-		return characters.map((char) => {
-			// Try to find the characterId (by name match or id if available)
-			const chatChar = (chat.chatCharacters || []).find(
-				(cc) =>
-					cc.character.nickname === char.nickname ||
-					cc.character.name === char.name
-			)
-			const charId = chatChar?.character?.id
-			return {
-				...char,
-				"extra lore": charId && loreMap[charId] ? loreMap[charId] : {}
-			}
-		})
-	}
-
-	private attachCharacterLoreToPersonas(
-		personas: TemplateContextPersona[],
-		includedCharacterLoreEntries: SelectCharacterLoreEntry[],
-		chat: BasePromptChat
-	): TemplateContextPersona[] {
-		// Build a map of personaId to lore entries
-		const loreMap: Record<number, Record<string, string>> = {}
-		includedCharacterLoreEntries.forEach((entry) => {
-			// Find the binding for this entry
-			const lorebook =
-				chat.lorebook && chat.lorebook.id === entry.lorebookId
-					? chat.lorebook
-					: undefined
-			if (!lorebook) return
-			const binding = lorebook.lorebookBindings.find(
-				(b: SelectLorebookBinding) => b.id === entry.lorebookBindingId
-			)
-			if (binding && binding.personaId) {
-				if (!loreMap[binding.personaId])
-					loreMap[binding.personaId] = {}
-				loreMap[binding.personaId][entry.name!] = entry.content
-			}
-		})
-		// Attach loreEntries to each persona
-		return personas.map((persona) => {
-			// Try to find the personaId (by name match or id if available)
-			const chatPersona = (chat.chatPersonas || []).find(
-				(cp) => cp.persona.name === persona.name
-			)
-			const personaId = chatPersona?.persona?.id
-			return {
-				...persona,
-				"extra lore":
-					personaId && loreMap[personaId] ? loreMap[personaId] : []
-			}
-		})
 	}
 }
 

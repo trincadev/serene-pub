@@ -1,9 +1,10 @@
 <script lang="ts">
     import * as skio from "sveltekit-io"
-    import { getContext, onMount } from "svelte"
+    import { getContext, onDestroy, onMount } from "svelte"
     import * as Icons from "@lucide/svelte"
     import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
     import NewNameModal from "../modals/NewNameModal.svelte"
+	import { toaster } from "$lib/client/utils/toaster"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -121,11 +122,24 @@
         socket.on("createContextConfig", (msg: Sockets.CreateContextConfig.Response) => {
             selectedConfigId = msg.contextConfig.id
         })
+        socket.on("updateContextConfig", (msg: Sockets.UpdateContextConfig.Response) => {
+            contextConfig = { ...msg.contextConfig }
+            originalData = { ...msg.contextConfig }
+            toaster.success({title:"Context config saved successfully."})
+        })
         socket.emit("contextConfigsList", {})
         socket.emit("contextConfig", {
             id: selectedConfigId
         })
         onclose = handleOnClose
+    })
+
+    onDestroy(() => {
+        socket.off("contextConfigsList")
+        socket.off("contextConfig")
+        socket.off("createContextConfig")
+        socket.off("updateContextConfig")
+        onclose = undefined
     })
 </script>
 

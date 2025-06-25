@@ -640,7 +640,7 @@
 											2}
 										class:preset-filled-tertiary-500={entry.priority ===
 											3}
-										title={`${PRIORITIES[entry.priority - 1].label} Priority`}
+										title={`${Priorities[entry.priority - 1].label} Priority`}
 									>
 										{#if entry.priority === 1}
 											<Icons.Plus
