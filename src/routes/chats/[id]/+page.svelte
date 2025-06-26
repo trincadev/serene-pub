@@ -227,6 +227,22 @@
 		}
 	}
 
+	function swipeRight(msg: SelectChatMessage): void {
+		const req: Sockets.ChatMessageSwipeRight.Call ={
+			chatId: chatId,
+			chatMessageId: msg.id
+		}
+		socket.emit("chatMessageSwipeRight", req)
+	}
+
+	function swipeLeft(msg: SelectChatMessage): void {
+		const req: Sockets.ChatMessageSwipeLeft.Call = {
+			chatId: chatId,
+			chatMessageId: msg.id
+		}
+		socket.emit("chatMessageSwipeLeft", req)
+	}
+
 	onMount(() => {
 		socket.on("chat", (msg: Sockets.Chat.Response) => {
 			if (msg.chat.id === Number.parseInt(page.params.id)) {
@@ -367,13 +383,6 @@
 											character?.name ||
 											"Unknown"}
 									</button>
-									<span
-										class="text-surface-500 text-sm opacity-0 transition-opacity group-hover:opacity-100"
-									>
-										{new Date(
-											msg.createdAt
-										).toLocaleString()}
-									</span>
 								</div>
 							</div>
 
@@ -395,44 +404,83 @@
 									</button>
 								</div>
 							{:else}
-								<div class="hidden gap-2 lg:flex">
-									{@render messageControls(msg)}
-								</div>
-								<div class="lg:hidden">
-									<Popover
-										open={openMobileMsgControls === msg.id}
-										onOpenChange={(e) =>
-											(openMobileMsgControls = e.open
-												? msg.id
-												: undefined)}
-										positioning={{ placement: "bottom" }}
-										triggerBase="btn btn-sm hover:bg-primary-600-400 {openMobileMsgControls ===
-										msg.id
-											? 'bg-primary-600-400'
-											: ''}"
-										contentBase="card bg-primary-200-800 p-4 space-y-4 max-w-[320px]"
-										arrow
-										arrowBackground="!bg-primary-200 dark:!bg-primary-800"
-										zIndex="1000"
-									>
-										{#snippet trigger()}
-											<Icons.EllipsisVertical size={20} />
-										{/snippet}
-										{#snippet content()}
-											<header
-												class="flex justify-between"
+								<div class="flex w-full flex-col gap-2">
+									<div class="ml-auto hidden gap-2 lg:flex">
+										{@render messageControls(msg)}
+									</div>
+									<div class="ml-auto lg:hidden">
+										<Popover
+											open={openMobileMsgControls ===
+												msg.id}
+											onOpenChange={(e) =>
+												(openMobileMsgControls = e.open
+													? msg.id
+													: undefined)}
+											positioning={{
+												placement: "bottom"
+											}}
+											triggerBase="btn btn-sm hover:bg-primary-600-400 {openMobileMsgControls ===
+											msg.id
+												? 'bg-primary-600-400'
+												: ''}"
+											contentBase="card bg-primary-200-800 p-4 space-y-4 max-w-[320px]"
+											arrow
+											arrowBackground="!bg-primary-200 dark:!bg-primary-800"
+											zIndex="1000"
+										>
+											{#snippet trigger()}
+												<Icons.EllipsisVertical
+													size={20}
+												/>
+											{/snippet}
+											{#snippet content()}
+												<header
+													class="flex justify-between"
+												>
+													<p
+														class="text-xl font-bold"
+													>
+														Popover Example
+													</p>
+												</header>
+												<article
+													class="flex flex-col gap-4"
+												>
+													{@render messageControls(
+														msg
+													)}
+												</article>
+											{/snippet}
+										</Popover>
+									</div>
+									{#if lastMessage && lastMessage.id === msg.id}
+										<div class="ml-auto flex gap-6">
+											{#if ![null, undefined].includes(msg.metadata?.swipes?.currentIdx) && msg.metadata?.swipes
+													?.history && msg.metadata?.swipes.history.length > 1}
+											<button
+												class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
+												title="Swipe Left"
+												onclick={() => swipeLeft(msg)}
+												disabled={!msg.metadata.swipes.currentIdx || msg.metadata.swipes.history.length <= 1 || msg.isGenerating}
 											>
-												<p class="text-xl font-bold">
-													Popover Example
-												</p>
-											</header>
-											<article
-												class="flex flex-col gap-4"
+												<Icons.ChevronLeft size={24} />
+											</button>
+											<span
+												class="text-surface-700-300 mt-[0.2rem] h-fit select-none"
 											>
-												{@render messageControls(msg)}
-											</article>
-										{/snippet}
-									</Popover>
+												{msg.metadata.swipes.currentIdx + 1}/{msg.metadata.swipes.history.length}
+											</span>
+											{/if}
+											<button
+												class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
+												title="Swipe Right"
+												onclick={() => swipeRight(msg)}
+												disabled={msg.isGenerating}
+											>
+												<Icons.ChevronRight size={24} />
+											</button>
+										</div>
+									{/if}
 								</div>
 							{/if}
 						</div>

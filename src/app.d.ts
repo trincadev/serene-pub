@@ -536,6 +536,29 @@ declare global {
 				error?: string
 			}
 		}
+		namespace ChatMessageSwipeRight {
+			interface Call {
+				chatId: number
+				chatMessageId: number
+				count?: number
+			}
+			interface Response {
+				chatId: number
+				chatMessageId: number
+				done: boolean
+			}
+		}
+		namespace ChatMessageSwipeLeft {
+			interface Call {
+				chatId: number
+				chatMessageId: number
+			}
+			interface Response {
+				chatId: number
+				chatMessageId: number
+				done: boolean
+			}
+		}
 		// Lorebook List
 		namespace LorebookList {
 			interface Call {

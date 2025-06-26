@@ -1,11 +1,10 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
-import { OllamaAdapter } from "../connectionAdapters/OllamaAdapter"
 import { eq } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
 import { activeAdapters, chatMessage } from "../sockets/chats"
 import { getConnectionAdapter } from "./getConnectionAdapter"
-import type { AdapterExports } from "../connectionAdapters/BaseConnectionAdapter"
+import { TokenCounters } from "$lib/server/utils/TokenCounterManager"
 
 export async function generateResponse({
 	socket,
@@ -63,13 +62,20 @@ export async function generateResponse({
 
 	const { Adapter } = getConnectionAdapter(user!.activeConnection!.type)
 
+	const tokenCounter = new TokenCounters("estimate")
+	const tokenLimit = 4096
+	const contextThresholdPercent = 0.8
+
 	const adapter = new Adapter({
 		chat,
 		connection: user!.activeConnection!,
 		sampling: user!.activeSamplingConfig!,
 		contextConfig: user!.activeContextConfig!,
 		promptConfig: user!.activePromptConfig!,
-		currentCharacterId: generatingMessage.characterId!
+		currentCharacterId: generatingMessage.characterId!,
+		tokenCounter,
+		tokenLimit,
+		contextThresholdPercent
 	})
 	// Store adapter in global map
 	activeAdapters.set(adapterId, adapter)
@@ -81,9 +87,34 @@ export async function generateResponse({
 		if (typeof completionResult === "function") {
 			await completionResult(async (chunk: string) => {
 				content += chunk
+
+				// --- SWIPE HISTORY LOGIC ---
+				let updateData: any = { content, isGenerating: true }
+				if (
+					generatingMessage.metadata &&
+					generatingMessage.metadata.swipes &&
+					typeof generatingMessage.metadata.swipes.currentIdx === "number" &&
+					generatingMessage.metadata.swipes.currentIdx > 0 &&
+					Array.isArray(generatingMessage.metadata.swipes.history)
+				) {
+					const idx = generatingMessage.metadata.swipes.currentIdx
+					const history: string[] = [...generatingMessage.metadata.swipes.history]
+					history[idx] = content
+					updateData = {
+						...updateData,
+						metadata: {
+							...generatingMessage.metadata,
+							swipes: {
+								...generatingMessage.metadata.swipes,
+								history
+							}
+						}
+					}
+				}
+
 				await db
 					.update(schema.chatMessages)
-					.set({ content, isGenerating: true })
+					.set(updateData)
 					.where(eq(schema.chatMessages.id, generatingMessage.id))
 				// Instead of getChat, emit the chatMessage
 				await chatMessage(
@@ -92,7 +123,8 @@ export async function generateResponse({
 						chatMessage: {
 							...generatingMessage,
 							content,
-							isGenerating: true
+							isGenerating: true,
+							...(updateData.metadata ? { metadata: updateData.metadata } : {})
 						}
 					},
 					emitToUser

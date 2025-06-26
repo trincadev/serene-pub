@@ -221,7 +221,7 @@ export const lorebookBindingsRelations = relations(
 			fields: [lorebookBindings.personaId],
 			references: [personas.id]
 		}),
-        characterLoreEntries: many(characterLoreEntries),
+		characterLoreEntries: many(characterLoreEntries)
 	})
 )
 
@@ -232,9 +232,7 @@ export const worldLoreEntries = sqliteTable("world_lore_entries", {
 		.references(() => lorebooks.id, { onDelete: "cascade" }),
 	name: text("name").notNull(),
 	category: text("category"),
-	keys: text("keys")
-		.notNull()
-		.default(""),
+	keys: text("keys").notNull().default(""),
 	useRegex: integer("use_regex", { mode: "boolean" }).default(false),
 	caseSensitive: integer("case_sensitive", { mode: "boolean" })
 		.notNull()
@@ -272,9 +270,7 @@ export const characterLoreEntries = sqliteTable("character_lore_entries", {
 		{ onDelete: "set null" }
 	),
 	name: text("name"),
-	keys: text("keys")
-		.notNull()
-		.default(""),
+	keys: text("keys").notNull().default(""),
 	useRegex: integer("use_regex", { mode: "boolean" }).default(false),
 	caseSensitive: integer("case_sensitive", { mode: "boolean" })
 		.notNull()
@@ -315,9 +311,7 @@ export const historyEntries = sqliteTable("history_entries", {
 		.notNull()
 		.default({ day: 1, month: 1, year: 1 })
 		.$type<{ day: number | null; month: number | null; year: number }>(),
-	keys: text("keys")
-		.notNull()
-		.default(""),
+	keys: text("keys").notNull().default(""),
 	useRegex: integer("use_regex", { mode: "boolean" }).default(false),
 	caseSensitive: integer("case_sensitive", { mode: "boolean" })
 		.notNull()
@@ -387,7 +381,7 @@ export const characters = sqliteTable("characters", {
 		.default("[]")
 		.$type<string[]>(), // JSON array of alternate greetings
 	exampleDialogues: text("example_dialogues"), // JSON/text
-	metadata: text("metadata"), // JSON/text for extra fields
+	metadata: text("metadata", { mode: "json" }), // JSON/text for extra fields
 	avatar: text("avatar"), // Path or URL to avatar image
 	creatorNotes: text("creator_notes"), // Notes from the character creator
 	creatorNotesMultilingual: text("creator_notes_multilingual", {
@@ -446,7 +440,7 @@ export const personas = sqliteTable("personas", {
 	updatedAt: text("updated_at"),
 	lorebookId: integer("lorebook_id").references(() => lorebooks.id, {
 		onDelete: "set null"
-	}), // Optional lorebook for this persona
+	}) // Optional lorebook for this persona
 })
 
 export const personasRelations = relations(personas, ({ one, many }) => ({
@@ -457,7 +451,7 @@ export const personasRelations = relations(personas, ({ one, many }) => ({
 	lorebook: one(lorebooks, {
 		fields: [personas.lorebookId],
 		references: [lorebooks.id]
-	}),
+	})
 }))
 
 // Chats (group or 1:1)
@@ -491,7 +485,7 @@ export const chatsRelations = relations(chats, ({ one, many }) => ({
 	lorebook: one(lorebooks, {
 		fields: [chats.lorebookId],
 		references: [lorebooks.id]
-	}),
+	})
 }))
 
 // Chat messages
@@ -514,7 +508,7 @@ export const chatMessages = sqliteTable("chat_messages", {
 	createdAt: text("created_at"),
 	updatedAt: text("updated_at"),
 	isEdited: integer("is_edited").default(0), // 1 if edited, 0 otherwise
-	metadata: text("metadata"), // JSON for extra info
+	metadata: text("metadata", { mode: "json" }).$type<{swipes?:{currentIdx: number | null, history: []}}>(), // JSON for extra info
 	isGenerating: integer("is_generating", { mode: "boolean" }).default(false), // 1 if processing, 0 otherwise
 	adapterId: text("adapter_id"), // UUID for in-flight adapter instance, nullable
 	isHidden: integer("is_hidden", { mode: "boolean" }).default(false) // Whether this message is processed or not

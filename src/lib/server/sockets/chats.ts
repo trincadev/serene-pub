@@ -1,6 +1,6 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
-import { and, eq, inArray } from "drizzle-orm"
+import { and, eq, inArray, is } from "drizzle-orm"
 import { generateResponse } from "../utils/generateResponse"
 import { getNextCharacterTurn } from "$lib/server/utils/getNextCharacterTurn"
 import type { BaseConnectionAdapter } from "../connectionAdapters/BaseConnectionAdapter"
@@ -151,10 +151,14 @@ async function getChatFromDB(chatId: number, userId: number) {
 	const chat = await res
 	if (chat) {
 		// Order the chatCharacters by position
-		chat.chatCharacters.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+		chat.chatCharacters.sort(
+			(a, b) => (a.position ?? 0) - (b.position ?? 0)
+		)
 		// Sort chatPersonas by position if it exists
 		if (chat.chatPersonas) {
-			chat.chatPersonas.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+			chat.chatPersonas.sort(
+				(a, b) => (a.position ?? 0) - (b.position ?? 0)
+			)
 		}
 	}
 	return chat
@@ -163,11 +167,10 @@ async function getChatFromDB(chatId: number, userId: number) {
 // Returns complete chat data for prompt compilation
 async function getPromptChatFromDb(chatId: number, userId: number) {
 	const chat = await db.query.chats.findFirst({
-		where: (c, { eq, and }) =>
-			and(eq(c.id, chatId), eq(c.userId, userId)),
+		where: (c, { eq, and }) => and(eq(c.id, chatId), eq(c.userId, userId)),
 		with: {
 			chatMessages: {
-				where: (cm, { eq }) => eq(cm.isHidden, false),
+				where: (cm, { eq }) => eq(cm.isHidden, false)
 			},
 			chatCharacters: {
 				with: {
@@ -209,10 +212,14 @@ async function getPromptChatFromDb(chatId: number, userId: number) {
 
 	if (chat) {
 		// Order the chatCharacters by position
-		chat.chatCharacters.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+		chat.chatCharacters.sort(
+			(a, b) => (a.position ?? 0) - (b.position ?? 0)
+		)
 		// Sort chatPersonas by position if it exists
 		if (chat.chatPersonas) {
-			chat.chatPersonas.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+			chat.chatPersonas.sort(
+				(a, b) => (a.position ?? 0) - (b.position ?? 0)
+			)
 		}
 	}
 	return chat
@@ -467,7 +474,9 @@ export async function promptTokenCount(
 		!user.activeContextConfig ||
 		!user.activePromptConfig
 	) {
-		emitToUser("error", { error: "Incomplete configuration, failed to calculate token count." })
+		emitToUser("error", {
+			error: "Incomplete configuration, failed to calculate token count."
+		})
 		return
 	}
 	let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
@@ -903,4 +912,294 @@ export async function updateChat(
 		console.error("Error updating chat:", error)
 		emitToUser("error", { error: "Failed to update chat." })
 	}
+}
+
+export async function chatMessageSwipeRight(
+	socket: any,
+	message: Sockets.ChatMessageSwipeRight.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	const userId = 1 // Replace with actual user id
+	const chat = await db.query.chats.findFirst({
+		where: (c, { eq, and }) =>
+			and(eq(c.id, message.chatId), eq(c.userId, userId)),
+		with: {
+			chatMessages: true
+		}
+	})
+	if (!chat) {
+		const res = {
+			error: "Chat not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+	const chatMessage = chat.chatMessages.find(
+		(cm) => cm.id === message.chatMessageId
+	)
+	if (!chatMessage) {
+		const res = {
+			error: "Chat message not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.isGenerating) {
+		const res = {
+			error: "Message is still generating, please wait."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.isHidden) {
+		const res = {
+			error: "Message is hidden, cannot swipe right."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.role !== "assistant") {
+		const res = {
+			error: "Only assistant messages can be swiped right."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	interface MetaData {
+		swipes?: {
+			currentIdx: number | null
+			history: string[]
+		}
+	}
+
+	let isOnLastSwipe = false
+
+	// Check if metadata.swipes, if not, initialize it
+	const data: SelectChatMessage = {
+		...chatMessage,
+		metadata: {
+			...chatMessage.metadata,
+			swipes: {
+				currentIdx: null,
+				history: [],
+				...(chatMessage.metadata?.swipes || {})
+			}
+		}
+	}
+
+	// Check if we are on the last swipe (or if there are no swipes)
+	if (
+		!data.metadata!.swipes!.history.length ||
+		data.metadata!.swipes!.currentIdx === null
+	) {
+		isOnLastSwipe = true
+	} else {
+		isOnLastSwipe =
+			data.metadata!.swipes!.currentIdx ===
+			data.metadata!.swipes!.history.length - 1
+	}
+
+	if (!isOnLastSwipe) {
+		// If not on the last swipe, just update the current index and content
+		data.metadata!.swipes!.currentIdx =
+			(data.metadata!.swipes!.currentIdx || 0) + 1
+		data.content =
+			data.metadata!.swipes!.history[data.metadata!.swipes!.currentIdx] ||
+			""
+	} else {
+		if (data.metadata!.swipes!.currentIdx === null) {
+			data.metadata!.swipes!.currentIdx = 0,
+			data.metadata!.swipes!.history.push(data.content)
+		}
+		// Now increment the current index and content
+		data.metadata!.swipes!.currentIdx += 1
+		data.content = "" // Clear the message content
+		data.isGenerating = true // Set generating state to true
+		// Push the new empty content to history
+		data.metadata!.swipes!.history.push("") // Add an empty string to history
+	}
+
+	// Update the chat message in the database
+	const [updatedMessage] = await db
+		.update(schema.chatMessages)
+		.set({ ...data, id: undefined })
+		.where(eq(schema.chatMessages.id, chatMessage.id))
+		.returning()
+
+	if (!updatedMessage) {
+		const res = {
+			error: "Failed to update chat message."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (!updatedMessage.isGenerating) {
+		// If the message is not generating, emit the updated chatMessage
+		const chatMsgRes: Sockets.ChatMessage.Response = {
+			chatMessage: updatedMessage as any
+		}
+		emitToUser("chatMessage", chatMsgRes)
+		const res: Sockets.ChatMessageSwipeRight.Response = {
+			chatId: chat.id,
+			chatMessageId: updatedMessage.id,
+			done: true
+		}
+
+		emitToUser("chatMessageSwipeRight", res)
+		return
+	}
+
+	// If the message is generating, we need to start generating a response
+	await generateResponse({
+		socket,
+		emitToUser,
+		chatId: chat.id,
+		userId,
+		generatingMessage: updatedMessage as any
+	})
+
+	const res: Sockets.ChatMessageSwipeRight.Response = {
+		chatId: chat.id,
+		chatMessageId: updatedMessage.id,
+		done: true
+	}
+
+	emitToUser("chatMessageSwipeRight", res)
+}
+
+export async function chatMessageSwipeLeft(
+	socket: any,
+	message: Sockets.ChatMessageSwipeLeft.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+		const userId = 1 // Replace with actual user id
+	const chat = await db.query.chats.findFirst({
+		where: (c, { eq, and }) =>
+			and(eq(c.id, message.chatId), eq(c.userId, userId)),
+		with: {
+			chatMessages: true
+		}
+	})
+	if (!chat) {
+		const res = {
+			error: "Chat not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+	const chatMessage = chat.chatMessages.find(
+		(cm) => cm.id === message.chatMessageId
+	)
+	if (!chatMessage) {
+		const res = {
+			error: "Chat message not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.isGenerating) {
+		const res = {
+			error: "Message is still generating, please wait."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.isHidden) {
+		const res = {
+			error: "Message is hidden, cannot swipe right."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.role !== "assistant") {
+		const res = {
+			error: "Only assistant messages can be swiped right."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	interface MetaData {
+		swipes?: {
+			currentIdx: number | null
+			history: string[]
+		}
+	}
+
+	let isOnLastSwipe = false
+
+	// Check if metadata.swipes, if not, initialize it
+	const data: SelectChatMessage = {
+		...chatMessage,
+		metadata: {
+			...chatMessage.metadata,
+			swipes: {
+				currentIdx: null,
+				history: [],
+				...(chatMessage.metadata?.swipes || {})
+			}
+		}
+	}
+
+	// Check if we are on the last left swipe (idx=0|null) (or if there are no swipes)
+	if (
+		!data.metadata!.swipes!.history.length ||
+		data.metadata!.swipes!.currentIdx === null ||
+		data.metadata!.swipes!.currentIdx === 0
+	) {
+		isOnLastSwipe = true
+	} else {
+		isOnLastSwipe =
+			data.metadata!.swipes!.currentIdx === 0 &&
+			data.metadata!.swipes!.history.length > 0
+	}
+
+	// If we are on the last left swipe, return an error
+	if (isOnLastSwipe) {
+		const res = {
+			error: "Already on the last left swipe, cannot swipe left."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	// If not on the last left swipe, just update the current index and content
+	data.metadata!.swipes!.currentIdx =
+		(data.metadata!.swipes!.currentIdx || 0) - 1
+	data.content =
+		data.metadata!.swipes!.history[data.metadata!.swipes!.currentIdx] ||
+		"" // Set content to the previous swipe content
+	// Update the chat message in the database
+	const [updatedMessage] = await db
+		.update(schema.chatMessages)
+		.set({ ...data, id: undefined })
+		.where(eq(schema.chatMessages.id, chatMessage.id))
+		.returning()
+
+	if (!updatedMessage) {
+		const res = {
+			error: "Failed to update chat message."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	const chatRes: Sockets.ChatMessage.Response = {
+		chatMessage: updatedMessage
+	}
+	socket.emit("chatMessage", chatRes)
+	const res: Sockets.ChatMessageSwipeLeft.Response = {
+		chatId: chat.id,
+		chatMessageId: updatedMessage.id,
+		done: true
+	}
+	emitToUser("chatMessageSwipeLeft", res)
 }

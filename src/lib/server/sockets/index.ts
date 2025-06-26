@@ -33,7 +33,7 @@ import {
     deleteContextConfig,
     setUserActiveContextConfig
 } from "./contextConfigs"
-import {chat, chatsList, createChat, deleteChatMessage, sendPersonaMessage, updateChatMessage, deleteChat, regenerateChatMessage, promptTokenCount, abortChatMessage, triggerGenerateMessage, chatMessage, updateChat} from './chats';
+import {chat, chatsList, createChat, deleteChatMessage, sendPersonaMessage, updateChatMessage, deleteChat, regenerateChatMessage, promptTokenCount, abortChatMessage, triggerGenerateMessage, chatMessage, updateChat, chatMessageSwipeRight, chatMessageSwipeLeft} from './chats';
 import {
     promptConfigsList,
     promptConfig,
@@ -120,6 +120,8 @@ export function connectSockets(io: {
         register(socket, triggerGenerateMessage, emitToUser)
         register(socket, chatMessage, emitToUser)
         register(socket, updateChat, emitToUser)
+        register(socket, chatMessageSwipeRight, emitToUser)
+        register(socket, chatMessageSwipeLeft, emitToUser)
         // Lorebooks
         register(socket, lorebookList, emitToUser)
         register(socket, lorebook, emitToUser)
