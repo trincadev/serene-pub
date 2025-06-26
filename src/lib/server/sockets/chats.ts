@@ -414,9 +414,21 @@ export async function regenerateChatMessage(
 		return
 	}
 
+	const data: InsertChatMessage = {
+		...chatMessage,
+		content: "",
+		isGenerating: true,
+		id: undefined,
+	}
+
+	// Check if we need to clear swipe history
+	if (typeof (data.metadata?.swipes?.currentIdx || null) === "number" && (data.metadata?.swipes?.history.length || 0) > 0) {
+		data.metadata!.swipes!.history[data.metadata!.swipes!.currentIdx!] = ""
+	}
+
 	await db
 		.update(schema.chatMessages)
-		.set({ isGenerating: true, content: "" })
+		.set(data)
 		.where(eq(schema.chatMessages.id, chatMessage.id))
 
 	try {
