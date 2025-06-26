@@ -171,11 +171,12 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 
 const connectionDefaults = {
 	baseUrl: "",
-	promptFormat: undefined,
-	tokenCounter: undefined,
+	promptFormat: PromptFormats.VICUNA,
+	tokenCounter: TokenCounterOptions.ESTIMATE,
 	extraJson: {
 		stream: true,
-		prerenderPrompt: false
+		prerenderPrompt: false,
+		apiKey: ""
 	}
 }
 

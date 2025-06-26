@@ -467,7 +467,7 @@ export async function promptTokenCount(
 		!user.activeContextConfig ||
 		!user.activePromptConfig
 	) {
-		emitToUser("error", { error: "Chat or user configuration not found." })
+		emitToUser("error", { error: "Incomplete configuration, failed to calculate token count." })
 		return
 	}
 	let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
