@@ -63,7 +63,6 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 			CompiledPrompt
 		]
 	> {
-		console.log("Generating with OpenAIAdapter")
 		const apiKey = this.connection.extraJson?.apiKey
 		const baseURL =
 			this.connection.baseUrl || connectionDefaults.baseUrl
@@ -80,8 +79,6 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 		} else if (compiledPrompt.messages) {
 			messages = compiledPrompt.messages
 		}
-
-		console.log("[OpenAIAdapter] Compiled prompt:", compiledPrompt)
 
 		// Minimal params for debugging
 		const params: ChatCompletionCreateParamsBase = {
@@ -231,8 +228,6 @@ async function testConnection(
 			apiKey,
 			baseURL: baseURL || undefined
 		})
-		console.log("Testing OpenAI connection with baseURL:", baseURL)
-		console.log("Using API key:", apiKey)
 		// Try to list models as a test
 		try {
 			const res = await openai.models.list()

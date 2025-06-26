@@ -89,6 +89,7 @@ export async function updateConnection(
 	const res: Sockets.UpdateConnection.Response = { connection: updated }
 	emitToUser("updateConnection", res)
 	await user(socket, {}, emitToUser)
+	await connectionsList(socket, {}, emitToUser)
 }
 
 export async function deleteConnection(

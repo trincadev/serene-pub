@@ -965,7 +965,6 @@ export class PromptBuilder {
 					renderedMessages = parseSplitChatPrompt(renderedPrompt)
 					renderedPrompt = JSON.stringify(renderedMessages)
 				}
-				// console.log("Rendered prompt:", compiledPrompt)
 				totalTokens =
 					typeof this.tokenCounter.countTokens === "function"
 						? await this.tokenCounter.countTokens(renderedPrompt)
@@ -1063,7 +1062,6 @@ export class PromptBuilder {
 	}: {
 		useChatFormat?: boolean
 	}): Promise<CompiledPrompt> {
-		console.log("Compiling prompt with useChatFormat:", useChatFormat)
 		this.registerHandlebarsHelpers({ useChatFormat })
 		const chatCharacters = this.chat.chatCharacters as
 			| (SelectChatCharacter & { character: SelectCharacter })[]
@@ -1145,9 +1143,6 @@ export class PromptBuilder {
 			useChatFormat
 		})
 
-		console.log("Rendered prompt:", renderedPrompt)
-		console.log("Rendered messages:", renderedMessages)
-
 		const sources = this.buildSources(scenarioSource)
 		const meta = this.buildMeta({
 			excludedIds: includedIds,
@@ -1227,7 +1222,6 @@ export class PromptBuilder {
 		}
 		const entries: SelectWorldLoreEntry[] =
 			chatWithLorebook.lorebook?.worldLoreEntries || []
-		// console.log("pre-filtered world lore entries:", entries)
 		let filtered: SelectWorldLoreEntry[] = []
 		if (priority === 4) {
 			filtered = entries.filter(
