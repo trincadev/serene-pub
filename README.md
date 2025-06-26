@@ -82,15 +82,16 @@ Toggle night mode on or off with over 20 themes!
 - Manage roleplay/system prompt instructions
 - Mobile responsive view
 - Day/night mode & themes
-- Chats: create/delete, send persona message, auto character response, edit/delete messages, streaming, regenerate, manual response, hide message, live token/history stats
+- Chats: create/delete, send persona message, auto character response, edit/delete messages, streaming, regenerate, manual response, hide message, live token/history stats, swipe right/left
+- Manage context settings
 
 ### Mostly Functional
 - Create, manage & import (Image Card Files supported; JSON not yet)
 - Create & manage personas (import/export not yet implemented)
 - Home page setup guide
 - Mobile responsive layout
-- Manage context settings (add your own, only one default provided)
 - Group chats, continue conversation, trigger response from specific character
+- Lorebooks+ - World lore, character lore, history
 
 ### In Progress
 - Connect to your favorite API ([see supported options](https://github.com/doolijb/serene-pub/issues/10))
@@ -98,7 +99,6 @@ Toggle night mode on or off with over 20 themes!
 
 ### Pending Priorities
 - Character/chat tags
-- Lorebooks
 
 ### Considered
 - Multi-user logins & group chats
