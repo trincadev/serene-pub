@@ -10,6 +10,8 @@ import {
 	characterLoreEntryIterator,
 	historyEntryIterator
 } from "./PromptIterators"
+import { PromptFormats } from "$lib/shared/constants/PromptFormats"
+import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 
 export class PromptBuilder {
 	connection: SelectConnection
@@ -61,40 +63,40 @@ export class PromptBuilder {
 		this.chat = chat
 		this.currentCharacterId = currentCharacterId
 		this.handlebars = Handlebars.create()
-		this.registerHandlebarsHelpers()
 		this.tokenCounter = tokenCounter
 		this.tokenLimit = tokenLimit
 		this.contextThresholdPercent = contextThresholdPercent
 	}
 
-	private registerHandlebarsHelpers() {
+	private registerHandlebarsHelpers({
+		useChatFormat = false
+	}: {
+		useChatFormat?: boolean
+	}) {
 		const handlebars = this.handlebars
-		// Common helpers
-		if (!handlebars.helpers.eq) {
-			handlebars.registerHelper("eq", (a, b) => a === b)
-		}
-		if (!handlebars.helpers.ne) {
-			handlebars.registerHelper("ne", (a, b) => a !== b)
-		}
-		if (!handlebars.helpers.and) {
-			handlebars.registerHelper("and", (a, b) => a && b)
-		}
-		if (!handlebars.helpers.or) {
-			handlebars.registerHelper("or", (a, b) => a || b)
-		}
 
-		// Helper to always get the root promptBuilder instance
-		const getPromptBuilder = (ctx: any, options: any) =>
-			options?.data?.root?.__promptBuilderInstance ||
-			ctx.__promptBuilderInstance
-		const getPromptFormat = (ctx: any, options: any) =>
-			getPromptBuilder(ctx, options)?.connection?.promptFormat || "chatml"
+		// Common helpers
+		if (!handlebars.helpers.eq)
+			handlebars.registerHelper("eq", (a, b) => a === b)
+		if (!handlebars.helpers.ne)
+			handlebars.registerHelper("ne", (a, b) => a !== b)
+		if (!handlebars.helpers.and)
+			handlebars.registerHelper("and", (a, b) => a && b)
+		if (!handlebars.helpers.or)
+			handlebars.registerHelper("or", (a, b) => a || b)
+
+		// Precompute prompt format ONCE for this registration
+		const precomputedPromptFormat = useChatFormat
+			? PromptFormats.SPLIT_CHAT
+			: this.connection?.promptFormat || PromptFormats.VICUNA
+
+		const getPromptFormat = () => precomputedPromptFormat
 
 		if (!handlebars.helpers.systemBlock) {
 			handlebars.registerHelper(
 				"systemBlock",
 				function (this: any, options: any) {
-					const promptFormat = getPromptFormat(this, options)
+					const promptFormat = getPromptFormat()
 					return PromptBlockFormatter.makeBlock({
 						format: promptFormat,
 						role: "system",
@@ -107,7 +109,7 @@ export class PromptBuilder {
 			handlebars.registerHelper(
 				"assistantBlock",
 				function (this: any, options: any) {
-					const promptFormat = getPromptFormat(this, options)
+					const promptFormat = getPromptFormat()
 					// If available, check for id property in the context
 					// Handlebars context for each message should have id
 					const messageId =
@@ -127,7 +129,7 @@ export class PromptBuilder {
 			handlebars.registerHelper(
 				"userBlock",
 				function (this: any, options: any) {
-					const promptFormat = getPromptFormat(this, options)
+					const promptFormat = getPromptFormat()
 					return PromptBlockFormatter.makeBlock({
 						format: promptFormat,
 						role: "user",
@@ -354,11 +356,26 @@ export class PromptBuilder {
 	}
 
 	// --- Modularized section: message block construction and token limit logic ---
-	private async infillContent(
-		templateContext: TemplateContext,
-		_charName: string,
-		_personaName: string
-	) {
+	private async infillContent({
+		templateContext,
+		charName,
+		personaName,
+		useChatFormat
+	}: {
+		templateContext: TemplateContext
+		charName: string
+		personaName: string
+		useChatFormat: boolean
+	}): Promise<{
+		renderedPrompt: string | undefined
+		renderedMessages: ChatCompletionMessageParam[] | undefined
+		totalTokens: number
+		chatMessages: {
+			included: number
+			includedIds: number[]
+			excludedIds: number[]
+		}
+	}> {
 		let completed = false
 		let priority = 4
 		let messagesIterator:
@@ -393,22 +410,25 @@ export class PromptBuilder {
 			{
 				id: -2, // Placeholder for the current character's empty message
 				role: "assistant",
-				name: _charName,
+				name: charName,
 				message: ""
 			}
 		]
-		let includedMessages = 0
-		let includedIds: number[] = []
-		let excludedIds: number[] = []
-		let renderedPrompt = ""
+		let includedChatMessages = 0
+		let includedChatMessageIds: number[] = []
+		let excludedChatMessageIds: number[] = []
+		// Precompiled prompt
+		let renderedPrompt: string | { role: string; content: string }[] = ""
+		// OpenAI chat format
+		let renderedMessages: ChatCompletionMessageParam[] | undefined
 		let totalTokens = 0
 
 		// Ensure interpolationContext is available
 		const interpolationContext = {
-			char: _charName,
-			character: _charName,
-			user: _personaName,
-			persona: _personaName
+			char: charName,
+			character: charName,
+			user: personaName,
+			persona: personaName
 		}
 
 		let includedWorldLoreEntries: any[] = []
@@ -544,20 +564,19 @@ export class PromptBuilder {
 				} else if (nextMessageVal.value && !isOverLimit) {
 					// Normalize message structure
 					const msg = nextMessageVal.value
-					let charName = _charName
-					let personaName = _personaName
 					let msgInterpolationContext = { ...interpolationContext }
 					if (msg.characterId && this.chat.chatCharacters) {
 						const foundChar = this.chat.chatCharacters.find(
 							(cc) => cc.character.id === msg.characterId
 						)?.character
+						let foundName: string | undefined
 						if (foundChar) {
-							charName = foundChar.nickname || foundChar.name
-							msgInterpolationContext = {
-								...msgInterpolationContext,
-								char: charName,
-								character: charName
-							}
+							foundName = foundChar.nickname || foundChar.name
+						}
+						msgInterpolationContext = {
+							...msgInterpolationContext,
+							char: foundName || charName,
+							character: foundName || charName
 						}
 					}
 					if (msg.personaId && this.chat.chatPersonas) {
@@ -633,12 +652,17 @@ export class PromptBuilder {
 					if (!nextHistoryEntryVal || nextHistoryEntryVal.done) {
 						historyEntryIter = null
 					} else if (nextHistoryEntryVal.value && priority === 4) {
-						includedHistoryEntries.push(
-							populateLorebookEntryBindings(
+						if (isHistoryEntry(nextHistoryEntryVal.value)) {
+							const populated = populateLorebookEntryBindings(
 								nextHistoryEntryVal.value,
 								this.chat
 							)
-						)
+							if ("date" in populated) {
+								includedHistoryEntries.push(
+									populated as SelectHistoryEntry
+								)
+							}
+						}
 					} else if (nextHistoryEntryVal.value) {
 						consideredHistoryEntries.push(nextHistoryEntryVal.value)
 					}
@@ -772,12 +796,18 @@ export class PromptBuilder {
 									}
 								})
 							if (matchFound) {
-								includedHistoryEntries.push(
-									populateLorebookEntryBindings(
-										entry,
-										this.chat
-									)
-								)
+								if (isHistoryEntry(entry)) {
+									const populated =
+										populateLorebookEntryBindings(
+											entry,
+											this.chat
+										)
+									if ("date" in populated) {
+										includedHistoryEntries.push(
+											populated as SelectHistoryEntry
+										)
+									}
+								}
 								consideredHistoryEntries =
 									consideredHistoryEntries.filter(
 										(e) => e.id !== entry.id
@@ -919,8 +949,8 @@ export class PromptBuilder {
 				(priority !== 4 && iterationCount % iterationRate === 0) ||
 				isOverLimit
 			) {
-				includedMessages = chatMessages.length - 1 // Exclude the last empty message
-				includedIds = chatMessages
+				includedChatMessages = chatMessages.length - 1 // Exclude the last empty message
+				includedChatMessageIds = chatMessages
 					.filter((m) => m.id !== -2)
 					.map((m) => m.id)
 
@@ -931,6 +961,11 @@ export class PromptBuilder {
 					...templateContext,
 					chatMessages: [...chatMessages].reverse()
 				})
+				if (useChatFormat) {
+					renderedMessages = parseSplitChatPrompt(renderedPrompt)
+					renderedPrompt = JSON.stringify(renderedMessages)
+				}
+				// console.log("Rendered prompt:", compiledPrompt)
 				totalTokens =
 					typeof this.tokenCounter.countTokens === "function"
 						? await this.tokenCounter.countTokens(renderedPrompt)
@@ -962,11 +997,14 @@ export class PromptBuilder {
 		}
 
 		return {
-			renderedPrompt,
+			renderedPrompt: !useChatFormat ? renderedPrompt : undefined,
+			renderedMessages,
 			totalTokens,
-			includedMessages,
-			includedIds,
-			excludedIds
+			chatMessages: {
+				included: includedChatMessages,
+				includedIds: includedChatMessageIds,
+				excludedIds: excludedChatMessageIds
+			}
 		}
 	}
 
@@ -1001,9 +1039,17 @@ export class PromptBuilder {
 	}
 
 	// --- Modularized section: meta reporting ---
-	private buildMeta(excludedIds: number[]) {
+	private buildMeta({
+		excludedIds,
+		useChatFormat = false
+	}: {
+		excludedIds: number[]
+		useChatFormat?: boolean
+	}) {
 		return {
-			promptFormat: (this.connection.promptFormat || "").toLowerCase(),
+			promptFormat: useChatFormat
+				? (this.connection.promptFormat || "").toLowerCase()
+				: "N/A - Chat Completions",
 			templateName: this.contextConfig?.name || null,
 			timestamp: new Date().toISOString(),
 			truncationReason: excludedIds.length ? "token_limit" : null,
@@ -1012,7 +1058,13 @@ export class PromptBuilder {
 	}
 
 	// --- Main compilePrompt ---
-	async compilePrompt(): Promise<CompiledPrompt> {
+	async compilePrompt({
+		useChatFormat = false
+	}: {
+		useChatFormat?: boolean
+	}): Promise<CompiledPrompt> {
+		console.log("Compiling prompt with useChatFormat:", useChatFormat)
+		this.registerHandlebarsHelpers({ useChatFormat })
 		const chatCharacters = this.chat.chatCharacters as
 			| (SelectChatCharacter & { character: SelectCharacter })[]
 			| undefined
@@ -1083,73 +1135,36 @@ export class PromptBuilder {
 
 		const {
 			renderedPrompt,
+			renderedMessages,
 			totalTokens,
-			includedMessages,
-			includedIds,
-			excludedIds
-		} = await this.infillContent(
+			chatMessages: { included: includedChatMessages, includedIds, excludedIds }
+		} = await this.infillContent({
 			templateContext,
 			charName,
-			personaName
-		)
+			personaName,
+			useChatFormat
+		})
 
-		let finalPrompt = renderedPrompt.trimEnd()
+		console.log("Rendered prompt:", renderedPrompt)
+		console.log("Rendered messages:", renderedMessages)
 
 		const sources = this.buildSources(scenarioSource)
-		const meta = this.buildMeta(excludedIds)
-
-		// --- NEW: Return OpenAI-style message list if requested ---
-		if (
-			this.connection.type === "openai" &&
-			!this.connection.extraJson?.prerenderPrompt
-		) {
-			// Split prompt into blocks by '### ' (keep delimiter)
-			const blocks = finalPrompt
-				.split(/(?=^### )/m)
-				.map((b: string) => b.trim())
-				.filter(Boolean)
-			const messages: Array<{ role: string; content: string }> = []
-			for (const block of blocks) {
-				const match = block.match(/^### (\w+):?/)
-				let role = "user"
-				if (match) {
-					const header = match[1].toLowerCase()
-					if (header === "assistant") role = "assistant"
-					else if (header === "system") role = "system"
-					else if (header === "user") role = "user"
-					else role = "user"
-				}
-				const content = block.replaceAll(/^### \w+:?\s*/, "").trim()
-				messages.push({ role, content })
-			}
-			return {
-				messages,
-				meta: {
-					tokenCounts: {
-						total: totalTokens as number,
-						limit: this.tokenLimit
-					},
-					messages: {
-						included: includedMessages,
-						total: this.chat.chatMessages.length,
-						includedIds,
-						excludedIds
-					},
-					sources
-				}
-			}
-		}
+		const meta = this.buildMeta({
+			excludedIds: includedIds,
+			useChatFormat
+		})
 
 		// Default: return as before
 		return {
-			prompt: finalPrompt,
+			prompt: renderedPrompt,
+			messages: renderedMessages,
 			meta: {
 				tokenCounts: {
 					total: totalTokens as number,
 					limit: this.tokenLimit
 				},
-				messages: {
-					included: includedMessages,
+				chatMessages: {
+					included: includedChatMessages,
 					total: this.chat.chatMessages.length,
 					includedIds,
 					excludedIds
@@ -1158,6 +1173,7 @@ export class PromptBuilder {
 			}
 		}
 	}
+
 	attachCharacterLoreToPersonas(
 		arg0: any[],
 		includedCharacterLoreEntries: {
@@ -1182,17 +1198,12 @@ export class PromptBuilder {
 		throw new Error("Method not implemented.")
 	}
 
-	/**
-	 * Abstract: Iterate over items of a given type and priority from the class instance.
-	 * Each subclass should implement its own logic.
-	 */
 	*chatMessageIterator({
 		priority
 	}: {
 		priority: number
 	}): IterableIterator<SelectChatMessage> {
 		const messages = this.chat.chatMessages || []
-		// // console.log(`chatMessageIterator called with priority ${priority}, total messages: ${messages.length}`)
 		// Always include the last 3 messages as priority 4 (highest for chat)
 		if (priority === 4) {
 			for (const msg of messages.slice(-3).reverse()) {
@@ -1266,4 +1277,25 @@ export type TemplateContext = {
 	history?: string // changed to object
 	currentDate?: string
 	__promptBuilderInstance: PromptBuilder
+}
+
+function isHistoryEntry(entry: any): entry is SelectHistoryEntry {
+	return entry && typeof entry === "object" && "date" in entry
+}
+
+function parseSplitChatPrompt(
+	prompt: string
+): ChatCompletionMessageParam[] {
+	const blocks = prompt.split(/(?=<@role:(user|assistant|system)>\s*)/g)
+	// TODO: populate the name param, but local models may ignore it anyway
+	const messages = blocks
+		.map((block) => {
+			const match = block.match(
+				/^<@role:(user|assistant|system)>\s*([\s\S]*)$/
+			)
+			return match ? { role: match[1], content: match[2].trim() } : null
+		})
+		.filter(Boolean)
+
+	return messages as ChatCompletionMessageParam[]
 }

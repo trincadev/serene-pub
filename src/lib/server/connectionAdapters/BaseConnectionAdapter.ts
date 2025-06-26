@@ -75,6 +75,10 @@ export abstract class BaseConnectionAdapter {
 		})
 	}
 
+	compilePrompt(args: {}): Promise<CompiledPrompt> {
+		return this.promptBuilder.compilePrompt(args)
+	}
+
 	abstract generate(): Promise<
 		[
 			string | ((cb: (chunk: string) => void) => Promise<void>),

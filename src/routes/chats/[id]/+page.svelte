@@ -590,8 +590,8 @@
 				</div>
 				<div class="mb-2">
 					<b>Messages Inserted:</b>
-					{draftCompiledPrompt.meta.messages.included} / {draftCompiledPrompt
-						.meta.messages.total}
+					{draftCompiledPrompt.meta.chatMessages.included} / {draftCompiledPrompt
+						.meta.chatMessages.total}
 				</div>
 				<div class="mb-2">
 					<b>Prompt Format:</b>
@@ -861,8 +861,8 @@
 				</div>
 				<div>
 					<b>Messages Inserted:</b>
-					{draftCompiledPrompt.meta.messages.included} / {draftCompiledPrompt
-						.meta.messages.total}
+					{draftCompiledPrompt.meta.chatMessages.included} / {draftCompiledPrompt
+						.meta.chatMessages.total}
 					<span class="text-surface-500">
 						(Includes current draft)
 					</span>

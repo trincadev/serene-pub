@@ -135,6 +135,7 @@
             {/if}
         </button>
     </div>
+    {#if openAIFields?.prerenderPrompt}
     <div class="mt-2 flex flex-col gap-1">
         <label class="font-semibold" for="promptFormat">Prompt Format</label>
         <select
@@ -147,6 +148,7 @@
             {/each}
         </select>
     </div>
+    {/if}
     <div class="mt-2 flex flex-col gap-1">
         <label class="font-semibold" for="tokenCounter">Token Counter</label>
         <select

@@ -6,6 +6,8 @@ export class PromptFormats {
 	static readonly LLAMA2_INST = "llama2_inst"
 	static readonly CLAUDE = "claude"
 	static readonly INSTRUCT = "instruct"
+	static readonly TEKKEN = "tekken"
+	static readonly SPLIT_CHAT = "split_chat" // This is a hidden format for splitting chat completions
 
 	static readonly keys = [
 		PromptFormats.VICUNA,
@@ -14,7 +16,9 @@ export class PromptFormats {
 		PromptFormats.OPENAI,
 		PromptFormats.LLAMA2_INST,
 		PromptFormats.CLAUDE,
-		PromptFormats.INSTRUCT
+		PromptFormats.INSTRUCT,
+		PromptFormats.SPLIT_CHAT, // ← new
+		// PromptFormats.TEKKEN // ← new
 	]
 
 	static readonly options = [
@@ -24,9 +28,7 @@ export class PromptFormats {
 		{ value: PromptFormats.OPENAI, label: "OpenAI" },
 		{ value: PromptFormats.LLAMA2_INST, label: "LLaMA2/Mistral Instruct" },
 		{ value: PromptFormats.CLAUDE, label: "Claude (Human/Assistant)" },
-		{
-			value: PromptFormats.INSTRUCT,
-			label: "Instruct (Alpaca)"
-		}
+		{ value: PromptFormats.INSTRUCT, label: "Instruct (Alpaca)" },
+		// { value: PromptFormats.TEKKEN, label: "Mistral v7 Tekken" } // ← new
 	]
 }

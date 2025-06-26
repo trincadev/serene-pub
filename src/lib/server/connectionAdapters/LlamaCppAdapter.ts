@@ -307,7 +307,7 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 		)
 
 		const compiledPrompt: CompiledPrompt =
-			await this.promptBuilder.compilePrompt()
+			await this.compilePrompt({})
 		let prompt: string
 		if (
 			"prompt" in compiledPrompt &&

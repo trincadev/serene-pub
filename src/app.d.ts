@@ -4,6 +4,7 @@ import type { Component } from "@lucide/svelte"
 import * as schema from "$lib/server/db/schema"
 import type { Schema } from "inspector/promises"
 import type { P } from "ollama/dist/shared/ollama.d792a03f.mjs"
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions/completions"
 
 // for information about these interfaces
 declare global {
@@ -824,14 +825,9 @@ declare global {
 		spec_version: string
 	}
 
-	export type CompiledPrompt =
-		| ({
-				prompt: string
-				messages?: never
-		  } & CompiledPromptMeta)
-		| ({
-				messages: Array<{ role: string; content: string }>
-				prompt?: never
+	export type CompiledPrompt = ({
+				prompt?: string
+				messages?: ChatCompletionMessageParam[]
 		  } & CompiledPromptMeta)
 
 	type CompiledPromptMeta = {
@@ -840,7 +836,7 @@ declare global {
 				total: number
 				limit: number
 			}
-			messages: {
+			chatMessages: {
 				included: number
 				total: number
 				includedIds: number[]

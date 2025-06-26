@@ -5,7 +5,6 @@ import { generateResponse } from "../utils/generateResponse"
 import { getNextCharacterTurn } from "$lib/server/utils/getNextCharacterTurn"
 import type { BaseConnectionAdapter } from "../connectionAdapters/BaseConnectionAdapter"
 import { getConnectionAdapter } from "../utils/getConnectionAdapter"
-import { historyEntries } from "../db/schema"
 import { TokenCounters } from "$lib/server/utils/TokenCounterManager"
 
 // --- Global map for active adapters ---
@@ -527,7 +526,7 @@ export async function promptTokenCount(
 		contextThresholdPercent
 	})
 	const promptResult: Sockets.PromptTokenCount.Response =
-		await adapter.promptBuilder.compilePrompt()
+		await adapter.compilePrompt({})
 	emitToUser(
 		"promptTokenCount",
 		promptResult as Sockets.PromptTokenCount.Response

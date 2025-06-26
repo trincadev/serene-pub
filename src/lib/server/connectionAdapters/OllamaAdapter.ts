@@ -129,7 +129,7 @@ class OllamaAdapter extends BaseConnectionAdapter {
 		// Use PromptBuilder for prompt construction
 
 		const compiledPrompt: CompiledPrompt =
-			await this.promptBuilder.compilePrompt()
+			await this.compilePrompt({})
 
 		const req: GenerateRequest = {
 			model,

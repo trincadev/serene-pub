@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as skio from "sveltekit-io"
-	import { getContext, onMount } from "svelte"
+	import { getContext, onDestroy, onMount } from "svelte"
 	import * as Icons from "@lucide/svelte"
 	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import OllamaForm from "$lib/client/connectionForms/OllamaForm.svelte"
@@ -12,6 +12,7 @@
 		CONNECTION_TYPES
 	} from "$lib/shared/constants/ConnectionTypes"
 	import LlamaCppForm from "$lib/client/connectionForms/LlamaCppForm.svelte"
+	import { toaster } from "$lib/client/utils/toaster"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -102,23 +103,23 @@
 		refreshModelsResult = null
 		socket.emit("refreshModels", { baseUrl: connection?.baseUrl })
 	}
-	function handleFieldChange(key: string, value: any) {
-		connection = { ...connection, [key]: value }
-	}
 
 	onMount(() => {
-		socket.on("connectionsList", (msg) => {
-			connectionsList = msg.connectionsList
+		socket.on("connectionsList", (msg: Sockets.ConnectionsList.Response) => {
+			connectionsList = msg.connectionsList.slice().sort((a, b) => a.name!.localeCompare(b.name!))
 		})
-		socket.on("connection", (msg) => {
+		socket.on("connection", (msg: Sockets.Connection.Response) => {
 			connection = { ...msg.connection }
 			originalConnection = { ...msg.connection }
 		})
-		socket.on("testConnection", (msg) => {
+		socket.on("testConnection", (msg: Sockets.TestConnection.Response) => {
 			testResult = msg
 		})
-		socket.on("refreshModels", (msg) => {
+		socket.on("refreshModels", (msg: Sockets.RefreshModels.Response) => {
 			refreshModelsResult = msg.models || []
+		})
+		socket.on("updateConnection", (msg: Sockets.UpdateConnection.Response) => {
+			toaster.success({title: "Connection Updated"})
 		})
 		socket.emit("connectionsList", {})
 		if (userCtx.user?.activeConnectionId) {
@@ -129,6 +130,15 @@
 		if (connection?.type === "ollama" && connection.baseUrl) {
 			handleRefreshModels()
 		}
+	})
+
+	onDestroy(() => {
+		socket.off("connectionsList")
+		socket.off("connection")
+		socket.off("testConnection")
+		socket.off("refreshModels")
+		socket.off("updateConnection")
+		onclose = undefined
 	})
 </script>
 

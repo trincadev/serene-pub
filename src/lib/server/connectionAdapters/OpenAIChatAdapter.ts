@@ -49,6 +49,14 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 		})
 	}
 
+	compilePrompt(args: {}) {
+		let useChatFormat = true
+		if (this.connection.extraJson?.prerenderPrompt) {
+			useChatFormat = false
+		}
+		return super.compilePrompt({ useChatFormat, ...args })
+	}
+
 	async generate(): Promise<
 		[
 			string | ((cb: (chunk: string) => void) => Promise<void>),
@@ -62,7 +70,7 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 		const model = this.connection.model || "gpt-3.5-turbo"
 		const stream = this.connection.extraJson?.stream || false
 		const compiledPrompt: CompiledPrompt =
-			await this.promptBuilder.compilePrompt()
+			await this.compilePrompt({})
 
 		// Configure messages
 		let messages: Array<ChatCompletionMessageParam> = []

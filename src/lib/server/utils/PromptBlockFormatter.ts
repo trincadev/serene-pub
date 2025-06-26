@@ -67,6 +67,20 @@ export class PromptBlockFormatter {
 		return PromptBlockFormatter.INSTRUCT_OPEN
 	}
 	static instructClose = PromptBlockFormatter.INSTRUCT_CLOSE
+	static tekkenBlock({
+		system,
+		user,
+		assistant
+	}: {
+		system?: string
+		user: string
+		assistant?: string
+	}): string {
+		const sys = system ? ` <<SYS>>\n${system}\n<</SYS>>\n\n` : " "
+		const inst = `[INST]${sys}${user} [/INST]`
+		const reply = assistant ?? ""
+		return `<s>${inst}\n${reply}</s>\n`
+	}
 
 	static makeBlock({
 		format,
@@ -122,6 +136,9 @@ export class PromptBlockFormatter {
 					content +
 					(includeClose ? this.instructClose : "")
 				)
+			case PromptFormats.SPLIT_CHAT:
+				// Use /<@role:(user|assistant|system)>\s*/g, i.e. <@role:user>\n {content} \n
+				return `<@role:${role}>\n${content}\n`
 			default:
 				return (
 					this.chatmlOpen(role) +
