@@ -7,7 +7,6 @@
 	import { renderMarkdownWithQuotedText } from "$lib/client/utils/markdownToHTML"
 	import { getContext, onMount } from "svelte"
 	import Avatar from "$lib/client/components/Avatar.svelte"
-	import { goto } from "$app/navigation"
 
 	let chat: Sockets.Chat.Response["chat"] | undefined = $state()
 	let newMessage = $state("")
@@ -228,7 +227,7 @@
 	}
 
 	function swipeRight(msg: SelectChatMessage): void {
-		const req: Sockets.ChatMessageSwipeRight.Call ={
+		const req: Sockets.ChatMessageSwipeRight.Call = {
 			chatId: chatId,
 			chatMessageId: msg.id
 		}
@@ -455,21 +454,31 @@
 									</div>
 									{#if lastMessage && lastMessage.id === msg.id}
 										<div class="ml-auto flex gap-6">
-											{#if ![null, undefined].includes(msg.metadata?.swipes?.currentIdx) && msg.metadata?.swipes
-													?.history && msg.metadata?.swipes.history.length > 1}
-											<button
-												class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
-												title="Swipe Left"
-												onclick={() => swipeLeft(msg)}
-												disabled={!msg.metadata.swipes.currentIdx || msg.metadata.swipes.history.length <= 1 || msg.isGenerating}
-											>
-												<Icons.ChevronLeft size={24} />
-											</button>
-											<span
-												class="text-surface-700-300 mt-[0.2rem] h-fit select-none"
-											>
-												{msg.metadata.swipes.currentIdx + 1}/{msg.metadata.swipes.history.length}
-											</span>
+											{#if ![null, undefined].includes(msg.metadata?.swipes?.currentIdx) && msg.metadata?.swipes?.history && msg.metadata?.swipes.history.length > 1}
+												<button
+													class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
+													title="Swipe Left"
+													onclick={() =>
+														swipeLeft(msg)}
+													disabled={!msg.metadata
+														.swipes.currentIdx ||
+														msg.metadata.swipes
+															.history.length <=
+															1 ||
+														msg.isGenerating}
+												>
+													<Icons.ChevronLeft
+														size={24}
+													/>
+												</button>
+												<span
+													class="text-surface-700-300 mt-[0.2rem] h-fit select-none"
+												>
+													{msg.metadata.swipes
+														.currentIdx + 1}/{msg
+														.metadata.swipes.history
+														.length}
+												</span>
 											{/if}
 											<button
 												class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
@@ -487,14 +496,7 @@
 
 						<div class="flex h-fit rounded p-2 text-left">
 							{#if msg.content === "" && msg.isGenerating}
-								<div class="wrapper">
-									<div class="circle"></div>
-									<div class="circle"></div>
-									<div class="circle"></div>
-									<div class="shadow"></div>
-									<div class="shadow"></div>
-									<div class="shadow"></div>
-								</div>
+								{@render generatingAnimation()}
 							{:else if editChatMessage && editChatMessage.id === msg.id}
 								<div
 									class="chat-input-bar bg-surface-100-900 w-full rounded-xl p-2 pb-2 align-middle lg:pb-4"
@@ -517,7 +519,8 @@
 			</ul>
 		{/if}
 	</div>
-	<!-- NEW CHAT MESSAGE FORM -->
+
+
 	<div
 		class="chat-input-bar preset-tonal-surface gap-4 pb-3 align-middle lg:pb-4"
 		class:hidden={!!editChatMessage}
@@ -555,7 +558,7 @@
 			{#snippet rightControls()}
 				{#if !lastMessage?.isGenerating && !editChatMessage}
 					<button
-						class="hover:preset-tonal-success hidden h-auto rounded-lg p-3 text-center lg:block"
+						class="hover:preset-tonal-success lg:h-auto rounded-lg p-2 lg:p-3 text-center lg:block"
 						type="button"
 						disabled={!newMessage.trim() ||
 							lastMessage?.isGenerating}
@@ -567,7 +570,7 @@
 				{:else if lastMessage?.isGenerating}
 					<button
 						title="Stop Generation"
-						class="text-error-500 hover:preset-tonal-error h-auto rounded-lg p-3 text-center"
+						class="text-error-500 hover:preset-tonal-error lg:h-auto rounded-lg p-2 lg:p-3 text-center"
 						type="button"
 						onclick={handleAbortLastMessage}
 					>
@@ -652,6 +655,18 @@
 				<div class="mb-2">
 					<b>Timestamp:</b>
 					{draftCompiledPrompt.meta.timestamp}
+				</div>
+				<div class="mb-2">
+					<b>World Lore:</b>
+					{draftCompiledPrompt.meta.sources.lorebooks.worldLore.included}/{draftCompiledPrompt.meta.sources.lorebooks.worldLore.total}
+				</div>
+				<div class="mb-2">
+					<b>Character Lore:</b>
+					{draftCompiledPrompt.meta.sources.lorebooks.characterLore.included}/{draftCompiledPrompt.meta.sources.lorebooks.characterLore.total}
+				</div>
+				<div class="mb-2">
+					<b>History:</b>
+					{draftCompiledPrompt.meta.sources.lorebooks.history.included}/{draftCompiledPrompt.meta.sources.lorebooks.history.total}
 				</div>
 				<div class="mb-2">
 					<b>Characters Used:</b>
@@ -789,6 +804,17 @@
 		</article>
 	{/snippet}
 </Modal>
+
+{#snippet generatingAnimation()}
+	<div class="wrapper">
+		<div class="circle"></div>
+		<div class="circle"></div>
+		<div class="circle"></div>
+		<div class="shadow"></div>
+		<div class="shadow"></div>
+		<div class="shadow"></div>
+	</div>
+{/snippet}
 
 {#snippet messageControls(msg: SelectChatMessage)}
 	<button

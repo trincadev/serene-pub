@@ -4,13 +4,15 @@
 	import * as Icons from "@lucide/svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
 	import EditLorebookForm from "../lorebookForms/EditLorebookForm.svelte"
-	import { Tabs } from "@skeletonlabs/skeleton-svelte"
+	import { FileUpload, Modal, Tabs } from "@skeletonlabs/skeleton-svelte"
 	import LorebookBindingsManager from "../lorebookForms/LorebookBindingsManager.svelte"
 	import WorldLoreManager from "../lorebookForms/WorldLoreManager.svelte"
 	import type { ValueChangeDetails } from "@zag-js/tabs"
 	import LorebookUnsavedChangesModal from "../modals/LorebookUnsavedChangesModal.svelte"
 	import CharacterLoreManager from "../lorebookForms/CharacterLoreManager.svelte"
 	import HistoryEntryManager from "../lorebookForms/HistoryEntryManager.svelte"
+	import { toaster } from "$lib/client/utils/toaster"
+	import type { SpecV3 } from "@lenml/char-card-reader"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -37,23 +39,28 @@
 	let showUnsavedChangesModal: boolean = $state(false)
 	let showUnsavedTabChangesModal: boolean = $state(false)
 	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
+	let showImportModal: boolean = $state(false)
+	let importingBook: SpecV3.Lorebook | undefined = $state(undefined)
 
 	async function handleOnClose() {
-        if (tabHasUnsavedChanges) {
-            showUnsavedChangesModal = true
-            return new Promise<boolean>((resolve) => {
-                confirmCloseSidebarResolve = resolve
-            })
-        } else {
-            return true
-        }
-    }
+		if (tabHasUnsavedChanges) {
+			showUnsavedChangesModal = true
+			return new Promise<boolean>((resolve) => {
+				confirmCloseSidebarResolve = resolve
+			})
+		} else {
+			return true
+		}
+	}
 
 	function handleCreateClick() {
 		isCreating = true
 	}
 
-	function handleLorebookClick(e: Event, {lorebook, tab}: {lorebook: SelectLorebook, tab?: EditGroup}) {
+	function handleLorebookClick(
+		e: Event,
+		{ lorebook, tab }: { lorebook: SelectLorebook; tab?: EditGroup }
+	) {
 		e.preventDefault()
 		e.stopPropagation()
 		selectedLorebook = lorebook
@@ -68,23 +75,25 @@
 	// UNSAVED CHANGES MODAL HANDLERS
 
 	function handleUnsavedChangesModalConfirm() {
-        showUnsavedChangesModal = false
-        if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(true)
-    }
-    function handleUnsavedChangesModalCancel() {
-        showUnsavedChangesModal = false
-        if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
-    }
-    function handleUnsavedChangesModalOpenChange(e: OpenChangeDetails) {
-        if (!e.open) {
-            showUnsavedChangesModal = false
-            if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
-        }
-    }
+		showUnsavedChangesModal = false
+		if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(true)
+	}
+	function handleUnsavedChangesModalCancel() {
+		showUnsavedChangesModal = false
+		if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
+	}
+	function handleUnsavedChangesModalOpenChange(e: OpenChangeDetails) {
+		if (!e.open) {
+			showUnsavedChangesModal = false
+			if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
+		}
+	}
 
 	// UNSAVED TAB CHANGES MODAL HANDLERS
 
-	function handleUnsavedTabChangesModalOpenChange(details: { open: boolean }) {
+	function handleUnsavedTabChangesModalOpenChange(details: {
+		open: boolean
+	}) {
 		showUnsavedTabChangesModal = details.open
 	}
 
@@ -130,12 +139,87 @@
 		)
 	})
 
+	function handleImportClick() {
+		showImportModal = true
+	}
+
+	async function handleFileImport(details: FileAcceptDetails) {
+		if (!details.files || details.files.length === 0) return
+		const file = details.files[0]
+
+		if (file.type !== "application/json") {
+			toaster.error({
+				title: "Invalid file type. Please upload a JSON file."
+			})
+			return
+		}
+
+		const reader = new FileReader()
+		reader.onload = function (e) {
+			try {
+				const json: SpecV3.Lorebook = JSON.parse(e.target?.result as string)
+				let entries = json.entries
+				if (entries && !Array.isArray(entries)) {
+					entries = Object.values(entries)
+				}
+				// Normalize both 'key' and 'keys' fields for every entry
+				entries = (entries || []).map((entry) => {
+					// @ts-ignore
+					let keyArr = entry.key
+					if (!Array.isArray(keyArr)) {
+						keyArr = entry.keys && Array.isArray(entry.keys) ? entry.keys : (keyArr ? [keyArr] : [])
+					}
+					let keysArr = entry.keys
+					if (!Array.isArray(keysArr)) {
+						keysArr = keyArr
+					}
+					// @ts-ignore
+					let keysecondaryArr = entry.keysecondary
+					if (!Array.isArray(keysecondaryArr)) {
+						keysecondaryArr = keysecondaryArr ? [keysecondaryArr] : []
+					}
+					return {
+						...entry,
+						key: keyArr,
+						keys: keysArr,
+						keysecondary: keysecondaryArr,
+					}
+				})
+				importingBook = {
+					...json,
+					entries: entries,
+					name: json.name || "",
+					description: json.description || "",
+					extensions: json.extensions || {},
+				}
+			} catch (err) {
+				console.log("Error parsing JSON:", err)
+				toaster.error({ title: "Invalid JSON file" })
+			}
+		}
+		reader.readAsText(file)
+	}
+
+	function handleImportConfirm() {
+		if (importingBook && importingBook.name?.trim()) {
+			console.log("Importing lorebook:", $state.snapshot(importingBook))
+			const req: Sockets.LorebookImport.Call = {
+				lorebookData: importingBook
+			}
+			socket.emit("lorebookImport", req)
+			showImportModal = false
+			importingBook = undefined
+		}
+	}
+
 	onMount(() => {
 		socket.on("lorebookList", (msg: Sockets.LorebookList.Response) => {
 			if (msg.lorebookList) {
-				console.log("Received lorebook list:", msg.lorebookList)
 				lorebookList = msg.lorebookList
 			}
+		})
+		socket.on("lorebookImport", (msg: Sockets.LorebookImport.Response) => {
+			toaster.success({ title: "Lorebook Imported" })
 		})
 		onclose = handleOnClose
 		socket.emit("lorebookList", {})
@@ -143,9 +227,9 @@
 
 	onDestroy(() => {
 		socket.off("lorebookList")
+		socket.off("lorebookImport")
 		onclose = undefined
 	})
-
 </script>
 
 <div class="min-h-full p-4">
@@ -163,10 +247,7 @@
 				<Icons.ArrowLeft size={20} class="inline" /> Back
 			</button>
 		</div>
-		<Tabs
-			value={editGroup}
-			onValueChange={(e) => (handleSwitchTabGroup(e))}
-		>
+		<Tabs value={editGroup} onValueChange={(e) => handleSwitchTabGroup(e)}>
 			{#snippet list()}
 				<Tabs.Control value="lorebook">
 					<Icons.Book size={20} class="inline" />
@@ -202,9 +283,7 @@
 			{#snippet content()}
 				<Tabs.Panel value="lorebook">
 					{#if editGroup == "lorebook"}
-						<EditLorebookForm
-							lorebookId={selectedLorebook.id}
-						/>
+						<EditLorebookForm lorebookId={selectedLorebook.id} />
 					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="bindings">
@@ -217,9 +296,9 @@
 				<Tabs.Panel value="world">
 					{#if editGroup == "world"}
 						<WorldLoreManager
-						lorebookId={selectedLorebook.id}
-						bind:hasUnsavedChanges={tabHasUnsavedChanges}
-					/>
+							lorebookId={selectedLorebook.id}
+							bind:hasUnsavedChanges={tabHasUnsavedChanges}
+						/>
 					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="characters">
@@ -249,6 +328,20 @@
 			>
 				<Icons.Plus size={16} />
 			</button>
+			<button
+				class="btn btn-sm preset-filled-primary-500"
+				title="Import Lorebook"
+				onclick={handleImportClick}
+			>
+				<Icons.Upload size={16} />
+			</button>
+			<button
+				class="btn btn-sm preset-filled-primary-500"
+				title="Export Lorebook"
+				disabled
+			>
+				<Icons.Download size={16} />
+			</button>
 		</div>
 		<div class="mb-4 flex items-center gap-2">
 			<input
@@ -266,11 +359,10 @@
 			{:else}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				{#each filteredLorebooks as l}
-				{console.log($state.snapshot(l))}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<div
 						class="sidebar-list-item"
-						onclick={(e) => handleLorebookClick(e, {lorebook: l})}
+						onclick={(e) => handleLorebookClick(e, { lorebook: l })}
 					>
 						<span class="text-muted-foreground w-[2.5em] text-xs">
 							#{l.id}
@@ -286,51 +378,83 @@
 							</div>
 							<button
 								class="btn btn-sm"
-								class:preset-filled-primary-500={l.lorebookBindings.length > 0}
-								class:preset-filled-primary-300-700={l.lorebookBindings.length === 0}
+								class:preset-filled-primary-500={l
+									.lorebookBindings.length > 0}
+								class:preset-filled-primary-300-700={l
+									.lorebookBindings.length === 0}
 								title={l.lorebookBindings?.length
 									? "Lorebook Bindings"
 									: "No Lorebook Bindings"}
-								onclick={(e) => handleLorebookClick(e, {lorebook: l, tab: "bindings"})}
+								onclick={(e) =>
+									handleLorebookClick(e, {
+										lorebook: l,
+										tab: "bindings"
+									})}
 							>
 								<Icons.Link size={16} class="inline" />
-								{l.lorebookBindings?.length ? l.lorebookBindings.length : ""}
+								{l.lorebookBindings?.length
+									? l.lorebookBindings.length
+									: ""}
 							</button>
 							<button
 								class="btn btn-sm"
-								class:preset-filled-primary-500={l.worldLoreEntries.length > 0}
-								class:preset-filled-primary-300-700={l.worldLoreEntries.length === 0}
+								class:preset-filled-primary-500={l
+									.worldLoreEntries.length > 0}
+								class:preset-filled-primary-300-700={l
+									.worldLoreEntries.length === 0}
 								title={l.worldLoreEntries?.length
 									? "World Lore Entries"
 									: "No World Lore Entries"}
-								onclick={(e) => handleLorebookClick(e, {lorebook: l, tab: "world"})}
+								onclick={(e) =>
+									handleLorebookClick(e, {
+										lorebook: l,
+										tab: "world"
+									})}
 							>
 								<Icons.Globe size={16} class="inline" />
-								{l.worldLoreEntries.length ? l.worldLoreEntries.length : ""}
+								{l.worldLoreEntries.length
+									? l.worldLoreEntries.length
+									: ""}
 							</button>
 							<button
 								class="btn btn-sm"
-								class:preset-filled-primary-500={l.characterLoreEntries.length > 0}
-								class:preset-filled-primary-300-700={l.characterLoreEntries.length === 0}
+								class:preset-filled-primary-500={l
+									.characterLoreEntries.length > 0}
+								class:preset-filled-primary-300-700={l
+									.characterLoreEntries.length === 0}
 								title={l.characterLoreEntries
 									? "Character Lore Entries"
 									: "No Character Lore Entries"}
-								onclick={(e) => handleLorebookClick(e, {lorebook: l, tab: "characters"})}
+								onclick={(e) =>
+									handleLorebookClick(e, {
+										lorebook: l,
+										tab: "characters"
+									})}
 							>
 								<Icons.User size={16} class="inline" />
-								{l.characterLoreEntries?.length ? l.characterLoreEntries.length : ""}
+								{l.characterLoreEntries?.length
+									? l.characterLoreEntries.length
+									: ""}
 							</button>
 							<button
 								class="btn btn-sm"
-								class:preset-filled-primary-500={l.historyEntries.length > 0}
-								class:preset-filled-primary-300-700={l.historyEntries.length === 0}
+								class:preset-filled-primary-500={l
+									.historyEntries.length > 0}
+								class:preset-filled-primary-300-700={l
+									.historyEntries.length === 0}
 								title={l.historyEntries.length
 									? "History Entries"
 									: "No History Entries"}
-								onclick={(e) => handleLorebookClick(e, {lorebook: l, tab: "history"})}
+								onclick={(e) =>
+									handleLorebookClick(e, {
+										lorebook: l,
+										tab: "history"
+									})}
 							>
 								<Icons.Calendar size={16} class="inline" />
-								{l.historyEntries?.length ? l.historyEntries.length : ""}
+								{l.historyEntries?.length
+									? l.historyEntries.length
+									: ""}
 							</button>
 						</div>
 					</div>
@@ -350,15 +474,75 @@
 />
 
 <LorebookUnsavedChangesModal
-    open={showUnsavedChangesModal}
-    onOpenChange={handleUnsavedChangesModalOpenChange}
-    onConfirm={handleUnsavedChangesModalConfirm}
-    onCancel={handleUnsavedChangesModalCancel}
+	open={showUnsavedChangesModal}
+	onOpenChange={handleUnsavedChangesModalOpenChange}
+	onConfirm={handleUnsavedChangesModalConfirm}
+	onCancel={handleUnsavedChangesModalCancel}
 />
 
 <LorebookUnsavedChangesModal
-    open={showUnsavedTabChangesModal}
-    onOpenChange={handleUnsavedTabChangesModalOpenChange}
-    onConfirm={handleUnsavedTabChangesModalConfirm}
-    onCancel={handleUnsavedTabChangesModalCancel}
+	open={showUnsavedTabChangesModal}
+	onOpenChange={handleUnsavedTabChangesModalOpenChange}
+	onConfirm={handleUnsavedTabChangesModalConfirm}
+	onCancel={handleUnsavedTabChangesModalCancel}
 />
+
+{#if showImportModal}
+	<Modal
+		open={showImportModal}
+		onOpenChange={(e) => {
+			showImportModal = e.open
+			if (!e.open) importingBook = undefined
+		}}
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+		backdropClasses="backdrop-blur-sm"
+	>
+		{#snippet content()}
+			<div class="p-6">
+				<h2 class="mb-2 text-lg font-bold">Import Lorebook</h2>
+				{#if !importingBook}
+					<label class="mb-2" for="file-upload">Select a file.</label>
+					<FileUpload
+						name="file-upload"
+						accept=".json"
+						maxFiles={1}
+						onFileAccept={handleFileImport}
+						onFileReject={console.error}
+						classes="w-full bg-surface-50-950"
+					/>
+				{:else}
+					<label class="mb-2" for="name">
+						Name
+					</label>
+					<input
+						id="name"
+						type="text"
+						bind:value={importingBook.name}
+						placeholder="Lorebook Name"
+						class="input"
+					/>
+				{/if}
+				<div class="mt-4 flex gap-2 items-end">
+					<button
+						class="btn preset-filled-surface-500"
+						onclick={() => {
+							showImportModal = false
+							importingBook = undefined
+						}}
+					>
+						Cancel
+					</button>
+					{#if importingBook}
+						<button
+							class="btn preset-filled-success-500"
+							disabled={!importingBook?.name?.trim()}
+							onclick={handleImportConfirm}
+						>
+							Import
+						</button>
+					{/if}
+				</div>
+			</div>
+		{/snippet}
+	</Modal>
+{/if}

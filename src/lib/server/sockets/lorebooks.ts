@@ -1,6 +1,8 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
+import type { SpecV3 } from "@lenml/char-card-reader"
 import { and, eq } from "drizzle-orm"
+import { CharacterBook } from "@lenml/char-card-reader"
 
 export async function lorebookList(
 	socket: any,
@@ -1226,5 +1228,116 @@ export async function iterateNextHistoryEntry(
 		socket.emit("error", {
 			error: "Failed to iterate to next history entry."
 		})
+	}
+}
+
+export async function lorebookImport(
+	socket: any,
+	message: Sockets.LorebookImport.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		console.log("Importing lorebook data:", message.lorebookData)
+		let charId: number | undefined = message.characterId
+		let char: Partial<SelectCharacter> | undefined = undefined
+		let card = CharacterBook.from_json(message.lorebookData)
+		
+		console.log("Importing lorebook data:", card)
+
+		if (!card) {
+			return socket.emit("error", { error: "No lorebook data provided." })
+		}
+
+		const userId = 1 // TODO: Replace with actual user ID from socket data
+
+		// If message.characterId is provided, ensure it exists
+		if (charId) {
+			char = await db.query.characters.findFirst({
+				where: (c, { eq }) =>
+					eq(c.id, charId) && eq(c.userId, userId),
+				columns: {
+					id: true,
+					lorebookId: true,
+				}
+			})
+			if (!char) {
+				return socket.emit("error", {
+					error: "Character not found."
+				})
+			}
+
+			if (char.lorebookId) {
+				return socket.emit("error", {
+					error: "Character already has a lorebook linked."
+				})
+			}
+		}
+
+		const [book] = await db.insert(schema.lorebooks).values({
+			name: card.name || "Imported Lorebook",
+			description: card.description,
+			userId
+		}).returning()
+
+		let position = 0
+		const queries: Promise<any>[] = []
+		card.entries.forEach((entry) => {
+			// World entries are the most agnostic, so we will import all entries as world lore entries
+			// Get priority from the entry. If the priority is null/less than 1, 
+			// If the priority is greater than 3, set it to 3
+			if (entry.priority === null || (entry.priority || 1) < 1) {
+				entry.priority = 1
+			} else if ((entry.priority || 1) > 3) {
+				entry.priority = 3
+			}
+			queries.push(db.insert(schema.worldLoreEntries).values({
+				name: entry.name || "Imported Entry",
+				content: entry.content || "",
+				lorebookId: book.id,
+				position,
+				keys: entry.keys.join(", ") || "",
+				enabled: entry.enabled ?? true,
+				constant: entry.constant ?? false,
+				priority: entry.priority || 1
+			}))
+			position++
+		})
+
+		await Promise.all(queries)
+
+		// If character Id, add the lorebook to the character, then add the character as a binding
+		if (char) {
+			await db.update(schema.characters)
+				.set({ lorebookId: book.id })
+				.where(eq(schema.characters.id, char.id!))
+			await db.insert(schema.lorebookBindings).values({
+				characterId: char.id,
+				lorebookId: book.id,
+				binding: "{char:1}",
+			})
+		}
+
+		const completedBook = await db.query.lorebooks.findFirst({
+			where: (l, { eq }) => eq(l.id, book.id),
+			with: {
+				lorebookBindings: true,
+				worldLoreEntries: true,
+				characterLoreEntries: true,
+				historyEntries: true
+			}
+		})
+
+		const res: Sockets.LorebookImport.Response = {
+			lorebook: completedBook,
+		}
+		emitToUser("lorebookImport", res)
+		const lbListReq: Sockets.LorebookList.Call = {
+			userId: userId
+		}
+		await lorebookList(socket, lbListReq, emitToUser)
+
+	} catch (error) {
+		console.error("Error importing lorebook:", error)
+		socket.emit("error", { error: "Failed to import lorebook." })
 	}
 }

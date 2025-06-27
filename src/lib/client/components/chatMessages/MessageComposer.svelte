@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Tabs } from "@skeletonlabs/skeleton-svelte"
     import * as Icons from "@lucide/svelte"
-    import { type Snippet } from "svelte";
+    import { onMount, type Snippet } from "svelte";
     import { renderMarkdownWithQuotedText } from "$lib/client/utils/markdownToHTML"
 
     interface Props {
@@ -30,30 +30,45 @@
 
     let tabGroup: "compose" | "preview" = $state("compose")
     let contextExceeded = $derived( !!compiledPrompt ? compiledPrompt!.meta.tokenCounts.total > compiledPrompt!.meta.tokenCounts.limit : false )
+    let submitOnEnter = $state(true)
 
     function handleSend(e: KeyboardEvent | MouseEvent | undefined = undefined) {
         if (e) e.preventDefault()
         onSend()
     }
+
+    onMount(() => {
+        const mq = window.matchMedia("(min-width: 1024px)")
+		const update = () => (submitOnEnter = mq.matches)
+		update()
+		mq.addEventListener("change", update)
+		return () => mq.removeEventListener("change", update)
+    })
+
+    function handleKeyDown(e: KeyboardEvent) {
+        if (e.key === "Enter" && !e.shiftKey && submitOnEnter) {
+            e.preventDefault()
+            handleSend(e)
+        }}
 </script>
 
 <Tabs value={tabGroup} {classes} onValueChange={(e) => (tabGroup = e.value as "compose" | "preview")}>
     {#snippet list()}
-        <Tabs.Control value="compose"
+        <Tabs.Control value="compose" classes="min-h-[2.75em]"
             ><span title="Compose"><Icons.Pen size="0.75em" /></span></Tabs.Control
         >
-        <Tabs.Control value="preview"
+        <Tabs.Control value="preview" classes="min-h-[2.75em]"
             ><span title="Preview"><Icons.Eye size="0.75em" /></span></Tabs.Control
         >
         {#if extraTabs}
             {#each extraTabs as tab}
-                <Tabs.Control value={tab.value}>
+                <Tabs.Control value={tab.value} classes="min-h-[2.75em]" >
                     <span title={tab.title}>{@render tab.control?.()}</span>
                 </Tabs.Control>
             {/each}
         {/if}
         {#if compiledPrompt}
-            <Tabs.Control value="tokenCount" classes="w-full text-right" disabled>
+            <Tabs.Control value="tokenCount" classes="w-full text-right min-h-[2.75]" disabled >
                 <span title="Token Count" class="text-xs" class:text-error-500={contextExceeded}>
                     {compiledPrompt.meta.tokenCounts.total} / {compiledPrompt.meta.tokenCounts.limit}
                 </span>
@@ -71,12 +86,7 @@
                         bind:value={markdown}
                         autocomplete="off"
                         spellcheck="true"
-                        onkeydown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault()
-                                handleSend()
-                            }
-                        }}
+                        onkeydown={handleKeyDown}
                     >
                     </textarea>
                 </Tabs.Panel>

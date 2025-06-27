@@ -12,6 +12,7 @@ import {
 } from "./PromptIterators"
 import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
+import { character } from "$lib/server/sockets/characters"
 
 export class PromptBuilder {
 	connection: SelectConnection
@@ -431,9 +432,6 @@ export class PromptBuilder {
 			persona: personaName
 		}
 
-		let includedWorldLoreEntries: any[] = []
-		let includedCharacterLoreEntries: any[] = []
-		let includedHistoryEntries: SelectHistoryEntry[] = []
 		let isBelowThreshold = true
 		let isAboveThreshold = false
 		let isOverLimit = false
@@ -614,7 +612,7 @@ export class PromptBuilder {
 					if (!nextWorldLoreEntryVal || nextWorldLoreEntryVal.done) {
 						worldLoreEntryIterator = null
 					} else if (nextWorldLoreEntryVal.value && priority === 4) {
-						includedWorldLoreEntries.push(
+						this.includedWorldLoreEntries.push(
 							populateLorebookEntryBindings(
 								nextWorldLoreEntryVal.value,
 								this.chat
@@ -636,7 +634,7 @@ export class PromptBuilder {
 						nextCharacterLoreEntryVal.value &&
 						priority === 4
 					) {
-						includedCharacterLoreEntries.push(
+						this.includedCharacterLoreEntries.push(
 							populateLorebookEntryBindings(
 								nextCharacterLoreEntryVal.value,
 								this.chat
@@ -658,7 +656,7 @@ export class PromptBuilder {
 								this.chat
 							)
 							if ("date" in populated) {
-								includedHistoryEntries.push(
+								this.includedHistoryEntries.push(
 									populated as SelectHistoryEntry
 								)
 							}
@@ -699,7 +697,7 @@ export class PromptBuilder {
 									}
 								})
 							if (matchFound) {
-								includedWorldLoreEntries.push(
+								this.includedWorldLoreEntries.push(
 									populateLorebookEntryBindings(
 										entry,
 										this.chat
@@ -747,7 +745,7 @@ export class PromptBuilder {
 									}
 								})
 							if (matchFound) {
-								includedCharacterLoreEntries.push(
+								this.includedCharacterLoreEntries.push(
 									populateLorebookEntryBindings(
 										entry,
 										this.chat
@@ -803,7 +801,7 @@ export class PromptBuilder {
 											this.chat
 										)
 									if ("date" in populated) {
-										includedHistoryEntries.push(
+										this.includedHistoryEntries.push(
 											populated as SelectHistoryEntry
 										)
 									}
@@ -829,7 +827,7 @@ export class PromptBuilder {
 				this.getInterpolatedCharacters(interpolationContext)
 			const assistantCharactersWithLore = attachCharacterLoreToCharacters(
 				assistantCharacters,
-				includedCharacterLoreEntries,
+				this.includedCharacterLoreEntries,
 				this.chat
 			)
 			const charactersInterpolated = JSON.stringify(
@@ -839,7 +837,7 @@ export class PromptBuilder {
 			)
 			const userCharactersWithLore = attachCharacterLoreToCharacters(
 				this.getInterpolatedPersonas(interpolationContext),
-				includedCharacterLoreEntries,
+				this.includedCharacterLoreEntries,
 				this.chat
 			)
 			const personasInterpolated = JSON.stringify(
@@ -851,10 +849,10 @@ export class PromptBuilder {
 			templateContext.characters = charactersInterpolated
 			templateContext.personas = personasInterpolated
 			templateContext.chatMessages = chatMessages
-			templateContext.characterLore = includedCharacterLoreEntries
+			templateContext.characterLore = this.includedCharacterLoreEntries
 
 			const worldLoreObj: Record<string, string> = {}
-			for (const entry of includedWorldLoreEntries) {
+			for (const entry of this.includedWorldLoreEntries) {
 				if (entry && entry.name && entry.content) {
 					worldLoreObj[entry.name] = entry.content
 				}
@@ -864,7 +862,7 @@ export class PromptBuilder {
 				: undefined
 
 			const historyObj: Record<string, string> = {}
-			includedHistoryEntries.forEach((entry) => {
+			this.includedHistoryEntries.forEach((entry) => {
 				if (entry.content.trim()) {
 					// Only populate bindings if the entry has the required lorebook fields
 					let populatedEntry = entry
@@ -900,14 +898,14 @@ export class PromptBuilder {
 				month: number | undefined
 				day: number | undefined
 			} | null = null
-			if (includedHistoryEntries.length) {
+			if (this.includedHistoryEntries.length) {
 				mostRecentDate = {
-					year: includedHistoryEntries[0].date.year,
-					month: !!includedHistoryEntries[0].date.month
-						? includedHistoryEntries[0].date.month
+					year: this.includedHistoryEntries[0].date.year,
+					month: !!this.includedHistoryEntries[0].date.month
+						? this.includedHistoryEntries[0].date.month
 						: undefined,
-					day: !!includedHistoryEntries[0].date.day
-						? includedHistoryEntries[0].date.day
+					day: !!this.includedHistoryEntries[0].date.day
+						? this.includedHistoryEntries[0].date.day
 						: undefined
 				}
 			}
@@ -1047,8 +1045,8 @@ export class PromptBuilder {
 	}) {
 		return {
 			promptFormat: useChatFormat
-				? (this.connection.promptFormat || "").toLowerCase()
-				: "N/A - Chat Completions",
+				? "N/A - Chat Completions"
+				: (this.connection.promptFormat || "").toLowerCase(),
 			templateName: this.contextConfig?.name || null,
 			timestamp: new Date().toISOString(),
 			truncationReason: excludedIds.length ? "token_limit" : null,
@@ -1135,7 +1133,11 @@ export class PromptBuilder {
 			renderedPrompt,
 			renderedMessages,
 			totalTokens,
-			chatMessages: { included: includedChatMessages, includedIds, excludedIds }
+			chatMessages: {
+				included: includedChatMessages,
+				includedIds,
+				excludedIds
+			}
 		} = await this.infillContent({
 			templateContext,
 			charName,
@@ -1149,11 +1151,14 @@ export class PromptBuilder {
 			useChatFormat
 		})
 
+		// console.log(this.includedWorldLoreEntries)
+
 		// Default: return as before
 		return {
 			prompt: renderedPrompt,
 			messages: renderedMessages,
 			meta: {
+				...meta,
 				tokenCounts: {
 					total: totalTokens as number,
 					limit: this.tokenLimit
@@ -1164,7 +1169,30 @@ export class PromptBuilder {
 					includedIds,
 					excludedIds
 				},
-				sources
+				sources: {
+					...sources,
+					lorebooks: {
+						worldLore: {
+							included: this.includedWorldLoreEntries.length,
+							total:
+								this.chat.lorebook?.worldLoreEntries.length || 0
+							// entries: this.includedWorldLoreEntries
+						},
+						characterLore: {
+							included: this.includedCharacterLoreEntries.length,
+							total:
+								this.chat.lorebook?.characterLoreEntries
+									.length || 0
+							// entries: this.includedCharacterLoreEntries
+						},
+						history: {
+							included: this.includedHistoryEntries.length,
+							total:
+								this.chat.lorebook?.historyEntries.length || 0
+							// entries: this.includedHistoryEntries
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1277,9 +1305,7 @@ function isHistoryEntry(entry: any): entry is SelectHistoryEntry {
 	return entry && typeof entry === "object" && "date" in entry
 }
 
-function parseSplitChatPrompt(
-	prompt: string
-): ChatCompletionMessageParam[] {
+function parseSplitChatPrompt(prompt: string): ChatCompletionMessageParam[] {
 	const blocks = prompt.split(/(?=<@role:(user|assistant|system)>\s*)/g)
 	// TODO: populate the name param, but local models may ignore it anyway
 	const messages = blocks

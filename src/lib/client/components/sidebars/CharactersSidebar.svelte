@@ -1,13 +1,12 @@
 <script lang="ts">
 	import * as skio from "sveltekit-io"
-	import { getContext, onMount } from "svelte"
+	import { getContext, onDestroy, onMount } from "svelte"
 	import { Avatar, FileUpload, Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import CharacterForm from "../characterForms/CharacterForm.svelte"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
-	import { goto } from "$app/navigation"
-	import { page } from "$app/state"
+	import type { SpecV3 } from "@lenml/char-card-reader"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -18,8 +17,9 @@
 	const socket = skio.get()
 	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 
-	let characterList: Sockets.CharacterList.Response["characterList"] =
-		$state([])
+	let characterList: Sockets.CharacterList.Response["characterList"] = $state(
+		[]
+	)
 	let search = $state("")
 	let characterId: number | undefined = $state()
 	let isCreating = $state(false)
@@ -30,6 +30,9 @@
 	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 	let showImportModal = $state(false)
 	let onEditFormCancel: (() => void) | undefined = $state()
+	let importingLorebook: SpecV3.Lorebook | null = $state(null)
+	let importingLorebookCharacter: SelectCharacter | null = $state(null)
+	let showLorebookImportConfirmationModal = $state(false)
 
 	let unsavedChanges = $derived.by(() => {
 		return !isCreating && !characterId ? false : !isSafeToCloseCharacterForm
@@ -145,9 +148,9 @@
 		}
 		reader.readAsDataURL(file)
 		showImportModal = false
-		const req: Sockets.CharacterCardImport.Call = {
-			file
-		}
+		// const req: Sockets.CharacterCardImport.Call = {
+		// 	file
+		// }
 	}
 
 	function handleCharacterClick(
@@ -157,12 +160,56 @@
 		panelsCtx.openPanel({ key: "chats", toggle: false })
 	}
 
+	function confirmLorebookImport() {
+		const req: Sockets.LorebookImport.Call = {
+			lorebookData: importingLorebook!,
+			characterId: importingLorebookCharacter?.id
+		}
+		socket.emit("lorebookImport", req)
+		showLorebookImportConfirmationModal = false
+		importingLorebook = null
+		importingLorebookCharacter = null
+	}
+
+	function cancelLorebookImport() {
+		showLorebookImportConfirmationModal = false
+		importingLorebook = null
+		importingLorebookCharacter = null
+	}
+
 	onMount(() => {
 		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
 			characterList = msg.characterList
 		})
+		socket.on(
+			"characterCardImport",
+			(msg: Sockets.CharacterCardImport.Response) => {
+				importingLorebook = msg.book || null
+				toaster.success({
+					title: `Character Imported`,
+					description: `Character ${msg.character.nickname || msg.character.name} imported successfully.`
+				})
+				if (!!importingLorebook) {
+					importingLorebookCharacter =
+						importingLorebook.character || null
+					showLorebookImportConfirmationModal = true
+				}
+			}
+		)
+		socket.on("lorebookImport", (msg: Sockets.LorebookImport.Response) => {
+			toaster.success({
+				title: `Lorebook Imported`,
+				description: `Lorebook imported successfully.`
+			})
+		})
 		socket.emit("characterList", {})
 		onclose = handleOnClose
+	})
+
+	onDestroy(() => {
+		socket.off("characterList")
+		socket.off("characterCardImport")
+		onclose = undefined
 	})
 </script>
 
@@ -278,72 +325,124 @@
 	{/if}
 </div>
 
-<Modal
-	open={showDeleteModal}
-	onOpenChange={(e) => (showDeleteModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
-	backdropClasses="backdrop-blur-sm"
->
-	{#snippet content()}
-		<div class="p-6">
-			<h2 class="mb-2 text-lg font-bold">Delete Character?</h2>
-			<p class="mb-4">
-				Are you sure you want to delete this character? This action
-				cannot be undone.
-			</p>
-			<div class="flex justify-end gap-2">
-				<button
-					class="btn preset-filled-surface-500"
-					onclick={cancelDelete}
-				>
-					Cancel
-				</button>
-				<button
-					class="btn preset-filled-error-500"
-					onclick={confirmDelete}
-				>
-					Delete
-				</button>
+{#if showDeleteModal}
+	<Modal
+		open={showDeleteModal}
+		onOpenChange={(e) => (showDeleteModal = e.open)}
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+		backdropClasses="backdrop-blur-sm"
+	>
+		{#snippet content()}
+			<div class="p-6">
+				<h2 class="mb-2 text-lg font-bold">Delete Character?</h2>
+				<p class="mb-4">
+					Are you sure you want to delete this character? This action
+					cannot be undone.
+				</p>
+				<div class="flex justify-end gap-2">
+					<button
+						class="btn preset-filled-surface-500"
+						onclick={cancelDelete}
+					>
+						Cancel
+					</button>
+					<button
+						class="btn preset-filled-error-500"
+						onclick={confirmDelete}
+					>
+						Delete
+					</button>
+				</div>
 			</div>
-		</div>
-	{/snippet}
-</Modal>
+		{/snippet}
+	</Modal>
+{/if}
 
-<Modal
-	open={showImportModal}
-	onOpenChange={(e) => (showImportModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
-	backdropClasses="backdrop-blur-sm"
->
-	{#snippet content()}
-		<div class="p-6">
-			<h2 class="mb-2 text-lg font-bold">Import Character</h2>
-			<p class="mb-4">
-				Import your character card. (JSON is not supported yet.)
-			</p>
-			<FileUpload
-				name="example"
-				accept=".png,.apng,.jpeg, .jpg, .webp"
-				maxFiles={1}
-				onFileAccept={handleFileImport}
-				onFileReject={console.error}
-				classes="w-full bg-surface-50-950"
-			/>
-			<div class="mt-4 flex gap-2">
-				<button
-					class="btn preset-filled-surface-500"
-					onclick={() => (showImportModal = false)}
-				>
-					Cancel
-				</button>
+{#if showImportModal}
+	<Modal
+		open={showImportModal}
+		onOpenChange={(e) => (showImportModal = e.open)}
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+		backdropClasses="backdrop-blur-sm"
+	>
+		{#snippet content()}
+			<div class="p-6">
+				<h2 class="mb-2 text-lg font-bold">Import Character</h2>
+				<p class="mb-4">
+					Import your character card. (JSON is not supported yet.)
+				</p>
+				<FileUpload
+					name="example"
+					accept=".png,.apng,.jpeg, .jpg, .webp"
+					maxFiles={1}
+					onFileAccept={handleFileImport}
+					onFileReject={console.error}
+					classes="w-full bg-surface-50-950"
+				/>
+				<div class="mt-4 flex gap-2">
+					<button
+						class="btn preset-filled-surface-500"
+						onclick={() => (showImportModal = false)}
+					>
+						Cancel
+					</button>
+				</div>
 			</div>
-		</div>
-	{/snippet}
-</Modal>
+		{/snippet}
+	</Modal>
+{/if}
 
-<CharacterUnsavedChangesModal
-	open={showUnsavedChangesModal}
-	onOpenChange={handleUnsavedChangesOnOpenChange}
-	onConfirm={handleCloseModalDiscard}
-	onCancel={handleCloseModalCancel}
-/>
+{#if showLorebookImportConfirmationModal}
+	<Modal
+		open={showLorebookImportConfirmationModal}
+		onOpenChange={(e) => {
+			showLorebookImportConfirmationModal = e.open
+			importingLorebook = null
+			importingLorebookCharacter = null
+		}}
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+		backdropClasses="backdrop-blur-sm"
+	>
+		{#snippet content()}
+			<div class="p-6">
+				<h2 class="mb-2 text-lg font-bold">Import Lorebook?</h2>
+				<p class="mb-4">
+					A lorebook is associated with this character card. Would you
+					like to import it?
+				</p>
+				<label class="mb-2 block font-semibold" for="lorebookName">
+					Lorebook Name
+				</label>
+				<input
+					name="lorebookName"
+					type="text"
+					class="input mb-4 w-full"
+					bind:value={importingLorebook!.name}
+				/>
+				<div class="flex justify-end gap-2">
+					<button
+						class="btn preset-filled-surface-500"
+						onclick={cancelLorebookImport}
+					>
+						Cancel
+					</button>
+					<button
+						class="btn preset-filled-primary-500"
+						onclick={confirmLorebookImport}
+					>
+						Import Lorebook
+					</button>
+				</div>
+			</div>
+		{/snippet}
+	</Modal>
+{/if}
+
+{#if showUnsavedChangesModal}
+	<CharacterUnsavedChangesModal
+		open={showUnsavedChangesModal}
+		onOpenChange={handleUnsavedChangesOnOpenChange}
+		onConfirm={handleCloseModalDiscard}
+		onCancel={handleCloseModalCancel}
+	/>
+{/if}

@@ -5,6 +5,7 @@ import * as schema from "$lib/server/db/schema"
 import type { Schema } from "inspector/promises"
 import type { P } from "ollama/dist/shared/ollama.d792a03f.mjs"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions/completions"
+import { FileAcceptDetails } from "../node_modules/@zag-js/file-upload/dist/index.d"
 
 // for information about these interfaces
 declare global {
@@ -31,7 +32,7 @@ declare global {
 		rightPanel: string | null
 		mobilePanel: string | null
 		isMobileMenuOpen: boolean
-		openPanel: (args:{key: string, toggle?: boolean}) => void
+		openPanel: (args: { key: string; toggle?: boolean }) => void
 		closePanel: (args: {
 			panel: "left" | "right" | "mobile"
 		}) => Promise<boolean>
@@ -85,8 +86,10 @@ declare global {
 	type InsertLorebook = typeof schema.lorebooks.$inferInsert
 	type SelectWorldLoreEntry = typeof schema.worldLoreEntries.$inferSelect
 	type InsertWorldLoreEntry = typeof schema.worldLoreEntries.$inferInsert
-	type SelectCharacterLoreEntry = typeof schema.characterLoreEntries.$inferSelect
-	type InsertCharacterLoreEntry = typeof schema.characterLoreEntries.$inferInsert
+	type SelectCharacterLoreEntry =
+		typeof schema.characterLoreEntries.$inferSelect
+	type InsertCharacterLoreEntry =
+		typeof schema.characterLoreEntries.$inferInsert
 	type SelectHistoryEntry = typeof schema.historyEntries.$inferSelect
 	type InsertHistoryEntry = typeof schema.historyEntries.$inferInsert
 	type SelectTag = typeof schema.tags.$inferSelect
@@ -611,9 +614,9 @@ declare global {
 		// Lorebook Binding List
 		namespace LorebookBindingList {
 			interface Call {
-				lorebookId: number,
+				lorebookId: number
 				with?: {
-					character?: boolean,
+					character?: boolean
 					persona?: boolean
 				}
 			}
@@ -816,6 +819,32 @@ declare global {
 				historyEntry: SelectHistoryEntry
 			}
 		}
+		// Character Card Import
+		namespace CharacterCardImport {
+			interface Call {
+				file: string // base64 or data URL
+			}
+			interface Response {
+				character: SelectCharacter
+				book: any | null // adjust type if you have a type for character_book
+			}
+		}
+
+		// Import Lorebook
+		namespace LorebookImport {
+			interface Call {
+				lorebookData: SpecV3.Lorebook
+				characterId?: number
+			}
+			interface Response {
+				lorebook: SelectLorebook & {
+					lorebookBindings: SelectLorebookBinding[]
+					worldLoreEntries: SelectWorldLoreEntry[]
+					characterLoreEntries: SelectCharacterLoreEntry[]
+					historyEntries: SelectHistoryEntry[]
+				}
+			}
+		}
 	}
 
 	export interface CharaImportMetadata {
@@ -848,10 +877,10 @@ declare global {
 		spec_version: string
 	}
 
-	export type CompiledPrompt = ({
-				prompt?: string
-				messages?: ChatCompletionMessageParam[]
-		  } & CompiledPromptMeta)
+	export type CompiledPrompt = {
+		prompt?: string
+		messages?: ChatCompletionMessageParam[]
+	} & CompiledPromptMeta
 
 	type CompiledPromptMeta = {
 		meta: {
@@ -884,6 +913,10 @@ declare global {
 				scenario: null | "character" | "chat"
 			}
 		}
+	}
+
+	interface FileAcceptDetails {
+		files: File[]
 	}
 }
 

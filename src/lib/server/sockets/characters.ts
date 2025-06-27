@@ -159,6 +159,7 @@ export async function characterCardImport(
             v3Data.creation_date && !isNaN(Number(v3Data.creation_date))
                 ? new Date(Number(v3Data.creation_date)).toISOString()
                 : new Date().toISOString()
+
         const data: InsertCharacter = {
             userId,
             name: v3Data.name || "Imported Character",
@@ -208,7 +209,7 @@ export async function characterCardImport(
 
         const mimeType = await detectMimeType(base64)
 
-        console.log("Extracted mime type:", mimeType)
+        // console.log("Extracted mime type:", mimeType)
         const supportedMimeTypes = [
             "image/png",
             "image/apng",
@@ -227,8 +228,8 @@ export async function characterCardImport(
         // TODO: Import tags
         // TODO: Import lorebook
 
-        const res: Sockets.CharacterCardImport.Response = { character }
-        emitToUser("createCharacter", res)
+        const res: Sockets.CharacterCardImport.Response = { character, book: v3Data.character_book || null }
+        emitToUser("characterCardImport", res)
         await characterList(socket, {}, emitToUser)
     } catch (e: any) {
         console.error("Error importing character card:", e)
