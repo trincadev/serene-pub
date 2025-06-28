@@ -138,7 +138,7 @@
 					chat = msg.chat
 					name = chat.name || ""
 					scenario = chat.scenario || ""
-					groupReplyStrategy = chat.group_reply_strategy || "ordered"
+					groupReplyStrategy = chat.groupReplyStrategy || "ordered"
 					selectedCharacters =
 						chat.chatCharacters?.map((cc) => cc.character) || []
 					selectedPersonas =

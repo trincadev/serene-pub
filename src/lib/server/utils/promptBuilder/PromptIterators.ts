@@ -5,12 +5,24 @@ import type { BasePromptChat } from "../../connectionAdapters/BaseConnectionAdap
 export function* chatMessageIterator({chat, priority}:{chat: BasePromptChat, priority: number}): IterableIterator<SelectChatMessage> {
   const messages = chat.chatMessages || [];
   if (priority === 4) {
-    for (const msg of messages.slice(-3).reverse()) {
-      yield msg;
+    // If there are 3 or fewer messages, yield all in reverse order
+    if (messages.length <= 3) {
+      for (const msg of messages.slice().reverse()) {
+        yield msg;
+      }
+    } else {
+      for (const msg of messages.slice(-3).reverse()) {
+        yield msg;
+      }
     }
   } else if (priority === 2) {
-    for (const msg of messages.slice(0, -3).reverse()) {
-      yield msg;
+    // If there are 3 or fewer messages, yield none
+    if (messages.length <= 3) {
+      // yield nothing
+    } else {
+      for (const msg of messages.slice(0, -3).reverse()) {
+        yield msg;
+      }
     }
   }
 }

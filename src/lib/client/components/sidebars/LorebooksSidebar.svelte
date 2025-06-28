@@ -13,6 +13,7 @@
 	import HistoryEntryManager from "../lorebookForms/HistoryEntryManager.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import type { SpecV3 } from "@lenml/char-card-reader"
+	import SidebarListItem from "../SidebarListItem.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -117,7 +118,7 @@
 		socket.emit("createLorebook", req)
 	}
 
-	async function handleSwitchTabGroup(e: ValueChangeDetails): void {
+	async function handleSwitchTabGroup(e: ValueChangeDetails): Promise<void> {
 		if (!tabHasUnsavedChanges) {
 			editGroup = e.value as EditGroup
 			await tick()
@@ -359,16 +360,14 @@
 			{:else}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				{#each filteredLorebooks as l}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<div
-						class="sidebar-list-item"
+				<SidebarListItem
+						id={l.id}
 						onclick={(e) => handleLorebookClick(e, { lorebook: l })}
+						contentTitle="Edit lorebook"
 					>
-						<span class="text-muted-foreground w-[2.5em] text-xs">
-							#{l.id}
-						</span>
-						<div class="min-w-0 flex-1">
-							<div class="truncate font-semibold">
+						{#snippet content()}
+						<div class="flex flex-col gap-1 text-left">
+														<div class="truncate font-semibold">
 								{l.name}
 							</div>
 							<div
@@ -376,6 +375,11 @@
 							>
 								{l.description || "No description provided."}
 							</div>
+						</div>
+						{/snippet}
+						{#snippet extraContent()}
+						<div class="min-w-0 flex-1">
+
 							<button
 								class="btn btn-sm"
 								class:preset-filled-primary-500={l
@@ -457,7 +461,20 @@
 									: ""}
 							</button>
 						</div>
-					</div>
+						{/snippet}
+						{#snippet controls()}
+						<button
+									class="btn btn-sm text-error-500 p-2"
+									onclick={(e) => {
+										e.stopPropagation()
+										// TODO
+									}}
+									title="Delete Lorebook"
+								>
+									<Icons.Trash2 size={16} />
+								</button>
+						{/snippet}
+					</SidebarListItem>
 				{/each}
 			{/if}
 		</div>

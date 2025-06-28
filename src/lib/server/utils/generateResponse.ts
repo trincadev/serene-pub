@@ -50,6 +50,7 @@ export async function generateResponse({
 			}
 		}
 	})
+
 	const user = await db.query.users.findFirst({
 		where: (u, { eq }) => eq(u.id, userId),
 		with: {
@@ -65,6 +66,8 @@ export async function generateResponse({
 	const tokenCounter = new TokenCounters("estimate")
 	const tokenLimit = 4096
 	const contextThresholdPercent = 0.8
+
+	console.log("Generating response with characterId:", generatingMessage.characterId)
 
 	const adapter = new Adapter({
 		chat,

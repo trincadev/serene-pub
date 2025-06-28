@@ -8,6 +8,7 @@
 	import { toaster } from "$lib/client/utils/toaster"
 	import { page } from "$app/state"
 	import Avatar from "../Avatar.svelte"
+	import SidebarListItem from "../SidebarListItem.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -235,20 +236,11 @@
 			{:else}
 				<ul class="flex flex-col gap-2">
 					{#each filteredChats as chat}
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-						<li
-							class="sidebar-list-item flex items-center"
-							onclick={() => handleChatClick(chat)}
-							title="Open Chat"
-						>
-							<div class="relative w-fit">
-								{#if chat}
-									{@const avatars = [
-										...(chat.chatCharacters || []).map(
-											(cc) => ({
-												type: "character",
-												data: cc.character
+					{@const avatars = [
+								...(chat.chatCharacters || []).map(
+									(cc) => ({
+										type: "character",
+										data: cc.character
 											})
 										),
 										...(chat.chatPersonas || []).map(
@@ -258,6 +250,13 @@
 											})
 										)
 									]}
+					<SidebarListItem
+						onclick={(e) => handleChatClick(chat)}
+						contentTitle="Go to chat"
+					>
+						{#snippet content()}
+						<div class="relative w-fit">
+							
 									<div
 										class="relative mr-2 flex flex-shrink-0 flex-grow-0 items-center"
 									>
@@ -295,14 +294,13 @@
 											{/if}
 										{/if}
 									</div>
-								{/if}
 							</div>
 							<div class="flex min-w-0 flex-col">
-								<div class="truncate font-semibold">
+								<div class="truncate font-semibold text-left">
 									{chat.name || "Untitled Chat"}
 								</div>
 								<div
-									class="text-muted-foreground line-clamp-2 text-xs"
+									class="text-muted-foreground line-clamp-2 text-xs text-left"
 								>
 									{#if chat.chatCharacters?.length}
 										{chat.chatCharacters
@@ -323,9 +321,11 @@
 									{/if}
 								</div>
 							</div>
-							<div class="ml-auto flex gap-4">
+						{/snippet}
+						{#snippet controls()}
+						<div class="ml-auto flex gap-4 flex-col">
 								<button
-									class="btn btn-sm text-primary-500 px-0"
+									class="btn btn-sm text-primary-500 p-4"
 									onclick={() => {
 										handleEditClick(chat.id!)
 									}}
@@ -334,7 +334,7 @@
 									<Icons.Edit size={16} />
 								</button>
 								<button
-									class="btn btn-sm text-error-500 px-0"
+									class="btn btn-sm text-error-500 p-4"
 									onclick={(e) => {
 										e.stopPropagation()
 										handleDeleteClick(chat.id!)
@@ -344,7 +344,8 @@
 									<Icons.Trash2 size={16} />
 								</button>
 							</div>
-						</li>
+						{/snippet}
+</SidebarListItem>
 					{/each}
 				</ul>
 			{/if}

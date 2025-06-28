@@ -24,6 +24,7 @@
 		isFavorite: boolean
 		_avatarFile?: File | undefined
 		_avatar: string
+		lorebookId: number | null
 	}
 
 	export interface Props {
@@ -60,7 +61,8 @@
 		isFavorite: false,
 		characterVersion: "",
 		_avatarFile: undefined,
-		_avatar: ""
+		_avatar: "",
+		lorebookId: null
 	})
 	let originalCharacterData: EditCharacterData = $state({
 		...editCharacterData
@@ -87,6 +89,7 @@
 	let showCancelModal = $state(false)
 	let newLangKey = $state("")
 	let newLangNote = $state("")
+	let lorebookList: Sockets.LorebookList.Response["lorebookList"] = $state([])
 
 	// Events: avatarChange, save, cancel
 	function handleAvatarChange(e: Event) {
@@ -182,7 +185,6 @@
 			JSON.stringify(originalCharacterData)
 	})
 
-
 	onMount(() => {
 		onCancel = handleCancel
 		socket.on("createCharacter", (res) => {
@@ -196,12 +198,14 @@
 				closeForm()
 			}
 		})
+		socket.on("lorebookList", (message: Sockets.LorebookList.Response) => {
+			lorebookList =
+				message.lorebookList.sort((a, b) =>
+					a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+				) || []
+		})
 		if (characterId) {
-			socket.once("character", (message) => {
-				console.log(
-					"[CharacterForm] Received character data:",
-					message.character
-				)
+			socket.once("character", (message: Sockets.Character.Response) => {
 				character = message.character
 				editCharacterData = {
 					...editCharacterData,
@@ -211,15 +215,18 @@
 			})
 			socket.emit("character", { id: characterId })
 		}
+		socket.emit("lorebookList", {})
 	})
 
 	onDestroy(() => {
 		socket.off("createCharacter")
+		socket.off("updateCharacter")
+		socket.off("character")
 	})
 </script>
 
 <div
-	class="border-primary bg-background animate-fade-in border-surface-500/25 min-h-full rounded-lg border p-2 shadow-lg"
+	class="animate-fade-inmin-h-full"
 >
 	<h2 class="mb-4 text-lg font-bold">
 		{mode === "edit"
@@ -317,18 +324,6 @@
 				class="input"
 			/>
 		</div>
-		<div class="flex flex-col gap-1">
-			<label class="font-semibold" for="charVersion">
-				Character Version
-			</label>
-			<input
-				id="charVersion"
-				type="text"
-				bind:value={editCharacterData.characterVersion}
-				class="input"
-				placeholder="1.0"
-			/>
-		</div>
 		<div class="flex flex-col gap-2">
 			<button
 				type="button"
@@ -417,17 +412,21 @@
 			{#if expanded.alternateGreetings}
 				<div class="flex flex-col gap-1">
 					{#each editCharacterData.alternateGreetings as greeting, idx (idx)}
-						<div class="flex items-center gap-2">
-							<input
-								type="text"
-								bind:value={
-									editCharacterData.alternateGreetings[idx]
-								}
-								class="input input-xs bg-background border-muted flex-1 rounded border"
-								placeholder="Greeting..."
-							/>
+						<div class="flex flex-col items-center gap-2">
+							<div class="w-full">
+								<textarea
+									rows="2"
+									bind:value={
+										editCharacterData.alternateGreetings[
+											idx
+										]
+									}
+									class="input input-xs bg-background border-muted resize-y rounded border w-full"
+									placeholder="Greeting..."
+								></textarea>
+							</div>
 							<button
-								class="btn btn-sm preset-filled-error-500"
+								class="btn btn-sm preset-tonal-error w-full"
 								type="button"
 								onclick={() =>
 									removeFromArray(
@@ -435,7 +434,7 @@
 										idx
 									)}
 							>
-								<Icons.Minus class="h-4 w-4" />
+								<Icons.Minus class="h-4 w-4" /> Delete
 							</button>
 						</div>
 					{/each}
@@ -565,17 +564,19 @@
 			{#if expanded.groupOnlyGreetings}
 				<div class="flex flex-col gap-1">
 					{#each editCharacterData.groupOnlyGreetings as greeting, idx (idx)}
-						<div class="flex items-center gap-2">
-							<input
-								type="text"
+						<div class="flex flex-col items-center gap-2">
+							<div class="w-full">
+							<textarea
+								rows="2"
 								bind:value={
 									editCharacterData.groupOnlyGreetings[idx]
 								}
-								class="input input-xs bg-background border-muted flex-1 rounded border"
+								class="textarea rounded border resize-y w-full"
 								placeholder="Group greeting..."
-							/>
+							></textarea>
+							</div>
 							<button
-								class="btn btn-sm preset-filled-success-500"
+								class="btn btn-sm preset-tonal-error w-full"
 								type="button"
 								onclick={() =>
 									removeFromArray(
@@ -583,7 +584,7 @@
 										idx
 									)}
 							>
-								-
+								<Icons.Minus class="h-4 w-4" /> Delete
 							</button>
 						</div>
 					{/each}
@@ -620,6 +621,31 @@
 					placeholder="Instructions for post-history processing..."
 				></textarea>
 			{/if}
+		</div>
+		<div class="flex flex-col gap-1">
+			<label class="font-semibold" for="charVersion">
+				Character Version
+			</label>
+			<input
+				id="charVersion"
+				type="text"
+				bind:value={editCharacterData.characterVersion}
+				class="input"
+				placeholder="1.0"
+			/>
+		</div>
+		<div class="flex flex-col gap-2">
+			<label class="font-semibold" for="lorebookSelect">Lorebook</label>
+			<select
+				id="lorebookSelect"
+				class="select"
+				bind:value={editCharacterData.lorebookId}
+			>
+				<option value={null}>None</option>
+				{#each lorebookList as lb}
+					<option value={lb.id}>{`#${lb.id} - ${lb.name}`}</option>
+				{/each}
+			</select>
 		</div>
 		<div class="mt-2 flex items-center gap-2">
 			<Switch

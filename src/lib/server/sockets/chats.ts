@@ -6,6 +6,7 @@ import { getNextCharacterTurn } from "$lib/server/utils/getNextCharacterTurn"
 import type { BaseConnectionAdapter } from "../connectionAdapters/BaseConnectionAdapter"
 import { getConnectionAdapter } from "../utils/getConnectionAdapter"
 import { TokenCounters } from "$lib/server/utils/TokenCounterManager"
+import { GroupReplyStrategies } from "$lib/shared/constants/GroupReplyStrategies"
 
 // --- Global map for active adapters ---
 export const activeAdapters = new Map<string, BaseConnectionAdapter>()
@@ -91,17 +92,24 @@ export async function createChat(
 		})
 		for (const cc of chatCharacters) {
 			if (!cc.character) continue
-			const firstMessageContent = (cc.character.firstMessage || "").trim()
-			if (firstMessageContent) {
+			const greetings = buildCharacterFirstChatMessage({ character: cc.character, isGroup: !!newChat.isGroup })
+			if (greetings.length > 0) {
 				const newMessage: InsertChatMessage = {
 					userId,
 					chatId: newChat.id,
 					personaId: null,
 					characterId: cc.character.id,
 					role: "assistant",
-					content: firstMessageContent,
+					content: greetings[0],
 					createdAt: new Date().toString(),
-					isGenerating: false
+					isGenerating: false,
+					metadata: {
+						isGreeting: true,
+						swipes: {
+							currentIdx: 0,
+							history: greetings as any // Patch: force string[]
+						}
+					}
 				}
 				await db.insert(schema.chatMessages).values(newMessage)
 			}
@@ -264,52 +272,62 @@ export async function sendPersonaMessage(
 	let maxTurns = 20 // Prevent infinite loops in case of data issues
 	let currentTurn = 1
 
-	while (chat && chat.chatCharacters.length > 0 && currentTurn <= maxTurns) {
-		currentTurn++
-		// Always fetch the latest chat state at the start of each loop
-		chat = await getPromptChatFromDb(chatId, userId)
-		if (!chat) break
-		const nextCharacterId = getNextCharacterTurn(
-			{
-				chatMessages: chat!.chatMessages,
-				chatCharacters: chat!.chatCharacters.filter(
-					(cc) => cc.character !== null
-				) as any,
-				chatPersonas: chat!.chatPersonas.filter(
-					(cp) => cp.persona !== null
-				) as any
-			},
-			{ triggered: false }
-		)
-		if (!nextCharacterId) {
-			break
-		}
-		const nextCharacter = chat.chatCharacters.find(
-			(cc) => cc.character && cc.character.id === nextCharacterId
-		)
+	// Check if group and group reply strategy
+	if (
+		!chat.isGroup ||
+		chat.groupReplyStrategy !== GroupReplyStrategies.MANUAL
+	) {
+		while (
+			chat &&
+			chat.chatCharacters.length > 0 &&
+			currentTurn <= maxTurns
+		) {
+			currentTurn++
+			// Always fetch the latest chat state at the start of each loop
+			chat = await getPromptChatFromDb(chatId, userId)
+			if (!chat) break
+			const nextCharacterId = getNextCharacterTurn(
+				{
+					chatMessages: chat!.chatMessages,
+					chatCharacters: chat!.chatCharacters.filter(
+						(cc) => cc.character !== null
+					) as any,
+					chatPersonas: chat!.chatPersonas.filter(
+						(cp) => cp.persona !== null
+					) as any
+				},
+				{ triggered: false }
+			)
+			if (!nextCharacterId) {
+				break
+			}
+			const nextCharacter = chat.chatCharacters.find(
+				(cc) => cc.character && cc.character.id === nextCharacterId
+			)
 
-		if (!nextCharacter || !nextCharacter.character) break
-		const assistantMessage: InsertChatMessage = {
-			userId,
-			chatId,
-			personaId: null,
-			characterId: nextCharacter.character.id,
-			content: "",
-			role: "assistant",
-			createdAt: new Date().toString(),
-			isGenerating: true
+			if (!nextCharacter || !nextCharacter.character) break
+			const assistantMessage: InsertChatMessage = {
+				userId,
+				chatId,
+				personaId: null,
+				characterId: nextCharacter.character.id,
+				content: "",
+				role: "assistant",
+				createdAt: new Date().toString(),
+				isGenerating: true
+			}
+			const [generatingMessage] = await db
+				.insert(schema.chatMessages)
+				.values(assistantMessage)
+				.returning()
+			await generateResponse({
+				socket,
+				emitToUser,
+				chatId,
+				userId,
+				generatingMessage: generatingMessage as any
+			})
 		}
-		const [generatingMessage] = await db
-			.insert(schema.chatMessages)
-			.values(assistantMessage)
-			.returning()
-		await generateResponse({
-			socket,
-			emitToUser,
-			chatId,
-			userId,
-			generatingMessage: generatingMessage as any
-		})
 	}
 }
 
@@ -418,11 +436,14 @@ export async function regenerateChatMessage(
 		...chatMessage,
 		content: "",
 		isGenerating: true,
-		id: undefined,
+		id: undefined
 	}
 
 	// Check if we need to clear swipe history
-	if (typeof (data.metadata?.swipes?.currentIdx || null) === "number" && (data.metadata?.swipes?.history.length || 0) > 0) {
+	if (
+		typeof (data.metadata?.swipes?.currentIdx || null) === "number" &&
+		(data.metadata?.swipes?.history.length || 0) > 0
+	) {
 		data.metadata!.swipes!.history[data.metadata!.swipes!.currentIdx!] = ""
 	}
 
@@ -444,6 +465,7 @@ export async function regenerateChatMessage(
 			} as any
 		})
 	} catch (error) {
+		console.log("Error during regeneration:", error)
 		let [canceledMsg] = await db
 			.update(schema.chatMessages)
 			.set({
@@ -492,24 +514,24 @@ export async function promptTokenCount(
 		return
 	}
 	let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
-	if (message.content && message.role) {
-		chatForPrompt.chatMessages.push({
-			id: -1,
-			chatId: chat.id,
-			userId: userId,
-			personaId: message.personaId ?? null,
-			characterId: null,
-			role: message.role,
-			content: message.content,
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString(),
-			isEdited: 0,
-			metadata: null,
-			isGenerating: false,
-			adapterId: null,
-			isHidden: null
-		})
-	}
+	// if (message.content && message.role) {
+	// 	// chatForPrompt.chatMessages.push({
+	// 	// 	id: -1,
+	// 	// 	chatId: chat.id,
+	// 	// 	userId: userId,
+	// 	// 	personaId: message.personaId ?? null,
+	// 	// 	characterId: null,
+	// 	// 	role: message.role,
+	// 	// 	content: message.content,
+	// 	// 	createdAt: new Date().toISOString(),
+	// 	// 	updatedAt: new Date().toISOString(),
+	// 	// 	isEdited: 0,
+	// 	// 	metadata: null,
+	// 	// 	isGenerating: false,
+	// 	// 	adapterId: null,
+	// 	// 	isHidden: null
+	// 	// })
+	// }
 	const currentCharacterId = getNextCharacterTurn(
 		{
 			chatMessages: chat.chatMessages,
@@ -894,19 +916,24 @@ export async function updateChat(
 			for (const cc of newChatCharacters) {
 				if (!cc.character) continue
 				if (!newCharacterIds.includes(cc.character.id)) continue
-				const firstMessageContent = (
-					cc.character.firstMessage || ""
-				).trim()
-				if (firstMessageContent) {
+				const greetings = buildCharacterFirstChatMessage({ character: cc.character, isGroup: message.characterIds.length > 1 })
+				if (greetings.length > 0) {
 					const newMessage: InsertChatMessage = {
 						userId,
 						chatId: message.chat.id,
 						personaId: null,
 						characterId: cc.character.id,
 						role: "assistant",
-						content: firstMessageContent,
+						content: greetings[0],
 						createdAt: new Date().toString(),
-						isGenerating: false
+						isGenerating: false,
+						metadata: {
+							isGreeting: true,
+							swipes: {
+								currentIdx: 0,
+								history: greetings as any // Patch: force string[]
+							}
+						}
 					}
 					await db.insert(schema.chatMessages).values(newMessage)
 				}
@@ -1024,8 +1051,8 @@ export async function chatMessageSwipeRight(
 			""
 	} else {
 		if (data.metadata!.swipes!.currentIdx === null) {
-			data.metadata!.swipes!.currentIdx = 0,
-			data.metadata!.swipes!.history.push(data.content)
+			;(data.metadata!.swipes!.currentIdx = 0),
+				data.metadata!.swipes!.history.push(data.content)
 		}
 		// Now increment the current index and content
 		data.metadata!.swipes!.currentIdx += 1
@@ -1089,7 +1116,7 @@ export async function chatMessageSwipeLeft(
 	message: Sockets.ChatMessageSwipeLeft.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-		const userId = 1 // Replace with actual user id
+	const userId = 1 // Replace with actual user id
 	const chat = await db.query.chats.findFirst({
 		where: (c, { eq, and }) =>
 			and(eq(c.id, message.chatId), eq(c.userId, userId)),
@@ -1187,8 +1214,7 @@ export async function chatMessageSwipeLeft(
 	data.metadata!.swipes!.currentIdx =
 		(data.metadata!.swipes!.currentIdx || 0) - 1
 	data.content =
-		data.metadata!.swipes!.history[data.metadata!.swipes!.currentIdx] ||
-		"" // Set content to the previous swipe content
+		data.metadata!.swipes!.history[data.metadata!.swipes!.currentIdx] || "" // Set content to the previous swipe content
 	// Update the chat message in the database
 	const [updatedMessage] = await db
 		.update(schema.chatMessages)
@@ -1214,4 +1240,24 @@ export async function chatMessageSwipeLeft(
 		done: true
 	}
 	emitToUser("chatMessageSwipeLeft", res)
+}
+
+// Builds the chatMessage history for the first chat message of a character, with history swipes for the user to choose from
+function buildCharacterFirstChatMessage({ character, isGroup }: { character: SelectCharacter, isGroup: boolean }): string[] {
+	const history: string[] = []
+	if (!isGroup || (isGroup && !character.groupOnlyGreetings?.length)) {
+		if (character.firstMessage) {
+			history.push(character.firstMessage.trim())
+		}
+		if (character.alternateGreetings) {
+			history.push(...character.alternateGreetings.map(g => g.trim()))
+		}
+	} else if (character.groupOnlyGreetings?.length) {
+		// If this is a group chat, use only group greetings
+		history.push(...character.groupOnlyGreetings.map(g => g.trim()))
+	} else {
+		// Fallback firstMessage if no greetings are available
+		history.push(`Sits down at the table, "I didn't think you'd show up so soon."`)
+	}
+	return history
 }

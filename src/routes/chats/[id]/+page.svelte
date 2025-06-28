@@ -7,6 +7,7 @@
 	import { renderMarkdownWithQuotedText } from "$lib/client/utils/markdownToHTML"
 	import { getContext, onMount } from "svelte"
 	import Avatar from "$lib/client/components/Avatar.svelte"
+	import { is } from "drizzle-orm"
 
 	let chat: Sockets.Chat.Response["chat"] | undefined = $state()
 	let newMessage = $state("")
@@ -37,6 +38,25 @@
 			return chat.chatMessages[chat.chatMessages.length - 1]
 		}
 		return undefined
+	})
+
+	let lastPersonaMessage: SelectChatMessage | undefined = $derived.by(() => {
+		if (chat && chat.chatMessages.length > 0) {
+			return chat.chatMessages
+				.slice()
+				.reverse()
+				.find((msg: SelectChatMessage) => msg.personaId)
+		}
+		return undefined
+	})
+
+	let canRegenerateLastMessage: boolean = $derived.by(() => {
+		return !lastMessage?.metadata?.isGreeting && (
+			!!lastMessage &&
+			!lastMessage.isGenerating &&
+			!lastMessage.isHidden &&
+			(!lastPersonaMessage || lastPersonaMessage.id < lastMessage.id)
+		) || false
 	})
 
 	function handleSend() {
@@ -242,6 +262,51 @@
 		socket.emit("chatMessageSwipeLeft", req)
 	}
 
+	function canSwipeRight(msg: SelectChatMessage, isGreeting: boolean): boolean {
+		console.log("Is greeting:", isGreeting)
+		// Only allow swipe right if:
+		// - Not generating
+		// - Not blocked by canRegenerateLastMessage
+		// - If greeting, only if not at the end of swipes
+		if (msg.isGenerating) return false
+		if (lastPersonaMessage && lastPersonaMessage.id >= msg.id) {
+			return false
+		}
+		if (isGreeting) {
+			const idx = msg.metadata?.swipes?.currentIdx
+			const len = msg.metadata?.swipes?.history?.length ?? 0
+			// Only allow swipe right if idx is not null/undefined and less than (len - 1)
+			if (typeof idx !== "number" || len === 0) return false
+			return idx < len - 1
+		}
+		return true
+	}
+
+	function showSwipeControls(
+		msg: SelectChatMessage,
+		isGreeting: boolean
+	): boolean {
+		let res = false
+		if (msg.id === lastMessage?.id) {
+			// If this is the last message, we always show swipe controls
+			res = canRegenerateLastMessage
+		} else if (msg.isGenerating) {
+			res = false
+		} else if (msg.role === "user") {
+			return false
+		} else if (isGreeting && (msg.metadata?.swipes?.history?.length ?? 0) <= 1) {
+			res = false
+		} else if (openMobileMsgControls === msg.id) {
+			res = true
+		} else if (isGreeting && (lastPersonaMessage?.id ?? 0) < msg.id) {
+			// If this is a greeting message and the last persona message is before this one,
+			// we do show swipe controls (could be multiple new characters with greetings that can be swiped)
+			res = true
+		}
+		console.log("Show swipe controls for message", msg.id, ":", res)
+		return res
+	}
+
 	onMount(() => {
 		socket.on("chat", (msg: Sockets.Chat.Response) => {
 			if (msg.chat.id === Number.parseInt(page.params.id)) {
@@ -345,16 +410,17 @@
 	<meta name="description" content="Serene Pub" />
 </svelte:head>
 
-<div class="flex h-full w-full flex-col lg:px-2">
+<div class="flex h-full w-full flex-col">
 	<div class="chat-messages flex-1" bind:this={chatMessagesContainer}>
 		{#if !chat || chat.chatMessages.length === 0}
 			<div class="text-muted mt-8 text-center">No messages yet.</div>
 		{:else}
-			<ul class="flex flex-col gap-3 py-2">
+			<ul class="flex flex-col gap-3">
 				{#each chat.chatMessages as msg (msg.id)}
 					{@const character = getMessageCharacter(msg)}
+					{@const isGreeting = !!msg.metadata?.isGreeting}
 					<li
-						class="bg-primary-50-950 flex flex-col rounded-lg p-2 lg:p-4"
+						class="bg-primary-50-950 flex flex-col rounded-lg p-2"
 						class:opacity-50={msg.isHidden &&
 							editChatMessage?.id !== msg.id}
 					>
@@ -452,7 +518,7 @@
 											{/snippet}
 										</Popover>
 									</div>
-									{#if lastMessage && lastMessage.id === msg.id}
+									{#if showSwipeControls(msg, isGreeting)}
 										<div class="ml-auto flex gap-6">
 											{#if ![null, undefined].includes(msg.metadata?.swipes?.currentIdx) && msg.metadata?.swipes?.history && msg.metadata?.swipes.history.length > 1}
 												<button
@@ -484,7 +550,7 @@
 												class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
 												title="Swipe Right"
 												onclick={() => swipeRight(msg)}
-												disabled={msg.isGenerating}
+												disabled={!canSwipeRight(msg, isGreeting)}
 											>
 												<Icons.ChevronRight size={24} />
 											</button>
@@ -854,7 +920,7 @@
 		<button
 			class="btn btn-sm msg-cntrl-icon hover:preset-filled-warning-500"
 			title="Regenerate Response"
-			disabled={msg.isHidden}
+			disabled={!canRegenerateLastMessage}
 			onclick={(e) => handleRegenerateMessage(e, msg)}
 		>
 			<Icons.RefreshCw size={16} />
@@ -903,7 +969,7 @@
 			class="btn preset-filled-warning-500"
 			title="Regenerate Last Message"
 			onclick={handleRegenerateLastMessage}
-			disabled={!lastMessage || lastMessage.isGenerating}
+			disabled={!canRegenerateLastMessage}
 		>
 			<Icons.RefreshCw size={24} />
 		</button>

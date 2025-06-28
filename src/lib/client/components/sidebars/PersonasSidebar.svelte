@@ -8,6 +8,7 @@
 	import { toaster } from "$lib/client/utils/toaster"
 	import { goto } from "$app/navigation"
 	import Avatar from "../Avatar.svelte"
+	import SidebarListItem from "../SidebarListItem.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -168,57 +169,61 @@
 				</div>
 			{:else}
 				{#each filteredPersonas as p}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div
-						class="sidebar-list-item"
+					<SidebarListItem
+						id={p.id}
 						onclick={() => handlePersonaClick(p)}
+						contentTitle="Go to persona chats"
 					>
-						<span class="text-muted-foreground w-[2.5em] text-xs">
-							#{p.id}
-						</span>
-						<!-- <Avatar
-							src={p.avatar}
-							size="w-[4em] h-[4em]"
-							name={p.name}
-							imageClasses="object-cover"
-						>
-							<Icons.User size={36} />
-						</Avatar> -->
-						<Avatar char={p} />
-						<div class="min-w-0 flex-1">
-							<div class="truncate">{p.name ?? "Unnamed"}</div>
-							{#if p.description}
-								<div
-									class="text-muted-foreground truncate text-xs"
+						{#snippet content()}
+						<Avatar
+									src={p.avatar || ""}
+									size="w-[4em] h-[4em] min-w-[4em] min-h-[4em]"
+									imageClasses="object-cover"
+									name={p.name!}
 								>
-									{p.description}
+									<Icons.User size={36} />
+								</Avatar>
+							<div class="flex gap-2 relative  flex-1">
+								
+								<div class="flex-1 relative">
+									<div class="truncate font-semibold text-left">
+										{p.name}
+									</div>
+									{#if p.description}
+										<div
+											class="text-muted-foreground line-clamp-2 text-xs text-left"
+										>
+											{p.description}
+										</div>
+									{/if}
 								</div>
-							{/if}
-						</div>
-						<div class="flex gap-4">
-							<button
-								class="btn btn-sm text-primary-500 px-0"
-								onclick={(e) => {
-									e.stopPropagation()
-									handleEditClick(p.id!)
-								}}
-								title="Edit Persona"
-							>
-								<Icons.Edit size={16} />
-							</button>
-							<button
-								class="btn btn-sm text-error-500 px-0"
-								onclick={(e) => {
-									e.stopPropagation()
-									handleDeleteClick(p.id!)
-								}}
-								title="Delete Personar"
-							>
-								<Icons.Trash2 size={16} />
-							</button>
-						</div>
-					</div>
+							</div>
+						{/snippet}
+						{#snippet controls()}
+							<div class="flex flex-col gap-4">
+								<button
+									class="btn btn-sm text-primary-500 p-2"
+									onclick={(e) => {
+										e.stopPropagation()
+										handleEditClick(p.id!)
+									}}
+									title="Edit Character"
+								>
+									<Icons.Edit size={16} />
+								</button>
+								<button
+									class="btn btn-sm text-error-500 p-2"
+									onclick={(e) => {
+										e.stopPropagation()
+										handleDeleteClick(p.id!)
+									}}
+									title="Delete Character"
+								>
+									<Icons.Trash2 size={16} />
+								</button>
+							</div>
+						{/snippet}
+					</SidebarListItem>
 				{/each}
 			{/if}
 		</div>

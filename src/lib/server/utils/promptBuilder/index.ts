@@ -411,7 +411,7 @@ export class PromptBuilder {
 			{
 				id: -2, // Placeholder for the current character's empty message
 				role: "assistant",
-				name: charName,
+				name: charName, // Only the placeholder uses the current character's name
 				message: ""
 			}
 		]
@@ -563,6 +563,8 @@ export class PromptBuilder {
 					// Normalize message structure
 					const msg = nextMessageVal.value
 					let msgInterpolationContext = { ...interpolationContext }
+					let assistantName = charName
+					let userName = personaName
 					if (msg.characterId && this.chat.chatCharacters) {
 						const foundChar = this.chat.chatCharacters.find(
 							(cc) => cc.character.id === msg.characterId
@@ -570,6 +572,9 @@ export class PromptBuilder {
 						let foundName: string | undefined
 						if (foundChar) {
 							foundName = foundChar.nickname || foundChar.name
+						}
+						if (msg.role === "assistant") {
+							assistantName = foundName || charName
 						}
 						msgInterpolationContext = {
 							...msgInterpolationContext,
@@ -582,27 +587,23 @@ export class PromptBuilder {
 							(cp) => cp.persona.id === msg.personaId
 						)?.persona
 						if (foundPersona) {
-							personaName = foundPersona.name
+							userName = foundPersona.name
 							msgInterpolationContext = {
 								...msgInterpolationContext,
-								user: personaName,
-								persona: personaName
+								user: userName,
+								persona: userName
 							}
 						}
 					}
 					const interpolate = (str: string | undefined) =>
-						str
-							? this.handlebars.compile(str)(
-									msgInterpolationContext
-								)
-							: str
+						str ? this.handlebars.compile(str)(msgInterpolationContext) : str
 					chatMessages.push({
 						id: msg.id,
 						role:
 							msg.role === "user" || msg.role === "assistant"
 								? msg.role
 								: "assistant",
-						name: msg.role === "assistant" ? charName : personaName,
+						name: msg.role === "assistant" ? assistantName : userName, // Use correct name for each assistant message
 						message: interpolate(msg.content)
 					})
 				}
@@ -993,6 +994,21 @@ export class PromptBuilder {
 			}
 		}
 
+		
+		////
+		// FINAL COMPILE
+		///
+
+		renderedPrompt = this.handlebars.compile(this.contextConfig.template)({
+			...templateContext,
+			chatMessages: [...chatMessages].reverse()
+		})
+
+		if (useChatFormat) {
+			renderedMessages = parseSplitChatPrompt(renderedPrompt)
+			renderedPrompt = JSON.stringify(renderedMessages)
+		}
+
 		return {
 			renderedPrompt: !useChatFormat ? renderedPrompt : undefined,
 			renderedMessages,
@@ -1147,11 +1163,22 @@ export class PromptBuilder {
 
 		const sources = this.buildSources(scenarioSource)
 		const meta = this.buildMeta({
-			excludedIds: includedIds,
+			excludedIds,
 			useChatFormat
 		})
 
-		// console.log(this.includedWorldLoreEntries)
+		// --- Lorebook entry totals ---
+		const lorebook = this.chat.lorebook
+		let worldLoreTotal = 0
+		let characterLoreTotal = 0
+		let historyTotal = 0
+		if (hasLorebookEntries(lorebook)) {
+			worldLoreTotal = lorebook.worldLoreEntries.length
+			characterLoreTotal = lorebook.characterLoreEntries.length
+			historyTotal = lorebook.historyEntries.length
+		}
+
+		// console.log("Prompt messages:" + JSON.stringify(renderedMessages))
 
 		// Default: return as before
 		return {
@@ -1169,30 +1196,7 @@ export class PromptBuilder {
 					includedIds,
 					excludedIds
 				},
-				sources: {
-					...sources,
-					lorebooks: {
-						worldLore: {
-							included: this.includedWorldLoreEntries.length,
-							total:
-								this.chat.lorebook?.worldLoreEntries.length || 0
-							// entries: this.includedWorldLoreEntries
-						},
-						characterLore: {
-							included: this.includedCharacterLoreEntries.length,
-							total:
-								this.chat.lorebook?.characterLoreEntries
-									.length || 0
-							// entries: this.includedCharacterLoreEntries
-						},
-						history: {
-							included: this.includedHistoryEntries.length,
-							total:
-								this.chat.lorebook?.historyEntries.length || 0
-							// entries: this.includedHistoryEntries
-						}
-					}
-				}
+				sources
 			}
 		}
 	}
@@ -1227,15 +1231,25 @@ export class PromptBuilder {
 		priority: number
 	}): IterableIterator<SelectChatMessage> {
 		const messages = this.chat.chatMessages || []
-		// Always include the last 3 messages as priority 4 (highest for chat)
 		if (priority === 4) {
-			for (const msg of messages.slice(-3).reverse()) {
-				yield msg
+			// If there are 3 or fewer messages, yield all in reverse order
+			if (messages.length <= 3) {
+				for (const msg of messages.slice().reverse()) {
+					yield msg
+				}
+			} else {
+				for (const msg of messages.slice(-3).reverse()) {
+					yield msg
+				}
 			}
 		} else if (priority === 2) {
-			// All other messages except the last 3
-			for (const msg of messages.slice(0, -3).reverse()) {
-				yield msg
+			// If there are 3 or fewer messages, yield none
+			if (messages.length <= 3) {
+				// yield nothing
+			} else {
+				for (const msg of messages.slice(0, -3).reverse()) {
+					yield msg
+				}
 			}
 		}
 	}
@@ -1318,4 +1332,18 @@ function parseSplitChatPrompt(prompt: string): ChatCompletionMessageParam[] {
 		.filter(Boolean)
 
 	return messages as ChatCompletionMessageParam[]
+}
+
+// Helper type guard for extended lorebook
+function hasLorebookEntries(lorebook: any): lorebook is SelectLorebook & {
+	worldLoreEntries: SelectWorldLoreEntry[]
+	characterLoreEntries: SelectCharacterLoreEntry[]
+	historyEntries: SelectHistoryEntry[]
+} {
+	return (
+		lorebook &&
+		Array.isArray(lorebook.worldLoreEntries) &&
+		Array.isArray(lorebook.characterLoreEntries) &&
+		Array.isArray(lorebook.historyEntries)
+	)
 }

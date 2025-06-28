@@ -466,7 +466,7 @@ export const chats = sqliteTable("chats", {
 	updatedAt: text("updated_at"),
 	scenario: text("scenario"),
 	metadata: text("metadata"), // JSON for extra settings
-	group_reply_strategy: text("group_reply_strategy").default(
+	groupReplyStrategy: text("group_reply_strategy").default(
 		GroupReplyStrategies.ORDERED
 	),
 	lorebookId: integer("lorebook_id").references(() => lorebooks.id, {
@@ -508,7 +508,7 @@ export const chatMessages = sqliteTable("chat_messages", {
 	createdAt: text("created_at"),
 	updatedAt: text("updated_at"),
 	isEdited: integer("is_edited").default(0), // 1 if edited, 0 otherwise
-	metadata: text("metadata", { mode: "json" }).$type<{swipes?:{currentIdx: number | null, history: []}}>(), // JSON for extra info
+	metadata: text("metadata", { mode: "json" }).$type<{isGreeting?: boolean, swipes?:{currentIdx: number | null, history: []}}>(), // JSON for extra info
 	isGenerating: integer("is_generating", { mode: "boolean" }).default(false), // 1 if processing, 0 otherwise
 	adapterId: text("adapter_id"), // UUID for in-flight adapter instance, nullable
 	isHidden: integer("is_hidden", { mode: "boolean" }).default(false) // Whether this message is processed or not

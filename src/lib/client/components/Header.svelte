@@ -36,12 +36,14 @@
         <!-- Desktop left nav -->
         <div class="hidden flex-1 justify-start gap-2 md:flex">
             {#each Object.entries(panelsCtx.leftNav) as [key, item]}
+            {@const isOpen = panelsCtx.leftPanel === key}
                 <button
-                    class="btn-ghost"
                     title={item.title}
                     onclick={() => panelsCtx.openPanel({key})}
                 >
-                    <item.icon class="text-foreground h-5 w-5" />
+                    <item.icon 
+                    class="{isOpen ? "text-primary-800-200" : ""} h-5 w-5 hover:text-primary-500 transition-colors"
+                    />
                 </button>
             {/each}
         </div>
@@ -58,12 +60,13 @@
         <!-- Desktop right nav -->
         <div class="hidden flex-1 justify-end gap-2 md:flex">
             {#each Object.entries(panelsCtx.rightNav) as [key, item]}
+                {@const isOpen = panelsCtx.rightPanel === key}
                 <button
                     class="btn-ghost"
                     title={item.title}
                     onclick={() => panelsCtx.openPanel({key})}
                 >
-                    <item.icon class="text-foreground h-5 w-5" />
+                    <item.icon class="{isOpen ? "text-primary-800-200" : ""} h-5 w-5 hover:text-primary-500 transition-colors" />
                 </button>
             {/each}
         </div>

@@ -7,6 +7,7 @@
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import type { SpecV3 } from "@lenml/char-card-reader"
+	import SidebarListItem from "../SidebarListItem.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -262,63 +263,67 @@
 		</div>
 		<div class="flex flex-col gap-2">
 			{#if filteredCharacters.length === 0}
-				<div class="text-muted-foreground py-8 text-center">
+				<div class="text-muted-foreground py-8 text-center w-100 relative">
 					No characters found.
 				</div>
 			{:else}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				{#each filteredCharacters as c}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<div
-						class="sidebar-list-item"
+					<SidebarListItem
+						id={c.id}
 						onclick={() => handleCharacterClick(c)}
+						contentTitle="Go to character chats"
 					>
-						<span class="text-muted-foreground w-[2.5em] text-xs">
-							#{c.id}
-						</span>
+						{#snippet content()}
 						<Avatar
-							src={c.avatar || ""}
-							size="w-[4em] h-[4em]"
-							imageClasses="object-cover"
-							name={c.nickname || c.name!}
-						>
-							<Icons.User size={36} />
-						</Avatar>
-						<div class="min-w-0 flex-1">
-							<div class="truncate font-semibold">
-								{c.nickname || c.name}
-							</div>
-							{#if c.description}
-								<div
-									class="text-muted-foreground truncate text-xs"
+									src={c.avatar || ""}
+									size="w-[4em] h-[4em] min-w-[4em] min-h-[4em]"
+									imageClasses="object-cover"
+									name={c.nickname || c.name!}
 								>
-									{c.description}
+									<Icons.User size={36} />
+								</Avatar>
+							<div class="flex gap-2 relative  flex-1">
+								
+								<div class="flex-1 relative">
+									<div class="truncate font-semibold text-left">
+										{c.nickname || c.name}
+									</div>
+									{#if c.description}
+										<div
+											class="text-muted-foreground line-clamp-2 text-xs text-left"
+										>
+											{c.description}
+										</div>
+									{/if}
 								</div>
-							{/if}
-						</div>
-						<div class="flex gap-4">
-							<button
-								class="btn btn-sm text-primary-500 px-0"
-								onclick={(e) => {
-									e.stopPropagation()
-									handleEditClick(c.id!)
-								}}
-								title="Edit Character"
-							>
-								<Icons.Edit size={16} />
-							</button>
-							<button
-								class="btn btn-sm text-error-500 px-0"
-								onclick={(e) => {
-									e.stopPropagation()
-									handleDeleteClick(c.id!)
-								}}
-								title="Delete Character"
-							>
-								<Icons.Trash2 size={16} />
-							</button>
-						</div>
-					</div>
+							</div>
+						{/snippet}
+						{#snippet controls()}
+							<div class="flex flex-col gap-4">
+								<button
+									class="btn btn-sm text-primary-500 p-2"
+									onclick={(e) => {
+										e.stopPropagation()
+										handleEditClick(c.id!)
+									}}
+									title="Edit Character"
+								>
+									<Icons.Edit size={16} />
+								</button>
+								<button
+									class="btn btn-sm text-error-500 p-2"
+									onclick={(e) => {
+										e.stopPropagation()
+										handleDeleteClick(c.id!)
+									}}
+									title="Delete Character"
+								>
+									<Icons.Trash2 size={16} />
+								</button>
+							</div>
+						{/snippet}
+					</SidebarListItem>
 				{/each}
 			{/if}
 		</div>

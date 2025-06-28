@@ -132,12 +132,25 @@
 			return false
 		}
 
+		if (!entry.date!.year) {
+			if (warn) {
+				toaster.error({ title: "Year is required" })
+			}
+			return false
+		}
+
 		if (!!entry.date!.day && !entry.date!.month) {
 			if (warn) {
 				toaster.error({ title: "Month is required if day is set" })
 			}
 			return false
 		}
+
+		if (!entry.keys) {
+			toaster.error({ title: "Keys are required" })
+			return false
+		}
+
 		return true
 	}
 
