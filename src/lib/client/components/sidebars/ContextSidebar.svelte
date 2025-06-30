@@ -208,12 +208,12 @@
                     <label class="font-semibold" for="contextTemplate">Template</label>
                     <textarea
                         id="template"
-                        rows="8"
+                        rows="20"
                         bind:value={contextConfig.template}
                         class="input w-full"
                     ></textarea>
                 </div>
-                <div class="flex flex-col gap-4">
+                <!-- <div class="flex flex-col gap-4">
                     <div class="flex flex-col gap-1">
                         <label class="flex items-center gap-2 font-semibold disabled">
                             <input
@@ -233,7 +233,7 @@
                             </p>
                         </div>
                     </div>
-                </div>
+                </div> -->
             {/if}
         </div>
     {/if}

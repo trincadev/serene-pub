@@ -182,10 +182,6 @@ class OllamaAdapter extends BaseConnectionAdapter {
 								return
 							}
 							for await (const part of result) {
-								console.log(
-									"[OllamaAdapter] Streaming part:",
-									part
-								)
 								if (this.isAborting) {
 									ollama.abort()
 									return

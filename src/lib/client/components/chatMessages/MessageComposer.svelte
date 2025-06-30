@@ -81,7 +81,7 @@
             <div class="w-full">
                 <Tabs.Panel value="compose">
                     <textarea
-                        class="input field-sizing-content lg:min-h-[3.75em] flex-1"
+                        class="input field-sizing-content lg:min-h-[3.75em] flex-1 rounded-xl"
                         placeholder="Type a message..."
                         bind:value={markdown}
                         autocomplete="off"

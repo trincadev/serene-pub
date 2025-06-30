@@ -56,6 +56,10 @@
 	let isReordering = $state(false)
 	let deleteEntryId: number | null = $state(null)
 	let showDeleteConfirmModal = $state(false)
+	let filteredEntries: SelectHistoryEntry[] = $derived.by(() => getFilteredEntries())
+	let maxDateValue: number = $derived.by(() => {
+		return filteredEntries.length ? getEntryDateValue(filteredEntries[0]) : 0
+	})
 
 	$effect(() => {
 		let populatedNewEntries = false
@@ -76,9 +80,8 @@
 		hasUnsavedChanges = populatedNewEntries || modifiedEntries
 	})
 
-	function getEntryDateValue(entry) {
-		const d = entry.date || { year: 0, month: 0, day: 0 }
-		return d.year * 10000 + d.month * 100 + d.day
+	function getEntryDateValue(entry: SelectHistoryEntry) {
+		return entry.year * 10000 + (entry.month || 0) * 100 + (entry.day || 0)
 	}
 
 	function getSortedEntries() {
@@ -132,14 +135,14 @@
 			return false
 		}
 
-		if (!entry.date!.year) {
+		if (!entry.year) {
 			if (warn) {
 				toaster.error({ title: "Year is required" })
 			}
 			return false
 		}
 
-		if (!!entry.date!.day && !entry.date!.month) {
+		if (!!entry.day && !entry.month) {
 			if (warn) {
 				toaster.error({ title: "Month is required if day is set" })
 			}
@@ -169,11 +172,11 @@
 			_uuid: undefined
 		}
 
-		if (data.date!.month === 0) {
-			data.date!.month = null
+		if (data.month === 0) {
+			data.month = null
 		}
-		if (data.date!.day === 0) {
-			data.date!.day = null
+		if (data.day === 0) {
+			data.day = null
 		}
 
 		if (entry._uuid) {
@@ -352,6 +355,10 @@
 		socket.off("lorebookBindingList")
 		socket.off("iterateNextHistoryEntry")
 	})
+
+	// --- Reactive sorted/filter logic for display and current date ---
+	$effect(() => {filteredEntries = getFilteredEntries().slice().sort((a, b) => getEntryDateValue(b) - getEntryDateValue(a))})
+	$effect(() => {maxDateValue = filteredEntries.length ? getEntryDateValue(filteredEntries[0]) : 0})
 </script>
 
 {#if isReady}
@@ -392,7 +399,7 @@
 					</button>
 				</div>
 			</div>
-			{#each [...newEntriesData, ...getFilteredEntries()] as oe}
+			{#each [...newEntriesData, ...filteredEntries] as oe}
 				{@const entry =
 					!!oe._uuid ||
 					!Object.values(editEntriesData).find((e) => e.id === oe.id)
@@ -401,6 +408,9 @@
 								(e) => e.id === oe.id
 							) || oe}
 				{@const isEditing = entry.id in editEntriesData || !entry.id}
+				{@const isFirstWithMaxDate =
+					getEntryDateValue(entry) === maxDateValue &&
+					filteredEntries.findIndex(e => getEntryDateValue(e) === maxDateValue) === filteredEntries.indexOf(entry)}
 				{#key entry}
 					{#if isEditing}
 						<!-- Edit mode: show the form -->
@@ -429,7 +439,7 @@
 										id="entryYear"
 										class="input preset-filled-surface-200-800 w-full rounded-lg"
 										type="number"
-										bind:value={entry.date!.year}
+										bind:value={entry.year}
 										required
 										placeholder="2055"
 									/>
@@ -454,7 +464,7 @@
 										id="entryMonth"
 										class="input preset-filled-surface-200-800 w-full rounded-lg"
 										type="number"
-										bind:value={entry.date!.month}
+										bind:value={entry.month}
 										placeholder="3"
 									/>
 								</div>
@@ -478,7 +488,7 @@
 										id="entryDay"
 										class="input preset-filled-surface-200-800 w-full rounded-lg"
 										type="number"
-										bind:value={entry.date!.day}
+										bind:value={entry.day}
 										placeholder="1"
 									/>
 								</div>
@@ -600,26 +610,26 @@
 						>
 							<div>
 								<strong>Date:</strong>
-								{entry.date?.year}{entry.date?.month
-									? `-${entry.date?.month}`
-									: ""}{entry.date?.day
-									? `-${entry.date?.day}`
+								{entry.year}{entry.month
+									? `-${entry.month}`
+									: ""}{entry.day
+									? `-${entry.day}`
 									: ""}
-								{#if entry.date?.year === 0 && entry.date?.month === 0 && entry.date?.day === 0}
+								{#if entry.year === 0 && entry.month === 0 && entry.day === 0}
 									<span
 										class="text-tertiary-500 ml-2 text-sm"
 									>
 										<strong>(No Date)</strong>
 									</span>
 								{/if}
-								{#if entry.date?.year === 0 && entry.date?.month === 0 && entry.date?.day === null}
+								{#if entry.year === 0 && entry.month === 0 && entry.day === null}
 									<span
 										class="text-tertiary-500 ml-2 text-sm"
 									>
 										<strong>(No Date Set)</strong>
 									</span>
 								{/if}
-								{#if getEntryDateValue(entry) === Math.max(...getFilteredEntries().map(getEntryDateValue))}
+								{#if isFirstWithMaxDate}
 									<span
 										class="text-tertiary-500 ml-2 text-sm"
 									>

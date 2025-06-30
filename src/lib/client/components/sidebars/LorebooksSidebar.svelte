@@ -42,6 +42,8 @@
 	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 	let showImportModal: boolean = $state(false)
 	let importingBook: SpecV3.Lorebook | undefined = $state(undefined)
+	let deletingLorebookId: number | undefined = $state(undefined)
+	let showDeleteConfirmationModal: boolean = $state(false)
 
 	async function handleOnClose() {
 		if (tabHasUnsavedChanges) {
@@ -158,7 +160,9 @@
 		const reader = new FileReader()
 		reader.onload = function (e) {
 			try {
-				const json: SpecV3.Lorebook = JSON.parse(e.target?.result as string)
+				const json: SpecV3.Lorebook = JSON.parse(
+					e.target?.result as string
+				)
 				let entries = json.entries
 				if (entries && !Array.isArray(entries)) {
 					entries = Object.values(entries)
@@ -168,7 +172,12 @@
 					// @ts-ignore
 					let keyArr = entry.key
 					if (!Array.isArray(keyArr)) {
-						keyArr = entry.keys && Array.isArray(entry.keys) ? entry.keys : (keyArr ? [keyArr] : [])
+						keyArr =
+							entry.keys && Array.isArray(entry.keys)
+								? entry.keys
+								: keyArr
+									? [keyArr]
+									: []
 					}
 					let keysArr = entry.keys
 					if (!Array.isArray(keysArr)) {
@@ -177,13 +186,15 @@
 					// @ts-ignore
 					let keysecondaryArr = entry.keysecondary
 					if (!Array.isArray(keysecondaryArr)) {
-						keysecondaryArr = keysecondaryArr ? [keysecondaryArr] : []
+						keysecondaryArr = keysecondaryArr
+							? [keysecondaryArr]
+							: []
 					}
 					return {
 						...entry,
 						key: keyArr,
 						keys: keysArr,
-						keysecondary: keysecondaryArr,
+						keysecondary: keysecondaryArr
 					}
 				})
 				importingBook = {
@@ -191,7 +202,7 @@
 					entries: entries,
 					name: json.name || "",
 					description: json.description || "",
-					extensions: json.extensions || {},
+					extensions: json.extensions || {}
 				}
 			} catch (err) {
 				console.log("Error parsing JSON:", err)
@@ -213,6 +224,32 @@
 		}
 	}
 
+	function onDeleteClick(id: number) {
+		deletingLorebookId = id
+		showDeleteConfirmationModal = true
+	}
+
+	function onDeleteConfirm() {
+		if (deletingLorebookId !== undefined) {
+			const req: Sockets.DeleteLorebook.Call = {
+				id: deletingLorebookId
+			}
+			socket.emit("deleteLorebook", req)
+			toaster.success({ title: "Lorebook Deleted" })
+		}
+		showDeleteConfirmationModal = false
+		deletingLorebookId = undefined
+		if (isEditingLorebook && selectedLorebook?.id === deletingLorebookId) {
+			isEditingLorebook = false
+			selectedLorebook = undefined
+		}
+	}
+
+	function onDeleteCancel() {
+		showDeleteConfirmationModal = false
+		deletingLorebookId = undefined
+	}
+
 	onMount(() => {
 		socket.on("lorebookList", (msg: Sockets.LorebookList.Response) => {
 			if (msg.lorebookList) {
@@ -222,6 +259,9 @@
 		socket.on("lorebookImport", (msg: Sockets.LorebookImport.Response) => {
 			toaster.success({ title: "Lorebook Imported" })
 		})
+		socket.on("lorebookDelete", (msg: Sockets.DeleteLorebook.Response) => {
+			toaster.success({ title: "Lorebook Deleted" })
+		})
 		onclose = handleOnClose
 		socket.emit("lorebookList", {})
 	})
@@ -229,6 +269,7 @@
 	onDestroy(() => {
 		socket.off("lorebookList")
 		socket.off("lorebookImport")
+		socket.off("lorebookDelete")
 		onclose = undefined
 	})
 </script>
@@ -360,119 +401,119 @@
 			{:else}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				{#each filteredLorebooks as l}
-				<SidebarListItem
+					<SidebarListItem
 						id={l.id}
 						onclick={(e) => handleLorebookClick(e, { lorebook: l })}
 						contentTitle="Edit lorebook"
 					>
 						{#snippet content()}
-						<div class="flex flex-col gap-1 text-left">
-														<div class="truncate font-semibold">
-								{l.name}
+							<div class="flex flex-col gap-1 text-left">
+								<div class="truncate font-semibold">
+									{l.name}
+								</div>
+								<div
+									class="text-muted-foreground line-clamp-2 h-[3em] text-xs"
+								>
+									{l.description ||
+										"No description provided."}
+								</div>
 							</div>
-							<div
-								class="text-muted-foreground line-clamp-2 h-[3em] text-xs"
-							>
-								{l.description || "No description provided."}
-							</div>
-						</div>
 						{/snippet}
 						{#snippet extraContent()}
-						<div class="min-w-0 flex-1">
-
-							<button
-								class="btn btn-sm"
-								class:preset-filled-primary-500={l
-									.lorebookBindings.length > 0}
-								class:preset-filled-primary-300-700={l
-									.lorebookBindings.length === 0}
-								title={l.lorebookBindings?.length
-									? "Lorebook Bindings"
-									: "No Lorebook Bindings"}
-								onclick={(e) =>
-									handleLorebookClick(e, {
-										lorebook: l,
-										tab: "bindings"
-									})}
-							>
-								<Icons.Link size={16} class="inline" />
-								{l.lorebookBindings?.length
-									? l.lorebookBindings.length
-									: ""}
-							</button>
-							<button
-								class="btn btn-sm"
-								class:preset-filled-primary-500={l
-									.worldLoreEntries.length > 0}
-								class:preset-filled-primary-300-700={l
-									.worldLoreEntries.length === 0}
-								title={l.worldLoreEntries?.length
-									? "World Lore Entries"
-									: "No World Lore Entries"}
-								onclick={(e) =>
-									handleLorebookClick(e, {
-										lorebook: l,
-										tab: "world"
-									})}
-							>
-								<Icons.Globe size={16} class="inline" />
-								{l.worldLoreEntries.length
-									? l.worldLoreEntries.length
-									: ""}
-							</button>
-							<button
-								class="btn btn-sm"
-								class:preset-filled-primary-500={l
-									.characterLoreEntries.length > 0}
-								class:preset-filled-primary-300-700={l
-									.characterLoreEntries.length === 0}
-								title={l.characterLoreEntries
-									? "Character Lore Entries"
-									: "No Character Lore Entries"}
-								onclick={(e) =>
-									handleLorebookClick(e, {
-										lorebook: l,
-										tab: "characters"
-									})}
-							>
-								<Icons.User size={16} class="inline" />
-								{l.characterLoreEntries?.length
-									? l.characterLoreEntries.length
-									: ""}
-							</button>
-							<button
-								class="btn btn-sm"
-								class:preset-filled-primary-500={l
-									.historyEntries.length > 0}
-								class:preset-filled-primary-300-700={l
-									.historyEntries.length === 0}
-								title={l.historyEntries.length
-									? "History Entries"
-									: "No History Entries"}
-								onclick={(e) =>
-									handleLorebookClick(e, {
-										lorebook: l,
-										tab: "history"
-									})}
-							>
-								<Icons.Calendar size={16} class="inline" />
-								{l.historyEntries?.length
-									? l.historyEntries.length
-									: ""}
-							</button>
-						</div>
+							<div class="min-w-0 flex-1">
+								<button
+									class="btn btn-sm"
+									class:preset-filled-primary-500={l
+										.lorebookBindings.length > 0}
+									class:preset-filled-primary-300-700={l
+										.lorebookBindings.length === 0}
+									title={l.lorebookBindings?.length
+										? "Lorebook Bindings"
+										: "No Lorebook Bindings"}
+									onclick={(e) =>
+										handleLorebookClick(e, {
+											lorebook: l,
+											tab: "bindings"
+										})}
+								>
+									<Icons.Link size={16} class="inline" />
+									{l.lorebookBindings?.length
+										? l.lorebookBindings.length
+										: ""}
+								</button>
+								<button
+									class="btn btn-sm"
+									class:preset-filled-primary-500={l
+										.worldLoreEntries.length > 0}
+									class:preset-filled-primary-300-700={l
+										.worldLoreEntries.length === 0}
+									title={l.worldLoreEntries?.length
+										? "World Lore Entries"
+										: "No World Lore Entries"}
+									onclick={(e) =>
+										handleLorebookClick(e, {
+											lorebook: l,
+											tab: "world"
+										})}
+								>
+									<Icons.Globe size={16} class="inline" />
+									{l.worldLoreEntries.length
+										? l.worldLoreEntries.length
+										: ""}
+								</button>
+								<button
+									class="btn btn-sm"
+									class:preset-filled-primary-500={l
+										.characterLoreEntries.length > 0}
+									class:preset-filled-primary-300-700={l
+										.characterLoreEntries.length === 0}
+									title={l.characterLoreEntries
+										? "Character Lore Entries"
+										: "No Character Lore Entries"}
+									onclick={(e) =>
+										handleLorebookClick(e, {
+											lorebook: l,
+											tab: "characters"
+										})}
+								>
+									<Icons.User size={16} class="inline" />
+									{l.characterLoreEntries?.length
+										? l.characterLoreEntries.length
+										: ""}
+								</button>
+								<button
+									class="btn btn-sm"
+									class:preset-filled-primary-500={l
+										.historyEntries.length > 0}
+									class:preset-filled-primary-300-700={l
+										.historyEntries.length === 0}
+									title={l.historyEntries.length
+										? "History Entries"
+										: "No History Entries"}
+									onclick={(e) =>
+										handleLorebookClick(e, {
+											lorebook: l,
+											tab: "history"
+										})}
+								>
+									<Icons.Calendar size={16} class="inline" />
+									{l.historyEntries?.length
+										? l.historyEntries.length
+										: ""}
+								</button>
+							</div>
 						{/snippet}
 						{#snippet controls()}
-						<button
-									class="btn btn-sm text-error-500 p-2"
-									onclick={(e) => {
-										e.stopPropagation()
-										// TODO
-									}}
-									title="Delete Lorebook"
-								>
-									<Icons.Trash2 size={16} />
-								</button>
+							<button
+								class="btn btn-sm text-error-500 p-2"
+								onclick={(e) => {
+									e.stopPropagation()
+									onDeleteClick(l.id)
+								}}
+								title="Delete Lorebook"
+							>
+								<Icons.Trash2 size={16} />
+							</button>
 						{/snippet}
 					</SidebarListItem>
 				{/each}
@@ -511,7 +552,7 @@
 			showImportModal = e.open
 			if (!e.open) importingBook = undefined
 		}}
-		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 		backdropClasses="backdrop-blur-sm"
 	>
 		{#snippet content()}
@@ -528,9 +569,7 @@
 						classes="w-full bg-surface-50-950"
 					/>
 				{:else}
-					<label class="mb-2" for="name">
-						Name
-					</label>
+					<label class="mb-2" for="name">Name</label>
 					<input
 						id="name"
 						type="text"
@@ -539,7 +578,7 @@
 						class="input"
 					/>
 				{/if}
-				<div class="mt-4 flex gap-2 items-end">
+				<div class="mt-4 flex items-end gap-2">
 					<button
 						class="btn preset-filled-surface-500"
 						onclick={() => {
@@ -558,6 +597,44 @@
 							Import
 						</button>
 					{/if}
+				</div>
+			</div>
+		{/snippet}
+	</Modal>
+{/if}
+
+{#if showDeleteConfirmationModal}
+	<Modal
+		open={showDeleteConfirmationModal}
+		onOpenChange={(e) => {
+			showDeleteConfirmationModal = e.open
+			if (!e.open) deletingLorebookId = undefined
+		}}
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+		backdropClasses="backdrop-blur-sm"
+	>
+		{#snippet content()}
+			<div class="p-6">
+				<h2 class="text-error-500 mb-2 text-lg font-bold">
+					Delete Lorebook?
+				</h2>
+				<p class="mb-4">
+					Are you sure you want to delete this lorebook? This action
+					cannot be undone.
+				</p>
+				<div class="mt-4 flex items-end gap-2">
+					<button
+						class="btn preset-filled-surface-500"
+						onclick={onDeleteCancel}
+					>
+						Cancel
+					</button>
+					<button
+						class="btn preset-filled-error-500"
+						onclick={onDeleteConfirm}
+					>
+						Delete
+					</button>
 				</div>
 			</div>
 		{/snippet}

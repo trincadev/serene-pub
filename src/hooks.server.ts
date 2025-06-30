@@ -4,7 +4,6 @@ import { appVersion } from "$lib/shared/constants/version"
 import type { Handle } from "@sveltejs/kit"
 
 loadSocketsServer()
-
 declare module "@sveltejs/kit" {
 	interface Locals {
 		latestRelease?: string

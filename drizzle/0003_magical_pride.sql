@@ -1,1 +1,0 @@
-ALTER TABLE `chat_messages` ADD `is_hidden` integer DEFAULT false;

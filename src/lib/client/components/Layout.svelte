@@ -58,11 +58,17 @@
 		digest: {}
 	})
 	let themeCtx: ThemeCtx = $state({
-		mode: localStorage.getItem("mode") as "light" | "dark" || "dark",
-		theme: localStorage.getItem("theme") || Theme.CERBERUS
+		mode: (localStorage.getItem("mode") as "light" | "dark") || "dark",
+		theme: localStorage.getItem("theme") || Theme.HAMLINDIGO
 	})
 
-	function openPanel({key, toggle = true}: { key: string; toggle?: boolean }): void {
+	function openPanel({
+		key,
+		toggle = true
+	}: {
+		key: string
+		toggle?: boolean
+	}): void {
 		// Determine which nav the key belongs to
 		const isLeft = Object.prototype.hasOwnProperty.call(
 			panelsCtx.leftNav,
@@ -145,7 +151,7 @@
 	}
 
 	function handleMobilePanelClick(key: string) {
-		panelsCtx.openPanel({key})
+		panelsCtx.openPanel({ key })
 		panelsCtx.isMobileMenuOpen = false
 	}
 
@@ -185,18 +191,19 @@
 
 {#if !!userCtx.user}
 	<div
-		class="bg-surface-100-900 relative flex min-h-screen w-[100%] max-w-[100%] flex-col justify-between"
+		class="bg-surface-100-900 relative h-full max-h-[100dvh] w-full justify-between"
 	>
-		<Header />
 		<div
-			class="relative mx-auto flex w-full flex-1 flex-col gap-1 gap-2 lg:flex-row"
+			class="relative flex min-h-svh max-h-svh min-w-full max-w-full flex-1 flex-col overflow-y-auto lg:flex-row lg:gap-2"
 		>
 			<!-- Left Sidebar -->
 			<aside class="desktop-sidebar">
 				{#if panelsCtx.leftPanel}
-					{@const title = panelsCtx.leftNav[panelsCtx.leftPanel]?.title || panelsCtx.leftPanel}
+					{@const title =
+						panelsCtx.leftNav[panelsCtx.leftPanel]?.title ||
+						panelsCtx.leftPanel}
 					<div
-						class="bg-surface-50-950 me-2 flex h-full w-full flex-col rounded-r-lg"
+						class="bg-surface-50-950 me-2 flex h-full w-full flex-col overflow-y-auto rounded-r-lg"
 						in:fly={{ x: -100, duration: 200 }}
 						out:fly={{ x: -100, duration: 200 }}
 					>
@@ -240,15 +247,20 @@
 				{/if}
 			</aside>
 			<!-- Main Content -->
-			<main class="bg-surface-50-950">
-				{@render children?.()}
+			<main class="flex flex-col min-h-svh max-h-svh overflow-hidden">
+				<Header />
+				<div class="h-full overflow-hidden">
+					{@render children?.()}
+				</div>
 			</main>
 			<!-- Right Sidebar -->
-			<aside class="desktop-sidebar">
+			<aside class="desktop-sidebar pt-1">
 				{#if panelsCtx.rightPanel}
-					{@const title = panelsCtx.rightNav[panelsCtx.rightPanel]?.title || panelsCtx.rightPanel}
+					{@const title =
+						panelsCtx.rightNav[panelsCtx.rightPanel]?.title ||
+						panelsCtx.rightPanel}
 					<div
-						class="bg-surface-50-950 flex h-full w-full flex-col rounded-l-lg"
+						class="bg-surface-50-950 flex h-full w-full flex-col overflow-y-auto rounded-l-lg"
 						in:fly={{ x: 100, duration: 200 }}
 						out:fly={{ x: 100, duration: 200 }}
 					>
@@ -293,9 +305,12 @@
 			</aside>
 		</div>
 		{#if panelsCtx.mobilePanel}
-		{@const title = {...panelsCtx.leftNav, ...panelsCtx.rightNav}[panelsCtx.mobilePanel]?.title || panelsCtx.mobilePanel}
+			{@const title =
+				{ ...panelsCtx.leftNav, ...panelsCtx.rightNav }[
+					panelsCtx.mobilePanel
+				]?.title || panelsCtx.mobilePanel}
 			<div
-				class="bg-surface-100-900 fixed inset-0 z-[51] flex flex-col lg:hidden"
+				class="bg-surface-100-900 fixed inset-0 z-[51] flex flex-col overflow-y-auto lg:hidden"
 			>
 				<div
 					class="border-border flex items-center justify-between border-b p-4"
@@ -383,7 +398,7 @@
 						<Icons.X class="text-foreground h-6 w-6" />
 					</button>
 				</div>
-				<div class="flex flex-col gap-4 p-4 text-2xl">
+				<div class="flex flex-col gap-4 overflow-y-auto p-4 text-2xl">
 					{#each Object.entries( { ...panelsCtx.rightNav, ...panelsCtx.leftNav } ) as [key, item]}
 						<button
 							class="btn-ghost flex items-center gap-2"
@@ -406,12 +421,12 @@
 	/* w-[100%] lg:min-w-[50%] lg:w-[50%] */
 
 	main {
-		@apply relative m-0 min-h-[calc(100vh-4.5rem)] basis-1/2 flex-col rounded-t-lg p-0 px-2 lg:max-w-[50%];
+		@apply relative m-0 lg:max-w-[50%] lg:basis-1/2;
 	}
 
 	/* w-[25%] max-w-[25%] */
 
 	.desktop-sidebar {
-		@apply sticky top-[2rem] z-30 hidden h-[calc(100vh-4.5rem)] basis-1/4 overflow-x-hidden lg:block;
+		@apply hidden min-h-full max-h-full basis-1/4 overflow-x-hidden lg:block py-1;
 	}
 </style>

@@ -8,16 +8,24 @@
 		controls?: Snippet
 		onclick: (e: MouseEvent) => void
 		contentTitle: string
+		classes?: string
 	}
 
-	let { id, content, extraContent, controls, onclick, contentTitle }: Props =
-		$props()
+	let {
+		id,
+		content,
+		extraContent,
+		controls,
+		onclick,
+		contentTitle,
+		classes = ""
+	}: Props = $props()
 </script>
 
 <div
-	class="card preset-tonal hover:preset-filled-surface-300-700 relative flex w-full gap-2 overflow-hidden rounded-lg py-2 pr-3 pl-2"
+	class="card preset-tonal hover:preset-filled-surface-300-700 relative flex w-full gap-2 overflow-hidden rounded-lg py-2 pr-3 pl-2 {classes}"
 >
-	<div class="relative flex gap-2 flex-1">
+	<div class="relative flex flex-1 gap-2">
 		{#if id !== undefined}
 			<button {onclick} class="flex flex-1 gap-2" title={contentTitle}>
 				<span
@@ -27,7 +35,7 @@
 				</span>
 			</button>
 		{/if}
-		<div class="flex flex-col w-full">
+		<div class="flex w-full flex-col">
 			<div class="flex">
 				<button
 					{onclick}

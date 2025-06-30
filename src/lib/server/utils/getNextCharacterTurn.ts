@@ -11,7 +11,7 @@ export function getNextCharacterTurn(
 	if (!chat.chatCharacters?.length || !chat.chatPersonas?.length) return null
 
 	// Sort characters by .position (lowest first)
-	const sortedCharacters = chat.chatCharacters.slice().sort(
+	const sortedCharacters = chat.chatCharacters.filter((cc) => cc.isActive).slice().sort(
 		(a, b) => (a.position ?? 0) - (b.position ?? 0)
 	)
 	const personaIds = chat.chatPersonas.map(cp => cp.persona.id)

@@ -883,9 +883,9 @@ export class PromptBuilder {
 						}
 					}
 					// Format date as year-month-day, year-month, or year only
-					const y = populatedEntry.date.year
-					const m = populatedEntry.date.month
-					const d = populatedEntry.date.day
+					const y = populatedEntry.year
+					const m = populatedEntry.month
+					const d = populatedEntry.day
 					let dateKey = String(y)
 					if (m !== undefined && m !== null)
 						dateKey += `-${String(m).padStart(2, "0")}`
@@ -901,12 +901,12 @@ export class PromptBuilder {
 			} | null = null
 			if (this.includedHistoryEntries.length) {
 				mostRecentDate = {
-					year: this.includedHistoryEntries[0].date.year,
-					month: !!this.includedHistoryEntries[0].date.month
-						? this.includedHistoryEntries[0].date.month
+					year: this.includedHistoryEntries[0].year,
+					month: !!this.includedHistoryEntries[0].month
+						? this.includedHistoryEntries[0].month
 						: undefined,
-					day: !!this.includedHistoryEntries[0].date.day
-						? this.includedHistoryEntries[0].date.day
+					day: !!this.includedHistoryEntries[0].day
+						? this.includedHistoryEntries[0].day
 						: undefined
 				}
 			}

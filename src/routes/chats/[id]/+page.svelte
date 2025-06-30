@@ -7,7 +7,6 @@
 	import { renderMarkdownWithQuotedText } from "$lib/client/utils/markdownToHTML"
 	import { getContext, onMount } from "svelte"
 	import Avatar from "$lib/client/components/Avatar.svelte"
-	import { is } from "drizzle-orm"
 
 	let chat: Sockets.Chat.Response["chat"] | undefined = $state()
 	let newMessage = $state("")
@@ -51,12 +50,15 @@
 	})
 
 	let canRegenerateLastMessage: boolean = $derived.by(() => {
-		return !lastMessage?.metadata?.isGreeting && (
-			!!lastMessage &&
-			!lastMessage.isGenerating &&
-			!lastMessage.isHidden &&
-			(!lastPersonaMessage || lastPersonaMessage.id < lastMessage.id)
-		) || false
+		return (
+			(!lastMessage?.metadata?.isGreeting &&
+				!!lastMessage &&
+				!lastMessage.isGenerating &&
+				!lastMessage.isHidden &&
+				(!lastPersonaMessage ||
+					lastPersonaMessage.id < lastMessage.id)) ||
+			false
+		)
 	})
 
 	function handleSend() {
@@ -163,7 +165,17 @@
 		}, 2000)
 	})
 
-	let chatMessagesContainer: HTMLDivElement | null = null
+	let chatMessagesContainer: HTMLDivElement | null = $state(null)
+
+	$effect(() => {
+		console.log(
+			"chatMessagesContainer effect",
+			chatMessagesContainer?.scrollTo({
+				top: chatMessagesContainer.scrollHeight,
+				behavior: "auto"
+			})
+		)
+	})
 
 	function handleEditMessage(e: Event, msg: SelectChatMessage) {
 		e.stopPropagation()
@@ -262,12 +274,10 @@
 		socket.emit("chatMessageSwipeLeft", req)
 	}
 
-	function canSwipeRight(msg: SelectChatMessage, isGreeting: boolean): boolean {
-		console.log("Is greeting:", isGreeting)
-		// Only allow swipe right if:
-		// - Not generating
-		// - Not blocked by canRegenerateLastMessage
-		// - If greeting, only if not at the end of swipes
+	function canSwipeRight(
+		msg: SelectChatMessage,
+		isGreeting: boolean
+	): boolean {
 		if (msg.isGenerating) return false
 		if (lastPersonaMessage && lastPersonaMessage.id >= msg.id) {
 			return false
@@ -275,7 +285,6 @@
 		if (isGreeting) {
 			const idx = msg.metadata?.swipes?.currentIdx
 			const len = msg.metadata?.swipes?.history?.length ?? 0
-			// Only allow swipe right if idx is not null/undefined and less than (len - 1)
 			if (typeof idx !== "number" || len === 0) return false
 			return idx < len - 1
 		}
@@ -294,16 +303,16 @@
 			res = false
 		} else if (msg.role === "user") {
 			return false
-		} else if (isGreeting && (msg.metadata?.swipes?.history?.length ?? 0) <= 1) {
+		} else if (
+			isGreeting &&
+			(msg.metadata?.swipes?.history?.length ?? 0) <= 1
+		) {
 			res = false
 		} else if (openMobileMsgControls === msg.id) {
 			res = true
 		} else if (isGreeting && (lastPersonaMessage?.id ?? 0) < msg.id) {
-			// If this is a greeting message and the last persona message is before this one,
-			// we do show swipe controls (could be multiple new characters with greetings that can be swiped)
 			res = true
 		}
-		console.log("Show swipe controls for message", msg.id, ":", res)
 		return res
 	}
 
@@ -312,9 +321,11 @@
 			if (msg.chat.id === Number.parseInt(page.params.id)) {
 				chat = msg.chat
 				// Instantly jump to bottom on chat update
-				if (!openMobileMsgControls) {
-					window.scrollTo(0, document.body.scrollHeight)
-				}
+				console.log("Scrolling to bottom on chat update")
+				chatMessagesContainer?.scrollTo({
+					top: chatMessagesContainer.scrollHeight,
+					behavior: "instant"
+				})
 			}
 		})
 
@@ -333,11 +344,9 @@
 						chatMessages: [...chat.chatMessages, msg.chatMessage]
 					}
 				}
-			}
-			if (!openMobileMsgControls) {
 				setTimeout(() => {
-					window.scrollTo({
-						top: document.body.scrollHeight,
+					chatMessagesContainer?.scrollTo({
+						top: chatMessagesContainer.scrollHeight,
 						behavior: "smooth"
 					})
 				}, 0)
@@ -410,185 +419,208 @@
 	<meta name="description" content="Serene Pub" />
 </svelte:head>
 
-<div class="flex h-full w-full flex-col">
-	<div class="chat-messages flex-1" bind:this={chatMessagesContainer}>
-		{#if !chat || chat.chatMessages.length === 0}
-			<div class="text-muted mt-8 text-center">No messages yet.</div>
-		{:else}
-			<ul class="flex flex-col gap-3">
-				{#each chat.chatMessages as msg (msg.id)}
-					{@const character = getMessageCharacter(msg)}
-					{@const isGreeting = !!msg.metadata?.isGreeting}
-					<li
-						class="bg-primary-50-950 flex flex-col rounded-lg p-2"
-						class:opacity-50={msg.isHidden &&
-							editChatMessage?.id !== msg.id}
-					>
-						<div class="flex justify-between gap-2">
-							<div class="group flex gap-2">
-								<span>
-									<!-- Make avatar clickable -->
-									<button
-										class="m-0 w-fit p-0"
-										onclick={() =>
-											handleAvatarClick(character)}
-										title="View Avatar"
-									>
-										<Avatar char={character} />
-									</button>
-								</span>
-								<div class="flex flex-col">
-									<button
-										class="funnel-display mx-0 w-fit px-0 text-[1.1em] font-bold hover:underline"
-										onclick={(e) =>
-											handleCharacterNameClick(msg)}
-										title="Edit"
-									>
-										{character?.nickname ||
-											character?.name ||
-											"Unknown"}
-									</button>
-								</div>
-							</div>
-
-							{#if editChatMessage && editChatMessage.id === msg.id}
-								<div class="flex gap-2">
-									<button
-										class="btn btn-sm msg-cntrl-icon preset-filled-surface-500"
-										title="Cancel Edit"
-										onclick={handleCancelEditMessage}
-									>
-										<Icons.X size={16} />
-									</button>
-									<button
-										class="btn btn-sm msg-cntrl-icon preset-filled-success-500"
-										title="Save"
-										onclick={handleSaveEditMessage}
-									>
-										<Icons.Save size={16} class="mx-4" />
-									</button>
-								</div>
-							{:else}
-								<div class="flex w-full flex-col gap-2">
-									<div class="ml-auto hidden gap-2 lg:flex">
-										{@render messageControls(msg)}
-									</div>
-									<div class="ml-auto lg:hidden">
-										<Popover
-											open={openMobileMsgControls ===
-												msg.id}
-											onOpenChange={(e) =>
-												(openMobileMsgControls = e.open
-													? msg.id
-													: undefined)}
-											positioning={{
-												placement: "bottom"
-											}}
-											triggerBase="btn btn-sm hover:bg-primary-600-400 {openMobileMsgControls ===
-											msg.id
-												? 'bg-primary-600-400'
-												: ''}"
-											contentBase="card bg-primary-200-800 p-4 space-y-4 max-w-[320px]"
-											arrow
-											arrowBackground="!bg-primary-200 dark:!bg-primary-800"
-											zIndex="1000"
+<div
+	class="relative flex max-h-full min-h-full max-w-full min-w-full flex-col overflow-y-auto"
+>
+	<div
+		id="chat-history"
+		class="flex flex-1 flex-col gap-3 overflow-auto"
+		bind:this={chatMessagesContainer}
+	>
+		<div class="p-2">
+			{#if !chat || chat.chatMessages.length === 0}
+				<div class="text-muted mt-8 text-center">No messages yet.</div>
+			{:else}
+				<ul class="flex flex-1 flex-col gap-3 overflow-y-auto">
+					{#each chat.chatMessages as msg (msg.id)}
+						{@const character = getMessageCharacter(msg)}
+						{@const isGreeting = !!msg.metadata?.isGreeting}
+						<li
+							class="bg-primary-50-950 flex flex-col overflow-y-auto rounded-lg p-2"
+							class:opacity-50={msg.isHidden &&
+								editChatMessage?.id !== msg.id}
+						>
+							<div class="flex justify-between gap-2">
+								<div class="group flex gap-2">
+									<span>
+										<!-- Make avatar clickable -->
+										<button
+											class="m-0 w-fit p-0"
+											onclick={() =>
+												handleAvatarClick(character)}
+											title="View Avatar"
 										>
-											{#snippet trigger()}
-												<Icons.EllipsisVertical
-													size={20}
-												/>
-											{/snippet}
-											{#snippet content()}
-												<header
-													class="flex justify-between"
-												>
-													<p
-														class="text-xl font-bold"
-													>
-														Popover Example
-													</p>
-												</header>
-												<article
-													class="flex flex-col gap-4"
-												>
-													{@render messageControls(
-														msg
-													)}
-												</article>
-											{/snippet}
-										</Popover>
+											<Avatar char={character} />
+										</button>
+									</span>
+									<div class="flex flex-col">
+										<button
+											class="funnel-display mx-0 w-fit px-0 text-[1.1em] font-bold hover:underline"
+											onclick={(e) =>
+												handleCharacterNameClick(msg)}
+											title="Edit"
+										>
+											{character?.nickname ||
+												character?.name ||
+												"Unknown"}
+										</button>
 									</div>
-									{#if showSwipeControls(msg, isGreeting)}
-										<div class="ml-auto flex gap-6">
-											{#if ![null, undefined].includes(msg.metadata?.swipes?.currentIdx) && msg.metadata?.swipes?.history && msg.metadata?.swipes.history.length > 1}
+								</div>
+
+								{#if editChatMessage && editChatMessage.id === msg.id}
+									<div class="flex gap-2">
+										<button
+											class="btn btn-sm msg-cntrl-icon preset-filled-surface-500"
+											title="Cancel Edit"
+											onclick={handleCancelEditMessage}
+										>
+											<Icons.X size={16} />
+										</button>
+										<button
+											class="btn btn-sm msg-cntrl-icon preset-filled-success-500"
+											title="Save"
+											onclick={handleSaveEditMessage}
+										>
+											<Icons.Save
+												size={16}
+												class="mx-4"
+											/>
+										</button>
+									</div>
+								{:else}
+									<div class="flex w-full flex-col gap-2">
+										<div
+											class="ml-auto hidden gap-2 lg:flex"
+										>
+											{@render messageControls(msg)}
+										</div>
+										<div class="ml-auto lg:hidden">
+											<Popover
+												open={openMobileMsgControls ===
+													msg.id}
+												onOpenChange={(e) =>
+													(openMobileMsgControls =
+														e.open
+															? msg.id
+															: undefined)}
+												positioning={{
+													placement: "bottom"
+												}}
+												triggerBase="btn btn-sm hover:bg-primary-600-400 {openMobileMsgControls ===
+												msg.id
+													? 'bg-primary-600-400'
+													: ''}"
+												contentBase="card bg-primary-200-800 p-4 space-y-4 max-w-[320px]"
+												arrow
+												arrowBackground="!bg-primary-200 dark:!bg-primary-800"
+												zIndex="1000"
+											>
+												{#snippet trigger()}
+													<Icons.EllipsisVertical
+														size={20}
+													/>
+												{/snippet}
+												{#snippet content()}
+													<header
+														class="flex justify-between"
+													>
+														<p
+															class="text-xl font-bold"
+														>
+															Popover Example
+														</p>
+													</header>
+													<article
+														class="flex flex-col gap-4"
+													>
+														{@render messageControls(
+															msg
+														)}
+													</article>
+												{/snippet}
+											</Popover>
+										</div>
+										{#if showSwipeControls(msg, isGreeting)}
+											<div class="ml-auto flex gap-6">
+												{#if ![null, undefined].includes(msg.metadata?.swipes?.currentIdx) && msg.metadata?.swipes?.history && msg.metadata?.swipes.history.length > 1}
+													<button
+														class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
+														title="Swipe Left"
+														onclick={() =>
+															swipeLeft(msg)}
+														disabled={!msg.metadata
+															.swipes
+															.currentIdx ||
+															msg.metadata.swipes
+																.history
+																.length <= 1 ||
+															msg.isGenerating}
+													>
+														<Icons.ChevronLeft
+															size={24}
+														/>
+													</button>
+													<span
+														class="text-surface-700-300 mt-[0.2rem] h-fit select-none"
+													>
+														{msg.metadata.swipes
+															.currentIdx +
+															1}/{msg.metadata
+															.swipes.history
+															.length}
+													</span>
+												{/if}
 												<button
 													class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
-													title="Swipe Left"
+													title="Swipe Right"
 													onclick={() =>
-														swipeLeft(msg)}
-													disabled={!msg.metadata
-														.swipes.currentIdx ||
-														msg.metadata.swipes
-															.history.length <=
-															1 ||
-														msg.isGenerating}
+														swipeRight(msg)}
+													disabled={!canSwipeRight(
+														msg,
+														isGreeting
+													)}
 												>
-													<Icons.ChevronLeft
+													<Icons.ChevronRight
 														size={24}
 													/>
 												</button>
-												<span
-													class="text-surface-700-300 mt-[0.2rem] h-fit select-none"
-												>
-													{msg.metadata.swipes
-														.currentIdx + 1}/{msg
-														.metadata.swipes.history
-														.length}
-												</span>
-											{/if}
-											<button
-												class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
-												title="Swipe Right"
-												onclick={() => swipeRight(msg)}
-												disabled={!canSwipeRight(msg, isGreeting)}
-											>
-												<Icons.ChevronRight size={24} />
-											</button>
-										</div>
-									{/if}
-								</div>
-							{/if}
-						</div>
+											</div>
+										{/if}
+									</div>
+								{/if}
+							</div>
 
-						<div class="flex h-fit rounded p-2 text-left">
-							{#if msg.content === "" && msg.isGenerating}
-								{@render generatingAnimation()}
-							{:else if editChatMessage && editChatMessage.id === msg.id}
-								<div
-									class="chat-input-bar bg-surface-100-900 w-full rounded-xl p-2 pb-2 align-middle lg:pb-4"
-								>
-									<MessageComposer
-										bind:markdown={editChatMessage.content}
-										onSend={handleMessageUpdate}
-									/>
-								</div>
-							{:else}
-								<div class="rendered-chat-message-content">
-									{@html renderMarkdownWithQuotedText(
-										msg.content
-									)}
-								</div>
-							{/if}
-						</div>
-					</li>
-				{/each}
-			</ul>
-		{/if}
+							<div class="flex h-fit rounded p-2 text-left">
+								{#if msg.content === "" && msg.isGenerating}
+									{@render generatingAnimation()}
+								{:else if editChatMessage && editChatMessage.id === msg.id}
+									<div
+										class="chat-input-bar bg-surface-100-900 w-full rounded-xl p-2 pb-2 align-middle lg:pb-4"
+									>
+										<MessageComposer
+											bind:markdown={
+												editChatMessage.content
+											}
+											onSend={handleMessageUpdate}
+										/>
+									</div>
+								{:else}
+									<div class="rendered-chat-message-content">
+										{@html renderMarkdownWithQuotedText(
+											msg.content
+										)}
+									</div>
+								{/if}
+							</div>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
 	</div>
 
-
 	<div
-		class="chat-input-bar preset-tonal-surface gap-4 pb-3 align-middle lg:pb-4"
+		class="chat-input-bar preset-tonal-surface gap-4 pb-2 align-middle lg:rounded-t-lg lg:pb-4"
 		class:hidden={!!editChatMessage}
 	>
 		<MessageComposer
@@ -614,7 +646,7 @@
 			{#snippet leftControls()}
 				{#if chat?.chatPersonas?.[0]?.persona}
 					{@const persona = chat?.chatPersonas?.[0]?.persona}
-					<div class="hidden flex-col lg:flex lg:gap-2">
+					<div class="hidden flex-col lg:ml-2 lg:flex lg:gap-2">
 						<span>
 							<Avatar char={persona} />
 						</span>
@@ -624,7 +656,7 @@
 			{#snippet rightControls()}
 				{#if !lastMessage?.isGenerating && !editChatMessage}
 					<button
-						class="hover:preset-tonal-success lg:h-auto rounded-lg p-2 lg:p-3 text-center lg:block"
+						class="hover:preset-tonal-success rounded-lg p-2 text-center lg:block lg:h-auto lg:p-3"
 						type="button"
 						disabled={!newMessage.trim() ||
 							lastMessage?.isGenerating}
@@ -636,7 +668,7 @@
 				{:else if lastMessage?.isGenerating}
 					<button
 						title="Stop Generation"
-						class="text-error-500 hover:preset-tonal-error lg:h-auto rounded-lg p-2 lg:p-3 text-center"
+						class="text-error-500 hover:preset-tonal-error rounded-lg p-2 text-center lg:h-auto lg:p-3"
 						type="button"
 						onclick={handleAbortLastMessage}
 					>
@@ -651,7 +683,7 @@
 <Modal
 	open={showDeleteMessageModal}
 	onOpenChange={onOpenMessageDeleteChange}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -683,7 +715,7 @@
 <Modal
 	open={showDraftCompiledPromptModal}
 	onOpenChange={(details) => (showDraftCompiledPromptModal = details.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-md"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -724,15 +756,21 @@
 				</div>
 				<div class="mb-2">
 					<b>World Lore:</b>
-					{draftCompiledPrompt.meta.sources.lorebooks.worldLore.included}/{draftCompiledPrompt.meta.sources.lorebooks.worldLore.total}
+					{draftCompiledPrompt.meta.sources.lorebooks.worldLore
+						.included}/{draftCompiledPrompt.meta.sources.lorebooks
+						.worldLore.total}
 				</div>
 				<div class="mb-2">
 					<b>Character Lore:</b>
-					{draftCompiledPrompt.meta.sources.lorebooks.characterLore.included}/{draftCompiledPrompt.meta.sources.lorebooks.characterLore.total}
+					{draftCompiledPrompt.meta.sources.lorebooks.characterLore
+						.included}/{draftCompiledPrompt.meta.sources.lorebooks
+						.characterLore.total}
 				</div>
 				<div class="mb-2">
 					<b>History:</b>
-					{draftCompiledPrompt.meta.sources.lorebooks.history.included}/{draftCompiledPrompt.meta.sources.lorebooks.history.total}
+					{draftCompiledPrompt.meta.sources.lorebooks.history
+						.included}/{draftCompiledPrompt.meta.sources.lorebooks
+						.history.total}
 				</div>
 				<div class="mb-2">
 					<b>Characters Used:</b>
@@ -781,7 +819,7 @@
 <Modal
 	open={showTriggerCharacterMessageModal}
 	onOpenChange={(e) => (showTriggerCharacterMessageModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-md"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -844,7 +882,7 @@
 <Modal
 	open={showAvatarModal}
 	onOpenChange={(e) => (showAvatarModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-md flex flex-col items-center"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md flex flex-col items-center"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -1017,17 +1055,12 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 
-	.chat-messages {
+	/* .chat-messages {
 		overflow-y: auto;
 		flex: 1 1 0%;
 		padding-bottom: 0.5rem;
-	}
+	} */
 	.chat-input-bar {
-		position: sticky;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		z-index: 10;
 	}
 	/* Loader styles from Uiverse.io by mobinkakei */
 	.wrapper {

@@ -1,0 +1,1 @@
+/home/jody/github/serene-pub/node_modules/@embedded-postgres/linux-x64/native/bin/postgres "-D" "./data/db" "-p" "3002"

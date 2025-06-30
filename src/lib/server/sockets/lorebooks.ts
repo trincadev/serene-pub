@@ -393,7 +393,7 @@ export async function createWorldLoreEntry(
 				id: true,
 				position: true
 			},
-			orderBy: (e, { asc }) => asc(e.position) // Don't trust this to be ordered in sqlite
+			orderBy: (e, { asc }) => asc(e.position)
 		})
 
 		let nextPosition = 1
@@ -641,7 +641,6 @@ export async function updateWorldLoreEntryPositions(
 				id: true,
 				userId: true
 			}
-			// .with removed to avoid relation errors
 		})
 
 		if (!lorebook) {
@@ -650,7 +649,6 @@ export async function updateWorldLoreEntryPositions(
 			})
 		}
 
-		// Should use a transaction, but bugged for sqlite in drizzle-orm
 		const queries = []
 		for (const update of message.positions) {
 			queries.push(
@@ -1166,17 +1164,9 @@ export async function iterateNextHistoryEntry(
 		}
 
 		const mostRecentEntry = book.historyEntries.sort((a, b) => {
-			// Compare by entry.date.year, entry.date.month, entry.date.day, month or day might be undefined/null
-			const dateA = new Date(
-				a.date.year,
-				a.date.month || 0,
-				a.date.day || 1
-			)
-			const dateB = new Date(
-				b.date.year,
-				b.date.month || 0,
-				b.date.day || 1
-			)
+			// Compare by entry.year, entry.month, entry.day, month or day might be undefined/null
+			const dateA = new Date(a.year, a.month || 0, a.day || 1)
+			const dateB = new Date(b.year, b.month || 0, b.day || 1)
 			return dateB.getTime() - dateA.getTime() // Sort in descending order
 		})[0]
 
@@ -1192,21 +1182,23 @@ export async function iterateNextHistoryEntry(
 
 		// If mostRecent entry exists, iterate on the day?, month? or year!
 		if (mostRecentEntry) {
-			if (mostRecentEntry.date.day) {
-				nextDate.year = mostRecentEntry.date.year
-				nextDate.month = mostRecentEntry.date.month
-				nextDate.day = (mostRecentEntry.date.day || 1) + 1 // Increment day
-			} else if (mostRecentEntry.date.month) {
-				nextDate.year = mostRecentEntry.date.year
-				nextDate.month = (mostRecentEntry.date.month || 1) + 1 // Increment month
+			if (mostRecentEntry.day) {
+				nextDate.year = mostRecentEntry.year
+				nextDate.month = mostRecentEntry.month
+				nextDate.day = (mostRecentEntry.day || 1) + 1 // Increment day
+			} else if (mostRecentEntry.month) {
+				nextDate.year = mostRecentEntry.year
+				nextDate.month = (mostRecentEntry.month || 1) + 1 // Increment month
 			} else {
-				nextDate.year = mostRecentEntry.date.year + 1 // Increment year
+				nextDate.year = mostRecentEntry.year + 1 // Increment year
 			}
 		}
 
 		const data: InsertHistoryEntry = {
 			lorebookId: book.id,
-			date: nextDate,
+			year: nextDate.year,
+			month: nextDate.month,
+			day: nextDate.day,
 			content: ""
 		}
 
@@ -1241,7 +1233,7 @@ export async function lorebookImport(
 		let charId: number | undefined = message.characterId
 		let char: Partial<SelectCharacter> | undefined = undefined
 		let card = CharacterBook.from_json(message.lorebookData)
-		
+
 		console.log("Importing lorebook data:", card)
 
 		if (!card) {
@@ -1253,11 +1245,10 @@ export async function lorebookImport(
 		// If message.characterId is provided, ensure it exists
 		if (charId) {
 			char = await db.query.characters.findFirst({
-				where: (c, { eq }) =>
-					eq(c.id, charId) && eq(c.userId, userId),
+				where: (c, { eq }) => eq(c.id, charId) && eq(c.userId, userId),
 				columns: {
 					id: true,
-					lorebookId: true,
+					lorebookId: true
 				}
 			})
 			if (!char) {
@@ -1273,33 +1264,40 @@ export async function lorebookImport(
 			}
 		}
 
-		const [book] = await db.insert(schema.lorebooks).values({
-			name: card.name || "Imported Lorebook",
-			description: card.description,
-			userId
-		}).returning()
+		const [book] = await db
+			.insert(schema.lorebooks)
+			.values({
+				name: card.name || "Imported Lorebook",
+				description: card.description,
+				userId,
+				extraJson: {}
+			})
+			.returning()
 
 		let position = 0
 		const queries: Promise<any>[] = []
 		card.entries.forEach((entry) => {
 			// World entries are the most agnostic, so we will import all entries as world lore entries
-			// Get priority from the entry. If the priority is null/less than 1, 
+			// Get priority from the entry. If the priority is null/less than 1,
 			// If the priority is greater than 3, set it to 3
 			if (entry.priority === null || (entry.priority || 1) < 1) {
 				entry.priority = 1
 			} else if ((entry.priority || 1) > 3) {
 				entry.priority = 3
 			}
-			queries.push(db.insert(schema.worldLoreEntries).values({
-				name: entry.name || "Imported Entry",
-				content: entry.content || "",
-				lorebookId: book.id,
-				position,
-				keys: entry.keys.join(", ") || "",
-				enabled: entry.enabled ?? true,
-				constant: entry.constant ?? false,
-				priority: entry.priority || 1
-			}))
+			queries.push(
+				db.insert(schema.worldLoreEntries).values({
+					name: entry.name || "Imported Entry",
+					content: entry.content || "",
+					lorebookId: book.id,
+					position,
+					keys: entry.keys.join(", ") || "",
+					enabled: entry.enabled ?? true,
+					constant: entry.constant ?? false,
+					priority: entry.priority || 1,
+					extraJson: {}
+				})
+			)
 			position++
 		})
 
@@ -1307,13 +1305,14 @@ export async function lorebookImport(
 
 		// If character Id, add the lorebook to the character, then add the character as a binding
 		if (char) {
-			await db.update(schema.characters)
+			await db
+				.update(schema.characters)
 				.set({ lorebookId: book.id })
 				.where(eq(schema.characters.id, char.id!))
 			await db.insert(schema.lorebookBindings).values({
 				characterId: char.id,
 				lorebookId: book.id,
-				binding: "{char:1}",
+				binding: "{char:1}"
 			})
 		}
 
@@ -1328,14 +1327,13 @@ export async function lorebookImport(
 		})
 
 		const res: Sockets.LorebookImport.Response = {
-			lorebook: completedBook,
+			lorebook: completedBook
 		}
 		emitToUser("lorebookImport", res)
 		const lbListReq: Sockets.LorebookList.Call = {
 			userId: userId
 		}
 		await lorebookList(socket, lbListReq, emitToUser)
-
 	} catch (error) {
 		console.error("Error importing lorebook:", error)
 		socket.emit("error", { error: "Failed to import lorebook." })

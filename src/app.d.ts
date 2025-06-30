@@ -363,7 +363,7 @@ declare global {
 		}
 		namespace CreateChat {
 			interface Call {
-				chat: InsertChat & { userId?: undefined }
+				chat: InsertChat
 				personaIds: number[]
 				characterIds: number[]
 				characterPositions: Record<number, number>
@@ -843,6 +843,18 @@ declare global {
 					characterLoreEntries: SelectCharacterLoreEntry[]
 					historyEntries: SelectHistoryEntry[]
 				}
+			}
+		}
+		// Toggle Chat Character Active
+		namespace ToggleChatCharacterActive {
+			interface Call {
+				chatId: number
+				characterId: number
+			}
+			interface Response {
+				chatId: number
+				characterId: number
+				isActive: boolean
 			}
 		}
 	}

@@ -158,7 +158,7 @@
 </script>
 
 <div
-	class="bg-background animate-fade-in h-full rounded-lg border border-surface-500/25 p-2 shadow-lg"
+	class="bg-background animate-fade-in border-surface-500/25 h-full rounded-lg border p-2 shadow-lg"
 >
 	<h2 class="mb-4 text-lg font-bold">
 		{mode === "edit" ? `Edit: ${editPersonaData.name}` : "Create Persona"}
@@ -237,7 +237,17 @@
 			</div>
 		</div>
 		<div class="flex flex-col gap-1">
-			<label class="font-semibold" for="personaName">Name*</label>
+			<label class="flex gap-1 font-semibold" for="personaName">
+				Name* <span
+					class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+					title="This field will be visible in prompts"
+				>
+					<Icons.ScanEye
+						size={16}
+						class="relative top-[1px] inline"
+					/>
+				</span>
+			</label>
 			<input
 				id="personaName"
 				type="text"
@@ -246,8 +256,16 @@
 			/>
 		</div>
 		<div class="flex flex-col gap-2">
-			<label class="font-semibold" for="personaDescription">
-				Description
+			<label class="flex gap-1 font-semibold" for="personaDescription">
+				Description <span
+					class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+					title="This field will be visible in prompts"
+				>
+					<Icons.ScanEye
+						size={16}
+						class="relative top-[1px] inline"
+					/>
+				</span>
 			</label>
 			<textarea
 				id="personaDescription"

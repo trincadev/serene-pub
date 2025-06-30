@@ -1,18 +1,19 @@
-import { drizzle } from "drizzle-orm/better-sqlite3"
-import Database from "better-sqlite3"
 import * as schema from "./schema"
-import { migrate } from "drizzle-orm/better-sqlite3/migrator"
+import { migrate } from "drizzle-orm/node-postgres/migrator"
 import * as dbConfig from "./drizzle.config"
 import type { MigrationConfig } from "drizzle-orm/migrator"
-import { copyFileSync } from "fs"
-import { basename, dirname, extname } from "path"
 import fs from "fs"
 import { dev } from "$app/environment"
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { sync } from "./defaults"
+import { startPg } from "./postgres.service"
+
+await startPg()
+
+export let db = drizzle(dbConfig.postgresUrl, {schema})
 
 
-const client = new Database(process.env.DATABASE_URL || dbConfig.dbPath)
 
-export const db = drizzle(client, { schema })
 
 // Compare two version strings in '0.0.0' format
 export function compareVersions(a: string, b: string): -1 | 0 | 1 {
@@ -28,27 +29,31 @@ export function compareVersions(a: string, b: string): -1 | 0 | 1 {
 }
 
 async function runMigrations(oldVersion?: string) {
+	// TODO: Update this in 0.4.0 to perform pg backups. Not needed for 0.3.0
+
 	// Backup database before migration in production
-	const dbFile = process.env.DATABASE_URL || dbConfig.dbPath
-	const dir = dirname(dbFile)
-	const base = basename(dbFile, extname(dbFile))
-	const ext = extname(dbFile)
-	const timestamp = new Date()
-		.toISOString()
-		.replace(/[-:T.]/g, "")
-		.slice(0, 14)
-	const backupFile = `${dir}/${base}_backup_v${oldVersion}_${timestamp}${ext}`
-	try {
-		copyFileSync(dbFile, backupFile)
-		console.log(`Database backup created: ${backupFile}`)
-	} catch (err) {
-		console.error("Failed to create database backup:", err)
-		throw new Error("Database backup failed, migration aborted.")
-	}
-	migrate(db, {
+	// const dbFile = process.env.DATABASE_URL || dbConfig.dbPath
+	// const dir = dirname(dbFile)
+	// const base = basename(dbFile, extname(dbFile))
+	// const ext = extname(dbFile)
+	// const timestamp = new Date()
+	// 	.toISOString()
+	// 	.replace(/[-:T.]/g, "")
+	// 	.slice(0, 14)
+	// const backupFile = `${dir}/${base}_backup_v${oldVersion}_${timestamp}${ext}`
+	// try {
+	// 	copyFileSync(dbFile, backupFile)
+	// 	console.log(`Database backup created: ${backupFile}`)
+	// } catch (err) {
+	// 	console.error("Failed to create database backup:", err)
+	// 	throw new Error("Database backup failed, migration aborted.")
+	// }
+
+	await migrate(db, {
 		migrationsFolder: dbConfig.migrationsDir
 	} as MigrationConfig)
 	console.log("Migrations applied.")
+	await sync()
 }
 
 // Run migrations if in production environment
@@ -77,7 +82,7 @@ if (!dev) {
 			break
 		case -1:
 			console.log("Running migrations to update database schema...")
-			runMigrations(meta.version)
+			await runMigrations(meta.version)
 			meta.version = appVersion
 			fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2))
 			console.log(`Updated meta.json to version ${appVersion}.`)
@@ -93,4 +98,7 @@ if (!dev) {
 			console.error("Unexpected version comparison result:", versionCompare)
 			throw new Error("Unexpected version comparison result")
 	}
+} else {
+	await sync()
+	// await migrateToPg()
 }

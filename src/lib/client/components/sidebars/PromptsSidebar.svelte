@@ -1,10 +1,11 @@
 <script lang="ts">
     import * as skio from "sveltekit-io"
-    import { getContext, onMount } from "svelte"
+    import { getContext, onDestroy, onMount } from "svelte"
     import * as Icons from "@lucide/svelte"
     import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
     import PromptConfigUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"
     import NewNameModal from '../modals/NewNameModal.svelte'
+	import { toaster } from "$lib/client/utils/toaster"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -118,11 +119,23 @@
         socket.on("createPromptConfig", (msg: Sockets.CreatePromptConfig.Response) => {
             selectedPromptId = msg.promptConfig.id
         })
+        socket.on("updatePromptConfig", (msg: Sockets.UpdatePromptConfig.Response) => {
+            if (msg.promptConfig.id === promptConfig.id) {
+                toaster.success({title: "Prompt Config Updated"})
+            }
+        })
         socket.emit("promptConfigsList", {})
         if (selectedPromptId) {
             socket.emit("promptConfig", { id: selectedPromptId })
         }
         onclose = handleOnClose
+    })
+
+    onDestroy(() => {
+        socket.off("promptConfigsList")
+        socket.off("promptConfig")
+        socket.off("createPromptConfig")
+        socket.off("updatePromptConfig")
     })
 </script>
 

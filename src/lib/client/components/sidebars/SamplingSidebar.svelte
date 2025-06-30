@@ -1,9 +1,10 @@
 <script lang="ts">
 	import * as skio from "sveltekit-io"
-	import { getContext, onMount, tick } from "svelte"
+	import { getContext, onDestroy, onMount, tick } from "svelte"
 	import * as Icons from "@lucide/svelte"
 	import SamplingConfigUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
+	import { toaster } from "$lib/client/utils/toaster"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -227,13 +228,26 @@
 				}
 			}
 		)
+		socket.on("deleteSamplingConfig", (message: Sockets.DeleteSamplingConfig.Response) => {
+			toaster.success({title: "Sampling Config Deleted"})
+		})
+		socket.on("updateSamplingConfig", (message: Sockets.UpdateSamplingConfig.Response) => {
+			toaster.success({title: "Sampling Config Updated"})
+		})
+		socket.on("createSamplingConfig", (message: Sockets.CreateSamplingConfig.Response) => {
+			toaster.success({title: "Sampling Config Created"})
+		})
 
 		socket.emit("sampling", { id: userCtx.user.activeSamplingConfigId })
 		socket.emit("samplingConfigsList", {})
 	})
 
-	$effect(() => {
-		console.log("SamplingSidebar list", $state.snapshot(samplingConfigsList))
+	onDestroy(() => {
+		socket.off("sampling")
+		socket.off("samplingConfigsList")
+		socket.off("deleteSamplingConfig")
+		socket.off("updateSamplingConfig")
+		socket.off("createSamplingConfig")
 	})
 </script>
 

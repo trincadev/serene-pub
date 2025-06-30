@@ -195,6 +195,9 @@
 			connection = undefined
 			originalConnection = undefined
 		})
+		socket.on("createConnection", (msg: Sockets.CreateConnection.Response) => {
+			toaster.success({ title: "Connection Created" })
+		})
 		socket.emit("connectionsList", {})
 		if (userCtx.user?.activeConnectionId) {
 			socket.emit("connection", { id: userCtx.user.activeConnectionId })
@@ -212,6 +215,8 @@
 		socket.off("testConnection")
 		socket.off("refreshModels")
 		socket.off("updateConnection")
+		socket.off("deleteConnection")
+		socket.off("createConnection")
 		onclose = undefined
 	})
 </script>
@@ -323,7 +328,7 @@
 <Modal
 	open={showConfirmModal}
 	onOpenChange={(e) => (showConfirmModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -355,7 +360,7 @@
 <Modal
 	open={showNewConnectionModal}
 	onOpenChange={(e) => (showNewConnectionModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -440,7 +445,7 @@
 <Modal
 	open={showDeleteModal}
 	onOpenChange={(e) => (showDeleteModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}

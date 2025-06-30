@@ -4,7 +4,6 @@ import * as schema from "$lib/server/db/schema"
 import * as fsPromises from "fs/promises"
 import { getCharacterDataDir, handleCharacterAvatarUpload } from "../utils"
 import { CharacterCard } from "@lenml/char-card-reader"
-import fs from "fs"
 import { fileTypeFromBuffer } from "file-type"
 
 export async function characterList(
@@ -161,24 +160,24 @@ export async function characterCardImport(
                 : new Date().toISOString()
 
         const data: InsertCharacter = {
-            userId,
-            name: v3Data.name || "Imported Character",
-            description: v3Data.description || "",
-            personality: v3Data.personality || "",
-            scenario: v3Data.scenario || "",
-            firstMessage: v3Data.first_mes || "",
-            exampleDialogues: v3Data.mes_example || "",
-            nickname: v3Data.nickname || "",
-            alternateGreetings: v3Data.alternate_greetings || [],
-            creatorNotes: v3Data.creator_notes || "",
-            creatorNotesMultilingual: v3Data.creator_notes_multilingual || {},
-            groupOnlyGreetings: v3Data.group_only_greetings || [],
-            postHistoryInstructions: v3Data.post_history_instructions || "",
-            source: v3Data.source || [],
-            assets: v3Data.assets || [],
-            createdAt: creationDate,
-            extensions: v3Data.extensions || []
-        }
+			userId,
+			name: v3Data.name || "Imported Character",
+			description: v3Data.description || "",
+			personality: v3Data.personality || "",
+			scenario: v3Data.scenario || "",
+			firstMessage: v3Data.first_mes || "",
+			exampleDialogues: v3Data.mes_example || "",
+			nickname: v3Data.nickname || "",
+			alternateGreetings: v3Data.alternate_greetings || [],
+			creatorNotes: v3Data.creator_notes || "",
+			creatorNotesMultilingual: v3Data.creator_notes_multilingual || {},
+			groupOnlyGreetings: v3Data.group_only_greetings || [],
+			postHistoryInstructions: v3Data.post_history_instructions || "",
+			source: v3Data.source || [],
+			assets: v3Data.assets || [],
+			createdAt: creationDate,
+			extensions: v3Data.extensions || [],
+		}
 
         const [character] = await db
             .insert(schema.characters)

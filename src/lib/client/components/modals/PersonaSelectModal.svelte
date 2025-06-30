@@ -32,7 +32,7 @@
 <Modal
 	{open}
 	{onOpenChange}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-md"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}

@@ -1,1 +1,0 @@
-ALTER TABLE `lorebook_bindings` ADD `binding` text NOT NULL;

@@ -58,8 +58,15 @@
 	// Filtered list
 	let filteredCharacters: Sockets.CharacterList.Response["characterList"] =
 		$derived.by(() => {
-			if (!search) return characterList
-			return characterList.filter(
+			let list = [...characterList]
+			// Sort favorites first
+			list.sort((a, b) => {
+				if (a.isFavorite && !b.isFavorite) return -1
+				if (!a.isFavorite && b.isFavorite) return 1
+				return 0
+			})
+			if (!search) return list
+			return list.filter(
 				(c: Sockets.CharacterList.Response["characterList"][0]) =>
 					c.name!.toLowerCase().includes(search.toLowerCase()) ||
 					(c.description &&
@@ -273,6 +280,7 @@
 						id={c.id}
 						onclick={() => handleCharacterClick(c)}
 						contentTitle="Go to character chats"
+						classes={c.isFavorite ? "border border-primary-500" : ""}
 					>
 						{#snippet content()}
 						<Avatar
@@ -334,7 +342,7 @@
 	<Modal
 		open={showDeleteModal}
 		onOpenChange={(e) => (showDeleteModal = e.open)}
-		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 		backdropClasses="backdrop-blur-sm"
 	>
 		{#snippet content()}
@@ -367,7 +375,7 @@
 	<Modal
 		open={showImportModal}
 		onOpenChange={(e) => (showImportModal = e.open)}
-		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 		backdropClasses="backdrop-blur-sm"
 	>
 		{#snippet content()}
@@ -405,7 +413,7 @@
 			importingLorebook = null
 			importingLorebookCharacter = null
 		}}
-		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 		backdropClasses="backdrop-blur-sm"
 	>
 		{#snippet content()}

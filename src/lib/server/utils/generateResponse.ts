@@ -155,9 +155,34 @@ export async function generateResponse({
 		} else {
 			content = completionResult
 			content = content.trim()
+
+			// --- SWIPE HISTORY LOGIC (non-streamed) ---
+			let updateData: any = { content, isGenerating: false, adapterId: null }
+			if (
+				generatingMessage.metadata &&
+				generatingMessage.metadata.swipes &&
+				typeof generatingMessage.metadata.swipes.currentIdx === "number" &&
+				generatingMessage.metadata.swipes.currentIdx > 0 &&
+				Array.isArray(generatingMessage.metadata.swipes.history)
+			) {
+				const idx = generatingMessage.metadata.swipes.currentIdx
+				const history: string[] = [...generatingMessage.metadata.swipes.history]
+				history[idx] = content
+				updateData = {
+					...updateData,
+					metadata: {
+						...generatingMessage.metadata,
+						swipes: {
+							...generatingMessage.metadata.swipes,
+							history
+						}
+					}
+				}
+			}
+
 			await db
 				.update(schema.chatMessages)
-				.set({ content, isGenerating: false, adapterId: null })
+				.set(updateData)
 				.where(eq(schema.chatMessages.id, generatingMessage.id))
 			// Instead of getChat, emit the chatMessage
 			await chatMessage(
@@ -167,7 +192,8 @@ export async function generateResponse({
 						...generatingMessage,
 						content,
 						isGenerating: false,
-						adapterId: null
+						adapterId: null,
+						...(updateData.metadata ? { metadata: updateData.metadata } : {})
 					}
 				},
 				emitToUser

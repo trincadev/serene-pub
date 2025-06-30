@@ -7,6 +7,9 @@
 	import { dndzone } from "svelte-dnd-action"
 	import RemoveFromChatModal from "../modals/RemoveFromChatModal.svelte"
 	import { onDestroy, onMount } from "svelte"
+	import { Switch } from "@skeletonlabs/skeleton-svelte"
+	import { toaster } from "$lib/client/utils/toaster"
+	import { GroupReplyStrategies } from "$lib/shared/constants/GroupReplyStrategies"
 
 	interface Props {
 		editChatId?: number | null // If provided, edit mode; else create mode
@@ -18,25 +21,11 @@
 		showEditChatForm = $bindable()
 	}: Props = $props()
 
-	const groupReplyOptions = [
-		{
-			value: "manual",
-			label: "Manual (user selects persona for each reply)"
-		},
-		{ value: "ordered", label: "Ordered (replies follow persona order)" },
-		{ value: "natural", label: "Natural (assigned by conversation flow)" }
-	]
 	const socket = skio.get()
 
 	// STATE VARIABLES
 
-	let chat:
-		| (SelectChat & {
-				chatCharacters?: SelectChatCharacter &
-					{ character: SelectCharacter }[]
-				chatPersonas?: SelectChatPersona & { persona: SelectPersona }[]
-		  })
-		| undefined = $state()
+	let chat: Sockets.Chat.Response["chat"] | undefined = $state()
 	let isCreating = $state(!chat)
 	let characters: Sockets.CharacterList.Response["characterList"] = $state([])
 	let personas: Sockets.PersonaList.Response["personaList"] = $state([])
@@ -133,7 +122,7 @@
 	$effect(() => {
 		if (editChatId) {
 			// Fetch chat details if editing
-			socket.once("chat", (msg: Sockets.Chat.Response) => {
+			socket.on("chat", (msg: Sockets.Chat.Response) => {
 				if (msg.chat && msg.chat.id === editChatId) {
 					chat = msg.chat
 					name = chat.name || ""
@@ -155,18 +144,22 @@
 			selectedCharacters = [...selectedCharacters, char]
 		showCharacterModal = false
 	}
+
 	function handleRemoveCharacter(id: number) {
 		selectedCharacters = selectedCharacters.filter((c) => c.id !== id)
 	}
+
 	function handleAddPersona(p: SelectPersona & { id: number }) {
 		if (!selectedPersonas.some((pp) => pp.id === p.id))
 			selectedPersonas = [...selectedPersonas, p]
 		showPersonaModal = false
 		// Sync data.personaIds
 	}
+
 	function handleRemovePersona(id: number) {
 		selectedPersonas = selectedPersonas.filter((p) => p.id !== id)
 	}
+
 	function handleSave() {
 		if (
 			!data?.chat.name.trim() ||
@@ -198,12 +191,14 @@
 		removeId = id
 		showRemoveModal = true
 	}
+
 	function confirmRemovePersona(id: number, name: string) {
 		removeType = "persona"
 		removeName = name
 		removeId = id
 		showRemoveModal = true
 	}
+
 	function handleRemoveConfirm() {
 		if (removeType === "character") handleRemoveCharacter(removeId!)
 		else if (removeType === "persona") handleRemovePersona(removeId!)
@@ -211,6 +206,7 @@
 		removeId = null
 		removeName = ""
 	}
+
 	function handleRemoveCancel() {
 		showRemoveModal = false
 		removeId = null
@@ -232,6 +228,16 @@
 		socket.on("lorebookList", (msg: Sockets.LorebookList.Response) => {
 			lorebookList = msg.lorebookList || []
 		})
+		socket.on(
+			"toggleChatCharacterActive",
+			(msg: Sockets.ToggleChatCharacterActive.Response) => {
+				if (chat && chat.id === msg.chatId) {
+					toaster.success({
+						title: `Character ${msg.isActive ? "activated" : "deactivated"}`
+					})
+				}
+			}
+		)
 		socket.emit("characterList", {})
 		socket.emit("personaList", {})
 		socket.emit("lorebookList", {})
@@ -241,11 +247,19 @@
 		socket.off("characterList")
 		socket.off("personaList")
 		socket.off("lorebookList")
+		socket.off("toggleChatCharacterActive")
 	})
 
-	$effect(() => {
-		console.log("lorebookId", $state.snapshot(lorebookId))
-	})
+	function toggleCharacterActive(
+		e: { checked: boolean },
+		c: SelectCharacter
+	): void {
+		const req: Sockets.ToggleChatCharacterActive.Call = {
+			chatId: chat!.id,
+			characterId: c.id
+		}
+		socket.emit("toggleChatCharacterActive", req)
+	}
 </script>
 
 {#if data}
@@ -280,59 +294,92 @@
 		</div>
 		<div>
 			<span class="mb-2 font-semibold">Characters*</span>
-			<div
-				class="relative mb-2 flex flex-wrap gap-3"
-				use:dndzone={{
-					items: selectedCharacters,
-					flipDurationMs: 150,
-					dragDisabled: !(selectedCharacters.length > 1),
-					dropFromOthersDisabled: true
-				}}
-				onconsider={(e) => (selectedCharacters = e.detail.items)}
-				onfinalize={(e) => (selectedCharacters = e.detail.items)}
-			>
-				{#each selectedCharacters as c (c.id)}
-					<div
-						class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"
-						data-dnd-handle
-					>
-						<div class="relative w-fit">
-							<span
-								class="text-surface-400 hover:text-primary-500 absolute -top-2 -left-2 z-10 cursor-grab"
+			{#key chat?.chatCharacters}
+				<div
+					class="relative mb-2 flex flex-col gap-3"
+					use:dndzone={{
+						items: selectedCharacters,
+						flipDurationMs: 150,
+						dragDisabled: !(selectedCharacters.length > 1),
+						dropFromOthersDisabled: true
+					}}
+					onconsider={(e) => (selectedCharacters = e.detail.items)}
+					onfinalize={(e) => (selectedCharacters = e.detail.items)}
+				>
+					{#each selectedCharacters as c (c.id)}
+						<div class="flex gap-2">
+							<div
+								class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"
 								data-dnd-handle
-								class:hidden={selectedCharacters.length <= 1}
-								title="Drag to reorder"
 							>
-								<Icons.GripVertical size={20} />
-							</span>
-							<Avatar char={c} />
-						</div>
-						<div class="relative flex w-0 min-w-0 flex-1 flex-col">
-							<div
-								class="w-full truncate text-left font-semibold select-none"
-							>
-								{c.nickname || c.name}
+								<div class="relative w-fit">
+									<span
+										class="text-surface-400 hover:text-primary-500 absolute -top-2 -left-2 z-10 cursor-grab"
+										data-dnd-handle
+										class:hidden={selectedCharacters.length <=
+											1}
+										title="Drag to reorder"
+									>
+										<Icons.GripVertical size={20} />
+									</span>
+									<Avatar char={c} />
+								</div>
+								<div
+									class="relative flex w-0 min-w-0 flex-1 flex-col"
+								>
+									<div
+										class="w-full truncate text-left font-semibold select-none"
+									>
+										{c.nickname || c.name}
+									</div>
+									<div
+										class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs select-none"
+									>
+										{c.creatorNotes || c.description || ""}
+									</div>
+								</div>
 							</div>
 							<div
-								class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs select-none"
+								class="flex flex-col justify-between py-1 text-center"
 							>
-								{c.creatorNotes || c.description || ""}
+								<button
+									class="preset-tonal-error btn btn-sm opacity-75"
+									onclick={() =>
+										confirmRemoveCharacter(
+											c.id,
+											c.nickname || c.name
+										)}
+									title="Remove"
+								>
+									<Icons.X size={16} />
+								</button>
+								<span>
+									<Switch
+										name="Toggle Character Active"
+										controlWidth="w-9"
+										controlActive="preset-filled-success-500"
+										controlDisabled="preset-filled-surface-500"
+										compact
+										checked={chat?.chatCharacters?.find(
+											(cc) => cc.characterId === c.id
+										)?.isActive || true}
+										disabled={!chat}
+										onCheckedChange={(e) =>
+											toggleCharacterActive(e, c)}
+									>
+										{#snippet inactiveChild()}<Icons.Meh
+												size="20"
+											/>{/snippet}
+										{#snippet activeChild()}<Icons.Smile
+												size="20"
+											/>{/snippet}
+									</Switch>
+								</span>
 							</div>
 						</div>
-						<button
-							class="text-text-error-500 absolute -top-2 -right-2 z-10 mt-2 mr-2 opacity-0 group-hover:opacity-100"
-							onclick={() =>
-								confirmRemoveCharacter(
-									c.id,
-									c.nickname || c.name
-								)}
-							title="Remove"
-						>
-							<Icons.X size={26} class="text-error-500" />
-						</button>
-					</div>
-				{/each}
-			</div>
+					{/each}
+				</div>
+			{/key}
 			<div>
 				<button
 					class="btn btn-sm preset-filled-primary-500 flex items-center"
@@ -344,33 +391,50 @@
 		</div>
 		<div>
 			<span class="mb-2 font-semibold">Personas*</span>
-			<div class="mb-2 flex flex-wrap gap-3">
+			<div class="relative mb-2 flex flex-col gap-3">
 				{#each selectedPersonas as p}
-					<div
-						class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"
-					>
-						<div class="w-fit">
-							<Avatar char={p} />
-						</div>
-						<div class="relative flex w-0 min-w-0 flex-1 flex-col">
-							<div
-								class="w-full truncate text-left font-semibold select-none"
-							>
-								{p.name}
-							</div>
-							<div
-								class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs select-none"
-							>
-								{p.description || ""}
-							</div>
-						</div>
-						<button
-							class="text-text-error-500 absolute -top-2 -right-2 z-10 mt-2 mr-2 opacity-0 group-hover:opacity-100"
-							onclick={() => confirmRemovePersona(p.id, p.name)}
-							title="Remove"
+					<div class="flex gap-2">
+						<div
+							class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"
 						>
-							<Icons.X size={26} class="text-error-500" />
-						</button>
+							<div class="w-fit">
+								<Avatar char={p} />
+							</div>
+							<div
+								class="relative flex w-0 min-w-0 flex-1 flex-col"
+							>
+								<div
+									class="w-full truncate text-left font-semibold select-none"
+								>
+									{p.name}
+								</div>
+								<div
+									class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs select-none"
+								>
+									{p.description || ""}
+								</div>
+							</div>
+							<button
+								class="text-text-error-500 absolute -top-2 -right-2 z-10 mt-2 mr-2 opacity-0 group-hover:opacity-100"
+								onclick={() =>
+									confirmRemovePersona(p.id, p.name)}
+								title="Remove"
+							>
+								<Icons.X size={26} class="text-error-500" />
+							</button>
+						</div>
+						<div
+							class="flex flex-col justify-between py-1 text-center"
+						>
+							<button
+								class="preset-tonal-error btn btn-sm opacity-75"
+								onclick={() =>
+									confirmRemovePersona(p.id, p.name)}
+								title="Remove"
+							>
+								<Icons.X size={16} />
+							</button>
+						</div>
 					</div>
 				{/each}
 			</div>
@@ -394,7 +458,7 @@
 					class="select input-lg w-full"
 					bind:value={groupReplyStrategy}
 				>
-					{#each groupReplyOptions as opt}
+					{#each GroupReplyStrategies.options as opt}
 						<option value={opt.value}>{opt.label}</option>
 					{/each}
 				</select>

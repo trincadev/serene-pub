@@ -28,9 +28,9 @@
     
 </script>
 
-<header class="sticky top-0 z-30 w-full">
+<header class="w-full">
     <div
-        class="bg-surface-100-900 bg-opacity-25 relative mx-auto flex w-full justify-between px-4 py-2 backdrop-blur md:w-[50%]"
+        class="bg-surface-100-900 bg-opacity-25 relative mx-auto flex w-full justify-between px-4 py-2 backdrop-blur"
     >
 
         <!-- Desktop left nav -->

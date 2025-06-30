@@ -4,7 +4,6 @@
 	import { loadSocketsClient } from "$lib/client/sockets/loadSockets.svelte"
     import type { Snippet } from "svelte"
 	import { page } from "$app/state"
-	import { onMount } from "svelte"
 	import * as Icons from "@lucide/svelte"
 	import { Toaster } from "@skeletonlabs/skeleton-svelte"
 	import { toaster } from "$lib/client/utils/toaster"

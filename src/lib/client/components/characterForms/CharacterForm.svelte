@@ -225,9 +225,7 @@
 	})
 </script>
 
-<div
-	class="animate-fade-inmin-h-full"
->
+<div class="animate-fade-inmin-h-full">
 	<h2 class="mb-4 text-lg font-bold">
 		{mode === "edit"
 			? `Edit: ${character.nickname || character.name}`
@@ -307,7 +305,17 @@
 			</div>
 		</div>
 		<div class="flex flex-col gap-1">
-			<label class="font-semibold" for="charName">Name*</label>
+			<label class="font-semibold flex gap-1" for="charName">
+				Name* <span
+					class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+					title="This field will be visible in prompts"
+				>
+					<Icons.ScanEye
+						size={16}
+						class="relative top-[1px] inline"
+					/>
+				</span>
+			</label>
 			<input
 				id="charName"
 				type="text"
@@ -316,7 +324,15 @@
 			/>
 		</div>
 		<div class="flex flex-col gap-1">
-			<label class="font-semibold" for="charNickname">Nickname</label>
+			<label class="font-semibold flex gap-1" for="charNickname">Nickname <span
+										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+										title="This field will be visible in prompts"
+									>
+										<Icons.ScanEye
+											size={16}
+											class="relative top-[1px] inline"
+										/>
+									</span></label>
 			<input
 				id="charNickname"
 				type="text"
@@ -330,7 +346,15 @@
 				class="flex items-center gap-2 text-sm font-semibold"
 				onclick={() => (expanded.description = !expanded.description)}
 			>
-				<span>Description*</span>
+				<span class="flex gap-1">Description <span
+										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+										title="This field will be visible in prompts"
+									>
+										<Icons.ScanEye
+											size={16}
+											class="relative top-[1px] inline"
+										/>
+									</span></span>
 				<span class="ml-1">{expanded.description ? "▼" : "►"}</span>
 			</button>
 			{#if expanded.description}
@@ -348,7 +372,15 @@
 				class="flex items-center gap-2 text-sm font-semibold"
 				onclick={() => (expanded.personality = !expanded.personality)}
 			>
-				<span>Personality</span>
+				<span class="flex gap-1">Personality <span
+										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+										title="This field will be visible in prompts"
+									>
+										<Icons.ScanEye
+											size={16}
+											class="relative top-[1px] inline"
+										/>
+									</span></span>
 				<span class="ml-1">{expanded.personality ? "▼" : "►"}</span>
 			</button>
 			{#if expanded.personality}
@@ -366,7 +398,15 @@
 				class="flex items-center gap-2 text-sm font-semibold"
 				onclick={() => (expanded.scenario = !expanded.scenario)}
 			>
-				<span>Scenario</span>
+				<span class="flex gap-1">Scenario <span
+										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+										title="This field will be visible in prompts (excluded from group chats)"
+									>
+										<Icons.ScanEye
+											size={16}
+											class="relative top-[1px] inline"
+										/>
+									</span></span>
 				<span class="ml-1">{expanded.scenario ? "▼" : "►"}</span>
 			</button>
 			{#if expanded.scenario}
@@ -421,7 +461,7 @@
 											idx
 										]
 									}
-									class="input input-xs bg-background border-muted resize-y rounded border w-full"
+									class="input input-xs bg-background border-muted w-full resize-y rounded border"
 									placeholder="Greeting..."
 								></textarea>
 							</div>
@@ -566,14 +606,16 @@
 					{#each editCharacterData.groupOnlyGreetings as greeting, idx (idx)}
 						<div class="flex flex-col items-center gap-2">
 							<div class="w-full">
-							<textarea
-								rows="2"
-								bind:value={
-									editCharacterData.groupOnlyGreetings[idx]
-								}
-								class="textarea rounded border resize-y w-full"
-								placeholder="Group greeting..."
-							></textarea>
+								<textarea
+									rows="2"
+									bind:value={
+										editCharacterData.groupOnlyGreetings[
+											idx
+										]
+									}
+									class="textarea w-full resize-y rounded border"
+									placeholder="Group greeting..."
+								></textarea>
 							</div>
 							<button
 								class="btn btn-sm preset-tonal-error w-full"
@@ -608,7 +650,15 @@
 					(expanded.postHistoryInstructions =
 						!expanded.postHistoryInstructions)}
 			>
-				<span>Post-History Instructions</span>
+				<span class="flex gap-1">Post-History Instructions <span
+										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+										title="This field will be visible in prompts"
+									>
+										<Icons.ScanEye
+											size={16}
+											class="relative top-[1px] inline"
+										/>
+									</span></span>
 				<span class="ml-1">
 					{expanded.postHistoryInstructions ? "▼" : "►"}
 				</span>
@@ -634,7 +684,7 @@
 				placeholder="1.0"
 			/>
 		</div>
-		<div class="flex flex-col gap-2">
+		<!-- <div class="flex flex-col gap-2">
 			<label class="font-semibold" for="lorebookSelect">Lorebook</label>
 			<select
 				id="lorebookSelect"
@@ -646,7 +696,7 @@
 					<option value={lb.id}>{`#${lb.id} - ${lb.name}`}</option>
 				{/each}
 			</select>
-		</div>
+		</div> -->
 		<div class="mt-2 flex items-center gap-2">
 			<Switch
 				name="favorite"

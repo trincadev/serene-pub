@@ -24,11 +24,11 @@ export class Theme {
 
 	static options: [string, string][] = [
 		[Theme.CATPPUCCIN, "Catppuccin"],
-		[Theme.CERBERUS, "Cerberus (Default)"],
+		[Theme.CERBERUS, "Cerberus"],
 		[Theme.CONCORD, "Concord"],
 		[Theme.CRIMSON, "Crimson"],
 		[Theme.FENNEC, "Fennec"],
-		[Theme.HAMLINDIGO, "Hamlindigo"],
+		[Theme.HAMLINDIGO, "Hamlindigo (Default)"],
 		[Theme.LEGACY, "Legacy"],
 		[Theme.MINT, "Mint"],
 		[Theme.MODERN, "Modern"],

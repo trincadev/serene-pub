@@ -1,6 +1,6 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
-import { and, eq, inArray, is } from "drizzle-orm"
+import { and, eq, inArray, } from "drizzle-orm"
 import { generateResponse } from "../utils/generateResponse"
 import { getNextCharacterTurn } from "$lib/server/utils/getNextCharacterTurn"
 import type { BaseConnectionAdapter } from "../connectionAdapters/BaseConnectionAdapter"
@@ -92,7 +92,10 @@ export async function createChat(
 		})
 		for (const cc of chatCharacters) {
 			if (!cc.character) continue
-			const greetings = buildCharacterFirstChatMessage({ character: cc.character, isGroup: !!newChat.isGroup })
+			const greetings = buildCharacterFirstChatMessage({
+				character: cc.character,
+				isGroup: !!newChat.isGroup
+			})
 			if (greetings.length > 0) {
 				const newMessage: InsertChatMessage = {
 					userId,
@@ -101,7 +104,6 @@ export async function createChat(
 					characterId: cc.character.id,
 					role: "assistant",
 					content: greetings[0],
-					createdAt: new Date().toString(),
 					isGenerating: false,
 					metadata: {
 						isGreeting: true,
@@ -174,6 +176,7 @@ async function getChatFromDB(chatId: number, userId: number) {
 
 // Returns complete chat data for prompt compilation
 async function getPromptChatFromDb(chatId: number, userId: number) {
+	
 	const chat = await db.query.chats.findFirst({
 		where: (c, { eq, and }) => and(eq(c.id, chatId), eq(c.userId, userId)),
 		with: {
@@ -183,7 +186,7 @@ async function getPromptChatFromDb(chatId: number, userId: number) {
 			chatCharacters: {
 				with: {
 					character: {
-						with: { lorebook: true }
+						// with: { lorebook: true }
 					}
 				},
 				orderBy: (cc, { asc }) => asc(cc.position ?? 0)
@@ -191,7 +194,7 @@ async function getPromptChatFromDb(chatId: number, userId: number) {
 			chatPersonas: {
 				with: {
 					persona: {
-						with: { lorebook: true }
+						// with: { lorebook: true }
 					}
 				},
 				orderBy: (cp, { asc }) => asc(cp.position ?? 0)
@@ -254,8 +257,7 @@ export async function sendPersonaMessage(
 		chatId,
 		personaId,
 		role: "user",
-		content,
-		createdAt: new Date().toString()
+		content
 	}
 	const [inserted] = await db
 		.insert(schema.chatMessages)
@@ -313,7 +315,6 @@ export async function sendPersonaMessage(
 				characterId: nextCharacter.character.id,
 				content: "",
 				role: "assistant",
-				createdAt: new Date().toString(),
 				isGenerating: true
 			}
 			const [generatingMessage] = await db
@@ -485,95 +486,100 @@ export async function promptTokenCount(
 	message: Sockets.PromptTokenCount.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	const userId = 1 // Replace with actual user id
-	const chat = await getPromptChatFromDb(message.chatId, userId)
-	if (!chat) {
-		emitToUser("error", { error: "Chat not found." })
-		return
-	}
-	const user = await db.query.users.findFirst({
-		where: (u, { eq }) => eq(u.id, userId),
-		with: {
-			activeConnection: true,
-			activeSamplingConfig: true,
-			activeContextConfig: true,
-			activePromptConfig: true
+	try {
+		const userId = 1 // Replace with actual user id
+		const chat = await getPromptChatFromDb(message.chatId, userId)
+		if (!chat) {
+			emitToUser("error", { error: "Chat not found." })
+			return
 		}
-	})
-	if (
-		!chat ||
-		!user ||
-		!user.activeConnection ||
-		!user.activeSamplingConfig ||
-		!user.activeContextConfig ||
-		!user.activePromptConfig
-	) {
-		emitToUser("error", {
-			error: "Incomplete configuration, failed to calculate token count."
+		const user = await db.query.users.findFirst({
+			where: (u, { eq }) => eq(u.id, userId),
+			with: {
+				activeConnection: true,
+				activeSamplingConfig: true,
+				activeContextConfig: true,
+				activePromptConfig: true
+			}
 		})
-		return
+		if (
+			!chat ||
+			!user ||
+			!user.activeConnection ||
+			!user.activeSamplingConfig ||
+			!user.activeContextConfig ||
+			!user.activePromptConfig
+		) {
+			emitToUser("error", {
+				error: "Incomplete configuration, failed to calculate token count."
+			})
+			return
+		}
+		let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
+		// if (message.content && message.role) {
+		// 	// chatForPrompt.chatMessages.push({
+		// 	// 	id: -1,
+		// 	// 	chatId: chat.id,
+		// 	// 	userId: userId,
+		// 	// 	personaId: message.personaId ?? null,
+		// 	// 	characterId: null,
+		// 	// 	role: message.role,
+		// 	// 	content: message.content,
+		// 	// 	isEdited: 0,
+		// 	// 	metadata: null,
+		// 	// 	isGenerating: false,
+		// 	// 	adapterId: null,
+		// 	// 	isHidden: null
+		// 	// })
+		// }
+		const currentCharacterId = getNextCharacterTurn(
+			{
+				chatMessages: chat.chatMessages,
+				chatCharacters: chat.chatCharacters.filter(
+					(cc: any) => cc && cc.character != null
+				) as any,
+				chatPersonas: chat.chatPersonas.filter(
+					(cp: any) => cp && cp.persona != null
+				) as any
+			},
+			{ triggered: true }
+		)
+
+		if (!currentCharacterId) {
+			emitToUser("error", { error: "No character available for prompt." })
+			return
+		}
+
+		const { Adapter } = getConnectionAdapter(user.activeConnection.type)
+
+		// Provide required params for Adapter (use defaults if not available)
+		const tokenCounter = new TokenCounters("estimate")
+		const tokenLimit = 4096
+		const contextThresholdPercent = 0.8
+
+		const adapter = new Adapter({
+			chat: chatForPrompt,
+			connection: user.activeConnection,
+			sampling: user.activeSamplingConfig,
+			contextConfig: user.activeContextConfig,
+			promptConfig: user.activePromptConfig,
+			currentCharacterId,
+			tokenCounter,
+			tokenLimit,
+			contextThresholdPercent
+		})
+		const promptResult: Sockets.PromptTokenCount.Response =
+			await adapter.compilePrompt({})
+		emitToUser(
+			"promptTokenCount",
+			promptResult as Sockets.PromptTokenCount.Response
+		)
+	} catch (error) {
+		console.error("Error in promptTokenCount:", error)
+		emitToUser("error", {
+			error: "Failed to calculate prompt token count."
+		})
 	}
-	let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
-	// if (message.content && message.role) {
-	// 	// chatForPrompt.chatMessages.push({
-	// 	// 	id: -1,
-	// 	// 	chatId: chat.id,
-	// 	// 	userId: userId,
-	// 	// 	personaId: message.personaId ?? null,
-	// 	// 	characterId: null,
-	// 	// 	role: message.role,
-	// 	// 	content: message.content,
-	// 	// 	createdAt: new Date().toISOString(),
-	// 	// 	updatedAt: new Date().toISOString(),
-	// 	// 	isEdited: 0,
-	// 	// 	metadata: null,
-	// 	// 	isGenerating: false,
-	// 	// 	adapterId: null,
-	// 	// 	isHidden: null
-	// 	// })
-	// }
-	const currentCharacterId = getNextCharacterTurn(
-		{
-			chatMessages: chat.chatMessages,
-			chatCharacters: chat.chatCharacters.filter(
-				(cc: any) => cc && cc.character != null
-			) as any,
-			chatPersonas: chat.chatPersonas.filter(
-				(cp: any) => cp && cp.persona != null
-			) as any
-		},
-		{ triggered: true }
-	)
-
-	if (!currentCharacterId) {
-		emitToUser("error", { error: "No character available for prompt." })
-		return
-	}
-
-	const { Adapter } = getConnectionAdapter(user.activeConnection.type)
-
-	// Provide required params for Adapter (use defaults if not available)
-	const tokenCounter = new TokenCounters("estimate")
-	const tokenLimit = 4096
-	const contextThresholdPercent = 0.8
-
-	const adapter = new Adapter({
-		chat: chatForPrompt,
-		connection: user.activeConnection,
-		sampling: user.activeSamplingConfig,
-		contextConfig: user.activeContextConfig,
-		promptConfig: user.activePromptConfig,
-		currentCharacterId,
-		tokenCounter,
-		tokenLimit,
-		contextThresholdPercent
-	})
-	const promptResult: Sockets.PromptTokenCount.Response =
-		await adapter.compilePrompt({})
-	emitToUser(
-		"promptTokenCount",
-		promptResult as Sockets.PromptTokenCount.Response
-	)
 }
 
 export async function abortChatMessage(
@@ -689,7 +695,6 @@ export async function triggerGenerateMessage(
 				characterId: nextCharacter.character.id,
 				content: "",
 				role: "assistant",
-				createdAt: new Date().toString(),
 				isGenerating: true
 			}
 			const [generatingMessage] = await db
@@ -916,7 +921,10 @@ export async function updateChat(
 			for (const cc of newChatCharacters) {
 				if (!cc.character) continue
 				if (!newCharacterIds.includes(cc.character.id)) continue
-				const greetings = buildCharacterFirstChatMessage({ character: cc.character, isGroup: message.characterIds.length > 1 })
+				const greetings = buildCharacterFirstChatMessage({
+					character: cc.character,
+					isGroup: message.characterIds.length > 1
+				})
 				if (greetings.length > 0) {
 					const newMessage: InsertChatMessage = {
 						userId,
@@ -925,7 +933,6 @@ export async function updateChat(
 						characterId: cc.character.id,
 						role: "assistant",
 						content: greetings[0],
-						createdAt: new Date().toString(),
 						isGenerating: false,
 						metadata: {
 							isGreeting: true,
@@ -1243,21 +1250,85 @@ export async function chatMessageSwipeLeft(
 }
 
 // Builds the chatMessage history for the first chat message of a character, with history swipes for the user to choose from
-function buildCharacterFirstChatMessage({ character, isGroup }: { character: SelectCharacter, isGroup: boolean }): string[] {
+function buildCharacterFirstChatMessage({
+	character,
+	isGroup
+}: {
+	character: SelectCharacter
+	isGroup: boolean
+}): string[] {
 	const history: string[] = []
 	if (!isGroup || (isGroup && !character.groupOnlyGreetings?.length)) {
 		if (character.firstMessage) {
 			history.push(character.firstMessage.trim())
 		}
 		if (character.alternateGreetings) {
-			history.push(...character.alternateGreetings.map(g => g.trim()))
+			history.push(...character.alternateGreetings.map((g) => g.trim()))
 		}
 	} else if (character.groupOnlyGreetings?.length) {
 		// If this is a group chat, use only group greetings
-		history.push(...character.groupOnlyGreetings.map(g => g.trim()))
+		history.push(...character.groupOnlyGreetings.map((g) => g.trim()))
 	} else {
 		// Fallback firstMessage if no greetings are available
-		history.push(`Sits down at the table, "I didn't think you'd show up so soon."`)
+		history.push(
+			`Sits down at the table, "I didn't think you'd show up so soon."`
+		)
 	}
 	return history
+}
+
+export async function toggleChatCharacterActive(
+	socket: any,
+	message: Sockets.ToggleChatCharacterActive.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	const userId = 1 // Replace with actual user id
+	if (!userId) return
+
+	const chat = await db.query.chats.findFirst({
+		where: (c, { eq, and }) =>
+			and(eq(c.id, message.chatId), eq(c.userId, userId)),
+		with: {
+			chatCharacters: {
+				where: (cc, { eq }) => eq(cc.characterId, message.characterId)
+			}
+		}
+	})
+	if (!chat) {
+		const res = {
+			error: "Chat not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (!chat.chatCharacters || chat.chatCharacters.length === 0) {
+		const res = {
+			error: "Chat character not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	const chatCharacter = chat.chatCharacters[0]
+
+	await db
+		.update(schema.chatCharacters)
+		.set({ isActive: !chatCharacter.isActive })
+		.where(
+			and(
+				eq(schema.chatCharacters.characterId, message.characterId),
+				eq(schema.chatCharacters.chatId, message.chatId)
+			)
+		)
+
+	const res: Sockets.ToggleChatCharacterActive.Response = {
+		chatId: message.chatId,
+		characterId: message.characterId,
+		isActive: !!chatCharacter.isActive
+	}
+
+	emitToUser("toggleChatCharacterActive", res)
+
+	await getChat(socket, { id: chat.id }, emitToUser)
 }
