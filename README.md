@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="static/readme-header.png" alt="Serene Pub logo" width="500"/>
+  <img src="static/readme-header.png" alt="Serene Pub logo" width="1920"/>
 </p>
 
 Serene Pub is a modern, customizable chat application designed for immersive roleplay and creative conversations. Inspired by Silly Tavern, it aims to be more intuitive, responsive, and simple to configure.
