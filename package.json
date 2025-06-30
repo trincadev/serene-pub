@@ -33,7 +33,7 @@
 		"db:migrate": "drizzle-kit migrate --config ./src/lib/server/db/drizzle.config.ts",
 		"db:studio": "drizzle-kit studio --config ./src/lib/server/db/drizzle.config.ts",
 		"bundle": "node scripts/bundle-dist.js",
-		"dist": "bun run build && bun run bundle"
+		"dist": "npm run build && npm run bundle"
 	},
 	"devDependencies": {
 		"@enviro/metadata": "^1.5.1",

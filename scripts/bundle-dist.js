@@ -121,7 +121,8 @@ const ACCEPTABLE_LICENSES = [
 	"bsd-3-clause-modified",
 	"bsd-3-clause",
 	"bsd-2-clause",
-	"bsd"
+	"bsd",
+	"python-2.0"
 ]
 
 function isAcceptableLicense(license, name, version) {
@@ -217,7 +218,7 @@ function checkAllLicensesAcceptable(nodeModulesPath) {
 			)
 			// Prune node_modules using Bun (or npm/yarn if you prefer)
 			console.log(`Pruning node_modules for ${platform.name}...`)
-			child_process.execSync("bun install --production", {
+			child_process.execSync("npm install --production", {
 				cwd: tempDir,
 				stdio: "inherit",
 				env: platform.env

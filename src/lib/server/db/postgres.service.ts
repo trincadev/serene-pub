@@ -36,7 +36,6 @@ export async function startPg(): Promise<void> {
 		}
 	} catch (error) {
 		console.error("Error starting PostgreSQL server:", error)
-		throw error
 	}
 }
 
