@@ -7,6 +7,7 @@ import { dev } from "$app/environment"
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { sync } from "./defaults"
 import { startPg } from "./postgres.service"
+import { migrateToPg } from "../db_old/migrateToPg"
 
 await startPg()
 

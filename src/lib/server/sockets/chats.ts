@@ -368,9 +368,11 @@ export async function updateChatMessage(
 	emitToUser: (event: string, data: any) => void
 ) {
 	const userId = 1 // Replace with actual user id
+	const data = {...message.chatMessage }
+	delete data.id // Remove id to avoid conflicts with update
 	const [updated] = await db
 		.update(schema.chatMessages)
-		.set({ ...message.chatMessage, id: undefined })
+		.set({ ...data })
 		.where(
 			and(
 				eq(schema.chatMessages.id, message.chatMessage.id),
@@ -437,8 +439,8 @@ export async function regenerateChatMessage(
 		...chatMessage,
 		content: "",
 		isGenerating: true,
-		id: undefined
 	}
+	delete data.id // Remove id to avoid conflicts with update
 
 	// Check if we need to clear swipe history
 	if (
@@ -764,13 +766,14 @@ export async function updateChat(
 		const existingChat = await getPromptChatFromDb(message.chat.id, userId)
 
 		// Update chat main fields
+		const data = {...message.chat}
+		delete data.id // Remove id to avoid conflicts
 		await db
 			.update(schema.chats)
 			.set({
 				...message.chat,
 				isGroup: message.characterIds.length > 1,
 				userId: undefined,
-				id: undefined
 			})
 			.where(
 				and(
@@ -1069,10 +1072,12 @@ export async function chatMessageSwipeRight(
 		data.metadata!.swipes!.history.push("") // Add an empty string to history
 	}
 
+	delete data.id
+
 	// Update the chat message in the database
 	const [updatedMessage] = await db
 		.update(schema.chatMessages)
-		.set({ ...data, id: undefined })
+		.set({ ...data })
 		.where(eq(schema.chatMessages.id, chatMessage.id))
 		.returning()
 
@@ -1223,9 +1228,10 @@ export async function chatMessageSwipeLeft(
 	data.content =
 		data.metadata!.swipes!.history[data.metadata!.swipes!.currentIdx] || "" // Set content to the previous swipe content
 	// Update the chat message in the database
+	delete data.id
 	const [updatedMessage] = await db
 		.update(schema.chatMessages)
-		.set({ ...data, id: undefined })
+		.set({ ...data })
 		.where(eq(schema.chatMessages.id, chatMessage.id))
 		.returning()
 

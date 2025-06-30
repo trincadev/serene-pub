@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { db } from "."
 import * as schema from "./schema"
 
@@ -299,4 +299,35 @@ Story history:
 	} catch (error) {
 		console.error("Error syncing database defaults:", error)
 	}
+
+	const tables = [
+		"chat_messages",
+		"chats",
+		"characters",
+		"connections",
+		"context_configs",
+		"history_entries",
+		"lorebooks",
+		"lorebook_bindings",
+		"world_lore_entries",
+		"character_lore_entries",
+		"personas",
+		"prompt_configs",
+		"sampling_configs",
+		"users"
+	]
+
+	const queries: Promise<any>[] = []
+	tables.map((table) => {
+		queries.push(
+			db.execute(`
+				SELECT setval(
+					pg_get_serial_sequence('${table}', 'id'),
+					(SELECT MAX(id) FROM ${table})
+				);
+			`)
+		)
+	})
+
+	await Promise.all(queries)
 }
