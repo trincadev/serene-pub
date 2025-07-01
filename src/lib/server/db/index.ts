@@ -7,14 +7,10 @@ import { dev } from "$app/environment"
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { sync } from "./defaults"
 import { startPg } from "./postgres.service"
-import { migrateToPg } from "../db_old/migrateToPg"
 
-await startPg()
+const firstInit = await startPg()
 
 export let db = drizzle(dbConfig.postgresUrl, {schema})
-
-
-
 
 // Compare two version strings in '0.0.0' format
 export function compareVersions(a: string, b: string): -1 | 0 | 1 {
@@ -58,7 +54,7 @@ async function runMigrations(oldVersion?: string) {
 }
 
 // Run migrations if in production environment
-if (!dev) {
+if (!dev || firstInit) {
 
 	// If it doesn't exist, create a meta.json file in the data directory
 	const metaPath = dbConfig.dataDir + "/meta.json"
@@ -101,5 +97,6 @@ if (!dev) {
 	}
 } else {
 	await sync()
+	// const { migrateToPg } = await import("../db_old/migrateToPg")
 	// await migrateToPg()
 }

@@ -857,6 +857,13 @@ declare global {
 				isActive: boolean
 			}
 		}
+		namespace SetTheme {
+			interface Call {
+				theme: string
+				darkMode: boolean
+			}
+			interface Response {}
+		}
 	}
 
 	export interface CharaImportMetadata {

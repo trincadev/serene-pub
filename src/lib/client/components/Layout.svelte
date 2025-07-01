@@ -57,6 +57,7 @@
 		},
 		digest: {}
 	})
+	// TODO use setTheme socket call
 	let themeCtx: ThemeCtx = $state({
 		mode: (localStorage.getItem("mode") as "light" | "dark") || "dark",
 		theme: localStorage.getItem("theme") || Theme.HAMLINDIGO

@@ -264,7 +264,7 @@
 
 {#if data}
 	<div
-		class="border-surface-500/25 flex min-h-full flex-col gap-6 rounded-lg border p-2"
+		class="flex min-h-full flex-col gap-6"
 	>
 		<div class="mt-4 flex gap-2">
 			<button

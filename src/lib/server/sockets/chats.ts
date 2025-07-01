@@ -1,6 +1,6 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
-import { and, asc, eq, inArray, } from "drizzle-orm"
+import { and, asc, eq, inArray } from "drizzle-orm"
 import { generateResponse } from "../utils/generateResponse"
 import { getNextCharacterTurn } from "$lib/server/utils/getNextCharacterTurn"
 import type { BaseConnectionAdapter } from "../connectionAdapters/BaseConnectionAdapter"
@@ -153,7 +153,7 @@ async function getChatFromDB(chatId: number, userId: number) {
 			},
 			chatCharacters: { with: { character: true } },
 			chatMessages: {
-				orderBy: (cm, { asc }) => asc(cm.id),
+				orderBy: (cm, { asc }) => asc(cm.id)
 			}
 		}
 	})
@@ -178,7 +178,6 @@ async function getChatFromDB(chatId: number, userId: number) {
 
 // Returns complete chat data for prompt compilation
 async function getPromptChatFromDb(chatId: number, userId: number) {
-	
 	const chat = await db.query.chats.findFirst({
 		where: (c, { eq, and }) => and(eq(c.id, chatId), eq(c.userId, userId)),
 		with: {
@@ -371,7 +370,7 @@ export async function updateChatMessage(
 	emitToUser: (event: string, data: any) => void
 ) {
 	const userId = 1 // Replace with actual user id
-	const data = {...message.chatMessage }
+	const data = { ...message.chatMessage }
 	delete data.id // Remove id to avoid conflicts with update
 	const [updated] = await db
 		.update(schema.chatMessages)
@@ -441,7 +440,7 @@ export async function regenerateChatMessage(
 	const data: InsertChatMessage = {
 		...chatMessage,
 		content: "",
-		isGenerating: true,
+		isGenerating: true
 	}
 	delete data.id // Remove id to avoid conflicts with update
 
@@ -606,7 +605,7 @@ export async function abortChatMessage(
 		return
 	}
 
-	;[chatMsg] = await db
+	[chatMsg] = await db
 		.update(schema.chatMessages)
 		.set({ isGenerating: false, adapterId: null })
 		.where(eq(schema.chatMessages.id, message.id))
@@ -739,8 +738,7 @@ export async function chatMessage(
 		}
 		emitToUser("chatMessage", res)
 		return
-	}
-	if (message.id) {
+	} else if (message.id) {
 		// If id is provided, fetch from database
 		const chatMessage = await db.query.chatMessages.findFirst({
 			where: (m, { eq }) => eq(m.id, message.id!)
@@ -752,8 +750,9 @@ export async function chatMessage(
 		const res: Sockets.ChatMessage.Response = { chatMessage }
 		emitToUser("chatMessage", res)
 		return
+	} else {
+		emitToUser("error", { error: "Must provide either id or chatMessage." })
 	}
-	emitToUser("error", { error: "Must provide either id or chatMessage." })
 }
 
 export async function updateChat(
@@ -769,14 +768,14 @@ export async function updateChat(
 		const existingChat = await getPromptChatFromDb(message.chat.id, userId)
 
 		// Update chat main fields
-		const data = {...message.chat}
+		const data = { ...message.chat }
 		delete data.id // Remove id to avoid conflicts
 		await db
 			.update(schema.chats)
 			.set({
 				...message.chat,
 				isGroup: message.characterIds.length > 1,
-				userId: undefined,
+				userId: undefined
 			})
 			.where(
 				and(

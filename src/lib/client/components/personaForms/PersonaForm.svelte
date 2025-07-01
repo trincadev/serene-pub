@@ -158,7 +158,7 @@
 </script>
 
 <div
-	class="bg-background animate-fade-in border-surface-500/25 h-full rounded-lg border p-2 shadow-lg"
+	class="h-full rounded-lg"
 >
 	<h2 class="mb-4 text-lg font-bold">
 		{mode === "edit" ? `Edit: ${editPersonaData.name}` : "Create Persona"}

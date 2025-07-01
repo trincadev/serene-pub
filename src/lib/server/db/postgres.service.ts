@@ -9,7 +9,8 @@ type PgGlobal = { pg?: EmbeddedPostgres }
 // Check if already initialized
 const globalPg = globalThis as unknown as PgGlobal
 
-export async function startPg(): Promise<void> {
+export async function startPg(): Promise<boolean> {
+	let firstInit = false
 	try {
 		console.log("Starting PostgreSQL server...")
 		// Create the object
@@ -21,11 +22,16 @@ export async function startPg(): Promise<void> {
 			persistent: true
 		})
 
-		// Check the path to the data directory
-		const pgDataDirExists = fs.existsSync(dbConfig.dbDataDir)
+		// Check the path to the data directory and if postgresql.conf exists
+		const pgDataExists = fs.existsSync(`${dbConfig.dbDataDir}/postgresql.conf`)
 
-		if (!pgDataDirExists) {
-			await pg.initialise()
+		if (!pgDataExists) {
+			try {
+				await pg.initialise()
+				firstInit = true
+			} catch (error) {
+				console.error("Error initializing PostgreSQL:", error)
+			}
 		}
 
 		await pg.start()
@@ -35,8 +41,9 @@ export async function startPg(): Promise<void> {
 			globalPg.pg = pg
 		}
 	} catch (error) {
-		console.error("Error starting PostgreSQL server:", error)
+		throw new Error("Failed to start PostgreSQL server. Please check the configuration and ensure PostgreSQL is not already running.")
 	}
+	return firstInit
 }
 
 export let pg = globalPg.pg

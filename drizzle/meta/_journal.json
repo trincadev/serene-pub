@@ -8,6 +8,13 @@
       "when": 1751273223316,
       "tag": "0000_stiff_puma",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1751364094857,
+      "tag": "0001_unique_stone_men",
+      "breakpoints": true
     }
   ]
 }

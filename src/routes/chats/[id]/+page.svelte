@@ -647,7 +647,7 @@
 				{#if chat?.chatPersonas?.[0]?.persona}
 					{@const persona = chat?.chatPersonas?.[0]?.persona}
 					<div class="hidden flex-col lg:ml-2 lg:flex lg:gap-2">
-						<span>
+						<span class="ml-1">
 							<Avatar char={persona} />
 						</span>
 					</div>
@@ -656,7 +656,7 @@
 			{#snippet rightControls()}
 				{#if !lastMessage?.isGenerating && !editChatMessage}
 					<button
-						class="hover:preset-tonal-success rounded-lg p-2 text-center lg:block lg:h-auto lg:p-3"
+						class="hover:preset-tonal-success rounded-lg p-2 text-center lg:block lg:h-auto lg:p-3 mr-3"
 						type="button"
 						disabled={!newMessage.trim() ||
 							lastMessage?.isGenerating}
@@ -668,7 +668,7 @@
 				{:else if lastMessage?.isGenerating}
 					<button
 						title="Stop Generation"
-						class="text-error-500 hover:preset-tonal-error rounded-lg p-2 text-center lg:h-auto lg:p-3"
+						class="text-error-500 hover:preset-tonal-error rounded-lg p-2 text-center lg:h-auto lg:p-3 mr-3"
 						type="button"
 						onclick={handleAbortLastMessage}
 					>

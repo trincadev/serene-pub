@@ -37,7 +37,9 @@ export const users = pgTable("users", {
 		{
 			onDelete: "set null"
 		}
-	)
+	),
+	theme: text("theme").notNull().default("hamlindigo"),
+	darkMode: boolean("dark_mode").notNull().default(true),
 })
 
 export const userRelations = relations(users, ({ many, one }) => ({

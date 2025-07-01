@@ -1,6 +1,6 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { v4 as uuidv4 } from "uuid"
 import { activeAdapters, chatMessage } from "../sockets/chats"
 import { getConnectionAdapter } from "./getConnectionAdapter"
@@ -27,16 +27,21 @@ export async function generateResponse({
 		.set({ isGenerating: true, content: "", adapterId })
 		.where(eq(schema.chatMessages.id, generatingMessage.id))
 	// Instead of getChat, emit the chatMessage
+
+	console.log("[generateResponse] Generating response for message:", generatingMessage.id, "in chat:", chatId, "for user:", userId, "with adapterId:", adapterId)
+
+	const req: Sockets.ChatMessage.Call = {
+		chatMessage: {
+			...generatingMessage,
+			isGenerating: true,
+			content: "",
+			adapterId
+		}
+	}
+
 	await chatMessage(
 		socket,
-		{
-			chatMessage: {
-				...generatingMessage,
-				isGenerating: true,
-				content: "",
-				adapterId
-			}
-		},
+		req,
 		emitToUser
 	)
 
@@ -135,10 +140,15 @@ export async function generateResponse({
 			})
 			// Final update: mark as not generating, clear adapterId
 			content = content.trim()
-			await db
+			const ret = await db
 				.update(schema.chatMessages)
 				.set({ content, isGenerating: false, adapterId: null })
-				.where(eq(schema.chatMessages.id, generatingMessage.id))
+				.where(and(eq(schema.chatMessages.id, generatingMessage.id), eq(schema.chatMessages.isGenerating, true))).returning()
+			if (!ret || ret.length === 0) {
+				console.error("[generateResponse] Failed to update generating message:", generatingMessage.id)
+				activeAdapters.delete(adapterId)
+				return
+			}
 			// Instead of getChat, emit the chatMessage
 			await chatMessage(
 				socket,
@@ -180,11 +190,16 @@ export async function generateResponse({
 				}
 			}
 
-			await db
+			const ret = await db
 				.update(schema.chatMessages)
 				.set(updateData)
-				.where(eq(schema.chatMessages.id, generatingMessage.id))
+				.where(and(eq(schema.chatMessages.id, generatingMessage.id), eq(schema.chatMessages.isGenerating, true))).returning()
 			// Instead of getChat, emit the chatMessage
+			if (!ret || ret.length === 0) {
+				console.error("[generateResponse] Failed to update generating message:", generatingMessage.id)
+				activeAdapters.delete(adapterId)
+				return
+			}
 			await chatMessage(
 				socket,
 				{

@@ -25,11 +25,13 @@
 
 	const onDarkModeChanged = (event: { checked: boolean }) => {
 		themeCtx.mode = event.checked ? "dark" : "light"
+		// TODO use setTheme socket call
 	}
 
 	const onThemeChanged = (event: Event) => {
 		const target = event.target as HTMLSelectElement
 		themeCtx.theme = target.value
+		// TODO use setTheme socket call
 	}
 
 	onMount(() => {
