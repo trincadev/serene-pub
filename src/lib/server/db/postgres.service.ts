@@ -41,7 +41,8 @@ export async function startPg(): Promise<boolean> {
 			globalPg.pg = pg
 		}
 	} catch (error) {
-		throw new Error("Failed to start PostgreSQL server. Please check the configuration and ensure PostgreSQL is not already running.")
+		console.error("Failed to start PostgreSQL server:", error)
+		// throw new Error("Failed to start PostgreSQL server. Please check the configuration and ensure PostgreSQL is not already running.")
 	}
 	return firstInit
 }

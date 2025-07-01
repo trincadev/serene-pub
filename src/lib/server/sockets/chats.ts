@@ -1265,8 +1265,9 @@ function buildCharacterFirstChatMessage({
 	character: SelectCharacter
 	isGroup: boolean
 }): string[] {
+	console.log("Building first chat message for character:", character.name)
 	const history: string[] = []
-	if (!isGroup || (isGroup && !character.groupOnlyGreetings?.length)) {
+	if (!isGroup || !character.groupOnlyGreetings?.length) {
 		if (character.firstMessage) {
 			history.push(character.firstMessage.trim())
 		}

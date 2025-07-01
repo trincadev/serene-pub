@@ -1361,9 +1361,10 @@ export async function lorebookImport(
 			} else if ((entry.priority || 1) > 3) {
 				entry.priority = 3
 			}
+			// console.log("Importing lore entry:", JSON.stringify(entry))
 			queries.push(
 				db.insert(schema.worldLoreEntries).values({
-					name: entry.name || "Imported Entry",
+					name: entry.name || entry.comment || "Imported Entry",
 					content: entry.content || "",
 					lorebookId: book.id,
 					position,

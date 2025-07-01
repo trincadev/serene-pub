@@ -28,7 +28,7 @@ export async function generateResponse({
 		.where(eq(schema.chatMessages.id, generatingMessage.id))
 	// Instead of getChat, emit the chatMessage
 
-	console.log("[generateResponse] Generating response for message:", generatingMessage.id, "in chat:", chatId, "for user:", userId, "with adapterId:", adapterId)
+	// console.log("[generateResponse] Generating response for message:", generatingMessage.id, "in chat:", chatId, "for user:", userId, "with adapterId:", adapterId)
 
 	const req: Sockets.ChatMessage.Call = {
 		chatMessage: {

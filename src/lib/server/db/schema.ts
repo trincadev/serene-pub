@@ -507,7 +507,7 @@ export const chatCharacters = pgTable("chat_characters", {
 		onDelete: "set null"
 	}),
 	position: integer("position").default(0), // Position in the chat
-	isActive: boolean("is_active").notNull() // 1 if active in chat, 0 if not
+	isActive: boolean("is_active").notNull().default(true) // 1 if active in chat, 0 if not
 }, table => ({
 	pk: uniqueIndex("chat_characters_pk").on(table.chatId, table.characterId)
 }))

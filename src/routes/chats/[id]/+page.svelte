@@ -296,22 +296,17 @@
 		isGreeting: boolean
 	): boolean {
 		let res = false
-		if (msg.id === lastMessage?.id) {
+		if (msg.id === lastMessage?.id && !isGreeting) {
 			// If this is the last message, we always show swipe controls
 			res = canRegenerateLastMessage
 		} else if (msg.isGenerating) {
 			res = false
 		} else if (msg.role === "user") {
 			return false
-		} else if (
-			isGreeting &&
-			(msg.metadata?.swipes?.history?.length ?? 0) <= 1
-		) {
-			res = false
 		} else if (openMobileMsgControls === msg.id) {
 			res = true
-		} else if (isGreeting && (lastPersonaMessage?.id ?? 0) < msg.id) {
-			res = true
+		} else if (isGreeting) {
+			res = (lastPersonaMessage?.id ?? 0) < msg.id
 		}
 		return res
 	}
@@ -454,8 +449,9 @@
 										</button>
 									</span>
 									<div class="flex flex-col">
-										<button
-											class="funnel-display mx-0 w-fit px-0 text-[1.1em] font-bold hover:underline"
+										<span class="flex gap-1">
+											<button
+											class="funnel-display mx-0 w-fit px-0 text-[1.1em] font-bold hover:underline inline-block"
 											onclick={(e) =>
 												handleCharacterNameClick(msg)}
 											title="Edit"
@@ -464,6 +460,15 @@
 												character?.name ||
 												"Unknown"}
 										</button>
+											{#if isGreeting}
+													<span class="text-xs text-muted mt-1 opacity-50" title="Greeting message">
+														<Icons.Handshake
+															size={16}
+														/>
+													</span>
+												{/if}
+										</span>
+										
 									</div>
 								</div>
 
