@@ -46,8 +46,10 @@ export async function generateResponse({
 			chatCharacters: { with: { character: true } },
 			chatPersonas: { with: { persona: true } },
 			chatMessages: {
-				where: (cm, { ne }) => ne(cm.id, generatingMessage.id)
-			}
+				where: (cm, { ne }) => ne(cm.id, generatingMessage.id),
+				orderBy: (cm, { asc }) => asc(cm.id)
+			},
+			lorebook: true,
 		}
 	})
 
@@ -66,8 +68,6 @@ export async function generateResponse({
 	const tokenCounter = new TokenCounters("estimate")
 	const tokenLimit = 4096
 	const contextThresholdPercent = 0.8
-
-	console.log("Generating response with characterId:", generatingMessage.characterId)
 
 	const adapter = new Adapter({
 		chat,

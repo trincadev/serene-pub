@@ -134,13 +134,6 @@
 			return false
 		}
 
-		if (!entry.content.trim()) {
-			if (warn) {
-				toaster.error({ title: "Content is required" })
-			}
-			return false
-		}
-
 		return true
 	}
 

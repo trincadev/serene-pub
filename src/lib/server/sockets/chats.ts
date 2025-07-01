@@ -1,6 +1,6 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
-import { and, eq, inArray, } from "drizzle-orm"
+import { and, asc, eq, inArray, } from "drizzle-orm"
 import { generateResponse } from "../utils/generateResponse"
 import { getNextCharacterTurn } from "$lib/server/utils/getNextCharacterTurn"
 import type { BaseConnectionAdapter } from "../connectionAdapters/BaseConnectionAdapter"
@@ -152,7 +152,9 @@ async function getChatFromDB(chatId: number, userId: number) {
 				orderBy: (cp, { asc }) => asc(cp.position)
 			},
 			chatCharacters: { with: { character: true } },
-			chatMessages: true
+			chatMessages: {
+				orderBy: (cm, { asc }) => asc(cm.id),
+			}
 		}
 	})
 
@@ -181,7 +183,8 @@ async function getPromptChatFromDb(chatId: number, userId: number) {
 		where: (c, { eq, and }) => and(eq(c.id, chatId), eq(c.userId, userId)),
 		with: {
 			chatMessages: {
-				where: (cm, { eq }) => eq(cm.isHidden, false)
+				where: (cm, { eq }) => eq(cm.isHidden, false),
+				orderBy: (cm, { asc }) => asc(cm.id)
 			},
 			chatCharacters: {
 				with: {
@@ -1331,7 +1334,7 @@ export async function toggleChatCharacterActive(
 	const res: Sockets.ToggleChatCharacterActive.Response = {
 		chatId: message.chatId,
 		characterId: message.characterId,
-		isActive: !!chatCharacter.isActive
+		isActive: !chatCharacter.isActive
 	}
 
 	emitToUser("toggleChatCharacterActive", res)

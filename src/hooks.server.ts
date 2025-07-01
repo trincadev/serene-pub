@@ -72,7 +72,15 @@ let isNewerReleaseAvailable: boolean | undefined = undefined
 let hasCheckedForUpdates = false
 
 export const handle: Handle = async ({ event, resolve }) => {
-	if ( !dev && !hasCheckedForUpdates ) {
+	if (
+		event.url.pathname.startsWith(
+			"/.well-known/appspecific/com.chrome.devtools"
+		)
+	) {
+		return new Response(null, { status: 204 }) // Return empty response with 204 No Content
+	}
+
+	if (!dev && !hasCheckedForUpdates) {
 		hasCheckedForUpdates = true
 		await checkForUpdates()
 	}

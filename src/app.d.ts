@@ -892,9 +892,6 @@ declare global {
 	export type CompiledPrompt = {
 		prompt?: string
 		messages?: ChatCompletionMessageParam[]
-	} & CompiledPromptMeta
-
-	type CompiledPromptMeta = {
 		meta: {
 			tokenCounts: {
 				total: number

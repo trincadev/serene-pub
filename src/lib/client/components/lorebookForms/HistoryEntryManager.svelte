@@ -128,13 +128,6 @@
 		entry: SelectHistoryEntry
 		warn?: boolean
 	}): boolean {
-		if (!entry.content.trim()) {
-			if (warn) {
-				toaster.error({ title: "Content is required" })
-			}
-			return false
-		}
-
 		if (!entry.year) {
 			if (warn) {
 				toaster.error({ title: "Year is required" })
@@ -146,11 +139,6 @@
 			if (warn) {
 				toaster.error({ title: "Month is required if day is set" })
 			}
-			return false
-		}
-
-		if (!entry.keys) {
-			toaster.error({ title: "Keys are required" })
 			return false
 		}
 

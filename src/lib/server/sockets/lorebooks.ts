@@ -382,19 +382,36 @@ export async function createWorldLoreEntry(
 		const userId = 1 // TODO: Replace with actual user ID from socket data
 
 		const data: InsertWorldLoreEntry = message.worldLoreEntry
-		data.name = data.name!.trim()
-		data.content = data.content!.trim()
+		data.name = data.name.trim()
+		data.content = data.content?.trim() || ""
 		// data.keys = data.keys
 
 		// Get next available position for the lore entry
-		const existingEntries = await db.query.worldLoreEntries.findMany({
-			where: (e, { eq }) => eq(e.lorebookId, data.lorebookId),
+		const existingBook = await db.query.lorebooks.findFirst({
+			where: (l, { and, eq }) =>
+				and(eq(l.id, data.lorebookId), eq(l.userId, userId)),
 			columns: {
+				id: true,
+				userId: true
+			},
+			with: {
+				worldLoreEntries: {
+					columns: {
 				id: true,
 				position: true
 			},
-			orderBy: (e, { asc }) => asc(e.position)
+					orderBy: (e, { asc }) => asc(e.position)
+				}
+			}
 		})
+
+		if (!existingBook) {
+			return socket.emit("error", {
+				error: "Lorebook not found or you do not have permission to create an entry."
+			})
+		}
+
+		const existingEntries = existingBook.worldLoreEntries
 
 		let nextPosition = 1
 		if (existingEntries.length > 0) {
@@ -470,7 +487,6 @@ async function syncLorebookBindings({ lorebookId }: { lorebookId: number }) {
 			}
 		}
 	}
-	console.log("Found bindings:", foundBindings)
 	// If a binding does not exist in the lorebook bindings, create it without a character or persona
 	foundBindings.forEach((fb) => {
 		const existingBinding = existingBindings.find((eb) => eb.binding === fb)
@@ -523,7 +539,7 @@ export async function updateWorldLoreEntry(
 			where: (l, { and, eq }) =>
 				and(
 					eq(l.id, message.worldLoreEntry.lorebookId),
-					eq(userId, l.userId)
+					eq(l.userId, userId)
 				),
 			columns: {
 				id: true,
@@ -726,18 +742,34 @@ export async function createCharacterLoreEntry(
 		const userId = 1 // TODO: Replace with actual user ID from socket data
 
 		const data: InsertCharacterLoreEntry = message.characterLoreEntry
-		data.name = data.name!.trim()
-		data.content = data.content!.trim()
+		data.name = data.name.trim()
+		data.content = data.content?.trim() || ""
 
 		// Get next available position for the lore entry
-		const existingEntries = await db.query.characterLoreEntries.findMany({
-			where: (e, { eq }) => eq(e.lorebookId, data.lorebookId),
+		const existingBook = await db.query.lorebooks.findFirst({
+			where: (l, { and, eq }) => and(eq(l.id, data.lorebookId), eq(l.userId, userId)),
 			columns: {
+				id: true,
+				userId: true
+			},
+			with: {
+				characterLoreEntries: {
+					columns: {
 				id: true,
 				position: true
 			},
 			orderBy: (e, { asc }) => asc(e.position)
+				}
+			}
 		})
+
+		if (!existingBook) {
+			return socket.emit("error", {
+				error: "Lorebook not found or you do not have permission to create an entry."
+			})
+		}
+
+		const existingEntries = existingBook.characterLoreEntries
 
 		let nextPosition = 1
 		if (existingEntries.length > 0) {
@@ -784,27 +816,36 @@ export async function updateCharacterLoreEntry(
 	try {
 		const userId = 1 // TODO: Replace with actual user ID from socket data
 
-		const lorebook = await db.query.lorebooks.findFirst({
+		const existingBook = await db.query.lorebooks.findFirst({
 			where: (l, { and, eq }) =>
 				and(
 					eq(l.id, message.characterLoreEntry.lorebookId),
-					eq(userId, l.userId)
+					eq(l.userId, userId)
 				),
 			columns: {
 				id: true,
 				userId: true
+			},
+			with: {
+				characterLoreEntries: {
+					where: (we, { eq }) => eq(we.id, message.characterLoreEntry.id),
+					columns: {
+						id: true,
+						lorebookId: true
+					}
+				}
 			}
 		})
 
-		if (!lorebook) {
+		if (!existingBook) {
 			return socket.emit("error", {
 				error: "Lorebook not found or you do not have permission to edit it."
 			})
 		}
 
-		const entry = await db.query.characterLoreEntries.findFirst({
-			where: (e, { eq }) => eq(e.id, message.characterLoreEntry.id)
-		})
+		const entry = existingBook.characterLoreEntries.find(
+			(e) => e.id === message.characterLoreEntry.id
+		)
 
 		if (!entry) {
 			return socket.emit("error", {
@@ -878,7 +919,8 @@ export async function deleteCharacterLoreEntry(
 			.where(eq(schema.characterLoreEntries.id, message.id))
 
 		const res: Sockets.DeleteCharacterLoreEntry.Response = {
-			// worldLoreEntry: lorebook.worldLoreEntries[0]
+			id: message.id,
+			lorebookId: message.lorebookId
 		}
 		emitToUser("deleteCharacterLoreEntry", res)
 		await characterLoreEntryList(
@@ -991,8 +1033,31 @@ export async function createHistoryEntry(
 	try {
 		const userId = 1 // TODO: Replace with actual user ID from socket data
 
+		const existingBook = await db.query.lorebooks.findFirst({
+			where: (l, { and, eq }) =>
+				and(eq(l.id, message.historyEntry.lorebookId), eq(l.userId, userId)),
+			columns: {
+				id: true,
+				userId: true
+			},
+			with: {
+				historyEntries: {
+					columns: {
+						id: true,
+						position: true
+					},
+					orderBy: (e, { asc }) => asc(e.position)
+				}
+			}
+		})
+
+		if (!existingBook) {
+			return socket.emit("error", {
+				error: "Lorebook not found or you do not have permission to create an entry."
+			})
+		}
+
 		const data: InsertHistoryEntry = message.historyEntry
-		if (typeof data.content === "string") data.content = data.content.trim()
 
 		const [newEntry] = await db
 			.insert(schema.historyEntries)
@@ -1028,27 +1093,36 @@ export async function updateHistoryEntry(
 	try {
 		const userId = 1 // TODO: Replace with actual user ID from socket data
 
-		const lorebook = await db.query.lorebooks.findFirst({
+		const existingBook = await db.query.lorebooks.findFirst({
 			where: (l, { and, eq }) =>
 				and(
 					eq(l.id, message.historyEntry.lorebookId),
-					eq(userId, l.userId)
+					eq(l.userId, userId)
 				),
 			columns: {
 				id: true,
 				userId: true
+			},
+			with: {
+				historyEntries: {
+					where: (we, { eq }) => eq(we.id, message.historyEntry.id),
+					columns: {
+						id: true,
+						lorebookId: true
+					}
+				}
 			}
 		})
 
-		if (!lorebook) {
+		if (!existingBook) {
 			return socket.emit("error", {
 				error: "Lorebook not found or you do not have permission to edit it."
 			})
 		}
 
-		const entry = await db.query.historyEntries.findFirst({
-			where: (e, { eq }) => eq(e.id, message.historyEntry.id)
-		})
+		const entry = existingBook.historyEntries.find(
+			(e) => e.id === message.historyEntry.id
+		)
 
 		if (!entry) {
 			return socket.emit("error", {
@@ -1147,11 +1221,13 @@ export async function iterateNextHistoryEntry(
 				and(eq(e.id, message.lorebookId), eq(e.userId, userId)),
 			with: {
 				historyEntries: {
-					orderBy: (e, { asc }) => asc(e.date),
+					orderBy: (e, { asc }) => [asc(e.year), asc(e.month), asc(e.day)],
 					columns: {
 						id: true,
 						lorebookId: true,
-						date: true
+						year: true,
+						month: true,
+						day: true,
 					}
 				}
 			}

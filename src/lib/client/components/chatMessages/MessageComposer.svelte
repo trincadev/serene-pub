@@ -50,6 +50,10 @@
             e.preventDefault()
             handleSend(e)
         }}
+
+    $effect(() => {
+        console.log("compiledPrompt", $state.snapshot(compiledPrompt))
+    })
 </script>
 
 <Tabs value={tabGroup} {classes} onValueChange={(e) => (tabGroup = e.value as "compose" | "preview")}>

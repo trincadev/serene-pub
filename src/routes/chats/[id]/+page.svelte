@@ -746,32 +746,32 @@
 					<b>Prompt Format:</b>
 					{draftCompiledPrompt.meta.promptFormat}
 				</div>
-				<div class="mb-2">
+				<!-- <div class="mb-2">
 					<b>Truncation Reason:</b>
-					{draftCompiledPrompt.meta.truncationReason || "None"}
-				</div>
-				<div class="mb-2">
+					{draftCompiledPrompt.meta.sources.lorebooks?.truncationReason || "None"}
+				</div> -->
+				<!-- <div class="mb-2">
 					<b>Timestamp:</b>
 					{draftCompiledPrompt.meta.timestamp}
-				</div>
-				<div class="mb-2">
+				</div> -->
+				<!-- <div class="mb-2">
 					<b>World Lore:</b>
-					{draftCompiledPrompt.meta.sources.lorebooks.worldLore
-						.included}/{draftCompiledPrompt.meta.sources.lorebooks
-						.worldLore.total}
-				</div>
-				<div class="mb-2">
+					{draftCompiledPrompt.meta.lorebooks?.worldLore
+						.included || 0}
+					/
+					{draftCompiledPrompt.meta.sources.lorebooks?.worldLore
+						.total || 0}
+				</div> -->
+				<!-- <div class="mb-2">
 					<b>Character Lore:</b>
-					{draftCompiledPrompt.meta.sources.lorebooks.characterLore
-						.included}/{draftCompiledPrompt.meta.sources.lorebooks
-						.characterLore.total}
-				</div>
-				<div class="mb-2">
+					{draftCompiledPrompt.meta.sources.lorebooks?.characterLore
+						.included || 0}/{draftCompiledPrompt.meta.sources.lorebooks?.characterLore.total || 0}
+				</div> -->
+				<!-- <div class="mb-2">
 					<b>History:</b>
-					{draftCompiledPrompt.meta.sources.lorebooks.history
-						.included}/{draftCompiledPrompt.meta.sources.lorebooks
-						.history.total}
-				</div>
+					{draftCompiledPrompt.meta.sources.lorebooks?.history
+						.included || 0}/{draftCompiledPrompt.meta.sources.lorebooks?.history.total || 0}
+				</div> -->
 				<div class="mb-2">
 					<b>Characters Used:</b>
 					<ul class="ml-4 list-disc">

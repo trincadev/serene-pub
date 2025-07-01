@@ -307,6 +307,9 @@
 					onfinalize={(e) => (selectedCharacters = e.detail.items)}
 				>
 					{#each selectedCharacters as c (c.id)}
+					{@const isActive = !!chat?.chatCharacters?.find(
+											(cc) => cc.characterId === c.id
+										)?.isActive}
 						<div class="flex gap-2">
 							<div
 								class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"
@@ -360,9 +363,7 @@
 										controlActive="preset-filled-success-500"
 										controlDisabled="preset-filled-surface-500"
 										compact
-										checked={chat?.chatCharacters?.find(
-											(cc) => cc.characterId === c.id
-										)?.isActive || true}
+										checked={isActive}
 										disabled={!chat}
 										onCheckedChange={(e) =>
 											toggleCharacterActive(e, c)}

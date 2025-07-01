@@ -999,6 +999,16 @@ export class PromptBuilder {
 		// FINAL COMPILE
 		///
 
+		// Recalculate included/excluded message counts and token count based on final prompt/messages
+		includedChatMessages = chatMessages.length - 1 // Exclude the last empty message
+		includedChatMessageIds = chatMessages
+			.filter((m) => m.id !== -2)
+			.map((m) => m.id)
+		// Excluded IDs are those in the original chat that are not included
+		excludedChatMessageIds = (this.chat.chatMessages || [])
+			.map((m) => m.id)
+			.filter((id) => !includedChatMessageIds.includes(id))
+
 		renderedPrompt = this.handlebars.compile(this.contextConfig.template)({
 			...templateContext,
 			chatMessages: [...chatMessages].reverse()
@@ -1008,6 +1018,12 @@ export class PromptBuilder {
 			renderedMessages = parseSplitChatPrompt(renderedPrompt)
 			renderedPrompt = JSON.stringify(renderedMessages)
 		}
+
+		// Recount tokens for the final prompt
+		totalTokens =
+			typeof this.tokenCounter.countTokens === "function"
+				? await this.tokenCounter.countTokens(renderedPrompt)
+				: 0
 
 		return {
 			renderedPrompt: !useChatFormat ? renderedPrompt : undefined,
@@ -1289,6 +1305,11 @@ export type TemplateContextCharacter = {
 	description: string
 	personality?: string
 	loreEntries?: SelectCharacterLoreEntry[]
+	category?: string
+	lorebookBindingId?: number | null
+	year?: number
+	month?: number
+	day?: number
 }
 
 export type TemplateContextPersona = {
