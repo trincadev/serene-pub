@@ -2,257 +2,283 @@
   <img src="static/readme-header.png" alt="Serene Pub logo" width="1920"/>
 </p>
 
-Serene Pub is a modern, customizable chat application designed for immersive roleplay and creative conversations. Inspired by Silly Tavern, it aims to be more intuitive, responsive, and simple to configure.
+> **⚠️ Serene Pub is in alpha! Expect bugs and rapid changes. This project is under heavy development.**
 
-Primary concerns Serene Pub aims to address:
-  1. Reduce the number of nested menus and settings.
-  2. Reduced visual clutter.
-  3. Manage settings server-side to prevent configurations from changing because the user switched windows/devices.
-  4. Make API calls & chat completion requests asyncronously server-side so they process regardless of window/device state.
-  5. Use sockets for all data, the user will see the same information updated across all windows/devices.
-  6. Have compatibility with the majority of Silly Tavern import/exports, i.e. Character Cards
-  7. Overall be a well rounded app with a suite of features. Use SillyTavern if you want the most options, features and plugin-support.
+---
 
-> 📄 See the <a href="NOTICE.md">NOTICE</a> file for attributions, contributors, and licensing details.
+## Table of Contents
+- [Why Serene Pub?](#-why-serene-pub)
+- [Screenshots](#-screenshots)
+- [Features](#-features)
+- [Quick Start / Download](#-quick-start)
+- [Documentation & Help](#-documentation--help)
+- [Planned Features](#-planned-features)
+- [Considered Features](#-considered-features)
+- [How to Update](#-how-to-update)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-## TOC
-<!-- TOC -->
-- [Screenshots](#screenshots)
-- [Features](#features)
-  - [Functional](#functional)
-  - [Mostly Functional](#mostly-functional)
-  - [In Progress](#in-progress)
-  - [Pending Priorities](#pending-priorities)
-  - [Considered](#considered)
-- [Getting Started (Download & Play!)](#getting-started-download--play)
-- [Software Stack](#software-stack)
-- [Getting Started (Source Code)](#getting-started-source-code)
-  - [Requirements](#requirements)
-  - [Instructions](#instructions)
-- [Feedback and Contributing](#feedback-and-contributing)
-  - [Feedback & Contact](#feedback--contact)
-- [Documentation](#documentation)
-- [Troubleshooting](#troubleshooting)
-<!-- /TOC -->
+# 🦊 Serene Pub
 
-## Screenshots
+**Modern, Open Source AI Roleplay Chat**
 
-1. Clean, intuitive chat interface
+Serene Pub is a brand new, open source chat application for immersive AI roleplay and creative conversations. Designed for simplicity, speed, and beautiful usability, Serene Pub brings your characters and worlds to life—on your terms, with your data, and your favorite AI models.
 
-   <img src="https://github.com/user-attachments/assets/aead8e09-00b5-42ec-983f-6e5f2005fddc" alt="chat" width="700"/>
-   
-2. Sampling/character list/token stats
+---
 
-   <img src="https://github.com/user-attachments/assets/4be5e4ec-08e7-47c4-bf4d-b55abfeff184" alt="sampling" width="700"/>
+## ✨ Why Serene Pub?
 
-3. Connections/models/character editing
+- **Zero Clutter, Maximum Fun:** Clean, intuitive UI with minimal menus and instant access to everything you need.
+- **Real-Time Sync:** All chats, settings, and characters update live across devices via WebSockets.
+- **Portable & Private:** Runs locally, no accounts, no cloud lock-in. Your data stays with you.
+- **AI Freedom:** Connect to OpenAI, Ollama, LM Studio, Llama.cpp, and more. Mix and match models, run local or cloud.
+- **Roleplay-First:** Built for character-driven, story-rich experiences. Import Silly Tavern cards, manage personas, and more.
+- **Mobile Ready:** Responsive design for desktop and mobile. Pick up your story anywhere.
+- **Open Source:** AGPL-3.0. Hack it, extend it, make it yours!
 
-   <img src="https://github.com/user-attachments/assets/4a8b92a1-2e49-426c-b437-0ed3a45b4276" alt="connections" width="700"/>
+---
 
-4. System prompt/persona/response
+## 🖼️ Screenshots
 
-   <img src="https://github.com/user-attachments/assets/35a6b563-1c9c-4b81-847d-30060b268ffb" alt="persona" width="700"/>
+### Desktop Experience
 
-5. Mobile chat view
+| Chat & Editing | Connections & Characters | Contexts & Lorebooks |
+| -------------- | ------------------------ | -------------------- |
+| ![](static/screenshots/desktop-chat-edit.png) | ![](static/screenshots/desktop-connections-characters.png) | ![](static/screenshots/desktop-contexts-lorebooks.png) |
 
-   <img src="https://github.com/user-attachments/assets/60a89d4d-f0ae-4761-b51b-385feddcddfe" alt="mobile-chat" width="400"/>
+| Prompt Details | Prompts & Chats | Sampling & Personas |
+| -------------- | --------------- | ------------------- |
+| ![](static/screenshots/desktop-prompt-details.png) | ![](static/screenshots/desktop-prompts-chats.png) | ![](static/screenshots/desktop-sampling-personas.png) |
 
-6. Mobile characters view
+| Theme Example 1 | Theme Example 2 | Theme Example 3 |
+| --------------- | --------------- | --------------- |
+| ![](static/screenshots/desktop-theme-example-1.png) | ![](static/screenshots/desktop-theme-example-2.png) | ![](static/screenshots/desktop-theme-example-3.png) |
 
-   <img src="https://github.com/user-attachments/assets/b28d36d2-9d2b-4c15-b9ff-c9e3c2e84c5b" alt="mobile-characters" width="400"/>
+| Theme Example 4 | Theme Example 5 |
+| --------------- | --------------- |
+| ![](static/screenshots/desktop-theme-example-4.png) | ![](static/screenshots/desktop-theme-example-5.png) |
 
-### Select theme and dark mode
+### Lorebooks+ & Worldbuilding
 
-Toggle night mode on or off with over 20 themes!
+| Character Bindings | Character Lore | Lorebook History | World Lore |
+| ------------------ | -------------- | ---------------- | ---------- |
+| ![](static/screenshots/lorebooks-character-bindings.png) | ![](static/screenshots/lorebooks-character-lore.png) | ![](static/screenshots/lorebooks-history.png) | ![](static/screenshots/lorebooks-world-lore.png) |
 
-<img src="https://github.com/user-attachments/assets/ff425506-3524-41a7-9c18-b11f4dd673a2" alt="theme-1" width="400"/>
-<img src="https://github.com/user-attachments/assets/8f6f57b0-b143-4ae2-a8b5-063551999478" alt="theme-2" width="400"/>
-<img src="https://github.com/user-attachments/assets/c23e9634-374f-49b7-b6b6-1fa8ef7c3a25" alt="theme-3" width="400"/>
-<img src="https://github.com/user-attachments/assets/c73d7d7c-ea27-4be2-8479-b0be7722f9f0" alt="theme-4" width="400"/>
+### Mobile Experience
 
+| Chat | Connections | Edit Character |
+| ---- | ----------- | -------------- |
+| ![](static/screenshots/mobile-chat.png) | ![](static/screenshots/mobile-connections.png) | ![](static/screenshots/mobile-edit-character.png) |
 
-## Project Status
+| Home | Navigation |
+| ---- | ---------- |
+| ![](static/screenshots/mobile-home.png) | ![](static/screenshots/mobile-navigation.png) |
 
-**Alpha:** Serene Pub is in early development. Expect bugs and breaking changes. If you are a developer or comfortable with manual setup, your testing and feedback are appreciated!
+---
 
-## Features
+## 🚀 Features
 
-### Functional
-- Manage sampling and context limits (settings can be individually enabled/disabled)
-- Manage roleplay/system prompt instructions
-- Mobile responsive view
-- Day/night mode & themes
-- Chats: create/delete, send persona message, auto character response, edit/delete messages, streaming, regenerate, manual response, hide message, live token/history stats, swipe right/left
-- Manage context settings
+- **AI Model Agnostic:** Connect to OpenAI, Ollama, LM Studio, Llama.cpp, and more
+- **Character & Persona Management:** Import, create, and edit with rich metadata and avatars
+- **Lorebooks+:** Organize world lore, character lore, and history for deep roleplay
+- **Group Chats:** Multi-character chats for immersive group roleplay and dynamic storylines
+- **Chat & Context Tools:**
+  - Auto character response
+  - Edit/delete messages
+  - Streaming & regenerate
+  - Manual & hidden responses
+  - Swipe left/right on messages
+  - Live token and history stats
+- **Prompt Statistics:** View compiled prompts before sending
+- **Context Templates:** Handlebar-based, customizable prompt formats
+- **Mobile-First Design:** Fully responsive, works great on phones and tablets
+- **Themes & Dark Mode:** 20+ themes, instant switching, and accessibility options
+- **Portable & Secure:** Embedded database, no cloud required, runs anywhere
+- **Silly Tavern Compatibility:** Import/export character cards and avatars
+- **Open Source & Extensible:** AGPL-3.0, modular adapters, easy to hack
 
-### Mostly Functional
-- Create, manage & import (Image Card Files supported; JSON not yet)
-- Create & manage personas (import/export not yet implemented)
-- Home page setup guide
-- Mobile responsive layout
-- Group chats, continue conversation, trigger response from specific character
-- Lorebooks+ - World lore, character lore, history
+---
 
-### In Progress
-- Connect to your favorite API ([see supported options](https://github.com/doolijb/serene-pub/issues/10))
-- App/user settings
+## 🛠️ Quick Start
 
-### Pending Priorities
-- Character/chat tags
+### Download & Run (No Install Required)
 
-### Considered
-- Multi-user logins & group chats
-- Chat summarizing
-- Chat/lore vectorization
-- User/chat backgrounds
-- Story narration/system instructions
-- Screen reader support
+Linux, MacOS and Windows are supported!
 
-## Getting Started (Download & Play!)
+1. [Download the latest release](https://github.com/doolijb/serene-pub/releases) for your OS
+2. Extract the archive anywhere
+3. Read the included `INSTRUCTIONS.txt` for your platform
+4. Run the launcher script (`run.sh`/`run.cmd`)
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+6. Add your first AI connection and start chatting!
 
-1. Download the latest release for your operating system [here.](https://github.com/doolijb/serene-pub/releases)
-2. Extract the archive where every you desire, there's nothing to install.
-3. Read the INSTRUCTIONS.txt file to launch Serene Pub on your OS.
-4. Once launched, the node runtime will download automatically and start Serene Pub.
-5. Access SerenePub on your host machine from http://localhost:3000 or https://0.0.0.0:/3000
-6. You should be able to access Serene Pub from other devices on your local network as well.
-7. Add your first API connection, via cloud services like ChatGPT or by locally hosting your own.
-<img src="https://github.com/user-attachments/assets/9a74ae9c-0cb8-4b3b-932d-acfe22c77349" width="300px"/>
+### Build from Source
 
+#### Requirements
 
-## Software Stack
-- SvelteKit (Svelte 5)
-- Socket.io via [sveltekit-io](https://github.com/cedrictailly/sveltekit-io)
-- Tailwind, themes, and components via [Skeleton UI](https://skeleton.dev)
-- ORM, SQLite, and migrations via [Drizzle ORM](https://orm.drizzle.team/)
-- [Bun](https://bun.sh/) for package management
-
-## Getting Started (Source Code)
-
-### Requirements
-- [Ollama](https://ollama.com/download) (install models from [here](https://ollama.com/search?q=roleplay) or Hugging Face)
 - [Node.js](https://nodejs.org/en)
-- [Bun](https://bun.sh/)
+- (Optional) [Ollama](https://ollama.com/download) for local models
 
-### Instructions
-1. Download or clone this repository.
-2. Open a terminal and navigate to the directory.
-3. Run `bun i` to install dependencies.
-4. Run `bun run db:migrate` to generate the database.
-5. Run `bun run dev` to start the server.
-6. Open `http://localhost:5173` in your browser.
-7. Use the UI to set up connections, characters, personas, and chats.
+#### Steps
 
-## Feedback and Contributing
+1. Clone this repo
+2. `bun i` to install dependencies
+3. `bun run db:migrate` to set up the database
+4. `bun run dev` to start the dev server
+5. Visit [http://localhost:5173](http://localhost:5173)
 
-Feel free to clone & contribute! Bug fixes are appreciated. For new features, please propose your strategy before starting work.
+---
 
-### Feedback & Contact
-- [Open an issue](https://github.com/doolijb/serene-pub/issues) for feedback, bugs, or questions
-- [Contact on Reddit](https://reddit.com/u/doolijb)
-- Discord: `285999266088878080`
+## 📚 Documentation & Help
 
-## Documentation
-Here is a WIP documentation. At the moment, prioritization is focused on adding documentation for features that are fundamentally different than Silly Tavern's paradigms.
+### 🧩 Context Configuration
 
-### Context Configuration
-#### Context Template
-Serene Pub abstracts how groups of information (i.e. characters, personas) are structured to ensure predictability for the LLMS to parse and understand.
+Serene Pub uses Handlebars-style templates to build highly customizable prompts. Templates can include dynamic information like date, world lore, and structured history. Example:
 
-How-ever placement is highly granular and customizable.
-
-```
+````hbs
 {{#systemBlock}}
 Instructions:
 """
-{{instructions}}
+{{#if currentDate}} 
+The current date in the story is {{{currentDate}}}.
+{{/if}}
+
+{{{instructions}}}
 """
 
 Assistant Characters (AI-controlled):
-'''json
+```json
 {{{characters}}}
-'''
+```
 
 User Characters (player-controlled):
-'''json
+```json
 {{{personas}}}
-'''
-
-Scenario:
-"""
-{{scenario}}
-"""
-{{/systemBlock}}
-
-{{#if wiBefore}}
-{{#systemBlock}}
-{{wiBefore}}
-{{/systemBlock}}
-{{/if}}
-
-{{#each chatMessages}}
-  {{#if (eq role "assistant")}}
-{{#assistantBlock}}
-{{name}}: {{{message}}}
-{{/assistantBlock}}
-  {{/if}}
-
-  {{#if (eq role "user")}}
-{{#userBlock}}
-{{name}}: {{{message}}}
-{{/userBlock}}
-  {{/if}}
-{{/each}}
-
-{{#if wiAfter}}
-{{#systemBlock}}
-{{wiAfter}}
-{{/systemBlock}}
-{{/if}}
 ```
-Context role blocks, i.e. `{{#systemBlock}}...{{/system}}` can be arranged how-ever you prefer, spliting the contents as you wish.
 
-Information for all characters can be inserted with a label that explains to the assistant what this information represents, i.e. `Assistant Characters (AI-controlled): {{{personas}}}`
+Scenario: """ {{{scenario}}} """
 
-Complex information is formatted as JSON. This keeps the data structured and predictable for the model. It also prevents arbitrary text formatting from character descriptions from confusing the overall prompt structure (a common issue with imported cards.)
+{{#if worldLore}} World lore:
+```json
+{{{worldLore}}}
+```
+{{/if}}
 
-Simple information, such as prompt instructions, or scenarios are wrapped in triple quotes to help prevent the model from getting confused from arbitrary text formatting.
+{{#if history}} Story history:
+```json
+{{{history}}}
+```
+{{/if}}
 
-To create a new Context Config, click the + button and enter a new name. The currently active Context Config will be cloned.
+{{#if wiBefore}} {{{wiBefore}}} {{/if}} {{/systemBlock}}
 
-With your Context Config set, you can then select the appropriate Prompt Format in the Connections sidebar. Prompt Format is selected per-connection so you can ensure your model is always using the correct format regardless of context template.
+{{#each chatMessages}} {{#if (eq role "assistant")}} {{#assistantBlock}} {{{name}}}: {{{message}}} {{/assistantBlock}} {{/if}} {{#if (eq role "user")}} {{#userBlock}} {{{name}}}: {{{message}}} {{/userBlock}} {{/if}} {{/each}}
 
-### Directories and Files
+{{#if wiAfter}} {{#systemBlock}} {{{wiAfter}}} {{/systemBlock}} {{/if}}
+````
 
-Data is saved automatically to the following directory, based on your OS:
+
+### 📝 Prompt Configuration
+
+Prompt Configurations define the tone and behavior of the AI's responses. These instructions are sent alongside your message history and context blocks.
+
+Example:
+
+````text
+Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions. Keep the story immersive and engaging.
+````
+
+### 👤 Personas
+
+Personas are user-controlled characters. Give your persona a name, description, and avatar to represent yourself in chats. Personas let you roleplay as different characters, each with their own style and background.
+
+### 🤖 Characters
+
+Characters are AI-controlled participants in your chats. Each character can have a name, description, avatar, personality, and greeting.
+
+- **Greeting:** The greeting is the first message a character inserts into the chat. It helps ground the AI and provides an example of how the character should behave. You can add additional greetings or group-only greetings for more variety.
+- **Importing:** Character cards can be imported from Silly Tavern or your favorite character card website, making it easy to bring your favorite personalities into Serene Pub.
+
+### 📖 Lorebooks+
+
+Lorebooks+ are advanced worldbuilding tools. Create and manage detailed lore for your characters and worlds, enhancing your roleplay experience.
+
+### 💬 Chats
+
+Create a chat by adding one or more characters and at least one persona. You can:
+- Optionally add a scenario to tell the AI what the current objective is. In non-group chats, this overrides character scenarios.
+- Enable or disable characters from responding automatically in group chats for more control over the conversation flow.
+- Optionally select a lorebook to inject world, character, or historical lore into your chat for richer context and storytelling.
+
+### 🏷️ Tags (Coming in 0.4.0)
+Tags are a planned feature for the 0.4.0 release. Tags will help you organize and filter your content, making it easier to manage complex stories and worlds.
+
+### 📂 Data Location
+
+Your data is saved locally in your OS-specific app directory:
+
 - **macOS:** `~/Library/Application Support/SerenePub`
 - **Windows:** `%LOCALAPPDATA%\SerenePub`
 - **Linux:** `~/.local/share/SerenePub`
 
-Key files:
-- **Database:** `./data/main.db`
-- **Character avatar:** `./data/users/[userId]/characters/[characterId]/avatar.png`
-- **Persona avatar:** `./data/users/[userId]/personas/[personaId]/avatar.png`
+### ⚡ Troubleshooting
 
-Avatars must be uploaded through the app; manual placement will not work.
+- Adjust "Context Tokens" in the Sampling tab.
+- Configure a more accurate tokenizer in the Connections sidebar.
+- Use the "View Prompt Statistics" modal to preview your final prompt.
 
-## Troubleshooting
+* Save your configuration to apply changes.
+* Default templates marked with `*` cannot be edited directly; clone to customize.
+- Ensure you are editing a cloned configuration, not the defaults.
 
-1. Why is my token count exceeding the limit?
-    - Context Tokens set in Sampling is too low, be sure to set a healthy context limit that your model & machine can handle. The oldest messages get truncated when the estimated token count exceeds the threshold. By default, the number of tokens in the compiled prompt are estimated. You can set a more accurate token counter in the Connections sidebar.
-<img src="https://github.com/user-attachments/assets/1d45dfca-3a01-4047-a662-4fad171613e2" alt="theme-4" width="400"/>
+### 🔌 Connections
 
+Serene Pub supports a variety of AI model connections, both local and cloud-based. For a full list of currently supported (or in development) connection options, see the [Supported Connections Issue](https://github.com/doolijb/serene-pub/issues/10).
 
-2. How do I review the compiled prompt before I hit send?
-    1. In the chat input, click the "Statistics" tab, and click the "View Prompt Statistics Button"
-    2. A modal will open where you can review how your prompt is compiled.
-<img src="https://github.com/user-attachments/assets/5c22f18b-9939-455f-96cb-f77a5c227367" alt="theme-4" width="400"/>
+- **Connection Types:** Some adapters support chat APIs, completion APIs, or both. You can mix and match connections to suit your needs. When using completion APIs (Serene Pub precompiles the entire prompt), you can select from available prompt formats to best match your model's requirements.
+- **Token Counter:** Each connection uses a token counter to estimate the number of tokens in your chat history, character definitions, and prompt. This helps manage context size and avoid exceeding model limits.
+- **Setup:** Add and configure connections in the app sidebar. Test connections and refresh available models directly from the UI.
 
-3. Why aren't my new settings taking effect?
-    - To enforce clarity on what configuration is being used and sent with your prompt, all settings have to be saved to apply any changes.
-  
-4. Why can't I save my changes?
-    - Default configurations, annotated with an asterisk `*` are system defaults. Clone the configuration to begin customizating.
-    - This is to ensure there are _reasonable_ defaults always available, incase you feel that you've gotten lost or made a mistake.
+---
+
+## 🗺️ Planned Features
+- 🏷️ Tags (coming in 0.4.0)
+- 🧠 Vectorization
+- 🔌 More API connection types
+- 🤖 Assistant Chat: Ask AI questions about Serene Pub and get suggestions to improve your characters, personas, and lore
+
+## 💡 Considered Features
+- 👥 Multi-user logins & multi-user group chats
+- 📝 Chat summarizing
+- 🖼️ User/chat backgrounds
+- 📖 Story narration/system instructions
+- 🦯 Screen reader support
+- 📅 Lorebooks+ features: custom calendars, "eras" historical categories, and more
+- 🕹️ Dungeon crawler mode
+- 🖼️ Image generation
+
+---
+
+## 🔄 How to Update
+
+**Updating from 0.2.x, 0.3.x:**
+- Download the latest version and extract to your desired location and run. Your data will automatically be copied from the old database to the new, more powerful database.
+
+**Updating to future versions:**
+- Download the latest version and extract to your desired location and run (it doesn't matter where). Run the application. Any database migrations will be performed automatically.
+
+---
+
+## ❤️ Contributing
+
+Serene Pub is community-driven! Bug fixes, features, and feedback are welcome. Please [open an issue](https://github.com/doolijb/serene-pub/issues) or [start a discussion](https://github.com/doolijb/serene-pub/discussions) before submitting large changes.
+
+---
+
+## 🛡️ License
+
+AGPL-3.0. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md) for details.
+
+<p align="center"><b>Serene Pub — Play more, tweak less. 100% open source.</b></p>
 
 
