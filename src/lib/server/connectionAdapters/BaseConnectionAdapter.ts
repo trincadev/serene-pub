@@ -80,10 +80,11 @@ export abstract class BaseConnectionAdapter {
 	}
 
 	abstract generate(): Promise<
-		[
-			string | ((cb: (chunk: string) => void) => Promise<void>),
-			CompiledPrompt
-		]
+		{
+			completionResult: string | ((cb: (chunk: string) => void) => Promise<void>),
+			compiledPrompt: CompiledPrompt,
+			isAborted: boolean
+		}
 	>
 
 	abort() {

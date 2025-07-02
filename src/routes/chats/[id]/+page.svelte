@@ -167,14 +167,21 @@
 
 	let chatMessagesContainer: HTMLDivElement | null = $state(null)
 
+	// Auto-scroll to bottom when messages change or container is mounted
 	$effect(() => {
-		console.log(
-			"chatMessagesContainer effect",
-			chatMessagesContainer?.scrollTo({
-				top: chatMessagesContainer.scrollHeight,
-				behavior: "auto"
-			})
-		)
+		// React to changes in messages and container
+		const messagesLength = chat?.chatMessages?.length ?? 0
+		if (chatMessagesContainer && messagesLength > 0) {
+			// Use setTimeout to ensure DOM has updated
+			setTimeout(() => {
+				if (chatMessagesContainer) {
+					chatMessagesContainer.scrollTo({
+						top: chatMessagesContainer.scrollHeight,
+						behavior: "smooth"
+					})
+				}
+			}, 50) // Slightly longer delay to ensure content is rendered
+		}
 	})
 
 	function handleEditMessage(e: Event, msg: SelectChatMessage) {
@@ -315,12 +322,7 @@
 		socket.on("chat", (msg: Sockets.Chat.Response) => {
 			if (msg.chat.id === Number.parseInt(page.params.id)) {
 				chat = msg.chat
-				// Instantly jump to bottom on chat update
-				console.log("Scrolling to bottom on chat update")
-				chatMessagesContainer?.scrollTo({
-					top: chatMessagesContainer.scrollHeight,
-					behavior: "instant"
-				})
+				// Auto-scroll is handled by the $effect
 			}
 		})
 
@@ -339,12 +341,7 @@
 						chatMessages: [...chat.chatMessages, msg.chatMessage]
 					}
 				}
-				setTimeout(() => {
-					chatMessagesContainer?.scrollTo({
-						top: chatMessagesContainer.scrollHeight,
-						behavior: "smooth"
-					})
-				}, 0)
+				// Auto-scroll is handled by the $effect
 			}
 		})
 
@@ -415,7 +412,7 @@
 </svelte:head>
 
 <div
-	class="relative flex max-h-full min-h-full max-w-full min-w-full flex-col overflow-y-auto"
+	class="relative flex h-full flex-col"
 >
 	<div
 		id="chat-history"
@@ -426,12 +423,12 @@
 			{#if !chat || chat.chatMessages.length === 0}
 				<div class="text-muted mt-8 text-center">No messages yet.</div>
 			{:else}
-				<ul class="flex flex-1 flex-col gap-3 overflow-y-auto">
+				<ul class="flex flex-1 flex-col gap-3">
 					{#each chat.chatMessages as msg (msg.id)}
 						{@const character = getMessageCharacter(msg)}
 						{@const isGreeting = !!msg.metadata?.isGreeting}
 						<li
-							class="bg-primary-50-950 flex flex-col overflow-y-auto rounded-lg p-2"
+							class="preset-filled-primary-50-950 flex flex-col rounded-lg p-2"
 							class:opacity-50={msg.isHidden &&
 								editChatMessage?.id !== msg.id}
 						>
@@ -633,6 +630,7 @@
 			onSend={handleSend}
 			compiledPrompt={draftCompiledPrompt}
 			classes=""
+			
 			extraTabs={[
 				{
 					value: "extraControls",

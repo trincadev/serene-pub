@@ -43,11 +43,11 @@
 }
 
 .rendered-chat-message-content em {
-	@apply text-surface-700-300;
+	@apply text-surface-800-200;
 }
 
 .rendered-chat-message-content span.quoted-text {
-	@apply text-tertiary-900-100;
+	@apply text-tertiary-950-50;
 }
 
 .sidebar-list-item {

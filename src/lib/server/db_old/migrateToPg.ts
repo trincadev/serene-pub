@@ -63,109 +63,90 @@ export async function migrateToPg() {
 			// Get characters from SQLite
 			const characters = await sqlite.query.characters.findMany()
 			characters.forEach(async (character) => {
-				// Map null fields to undefined for compatibility with schema
-				const mappedCharacter = {
+				// Convert any String[] fields to string[] (primitive)
+				const safeCharacter = {
 					...character,
-					updatedAt: undefined,
-			        createdAt: undefined,
-			        metadata: character.metadata || {},
-			        lorebookId: null,
-					// Add other nullable fields as needed
+					alternateGreetings: character.alternateGreetings
+						? character.alternateGreetings.map((s: any) => s.toString())
+						: null,
+					exampleDialogues: character.exampleDialogues
+						? character.exampleDialogues.map((s: any) => s.toString())
+						: null,
 				}
-				return await tx.insert(schema.characters).values(mappedCharacter)
+				return await tx.insert(schema.characters).values({
+					name: safeCharacter.name,
+					description: safeCharacter.description ?? "",
+					userId: safeCharacter.userId,
+					nickname: safeCharacter.nickname ?? null,
+					characterVersion: safeCharacter.characterVersion ?? null,
+					personality: safeCharacter.personality ?? null,
+					scenario: safeCharacter.scenario ?? null,
+					firstMessage: safeCharacter.firstMessage ?? null,
+					alternateGreetings: safeCharacter.alternateGreetings ?? null,
+					exampleDialogues: safeCharacter.exampleDialogues ?? null,
+					avatar: safeCharacter.avatar ?? null,
+					creatorNotes: safeCharacter.creatorNotes ?? null,
+					creatorNotesMultilingual: safeCharacter.creatorNotesMultilingual ?? null,
+					groupOnlyGreetings: safeCharacter.groupOnlyGreetings ?? null,
+					postHistoryInstructions: safeCharacter.postHistoryInstructions ?? null,
+					isFavorite: !!safeCharacter.isFavorite,
+				})
 			})
 			// Get personas from SQLite
 			const personas = await sqlite.query.personas.findMany()
 			personas.forEach(async (persona) => {
-			    return await tx.insert(schema.personas).values({
-			        ...persona,
-			        updatedAt: undefined,
-			        createdAt: undefined,
-			    })
-			})
-			// Get lorebooks from SQLite
-			const lorebooks = await sqlite.query.lorebooks.findMany()
-			lorebooks.forEach(async (lorebook) => {
-			    return await tx.insert(schema.lorebooks).values({
-			        ...lorebook,
-			        updatedAt: undefined,
-			        createdAt: undefined,
-			    })
-			})
-			// Get lorebook bindings from SQLite
-			const lorebookBindings = await sqlite.query.lorebookBindings.findMany()
-			lorebookBindings.forEach(async (binding) => {
-			    return await tx.insert(schema.lorebookBindings).values({
-			        ...binding,
-			    })
-			})
-			// Get worldLoreEntries from SQLite
-			const worldLoreEntries = await sqlite.query.worldLoreEntries.findMany()
-			worldLoreEntries.forEach(async (entry) => {
-			    return await tx.insert(schema.worldLoreEntries).values({
-			        ...entry,
-			        updatedAt: undefined,
-			        createdAt: undefined,
-			    })
-			})
-			// Get characterLoreEntries from SQLite
-			const characterLoreEntries = await sqlite.query.characterLoreEntries.findMany()
-			characterLoreEntries.forEach(async (entry) => {
-			    return await tx.insert(schema.characterLoreEntries).values({
-			        ...entry,
-			        updatedAt: undefined,
-			        createdAt: undefined,
-			    })
-			})
-			// Get historyEntries from SQLite
-			const historyEntries = await sqlite.query.historyEntries.findMany()
-			historyEntries.forEach(async (entry) => {
-			    return await tx.insert(schema.historyEntries).values({
-			        ...entry,
-			        date: undefined,
-			        updatedAt: undefined,
-			        createdAt: undefined,
-			        day: entry.date?.day || undefined,
-			        month: entry.date?.month || undefined,
-			        year: entry.date?.year || undefined,
-			    })
+				return await tx.insert(schema.personas).values({
+					name: persona.name || "",
+					description: persona.description || "",
+					userId: persona.userId,
+					avatar: persona.avatar || null,
+					isDefault: !!persona.isDefault,
+					position: persona.position || null
+				})
 			})
 			// Get chats from SQLite
 			const chats = await sqlite.query.chats.findMany()
 			chats.forEach(async (chat) => {
-			    return await tx.insert(schema.chats).values({
-			        ...chat,
-			        updatedAt: undefined,
-			        createdAt: undefined,
-			    })
+				return await tx.insert(schema.chats).values({
+					id: chat.id,
+					name: chat.name || "", // Add the required name property
+					userId: chat.userId,
+					scenario: chat.scenario,
+					isGroup: !!chat.isGroup,
+					groupReplyStrategy: chat.group_reply_strategy,
+				})
 			})
 			// Get chatCharacters from SQLite
 			const chatCharacters = await sqlite.query.chatCharacters.findMany()
 			chatCharacters.forEach(async (chatCharacter) => {
-			    return await tx.insert(schema.chatCharacters).values({
-			        ...chatCharacter,
-			        updatedAt: undefined,
-			        createdAt: undefined,
-			    })
+				// Map null isActive to undefined for compatibility with schema
+				const mappedChatCharacter = {
+					...chatCharacter,
+					isActive: chatCharacter.isActive === null ? undefined : chatCharacter.isActive,
+				}
+				return await tx.insert(schema.chatCharacters).values(mappedChatCharacter)
 			})
 			// Get chatPersonas from SQLite
 			const chatPersonas = await sqlite.query.chatPersonas.findMany()
 			chatPersonas.forEach(async (chatPersona) => {
-			    return await tx.insert(schema.chatPersonas).values({
-			        ...chatPersona,
-			        updatedAt: undefined,
-			        createdAt: undefined,
-			    })
+			    return await tx.insert(schema.chatPersonas).values(chatPersona)
 			})
 			// Get chatMessages from SQLite
 			const chatMessages = await sqlite.query.chatMessages.findMany()
 			chatMessages.forEach(async (chatMessage) => {
-			    return await tx.insert(schema.chatMessages).values({
-			        ...chatMessage,
-			        updatedAt: undefined,
-			        createdAt: undefined,
-			        metadata: chatMessage.metadata || {},
-			    })
+				return await tx.insert(schema.chatMessages).values({
+					id: chatMessage.id,
+					userId: chatMessage.userId,
+					content: chatMessage.content, // Add the required content property
+					chatId: chatMessage.chatId,
+					characterId: chatMessage.characterId ?? null,
+					personaId: chatMessage.personaId ?? null,
+					adapterId: chatMessage.adapterId ?? null,
+					role: chatMessage.role ?? "user",
+					isEdited: !!chatMessage.isEdited,
+					isGenerating: !!chatMessage.isGenerating,
+					isHidden: !!chatMessage.isHidden,
+				})
 			})
 			// Get users from SQLite
 			const users = await sqlite.query.users.findMany()

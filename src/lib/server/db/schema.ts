@@ -549,7 +549,3 @@ export const chatLorebooksRelations = relations(chatLorebooks, ({ one }) => ({
 		references: [lorebooks.id]
 	})
 }))
-
-// For JSON/text columns, use text(...).notNull() if required, but do not use { mode: "json" } or .default({})
-// Example fix for a JSON/text column:
-// myJsonColumn: text("my_json_column").notNull(),

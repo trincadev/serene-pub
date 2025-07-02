@@ -657,8 +657,9 @@ export async function triggerGenerateMessage(
 	const msgLimit = 10
 	let currentMsg = 1
 	let triggered = true
+	let ok = true
 
-	while (currentMsg <= msgLimit) {
+	while (currentMsg <= msgLimit && ok) {
 		let chat = await getPromptChatFromDb(message.chatId, userId)
 		if (!chat) {
 			const res: Sockets.TriggerGenerateMessage.Response = {
@@ -710,7 +711,7 @@ export async function triggerGenerateMessage(
 				{ chatMessage: generatingMessage },
 				emitToUser
 			)
-			await generateResponse({
+			ok =await generateResponse({
 				socket,
 				emitToUser,
 				chatId: message.chatId,

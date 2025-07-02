@@ -18,7 +18,7 @@ export async function generateResponse({
 	chatId: number
 	userId: number
 	generatingMessage: SelectChatMessage
-}) {
+}): Promise<boolean> {
 	// Generate a UUID for this adapter instance
 	const adapterId = uuidv4()
 	// Save the adapterId to the chatMessage (set isGenerating true, content empty, and adapterId)
@@ -27,8 +27,6 @@ export async function generateResponse({
 		.set({ isGenerating: true, content: "", adapterId })
 		.where(eq(schema.chatMessages.id, generatingMessage.id))
 	// Instead of getChat, emit the chatMessage
-
-	// console.log("[generateResponse] Generating response for message:", generatingMessage.id, "in chat:", chatId, "for user:", userId, "with adapterId:", adapterId)
 
 	const req: Sockets.ChatMessage.Call = {
 		chatMessage: {
@@ -39,11 +37,7 @@ export async function generateResponse({
 		}
 	}
 
-	await chatMessage(
-		socket,
-		req,
-		emitToUser
-	)
+	await chatMessage(socket, req, emitToUser)
 
 	const chat = await db.query.chats.findFirst({
 		where: (c, { eq }) => eq(c.id, chatId),
@@ -54,7 +48,7 @@ export async function generateResponse({
 				where: (cm, { ne }) => ne(cm.id, generatingMessage.id),
 				orderBy: (cm, { asc }) => asc(cm.id)
 			},
-			lorebook: true,
+			lorebook: true
 		}
 	})
 
@@ -89,11 +83,16 @@ export async function generateResponse({
 	activeAdapters.set(adapterId, adapter)
 
 	// Generate completion
-	let [completionResult, compiledPrompt] = await adapter.generate() // TODO: save compiledPrompt to chatMessages
+	let { completionResult, compiledPrompt, isAborted } =
+		await adapter.generate() // TODO: save compiledPrompt to chatMessages
 	let content = ""
 	try {
 		if (typeof completionResult === "function") {
+			let ok = true
 			await completionResult(async (chunk: string) => {
+				if (!ok) {
+					return
+				}
 				content += chunk
 
 				// --- SWIPE HISTORY LOGIC ---
@@ -101,12 +100,15 @@ export async function generateResponse({
 				if (
 					generatingMessage.metadata &&
 					generatingMessage.metadata.swipes &&
-					typeof generatingMessage.metadata.swipes.currentIdx === "number" &&
+					typeof generatingMessage.metadata.swipes.currentIdx ===
+						"number" &&
 					generatingMessage.metadata.swipes.currentIdx > 0 &&
 					Array.isArray(generatingMessage.metadata.swipes.history)
 				) {
 					const idx = generatingMessage.metadata.swipes.currentIdx
-					const history: string[] = [...generatingMessage.metadata.swipes.history]
+					const history: string[] = [
+						...generatingMessage.metadata.swipes.history
+					]
 					history[idx] = content
 					updateData = {
 						...updateData,
@@ -120,34 +122,52 @@ export async function generateResponse({
 					}
 				}
 
-				await db
+				const [updatedChatMsg] = await db
 					.update(schema.chatMessages)
 					.set(updateData)
-					.where(eq(schema.chatMessages.id, generatingMessage.id))
-				// Instead of getChat, emit the chatMessage
-				await chatMessage(
-					socket,
-					{
-						chatMessage: {
-							...generatingMessage,
-							content,
-							isGenerating: true,
-							...(updateData.metadata ? { metadata: updateData.metadata } : {})
-						}
-					},
-					emitToUser
-				)
+					.where(
+						and(
+							eq(schema.chatMessages.id, generatingMessage.id),
+							eq(schema.chatMessages.isGenerating, true)
+						)
+					)
+					.returning()
+				if (!!updatedChatMsg) {
+					const chatMsgReq: Sockets.ChatMessage.Call = {
+						chatMessage: updatedChatMsg
+					}
+					await chatMessage(socket, chatMsgReq, emitToUser)
+				} else {
+					const chatMsgReq: Sockets.ChatMessage.Call = {
+						id: generatingMessage.id
+					}
+					await chatMessage(socket, chatMsgReq, emitToUser)
+					console.warn(
+						"[generateResponse] Generating terminated early",
+						generatingMessage.id
+					)
+					ok = false
+				}
 			})
 			// Final update: mark as not generating, clear adapterId
 			content = content.trim()
 			const ret = await db
 				.update(schema.chatMessages)
 				.set({ content, isGenerating: false, adapterId: null })
-				.where(and(eq(schema.chatMessages.id, generatingMessage.id), eq(schema.chatMessages.isGenerating, true))).returning()
+				.where(
+					and(
+						eq(schema.chatMessages.id, generatingMessage.id),
+						eq(schema.chatMessages.isGenerating, true)
+					)
+				)
+				.returning()
 			if (!ret || ret.length === 0) {
-				console.error("[generateResponse] Failed to update generating message:", generatingMessage.id)
+				console.error(
+					"[generateResponse] Failed to update generating message:",
+					generatingMessage.id
+				)
 				activeAdapters.delete(adapterId)
-				return
+				return false
 			}
 			// Instead of getChat, emit the chatMessage
 			await chatMessage(
@@ -167,16 +187,23 @@ export async function generateResponse({
 			content = content.trim()
 
 			// --- SWIPE HISTORY LOGIC (non-streamed) ---
-			let updateData: any = { content, isGenerating: false, adapterId: null }
+			let updateData: any = {
+				content,
+				isGenerating: false,
+				adapterId: null
+			}
 			if (
 				generatingMessage.metadata &&
 				generatingMessage.metadata.swipes &&
-				typeof generatingMessage.metadata.swipes.currentIdx === "number" &&
+				typeof generatingMessage.metadata.swipes.currentIdx ===
+					"number" &&
 				generatingMessage.metadata.swipes.currentIdx > 0 &&
 				Array.isArray(generatingMessage.metadata.swipes.history)
 			) {
 				const idx = generatingMessage.metadata.swipes.currentIdx
-				const history: string[] = [...generatingMessage.metadata.swipes.history]
+				const history: string[] = [
+					...generatingMessage.metadata.swipes.history
+				]
 				history[idx] = content
 				updateData = {
 					...updateData,
@@ -193,12 +220,21 @@ export async function generateResponse({
 			const ret = await db
 				.update(schema.chatMessages)
 				.set(updateData)
-				.where(and(eq(schema.chatMessages.id, generatingMessage.id), eq(schema.chatMessages.isGenerating, true))).returning()
+				.where(
+					and(
+						eq(schema.chatMessages.id, generatingMessage.id),
+						eq(schema.chatMessages.isGenerating, true)
+					)
+				)
+				.returning()
 			// Instead of getChat, emit the chatMessage
 			if (!ret || ret.length === 0) {
-				console.error("[generateResponse] Failed to update generating message:", generatingMessage.id)
+				console.error(
+					"[generateResponse] Failed to update generating message:",
+					generatingMessage.id
+				)
 				activeAdapters.delete(adapterId)
-				return
+				return false
 			}
 			await chatMessage(
 				socket,
@@ -208,7 +244,9 @@ export async function generateResponse({
 						content,
 						isGenerating: false,
 						adapterId: null,
-						...(updateData.metadata ? { metadata: updateData.metadata } : {})
+						...(updateData.metadata
+							? { metadata: updateData.metadata }
+							: {})
 					}
 				},
 				emitToUser
@@ -228,4 +266,5 @@ export async function generateResponse({
 	socket.io.to("user_" + userId).emit("personaMessageReceived", response)
 	// Instead of getChat, emit the chatMessage
 	await chatMessage(socket, { chatMessage: updatedMsg! }, emitToUser)
+	return !!isAborted // Whether there were no interruptions
 }

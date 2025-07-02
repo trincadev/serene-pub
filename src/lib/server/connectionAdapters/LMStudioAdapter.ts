@@ -112,13 +112,14 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 	}
 
 	async generate(): Promise<
-		[
-			string | ((cb: (chunk: string) => void) => Promise<void>),
-			CompiledPrompt
-		]
+		{
+			completionResult: string | ((cb: (chunk: string) => void) => Promise<void>),
+			compiledPrompt: CompiledPrompt,
+			isAborted: boolean
+		}
 	> {
 		const modelName =
-			this.connection.model ?? LMStudioAdapter.connectionDefaults.baseUrl
+			this.connection.model ?? connectionDefaults.baseUrl
 		const stream = this.connection!.extraJson?.stream || false
 		if (typeof modelName !== "string")
 			throw new Error("LMStudioAdapter: model must be a string")
@@ -147,15 +148,10 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 		const compiledPrompt: CompiledPrompt =
 			await this.compilePrompt({})
 
-		// Select prompt or messages for LM Studio
 		let prompt: string = ""
-		// if ("prompt" in compiledPrompt && typeof compiledPrompt.prompt === "string") {
-		prompt = compiledPrompt.prompt
-		// } else if ("messages" in compiledPrompt && Array.isArray(compiledPrompt.messages)) {
-		// 	prompt = compiledPrompt.messages.map(m => m.content).join("\n")
-		// } else {
-		// 	throw new Error("Compiled prompt missing both prompt and messages")
-		// }
+
+		prompt = compiledPrompt.prompt!
+
 		let options: LLMPredictionOpts<unknown> = {
 			stopStrings: stop,
 			maxTokens: this.sampling.responseTokensEnabled
@@ -170,8 +166,8 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 		const modelClient = await this.getModelClient(modelName)
 
 		if (stream) {
-			return [
-				async (cb: (chunk: string) => void) => {
+			return {
+				completionResult: async (cb: (chunk: string) => void) => {
 					let fullContent = ""
 					let lastChunk = ""
 					let abortedEarly = false
@@ -198,8 +194,9 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 							cb("FAILURE: " + (e.message || String(e)))
 					}
 				},
-				compiledPrompt
-			]
+				compiledPrompt,
+				isAborted: this.isAborting
+			}
 		} else {
 			const content = await (async () => {
 				try {
@@ -222,7 +219,7 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 					return "FAILURE: " + (e.message || String(e))
 				}
 			})()
-			return [content ?? "", compiledPrompt]
+			return {completionResult:content ?? "", compiledPrompt, isAborted: this.isAborting}
 		}
 	}
 

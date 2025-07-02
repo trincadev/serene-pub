@@ -280,10 +280,11 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 	}
 
 	async generate(): Promise<
-		[
-			string | ((cb: (chunk: string) => void) => Promise<void>),
-			CompiledPrompt
-		]
+		{
+			completionResult: string | ((cb: (chunk: string) => void) => Promise<void>),
+			compiledPrompt: CompiledPrompt,
+			isAborted: boolean
+		}
 	> {
 		const stream = this.connection.extraJson?.stream || false
 		// Prepare stop strings
@@ -337,8 +338,8 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 			"http://localhost:8080"
 
 		if (stream) {
-			return [
-				async (cb: (chunk: string) => void) => {
+			return {
+				completionResult: async (cb: (chunk: string) => void) => {
 					let content = ""
 					let cancelTokenSource = axios.CancelToken.source();
 					try {
@@ -380,13 +381,14 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 						cb("FAILURE: " + (e.message || String(e)))
 					}
 				},
-				compiledPrompt
-			]
+				compiledPrompt,
+				isAborted: this.isAborting
+			}
 		} else {
 			const abortController = new AbortController();
 			if (this.isAborting) {
 				abortController.abort();
-				return ["FAILURE: Request aborted by user.", compiledPrompt];
+				return {completionResult: "FAILURE: Request aborted by user.", compiledPrompt, isAborted: true};
 			}
 			try {
 				const response = await axios.post<CompletionResponse>(
@@ -396,12 +398,12 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 				)
 				const result = response.data
 				const content = result?.content || result?.response || ""
-				return [content, compiledPrompt]
+				return {completionResult: content, compiledPrompt, isAborted: this.isAborting}
 			} catch (e: any) {
 				if (axios.isCancel?.(e) || e?.code === 'ERR_CANCELED' || e?.message?.includes('aborted')) {
-					return ["FAILURE: Request aborted by user.", compiledPrompt]
+					return {completionResult: "FAILURE: Request aborted by user.", compiledPrompt, isAborted: true}
 				}
-				return ["FAILURE: " + (e.message || String(e)), compiledPrompt]
+				return {completionResult: "FAILURE: " + (e.message || String(e)), compiledPrompt, isAborted: true}
 			}
 		}
 	}
