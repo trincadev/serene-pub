@@ -266,5 +266,5 @@ export async function generateResponse({
 	socket.io.to("user_" + userId).emit("personaMessageReceived", response)
 	// Instead of getChat, emit the chatMessage
 	await chatMessage(socket, { chatMessage: updatedMsg! }, emitToUser)
-	return !!isAborted // Whether there were no interruptions
+	return !isAborted // Whether there were no interruptions
 }

@@ -11,7 +11,8 @@ export async function sampling(
     emitToUser: (event: string, data: any) => void
 ) {
     const sampling = await db.query.samplingConfigs.findFirst({
-        where: (w, { eq }) => eq(w.id, message.id)
+        where: (w, { eq }) => eq(w.id, message.id),
+        orderBy: (w, { asc }) => [asc(w.isImmutable), asc(w.name)],
     })
     emitToUser("sampling", { sampling })
 }

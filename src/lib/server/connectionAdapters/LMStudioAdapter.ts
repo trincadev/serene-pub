@@ -4,7 +4,10 @@ import { StopStrings } from "../utils/StopStrings"
 import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
 import { TokenCounters } from "../utils/TokenCounterManager"
-import {BaseConnectionAdapter, type AdapterExports} from './BaseConnectionAdapter';
+import {
+	BaseConnectionAdapter,
+	type AdapterExports
+} from "./BaseConnectionAdapter"
 import {
 	type BaseLoadModelOpts,
 	type LLM,
@@ -61,24 +64,28 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 	}
 
 	mapSamplingConfig(): Record<string, any> {
-		const result: Record<string, any> = {}
-		for (const [key, value] of Object.entries(this.sampling)) {
-			if (key.endsWith("Enabled")) continue
-			const enabledKey = key + "Enabled"
-			if ((this.sampling as any)[enabledKey] === false) continue
-			if (
-				(this.constructor as typeof LMStudioAdapter).samplingKeyMap[key]
-			) {
-				if (key === "streaming") continue
-				result[
-					(this.constructor as typeof LMStudioAdapter).samplingKeyMap[
-						key
-					]
-				] = value
-			}
-		}
-		return result
-	}
+    const result: Record<string, any> = {}
+    for (const [key, value] of Object.entries(this.sampling)) {
+        if (key.endsWith("Enabled")) continue
+        const enabledKey = key + "Enabled"
+        if ((this.sampling as any)[enabledKey] === false) continue
+        if (
+            samplingKeyMap[key]
+        ) {
+            if (key === "streaming") continue
+            // Defensive: skip if value is undefined or not a primitive (unless you expect an object)
+            if (value === undefined) continue
+            // If you expect only primitives, skip objects:
+            if (typeof value === "object" && value !== null) continue
+            result[
+                samplingKeyMap[
+                    key
+                ]
+            ] = value
+        }
+    }
+    return result
+}
 
 	// --- LM Studio client instance ---
 	getClient() {
@@ -111,15 +118,28 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 		return this._modelClient
 	}
 
-	async generate(): Promise<
-		{
-			completionResult: string | ((cb: (chunk: string) => void) => Promise<void>),
-			compiledPrompt: CompiledPrompt,
-			isAborted: boolean
+	async generate(): Promise<{
+		completionResult:
+			| string
+			| ((cb: (chunk: string) => void) => Promise<void>)
+		compiledPrompt: CompiledPrompt
+		isAborted: boolean
+	}> {
+		if (!this.sampling || typeof this.sampling !== "object") {
+			throw new Error(
+				"LMStudioAdapter: sampling config is missing or invalid"
+			)
 		}
-	> {
-		const modelName =
-			this.connection.model ?? connectionDefaults.baseUrl
+		if (
+			this.sampling.responseTokensEnabled === undefined ||
+			this.sampling.responseTokens === undefined
+		) {
+			throw new Error(
+				"LMStudioAdapter: sampling config missing required properties"
+			)
+		}
+
+		const modelName = this.connection.model ?? connectionDefaults.baseUrl
 		const stream = this.connection!.extraJson?.stream || false
 		if (typeof modelName !== "string")
 			throw new Error("LMStudioAdapter: model must be a string")
@@ -145,8 +165,7 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 		)
 
 		// Use PromptBuilder for prompt construction
-		const compiledPrompt: CompiledPrompt =
-			await this.compilePrompt({})
+		const compiledPrompt: CompiledPrompt = await this.compilePrompt({})
 
 		let prompt: string = ""
 
@@ -219,7 +238,11 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 					return "FAILURE: " + (e.message || String(e))
 				}
 			})()
-			return {completionResult:content ?? "", compiledPrompt, isAborted: this.isAborting}
+			return {
+				completionResult: content ?? "",
+				compiledPrompt,
+				isAborted: this.isAborting
+			}
 		}
 	}
 

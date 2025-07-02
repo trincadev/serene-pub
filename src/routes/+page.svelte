@@ -7,6 +7,8 @@
 
 	let userCtx: UserCtx = $state(getContext("userCtx"))
 	let panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
+	let themeCtx: ThemeCtx = $state(getContext("themeCtx"))
+
 	const socket = skio.get()
 
 	// Data for lists
@@ -84,9 +86,9 @@
 	class="flex flex-1 flex-col items-center justify-center gap-4 px-2 md:px-0"
 >
 	<img
-		src="logo-w-text.png"
+		src={themeCtx.mode === "dark" ? "logo-w-text-dark.png" : "logo-w-text.png"}
 		alt="Serene Pub Logo"
-		class="w-full rounded-xl"
+		class="w-full rounded-xl bg-primary-500/25"
 	/>
 
 	{#if !isSetup}
@@ -349,7 +351,7 @@
 
 		<div class="w-full">
 			<h3 class="w-full text-xl">Characters</h3>
-			<div class="grid grid-cols-2 justify-between gap-2">
+			<div class="grid grid-cols-1 lg:grid-cols-2 justify-between gap-2">
 				<!-- <div class="card preset-filled-surface-200-800 p-2">
 					tEST
 				</div> -->

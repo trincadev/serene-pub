@@ -25,7 +25,7 @@
 	const DefaultCharacterEntry: InsertCharacterLoreEntry = {
 		name: "",
 		content: "",
-		keys: [],
+		keys: "",
 		useRegex: false,
 		caseSensitive: false,
 		constant: false,
@@ -465,7 +465,7 @@
 									type="text"
 									bind:value={entry.name}
 									required
-									placeholder="Umber City"
+									placeholder="Her abilities"
 								/>
 							</div>
 							<div>
@@ -516,6 +516,7 @@
 								<LoreContentField
 									bind:content={entry.content}
 									bind:lorebookBindingList
+
 								/>
 							</div>
 							<div>
@@ -539,7 +540,7 @@
 									class="input preset-filled-surface-200-800 w-full rounded-lg"
 									type="text"
 									bind:value={entry.keys}
-									placeholder="umber, umber city"
+									placeholder="abilities, powers, skills"
 								/>
 							</div>
 							<details>
@@ -677,9 +678,7 @@
 							</div>
 							<div>
 								<strong>Keys:</strong>
-								{Array.isArray(entry.keys)
-									? entry.keys.join(", ")
-									: entry.keys}
+								{entry.keys}
 							</div>
 							<div class="flex gap-1">
 								{#if !entry.enabled}

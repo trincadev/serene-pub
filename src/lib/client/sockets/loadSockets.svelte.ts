@@ -22,6 +22,6 @@ export async function loadSocketsClient() {
 	}
 
 	if (dev) {
-		console.log("Client sockets initialized:", host)
+		console.log("Client socket initialized:", host)
 	}
 }

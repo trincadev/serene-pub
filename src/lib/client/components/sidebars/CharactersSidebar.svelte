@@ -110,7 +110,6 @@
 	}
 
 	async function handleOnClose() {
-		console.log("unsavedChanges", unsavedChanges)
 		if (unsavedChanges) {
 			showUnsavedChangesModal = true
 			return new Promise<boolean>((resolve) => {
@@ -291,9 +290,9 @@
 								>
 									<Icons.User size={36} />
 								</Avatar>
-							<div class="flex gap-2 relative  flex-1">
+							<div class="flex gap-2 relative flex-1 min-w-0">
 								
-								<div class="flex-1 relative">
+								<div class="flex-1 relative min-w-0">
 									<div class="truncate font-semibold text-left">
 										{c.nickname || c.name}
 									</div>

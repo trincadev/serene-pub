@@ -121,20 +121,6 @@
 
 	$effect(() => {
 		if (editChatId) {
-			// Fetch chat details if editing
-			socket.on("chat", (msg: Sockets.Chat.Response) => {
-				if (msg.chat && msg.chat.id === editChatId) {
-					chat = msg.chat
-					name = chat.name || ""
-					scenario = chat.scenario || ""
-					groupReplyStrategy = chat.groupReplyStrategy || "ordered"
-					selectedCharacters =
-						chat.chatCharacters?.map((cc) => cc.character) || []
-					selectedPersonas =
-						chat.chatPersonas?.map((cp) => cp.persona) || []
-					lorebookId = chat.lorebookId || null
-				}
-			})
 			socket.emit("chat", { id: editChatId })
 		}
 	})
@@ -219,6 +205,19 @@
 	}
 
 	onMount(() => {
+		socket.on("chat", (msg: Sockets.Chat.Response) => {
+			if (msg.chat && msg.chat.id === editChatId) {
+				chat = msg.chat
+				name = chat.name || ""
+				scenario = chat.scenario || ""
+				groupReplyStrategy = chat.groupReplyStrategy || "ordered"
+				selectedCharacters =
+					chat.chatCharacters?.map((cc) => cc.character) || []
+				selectedPersonas =
+					chat.chatPersonas?.map((cp) => cp.persona) || []
+				lorebookId = chat.lorebookId || null
+			}
+		})
 		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
 			characters = msg.characterList || []
 		})
@@ -244,6 +243,7 @@
 	})
 
 	onDestroy(() => {
+		socket.off("chat")
 		socket.off("characterList")
 		socket.off("personaList")
 		socket.off("lorebookList")
@@ -263,9 +263,7 @@
 </script>
 
 {#if data}
-	<div
-		class="flex min-h-full flex-col gap-6"
-	>
+	<div class="flex min-h-full flex-col gap-6">
 		<div class="mt-4 flex gap-2">
 			<button
 				class="btn btn-sm preset-filled-surface-500 w-full"
@@ -307,9 +305,9 @@
 					onfinalize={(e) => (selectedCharacters = e.detail.items)}
 				>
 					{#each selectedCharacters as c (c.id)}
-					{@const isActive = !!chat?.chatCharacters?.find(
-											(cc) => cc.characterId === c.id
-										)?.isActive}
+						{@const isActive = !!chat?.chatCharacters?.find(
+							(cc) => cc.characterId === c.id
+						)?.isActive}
 						<div class="flex gap-2">
 							<div
 								class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"

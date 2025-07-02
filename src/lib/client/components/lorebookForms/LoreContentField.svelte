@@ -124,9 +124,9 @@
 				StarterKit,
 				LorebookBindingTag.configure({ getLabel, getCharType }),
                 LegacyTag.configure({}),
-                Placeholder.configure({
-                    placeholder: ({ node }) => "A subterranean metropolis carved into the bones of a long-dead titan..."
-                }),
+                // Placeholder.configure({
+                //     placeholder: ({ node }) => "A subterranean metropolis carved into the bones of a long-dead titan..."
+                // }),
 			],
 			onUpdate: ({ editor }) => {
 				content = getContentWithCharTags(editor)

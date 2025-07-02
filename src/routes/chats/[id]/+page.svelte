@@ -152,8 +152,9 @@
 			!lastMessage ||
 			lastMessage.isGenerating ||
 			!!editChatMessage
-		)
+		) {
 			return
+		}
 		if (promptTokenCountTimeout) clearTimeout(promptTokenCountTimeout)
 		promptTokenCountTimeout = setTimeout(() => {
 			socket.emit("promptTokenCount", {
@@ -411,9 +412,7 @@
 	<meta name="description" content="Serene Pub" />
 </svelte:head>
 
-<div
-	class="relative flex h-full flex-col"
->
+<div class="relative flex h-full flex-col">
 	<div
 		id="chat-history"
 		class="flex flex-1 flex-col gap-3 overflow-auto"
@@ -448,24 +447,30 @@
 									<div class="flex flex-col">
 										<span class="flex gap-1">
 											<button
-											class="funnel-display mx-0 w-fit px-0 text-[1.1em] font-bold hover:underline inline-block"
-											onclick={(e) =>
-												handleCharacterNameClick(msg)}
-											title="Edit"
-										>
-											{character?.nickname ||
-												character?.name ||
-												"Unknown"}
-										</button>
+												class="funnel-display mx-0 inline-block w-fit px-0 text-[1.1em] font-bold hover:underline"
+												onclick={(e) =>
+													handleCharacterNameClick(
+														msg
+													)}
+												title="Edit"
+											>
+												<span class="text-nowrap">
+													{character?.nickname ||
+														character?.name ||
+														"Unknown"}
+												</span>
+											</button>
 											{#if isGreeting}
-													<span class="text-xs text-muted mt-1 opacity-50" title="Greeting message">
-														<Icons.Handshake
-															size={16}
-														/>
-													</span>
-												{/if}
+												<span
+													class="text-muted mt-1 text-xs opacity-50"
+													title="Greeting message"
+												>
+													<Icons.Handshake
+														size={16}
+													/>
+												</span>
+											{/if}
 										</span>
-										
 									</div>
 								</div>
 
@@ -630,7 +635,6 @@
 			onSend={handleSend}
 			compiledPrompt={draftCompiledPrompt}
 			classes=""
-			
 			extraTabs={[
 				{
 					value: "extraControls",
@@ -654,12 +658,13 @@
 							<Avatar char={persona} />
 						</span>
 					</div>
+					<div class="lg:hidden"></div>
 				{/if}
 			{/snippet}
 			{#snippet rightControls()}
 				{#if !lastMessage?.isGenerating && !editChatMessage}
 					<button
-						class="hover:preset-tonal-success rounded-lg p-2 text-center lg:block lg:h-auto lg:p-3 mr-3"
+						class="hover:preset-tonal-success mr-3 rounded-lg text-center lg:block lg:h-auto lg:p-3"
 						type="button"
 						disabled={!newMessage.trim() ||
 							lastMessage?.isGenerating}
@@ -671,7 +676,7 @@
 				{:else if lastMessage?.isGenerating}
 					<button
 						title="Stop Generation"
-						class="text-error-500 hover:preset-tonal-error rounded-lg p-2 text-center lg:h-auto lg:p-3 mr-3"
+						class="text-error-500 hover:preset-tonal-error mr-3 rounded-lg text-center lg:h-auto lg:p-3"
 						type="button"
 						onclick={handleAbortLastMessage}
 					>
@@ -718,7 +723,7 @@
 <Modal
 	open={showDraftCompiledPromptModal}
 	onOpenChange={(details) => (showDraftCompiledPromptModal = details.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-full w-[60em]"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}

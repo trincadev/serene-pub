@@ -30,13 +30,11 @@
 	]
 
 	const DefaultHistoryEntry: InsertHistoryEntry = {
-		date: {
-			year: 0,
-			month: 0,
-			day: 0
-		},
+		year: 1,
+		month: null,
+		day:null,
 		content: "",
-		keys: [],
+		keys: "",
 		useRegex: false,
 		caseSensitive: false,
 		constant: false,
@@ -114,9 +112,7 @@
 		if (!lower) return getSortedEntries()
 		return getSortedEntries().filter((entry) => {
 			const content = (entry.content || "").toLowerCase()
-			const keys = Array.isArray(entry.keys)
-				? entry.keys.join(", ")
-				: entry.keys || ""
+			const keys = entry.keys || ""
 			return content.includes(lower) || keys.toLowerCase().includes(lower)
 		})
 	}
@@ -633,9 +629,7 @@
 							</div>
 							<div>
 								<strong>Keys:</strong>
-								{Array.isArray(entry.keys)
-									? entry.keys.join(", ")
-									: entry.keys}
+								{entry.keys}
 							</div>
 							<div class="flex gap-1">
 								{#if !entry.enabled}

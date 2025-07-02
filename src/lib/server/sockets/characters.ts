@@ -21,7 +21,8 @@ export async function characterList(
 			description: true,
 			creatorNotes: true
 		},
-		where: (c, { eq }) => eq(c.userId, 1) // TODO: Replace with actual user id
+		where: (c, { eq }) => eq(c.userId, 1), // TODO: Replace with actual user id
+		orderBy: (c, { asc }) => asc(c.id)
 	})
 	const res: Sockets.CharacterList.Response = { characterList }
 	emitToUser("characterList", res)

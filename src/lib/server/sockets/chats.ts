@@ -431,7 +431,7 @@ export async function regenerateChatMessage(
 	const chat = await getPromptChatFromDb(chatMessage.chatId, userId)
 	if (!chat) {
 		const res: Sockets.RegenerateChatMessage.Response = {
-			error: "Chat not found."
+			error: "Error Regenerating Message: Chat not found."
 		}
 		emitToUser("regenerateChatMessage", res)
 		return
@@ -494,7 +494,7 @@ export async function promptTokenCount(
 		const userId = 1 // Replace with actual user id
 		const chat = await getPromptChatFromDb(message.chatId, userId)
 		if (!chat) {
-			emitToUser("error", { error: "Chat not found." })
+			emitToUser("error", { error: "Error Generating Prompt Token Count: Chat not found." })
 			return
 		}
 		const user = await db.query.users.findFirst({
@@ -663,7 +663,7 @@ export async function triggerGenerateMessage(
 		let chat = await getPromptChatFromDb(message.chatId, userId)
 		if (!chat) {
 			const res: Sockets.TriggerGenerateMessage.Response = {
-				error: "Chat not found."
+				error: "Error Triggering Chat Message: Chat not found."
 			}
 			emitToUser("triggerGenerateMessage", res)
 			return
@@ -711,7 +711,7 @@ export async function triggerGenerateMessage(
 				{ chatMessage: generatingMessage },
 				emitToUser
 			)
-			ok =await generateResponse({
+			ok = await generateResponse({
 				socket,
 				emitToUser,
 				chatId: message.chatId,
@@ -981,7 +981,7 @@ export async function chatMessageSwipeRight(
 	})
 	if (!chat) {
 		const res = {
-			error: "Chat not found."
+			error: "Error Swiping Chat Message Right: Chat not found."
 		}
 		emitToUser("error", res)
 		return
@@ -1141,7 +1141,7 @@ export async function chatMessageSwipeLeft(
 	})
 	if (!chat) {
 		const res = {
-			error: "Chat not found."
+			error: "Error Swiping Chat Message Left: Chat not found."
 		}
 		emitToUser("error", res)
 		return
@@ -1306,7 +1306,7 @@ export async function toggleChatCharacterActive(
 	})
 	if (!chat) {
 		const res = {
-			error: "Chat not found."
+			error: "Error toggling character active: Chat not found."
 		}
 		emitToUser("error", res)
 		return

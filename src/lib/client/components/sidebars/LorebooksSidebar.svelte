@@ -407,15 +407,14 @@
 						contentTitle="Edit lorebook"
 					>
 						{#snippet content()}
-							<div class="flex flex-col gap-1 text-left">
-								<div class="truncate font-semibold">
+							<div class="flex flex-col gap-1 text-left min-w-0">
+								<div class="truncate font-semibold min-w-0">
 									{l.name}
 								</div>
 								<div
-									class="text-muted-foreground line-clamp-2 h-[3em] text-xs"
+									class="text-muted-foreground line-clamp-2 h-[3em] text-xs min-w-0"
 								>
-									{l.description ||
-										"No description provided."}
+									{l.description || "No description provided."}
 								</div>
 							</div>
 						{/snippet}

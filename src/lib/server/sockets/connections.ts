@@ -16,7 +16,8 @@ export async function connectionsList(
 			id: true,
 			name: true,
 			type: true
-		}
+		},
+		orderBy: (c, { asc }) => [asc(c.type), asc(c.name)],
 	})
 	const res: Sockets.ConnectionsList.Response = { connectionsList }
 	emitToUser("connectionsList", res)
