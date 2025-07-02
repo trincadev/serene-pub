@@ -91,6 +91,11 @@
 		class="w-full rounded-xl bg-primary-500/25"
 	/>
 
+	<!-- Alpha disclaimer card below the logo -->
+	<div class="mx-auto rounded-lg preset-filled-warning-100-900 p-2 text-center text-sm w-full">
+		<strong>Serene Pub is in alpha!</strong> Expect bugs and rapid changes. This project is under heavy development.
+	</div>
+
 	{#if !isSetup}
 		<div
 			class="preset-filled-surface-200-800 mx-auto w-full rounded-xl p-6"

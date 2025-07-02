@@ -176,10 +176,9 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 			maxTokens: this.sampling.responseTokensEnabled
 				? this.sampling.responseTokens || 2048
 				: 2048,
-			...this.mapSamplingConfig()
+			...this.mapSamplingConfig(),
+			promptTemplate: undefined // <-- Added to satisfy LM Studio SDK schema
 		}
-
-		console.log("options", options)
 
 		// --- LM Studio SDK integration ---
 		const modelClient = await this.getModelClient(modelName)
