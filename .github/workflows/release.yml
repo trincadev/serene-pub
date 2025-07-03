@@ -54,11 +54,9 @@ jobs:
 
       - name: Build app
         run: npm run build
-        continue-on-error: true
 
       - name: Bundle for ${{ matrix.target }}
         run: node scripts/bundle-dist.js ${{ matrix.target }}
-        continue-on-error: true
 
       - name: Zip dist directory
         run: |
