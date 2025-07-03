@@ -45,6 +45,7 @@ export const users = pgTable("users", {
 export const userRelations = relations(users, ({ many, one }) => ({
 	lorebooks: many(lorebooks),
 	characters: many(characters),
+	chats: many(chats),
 	activeSamplingConfig: one(samplingConfigs, {
 		fields: [users.activeSamplingConfigId],
 		references: [samplingConfigs.id]
@@ -363,6 +364,20 @@ export const characters = pgTable("characters", {
 	extensions: json("extensions").notNull().default({}).$type<Record<string, any>>() ,
 	isFavorite: boolean("is_favorite").notNull().default(false) // 1 if favorite, 0 otherwise
 }, table => ({
+}))
+
+export const charactersRelations = relations(characters, ({ many, one }) => ({
+	user: one(users, {
+		fields: [characters.userId],
+		references: [users.id]
+	}),
+	lorebook: one(lorebooks, {
+		fields: [characters.lorebookId],
+		references: [lorebooks.id]
+	}),
+	characterTags: many(characterTags),
+	chatCharacters: many(chatCharacters),
+	chatMessages: many(chatMessages)
 }))
 
 export const personas = pgTable("personas", {

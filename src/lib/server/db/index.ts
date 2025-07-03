@@ -1,16 +1,16 @@
 import * as schema from "./schema"
-import { migrate } from "drizzle-orm/node-postgres/migrator"
+import { migrate } from "drizzle-orm/pglite/migrator"
 import * as dbConfig from "./drizzle.config"
 import type { MigrationConfig } from "drizzle-orm/migrator"
 import fs from "fs"
 import { dev } from "$app/environment"
-import { drizzle } from "drizzle-orm/node-postgres"
+import { drizzle } from "drizzle-orm/pglite"
 import { sync } from "./defaults"
-import { startPg } from "./postgres.service"
+import { startPg } from "./postgres"
 
-const firstInit = await startPg()
+// const { firstInit, pglite } = await startPg()
 
-export let db = drizzle(dbConfig.postgresUrl, { schema })
+export let db = drizzle(pglite, { schema })
 
 // Compare two version strings in '0.0.0' format
 export function compareVersions(a: string, b: string): -1 | 0 | 1 {
@@ -25,26 +25,8 @@ export function compareVersions(a: string, b: string): -1 | 0 | 1 {
 	return 0
 }
 
-async function runMigrations(oldVersion?: string) {
+async function runMigrations() {
 	// TODO: Update this in 0.4.0 to perform pg backups. Not needed for 0.3.0
-
-	// Backup database before migration in production
-	// const dbFile = process.env.DATABASE_URL || dbConfig.dbPath
-	// const dir = dirname(dbFile)
-	// const base = basename(dbFile, extname(dbFile))
-	// const ext = extname(dbFile)
-	// const timestamp = new Date()
-	// 	.toISOString()
-	// 	.replace(/[-:T.]/g, "")
-	// 	.slice(0, 14)
-	// const backupFile = `${dir}/${base}_backup_v${oldVersion}_${timestamp}${ext}`
-	// try {
-	// 	copyFileSync(dbFile, backupFile)
-	// 	console.log(`Database backup created: ${backupFile}`)
-	// } catch (err) {
-	// 	console.error("Failed to create database backup:", err)
-	// 	throw new Error("Database backup failed, migration aborted.")
-	// }
 
 	await migrate(db, {
 		migrationsFolder: dbConfig.migrationsDir
@@ -115,6 +97,8 @@ if (!dev || firstInit) {
 			)
 			throw new Error("Unexpected version comparison result")
 	}
+
 } else {
+	await runMigrations()
 	await sync()
 }
