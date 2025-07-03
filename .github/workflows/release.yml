@@ -43,6 +43,12 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Prepare lockfile for macOS
+        if: matrix.target == 'macos-x64' || matrix.target == 'macos-arm64'
+        run: |
+          rm -f package-lock.json
+          npm install --package-lock-only
+
       - name: Install dependencies
         run: npm ci
 
