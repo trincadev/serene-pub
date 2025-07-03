@@ -228,39 +228,10 @@ if (!target) {
 
 ;(async () => {
 	try {
-		// 1. Create a temp dir and run npm install for this platform/arch
-		const tempDir = path.join(__dirname, `../.tmp-bundle-dist-${target.name}`)
-		if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true })
-		fs.mkdirSync(tempDir)
-		fs.writeFileSync(
-			path.join(tempDir, "package.json"),
-			JSON.stringify(pkg, null, 2)
-		)
-		// Run npm install for this platform/arch
-		console.log(`Installing node_modules for ${target.name}...`)
-		child_process.execSync("npm install --production", {
-			cwd: tempDir,
-			stdio: "inherit",
-			env: { ...process.env, npm_config_platform: target.platform, npm_config_arch: target.arch }
-		})
-		// After npm install --production in the temp dir, rebuild native modules for the target
-		console.log(`Rebuilding native modules for ${target.name}...`)
-		child_process.execSync("npm rebuild", {
-			cwd: tempDir,
-			stdio: "inherit",
-			env: { ...process.env, npm_config_platform: target.platform, npm_config_arch: target.arch }
-		})
-		// Clean node_modules with modclean, preserving license files
-		console.log(`Cleaning node_modules with modclean for ${target.name}...`)
-		child_process.execSync(
-			'npx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"',
-			{ cwd: tempDir, stdio: "inherit", env: { ...process.env, npm_config_platform: target.platform, npm_config_arch: target.arch } }
-		)
-
-		// 2. License check
+		// 1. License check
 		console.log("Checking licenses...")
 		const problematic = checkAllLicensesAcceptable(
-			path.join(tempDir, "node_modules")
+			path.resolve(__dirname, "../node_modules")
 		)
 		if (problematic.length > 0) {
 			console.error("Unacceptable licenses found:")
@@ -272,19 +243,22 @@ if (!target) {
 			process.exit(1)
 		}
 
-		// 3. Create dist bundle
+		// 2. Create dist bundle
 		const outDir = path.join(distDir, `serene-pub-${version}-${target.name}`)
 		if (fs.existsSync(outDir))
 			fs.rmSync(outDir, { recursive: true, force: true })
 		fs.mkdirSync(outDir, { recursive: true })
+		
 		// Copy build and static
 		copyRecursive(buildDir, path.join(outDir, "build"))
 		copyRecursive(staticDir, path.join(outDir, "static"))
-		// Copy node_modules for this target
+		
+		// Copy node_modules (assuming it's already prepared for this target)
 		copyRecursive(
-			path.join(tempDir, "node_modules"),
+			path.resolve(__dirname, "../node_modules"),
 			path.join(outDir, "node_modules")
 		)
+		
 		// Copy LICENSE, README, etc.
 		for (const file of filesToCopy) {
 			if (fs.existsSync(path.resolve(__dirname, "..", file))) {
@@ -294,6 +268,7 @@ if (!target) {
 				)
 			}
 		}
+		
 		// Copy platform-specific instructions
 		const instrFile = path.resolve(
 			__dirname,
@@ -302,6 +277,7 @@ if (!target) {
 		if (fs.existsSync(instrFile)) {
 			fs.copyFileSync(instrFile, path.join(outDir, "INSTRUCTIONS.txt"))
 		}
+		
 		// Copy all run files from dist-assets/<os>/
 		const runFiles = fs
 			.readdirSync(path.resolve(__dirname, `../dist-assets/${target.name.split("-")[0]}`))
@@ -314,8 +290,10 @@ if (!target) {
 				fs.chmodSync(dest, 0o755)
 			}
 		}
+		
 		// Copy drizzle migrations folder
 		copyRecursive(path.resolve(__dirname, '../drizzle'), path.join(outDir, 'drizzle'))
+		
 		// Write minimal package.json
 		fs.writeFileSync(
 			path.join(outDir, "package.json"),
@@ -332,8 +310,6 @@ if (!target) {
 			)
 		)
 
-		// 4. Clean up temp dir
-		fs.rmSync(tempDir, { recursive: true, force: true })
 		console.log(`Distributable generated in dist/${path.basename(outDir)}`)
 	} catch (err) {
 		console.error("Bundle process failed:", err)

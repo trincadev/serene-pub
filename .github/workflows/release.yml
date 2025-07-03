@@ -30,20 +30,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       NODE_OPTIONS: '--max-old-space-size=4096'
-      CI: 'true'
-      DISABLE_ESLINT_PLUGIN: 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Clean node_modules
-        shell: bash
-        run: |
-          if [ -d node_modules ]; then rm -rf node_modules; fi
-
-      - name: Clean npm cache
-        shell: bash
-        run: npm cache clean --force
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -51,88 +40,72 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        shell: bash
         run: |
-          # Try npm ci first - remove ignore-optional to ensure all needed packages are installed
-          npm ci || {
-            echo "npm ci failed, trying fresh install"
-            rm -rf node_modules package-lock.json
-            npm install
-          }
+          node -e "const fs = require('fs'); try { fs.unlinkSync('package-lock.json'); } catch (e) { /* ignore */ }"
+          npm install
 
       - name: Prepare SvelteKit
-        shell: bash
-        run: |
-          # Generate SvelteKit files and sync types
-          echo "Setting up SvelteKit..."
-          npx @sveltejs/kit sync || echo "SvelteKit sync completed with warnings"
-
-      - name: Check TypeScript
-        shell: bash
-        run: |
-          # Skip TypeScript check in CI to avoid build failures from type issues
-          echo "Skipping TypeScript check in CI build"
-
-      - name: Clean build and dist directories
-        shell: bash
-        run: |
-          if [ -d build ]; then rm -rf build; fi
-          if [ -d dist ]; then rm -rf dist; fi
-
-      - name: Print architecture info
-        shell: bash
-        run: |
-          echo "Node arch: $(node -p 'process.arch')"
-          echo "Node platform: $(node -p 'process.platform')"
-          echo "Node version: $(node --version)"
-          echo "NPM version: $(npm --version)"
-          uname -a || echo "uname not available"
-          uname -m || echo "uname -m not available"
-          sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "sysctl not available (not macOS)"
+        run: npx @sveltejs/kit sync
 
       - name: Build app
-        shell: bash
+        run: npm run build
+
+      - name: Prepare production dependencies
         run: |
-          # Set environment variables for CI build
-          export NODE_ENV=production
+          # Convert target to platform and arch
+          case "${{ matrix.target }}" in
+            linux-x64)
+              PLATFORM="linux"
+              ARCH="x64"
+              ;;
+            linux-arm64)
+              PLATFORM="linux"
+              ARCH="arm64"
+              ;;
+            linux-arm)
+              PLATFORM="linux"
+              ARCH="arm"
+              ;;
+            linux-ppc64)
+              PLATFORM="linux"
+              ARCH="ppc64"
+              ;;
+            macos-arm64)
+              PLATFORM="darwin"
+              ARCH="arm64"
+              ;;
+            windows-x64)
+              PLATFORM="win32"
+              ARCH="x64"
+              ;;
+            windows-arm64)
+              PLATFORM="win32"
+              ARCH="arm64"
+              ;;
+            *)
+              echo "Unknown target: ${{ matrix.target }}"
+              exit 1
+              ;;
+          esac
           
-          # Ensure SvelteKit is properly set up before building
-          echo "Ensuring SvelteKit setup..."
-          npx @sveltejs/kit sync || echo "Sync completed with warnings"
+          # Install production dependencies
+          npm install --production
+          npm rebuild
           
-          # Try building step by step for better error handling
-          echo "Running client build..."
-          npx vite build || {
-            echo "Client build failed, trying with clean environment"
-            rm -rf node_modules package-lock.json .svelte-kit build
-            npm install
-            # Try sync again after clean install
-            npx @sveltejs/kit sync || echo "Sync completed with warnings after clean install"
-            export NODE_ENV=production
-            npx vite build
-          }
-          
-          echo "Running SSR build..."
-          npx vite build --ssr || {
-            echo "SSR build failed, but continuing with client build only"
-            echo "Client build was successful, SSR build can be optional for release"
-          }
+          # Clean node_modules with modclean, preserving license files
+          npx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"
 
       - name: Bundle for ${{ matrix.target }}
-        shell: bash
         run: node scripts/bundle-dist.js ${{ matrix.target }}
 
       - name: Zip dist directory
-        shell: bash
         run: |
           cd dist
-          if command -v zip >/dev/null 2>&1; then
-            zip -r "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip" "serene-pub-*-${{ matrix.target }}"
-          else
-            # Fallback for Windows without zip command
+          if [ "$RUNNER_OS" = "Windows" ]; then
             powershell -Command "Compress-Archive -Path 'serene-pub-*-${{ matrix.target }}' -DestinationPath '../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip'"
+          else
+            zip -r "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip" "serene-pub-*-${{ matrix.target }}"
           fi
-          cd ..
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
