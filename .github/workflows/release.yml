@@ -44,8 +44,10 @@ jobs:
           node-version: '20'
 
       - name: Prepare lockfile for platform
+        shell: bash
         run: |
-          rm -f package-lock.json
+          if [ -f package-lock.json ]; then rm package-lock.json; fi
+          if [ -f package-lock.json ]; then powershell Remove-Item -Path package-lock.json -Force; fi
           npm install --package-lock-only
 
       - name: Install dependencies
