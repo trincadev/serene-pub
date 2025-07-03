@@ -226,7 +226,7 @@ function checkAllLicensesAcceptable(nodeModulesPath) {
 			// Clean node_modules with modclean, preserving license files
 			console.log(`Cleaning node_modules with modclean for ${platform.name}...`)
 			child_process.execSync(
-				'bunx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"',
+				'npx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"',
 				{ cwd: tempDir, stdio: "inherit", env: platform.env }
 			)
 			tempDirs[platform.name] = tempDir
