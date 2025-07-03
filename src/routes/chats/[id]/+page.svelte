@@ -181,7 +181,8 @@
 						behavior: "smooth"
 					})
 				}
-			}, 50) // Slightly longer delay to ensure content is rendered
+			// }, 50) // Slightly longer delay to ensure content is rendered
+			}, 30)
 		}
 	})
 
