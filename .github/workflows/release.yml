@@ -51,43 +51,8 @@ jobs:
         run: npm run build
 
       - name: Prepare production dependencies
+        shell: bash
         run: |
-          # Convert target to platform and arch
-          case "${{ matrix.target }}" in
-            linux-x64)
-              PLATFORM="linux"
-              ARCH="x64"
-              ;;
-            linux-arm64)
-              PLATFORM="linux"
-              ARCH="arm64"
-              ;;
-            linux-arm)
-              PLATFORM="linux"
-              ARCH="arm"
-              ;;
-            linux-ppc64)
-              PLATFORM="linux"
-              ARCH="ppc64"
-              ;;
-            macos-arm64)
-              PLATFORM="darwin"
-              ARCH="arm64"
-              ;;
-            windows-x64)
-              PLATFORM="win32"
-              ARCH="x64"
-              ;;
-            windows-arm64)
-              PLATFORM="win32"
-              ARCH="arm64"
-              ;;
-            *)
-              echo "Unknown target: ${{ matrix.target }}"
-              exit 1
-              ;;
-          esac
-          
           # Install production dependencies
           npm install --production
           npm rebuild
@@ -99,6 +64,7 @@ jobs:
         run: node scripts/bundle-dist.js ${{ matrix.target }}
 
       - name: Zip dist directory
+        shell: bash
         run: |
           cd dist
           if [ "$RUNNER_OS" = "Windows" ]; then
@@ -113,13 +79,13 @@ jobs:
             "
           else
             # Find the exact directory name and zip it
-            DIST_DIR=$(ls -d serene-pub-*-${{ matrix.target }} 2>/dev/null | head -1)
-            if [ -z "$DIST_DIR" ]; then
-              echo "Error: No directory found matching serene-pub-*-${{ matrix.target }}"
+            DIST_DIR=\$(ls -d serene-pub-*-${{ matrix.target }} 2>/dev/null | head -1)
+            if [ -z \"\$DIST_DIR\" ]; then
+              echo \"Error: No directory found matching serene-pub-*-${{ matrix.target }}\"
               ls -la
               exit 1
             fi
-            zip -r "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip" "$DIST_DIR"
+            zip -r \"../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip\" \"\$DIST_DIR\"
           fi
 
       - name: Upload release assets
