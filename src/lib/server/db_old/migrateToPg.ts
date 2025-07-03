@@ -63,14 +63,22 @@ export async function migrateToPg() {
 			// Get characters from SQLite
 			const characters = await sqlite.query.characters.findMany()
 			characters.forEach(async (character) => {
-				// Convert any String[] fields to string[] (primitive)
+				// Convert any String[] fields to string[] (primitive) or text as needed
 				const safeCharacter = {
 					...character,
-					alternateGreetings: character.alternateGreetings
-						? character.alternateGreetings.map((s: any) => s.toString())
-						: null,
-					exampleDialogues: character.exampleDialogues
-						? character.exampleDialogues.map((s: any) => s.toString())
+					// alternateGreetings should be string[] for JSON field
+					alternateGreetings: character.alternateGreetings 
+						? Array.isArray(character.alternateGreetings)
+							? character.alternateGreetings.map((s: any) => String(s))
+							: [String(character.alternateGreetings)]
+						: [],
+					// exampleDialogues should be string for text field
+					exampleDialogues: character.exampleDialogues 
+						? (typeof character.exampleDialogues === 'string' 
+							? character.exampleDialogues 
+							: Array.isArray(character.exampleDialogues)
+								? (character.exampleDialogues as any[]).join('\n')
+								: String(character.exampleDialogues))
 						: null,
 				}
 				return await tx.insert(schema.characters).values({
@@ -82,7 +90,7 @@ export async function migrateToPg() {
 					personality: safeCharacter.personality ?? null,
 					scenario: safeCharacter.scenario ?? null,
 					firstMessage: safeCharacter.firstMessage ?? null,
-					alternateGreetings: safeCharacter.alternateGreetings ?? null,
+					alternateGreetings: safeCharacter.alternateGreetings as string[] ?? null,
 					exampleDialogues: safeCharacter.exampleDialogues ?? null,
 					avatar: safeCharacter.avatar ?? null,
 					creatorNotes: safeCharacter.creatorNotes ?? null,

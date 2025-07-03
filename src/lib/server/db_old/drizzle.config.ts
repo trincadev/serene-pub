@@ -13,7 +13,7 @@ if (!existsSync(dataDir)) {
 	mkdirSync(dataDir, { recursive: true });
 }
 
-console.log(`Using database path: ${dbPath}`)
+console.log(`Checking sqlite database path (deprecated): ${dbPath}`)
 
 // Create the data directory if it doesn't exist
 
