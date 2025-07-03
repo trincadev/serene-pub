@@ -8,7 +8,26 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: linux-x64
+            os: ubuntu-latest
+          - target: linux-arm64
+            os: ubuntu-latest
+          - target: linux-arm
+            os: ubuntu-latest
+          - target: linux-ppc64
+            os: ubuntu-latest
+          - target: macos-x64
+            os: macos-latest
+          - target: macos-arm64
+            os: macos-latest
+          - target: windows-x64
+            os: windows-latest
+          - target: windows-arm64
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,25 +40,22 @@ jobs:
       - name: Install dependencies
         run: npm install --frozen-lockfile
 
-      # - name: Ensure database directory exists
-      #   run: mkdir -p ~/SerenePubData
+      - name: Build app
+        run: npm run build
 
-      - name: Build app & make release distributions
-        run: npm run dist
+      - name: Bundle for ${{ matrix.target }}
+        run: node scripts/bundle-dist.js ${{ matrix.target }}
 
-      - name: Zip each dist directory
+      - name: Zip dist directory
         run: |
           cd dist
-          for d in serene-pub-* ; do
-            zip -r "../${d}.zip" "$d"
-          done
+          zip -r "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip" "serene-pub-*-${{ matrix.target }}"
           cd ..
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            *.zip
+          files: serene-pub-*.zip
           prerelease: ${{ contains(github.ref, 'alpha') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
