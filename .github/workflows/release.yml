@@ -30,7 +30,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       NODE_OPTIONS: '--max-old-space-size=4096'
-      NPM_CONFIG_OPTIONAL: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -52,37 +51,12 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
-          # Try npm ci first
-          npm ci --legacy-peer-deps || {
+          # Try npm ci first with ignore optional to avoid rollup platform-specific issues
+          npm ci --ignore-optional || {
             echo "npm ci failed, trying fresh install"
             rm -rf node_modules package-lock.json
-            npm install --legacy-peer-deps
+            npm install --ignore-optional
           }
-          # Workaround for rollup optional dependency issues
-          npm audit fix --force || true
-
-      - name: Fix rollup dependencies
-        shell: bash
-        run: |
-          # Remove problematic optional dependencies that might cause issues
-          npm ls @rollup/rollup-darwin-arm64 || echo "rollup-darwin-arm64 not found, continuing..."
-          # Force reinstall rollup if there are issues based on target platform
-          case "${{ matrix.target }}" in
-            linux*)
-              npm install --save-dev @rollup/rollup-linux-x64-gnu@latest || true
-              npm install --save-dev @rollup/rollup-linux-arm64-gnu@latest || true
-              ;;
-            windows*)
-              npm install --save-dev @rollup/rollup-win32-x64-msvc@latest || true
-              npm install --save-dev @rollup/rollup-win32-arm64-msvc@latest || true
-              ;;
-            macos*)
-              npm install --save-dev @rollup/rollup-darwin-x64@latest || true
-              npm install --save-dev @rollup/rollup-darwin-arm64@latest || true
-              ;;
-          esac
-          # Clear any cached rollup builds
-          npm cache clean --force
 
       - name: Clean build and dist directories
         shell: bash
@@ -104,13 +78,10 @@ jobs:
         run: |
           # Try building normally first
           npm run build || {
-            echo "Build failed, trying with --force-rebuild flag"
-            npm run build --force-rebuild || {
-              echo "Build still failed, trying with clean install"
-              rm -rf node_modules package-lock.json
-              npm install --legacy-peer-deps
-              npm run build
-            }
+            echo "Build failed, trying with clean reinstall"
+            rm -rf node_modules package-lock.json
+            npm install --ignore-optional
+            npm run build
           }
 
       - name: Bundle for ${{ matrix.target }}
