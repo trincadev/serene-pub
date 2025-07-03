@@ -53,6 +53,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Clean build and dist directories
+        shell: bash
+        run: |
+          if [ -d build ]; then rm -rf build; fi
+          if [ -d dist ]; then rm -rf dist; fi
+
       - name: Build app
         run: npm run build
 
@@ -64,6 +70,12 @@ jobs:
           cd dist
           zip -r "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip" "serene-pub-*-${{ matrix.target }}"
           cd ..
+
+      - name: Debug: Print last 50 lines of PersonasSidebar.svelte if build fails
+        if: failure()
+        run: |
+          echo "Last 50 lines of PersonasSidebar.svelte:"
+          tail -n 50 src/lib/client/components/sidebars/PersonasSidebar.svelte || true
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
