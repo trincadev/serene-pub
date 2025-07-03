@@ -35,9 +35,21 @@
 			stream: extraJson?.stream ?? true,
 			think: extraJson?.think ?? false,
 			keepAlive: extraJson?.keepAlive ?? "300ms",
-			raw: extraJson?.raw ?? true
+			raw: extraJson?.raw ?? true,
+			useChat: extraJson?.useChat ?? true
 		}
 	}
+
+	$effect(() => {
+		connection.extraJson = {
+			...connection.extraJson,
+			stream: extraFields.stream,
+			think: extraFields.think,
+			keepAlive: extraFields.keepAlive,
+			raw: extraFields.raw,
+			useChat: extraFields.useChat
+		}
+	})
 
 	socket.on("refreshModels", (msg: Sockets.RefreshModels.Response) => {
 		if (msg.models) availableLMStudioModels = msg.models
@@ -94,30 +106,36 @@
 				{/if}
 			</button>
 		</div>
-        	<div class="mt-2 flex flex-col gap-1">
-		<label class="font-semibold" for="promptFormat">Prompt Format</label>
-		<select
-			id="promptFormat"
-			class="select bg-background border-muted w-full rounded border"
-			bind:value={connection.promptFormat}
-		>
-			{#each PromptFormats.options as option}
-				<option value={option.value}>{option.label}</option>
-			{/each}
-		</select>
-	</div>
-	<div class="mt-2 flex flex-col gap-1">
-		<label class="font-semibold" for="tokenCounter">Token Counter</label>
-		<select
-			id="tokenCounter"
-			bind:value={connection.tokenCounter}
-			class="select bg-background border-muted w-full rounded border"
-		>
-			{#each TokenCounterOptions.options as t}
-				<option value={t.value}>{t.label}</option>
-			{/each}
-		</select>
-	</div>
+		{#if !extraFields.useChat}
+			<div class="mt-2 flex flex-col gap-1">
+				<label class="font-semibold" for="promptFormat">
+					Prompt Format
+				</label>
+				<select
+					id="promptFormat"
+					class="select bg-background border-muted w-full rounded border"
+					bind:value={connection.promptFormat}
+				>
+					{#each PromptFormats.options as option}
+						<option value={option.value}>{option.label}</option>
+					{/each}
+				</select>
+			</div>
+		{/if}
+		<div class="mt-2 flex flex-col gap-1">
+			<label class="font-semibold" for="tokenCounter">
+				Token Counter
+			</label>
+			<select
+				id="tokenCounter"
+				bind:value={connection.tokenCounter}
+				class="select bg-background border-muted w-full rounded border"
+			>
+				{#each TokenCounterOptions.options as t}
+					<option value={t.value}>{t.label}</option>
+				{/each}
+			</select>
+		</div>
 	</div>
 	<!-- <div class="flex gap-4">
 		<label class="flex items-center gap-2">
@@ -165,9 +183,20 @@
 					class="input"
 				/>
 			</div>
-			<label class="flex items-center gap-2">
+			<!-- Use Chat toggle -->
+			<div class="mt-2 flex items-center gap-2">
+				<label class="font-semibold" for="useChat">Use Chat Mode</label>
 				<input
 					type="checkbox"
+					id="useChat"
+					bind:checked={extraFields.useChat}
+				/>
+			</div>
+			<div class="mt-2 flex items-center gap-2">
+				<label class="font-semibold" for="stream">Stream</label>
+				<input
+					type="checkbox"
+					name="stream"
 					bind:checked={extraFields.stream}
 					onchange={() => {
 						connection.extraJson = {
@@ -176,8 +205,7 @@
 						}
 					}}
 				/>
-				Stream
-			</label>
+			</div>
 		</div>
 	</details>
 	<!-- <div>

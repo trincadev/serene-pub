@@ -144,12 +144,23 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 				}
 				return {completionResult: content, compiledPrompt, isAborted: this.isAborting}
 			}
-		} catch (err) {
+		} catch (err: any) {
 			console.error(
 				"[OpenAIAdapter] Error from openai.chat.completions.create:",
 				err
 			)
-			throw err
+			// Enhanced error reporting for upstream/proxy errors
+			let errorMsg = "OpenAI API error."
+			if (err?.status || err?.code) {
+				errorMsg += ` Status: ${err.status || err.code}.`
+			}
+			if (err?.error?.message) {
+				errorMsg += ` Message: ${err.error.message}`
+			}
+			if (err?.error?.provider_name) {
+				errorMsg += ` Provider: ${err.error.provider_name}`
+			}
+			throw new Error(errorMsg)
 		}
 	}
 

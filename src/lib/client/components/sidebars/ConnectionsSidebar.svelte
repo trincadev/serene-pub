@@ -62,6 +62,160 @@
 					apiKey: "ollama",
 				}
 			}
+		},
+		// {
+		// 	name: "LM Studio",
+		// 	value: 2,
+		// 	connectionDefaults: {
+		// 		baseUrl: "http://localhost:1234/v1/",
+		// 		promptFormat: PromptFormats.VICUNA,
+		// 		tokenCounter: TokenCounterOptions.ESTIMATE,
+		// 		extraJson: {
+		// 			stream: true,
+		// 			prerenderPrompt: false,
+		// 			apiKey: "",
+		// 		}
+		// 	}
+		// }
+		{
+			name: "OpenRouter",
+			value: 3,
+			connectionDefaults: {
+				baseUrl: "https://openrouter.ai/api/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "OpenAI (Official)",
+			value: 4,
+			connectionDefaults: {
+				baseUrl: "https://api.openai.com/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.OPENAI_GPT4O,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "LocalAI",
+			value: 5,
+			connectionDefaults: {
+				baseUrl: "http://localhost:8080/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "AnyScale",
+			value: 6,
+			connectionDefaults: {
+				baseUrl: "https://api.endpoints.anyscale.com/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "Groq",
+			value: 7,
+			connectionDefaults: {
+				baseUrl: "https://api.groq.com/openai/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "Together AI",
+			value: 8,
+			connectionDefaults: {
+				baseUrl: "https://api.together.xyz/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "DeepInfra",
+			value: 9,
+			connectionDefaults: {
+				baseUrl: "https://api.deepinfra.com/v1/openai/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "Fireworks AI",
+			value: 10,
+			connectionDefaults: {
+				baseUrl: "https://api.fireworks.ai/inference/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "Perplexity AI",
+			value: 11,
+			connectionDefaults: {
+				baseUrl: "https://api.perplexity.ai/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "KoboldCPP",
+			value: 12,
+			connectionDefaults: {
+				baseUrl: "http://localhost:5001/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
 		}
 	]
 
@@ -391,7 +545,7 @@
 					bind:value={newConnectionType}
 				>
 					{#each CONNECTION_TYPES as t}
-						<option value={t.value}>{t.label}</option>
+						<option value={t.value} disabled={t.value===CONNECTION_TYPE.LM_STUDIO}>{t.label}</option>
 					{/each}
 				</select>
 			</div>

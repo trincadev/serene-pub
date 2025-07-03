@@ -78,7 +78,7 @@ Serene Pub is a brand new, open source chat application for immersive AI rolepla
 
 ## 🚀 Features
 
-- **AI Model Agnostic:** Connect to OpenAI, Ollama, LM Studio, Llama.cpp, and more
+- **AI Model Agnostic:** Connect to OpenAI, Ollama, Llama.cpp, and more
 - **Character & Persona Management:** Import, create, and edit with rich metadata and avatars
 - **Lorebooks+:** Organize world lore, character lore, and history for deep roleplay
 - **Group Chats:** Multi-character chats for immersive group roleplay and dynamic storylines
@@ -201,7 +201,17 @@ Characters are AI-controlled participants in your chats. Each character can have
 
 ### 📖 Lorebooks+
 
-Lorebooks+ are advanced worldbuilding tools. Create and manage detailed lore for your characters and worlds, enhancing your roleplay experience.
+Lorebooks+ are advanced worldbuilding and context management tools that let you deeply enrich your roleplay experience. With Lorebooks+, you can:
+
+- **Character Bindings:** Hotswappable characters linked in the lorebook. Dynamically update character and persona names in lorebook entries, so the right information is injected into the prompt for the current cast of your chat.
+- **World Lore:** Store and organize facts, rules, and background information about your world, setting, or universe. World lore can be automatically included in relevant chats.
+  - *Imported lorebooks/world books are inserted into "world lore" for easy access and editing.*
+- **Character Lore:** Linked to character bindings and extends the character profiles. Maintain detailed backstories, traits, and secrets for each character, ensuring the AI stays consistent and in-character.
+- **History:** Track and inject important story events, chat history, or evolving facts as the narrative progresses. *History entries are experimental and may change in future releases.* This helps maintain continuity and depth in long-running stories.
+
+To use a lorebook, select it when creating or editing a chat. Lorebook entries are triggered by keywords, but may also be pinned to ensure they are always present in the prompt. Vectorization will be added in the future as a replacement for keyword engineering, making context injection smarter and more flexible.
+
+Lorebooks+ make it easy to manage complex worlds, keep characters consistent, and ensure the AI always has the right context for immersive storytelling.
 
 ### 💬 Chats
 
@@ -246,6 +256,7 @@ Serene Pub supports a variety of AI model connections, both local and cloud-base
 - 🧠 Vectorization
 - 🔌 More API connection types
 - 🤖 Assistant Chat: Ask AI questions about Serene Pub and get suggestions to improve your characters, personas, and lore
+- 🦙 Ollama Manager UI: Manage, download, and update Ollama models directly from the app
 
 ## 💡 Considered Features
 - 👥 Multi-user logins & multi-user group chats
@@ -254,7 +265,7 @@ Serene Pub supports a variety of AI model connections, both local and cloud-base
 - 📖 Story narration/system instructions
 - 🦯 Screen reader support
 - 📅 Lorebooks+ features: custom calendars, "eras" historical categories, and more
-- 🕹️ Dungeon crawler mode
+- 🕹️ Text adventure & narrator modes
 - 🖼️ Image generation
 
 ---

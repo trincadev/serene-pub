@@ -10,6 +10,7 @@ import {
 } from "./BaseConnectionAdapter"
 import {
 	type BaseLoadModelOpts,
+	type ChatLike,
 	type LLM,
 	type LLMLoadModelConfig,
 	type LLMPredictionOpts,
@@ -64,28 +65,22 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 	}
 
 	mapSamplingConfig(): Record<string, any> {
-    const result: Record<string, any> = {}
-    for (const [key, value] of Object.entries(this.sampling)) {
-        if (key.endsWith("Enabled")) continue
-        const enabledKey = key + "Enabled"
-        if ((this.sampling as any)[enabledKey] === false) continue
-        if (
-            samplingKeyMap[key]
-        ) {
-            if (key === "streaming") continue
-            // Defensive: skip if value is undefined or not a primitive (unless you expect an object)
-            if (value === undefined) continue
-            // If you expect only primitives, skip objects:
-            if (typeof value === "object" && value !== null) continue
-            result[
-                samplingKeyMap[
-                    key
-                ]
-            ] = value
-        }
-    }
-    return result
-}
+		const result: Record<string, any> = {}
+		for (const [key, value] of Object.entries(this.sampling)) {
+			if (key.endsWith("Enabled")) continue
+			const enabledKey = key + "Enabled"
+			if ((this.sampling as any)[enabledKey] === false) continue
+			if (samplingKeyMap[key]) {
+				if (key === "streaming") continue
+				// Defensive: skip if value is undefined or not a primitive (unless you expect an object)
+				if (value === undefined) continue
+				// If you expect only primitives, skip objects:
+				if (typeof value === "object" && value !== null) continue
+				result[samplingKeyMap[key]] = value
+			}
+		}
+		return result
+	}
 
 	// --- LM Studio client instance ---
 	getClient() {
@@ -167,17 +162,22 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 		// Use PromptBuilder for prompt construction
 		const compiledPrompt: CompiledPrompt = await this.compilePrompt({})
 
+		let useChat = this.connection.extraJson?.useChat ?? true
 		let prompt: string = ""
+		let messages: any[] | undefined = undefined
 
-		prompt = compiledPrompt.prompt!
+		if (useChat && compiledPrompt.messages) {
+			messages = compiledPrompt.messages
+		} else {
+			prompt = compiledPrompt.prompt!
+		}
 
 		let options: LLMPredictionOpts<unknown> = {
 			stopStrings: stop,
 			maxTokens: this.sampling.responseTokensEnabled
 				? this.sampling.responseTokens || 2048
 				: 2048,
-			...this.mapSamplingConfig(),
-			promptTemplate: undefined // <-- Added to satisfy LM Studio SDK schema
+			...this.mapSamplingConfig()
 		}
 
 		// --- LM Studio SDK integration ---
@@ -190,13 +190,25 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 					let lastChunk = ""
 					let abortedEarly = false
 					try {
-						this.prediction = modelClient.complete(prompt, options)
-						for await (const part of this.prediction) {
-							if (part?.content) {
-								const newChunk = part.content
-								fullContent += newChunk
-								lastChunk = newChunk
-								cb(newChunk)
+						if (useChat && messages) {
+							this.prediction = modelClient.respond(messages, options)
+							for await (const part of this.prediction) {
+								if (part?.content) {
+									const newChunk = part.content
+									fullContent += newChunk
+									lastChunk = newChunk
+									cb(newChunk)
+								}
+							}
+						} else {
+							this.prediction = modelClient.complete(prompt, options)
+							for await (const part of this.prediction) {
+								if (part?.content) {
+									const newChunk = part.content
+									fullContent += newChunk
+									lastChunk = newChunk
+									cb(newChunk)
+								}
 							}
 						}
 						// Only emit final content if it's different from the last streamed piece
@@ -204,7 +216,6 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 							!fullContent.endsWith(lastChunk) ||
 							fullContent !== lastChunk
 						) {
-							// cb("[[FINAL]]" + fullContent)
 							return
 						}
 					} catch (e: any) {
@@ -218,20 +229,30 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 		} else {
 			const content = await (async () => {
 				try {
-					this.prediction = modelClient.complete(prompt, {
-						...options
-					})
-
-					const result = await this.prediction
-
-					if (
-						result &&
-						typeof result === "object" &&
-						"content" in result
-					) {
-						return result.content || ""
+					if (useChat && messages) {
+						this.prediction = modelClient.chat(messages, options)
+						const result = await this.prediction
+						if (
+							result &&
+							typeof result === "object" &&
+							"content" in result
+						) {
+							return result.content || ""
+						} else {
+							return "FAILURE: Unexpected LM Studio chat result type"
+						}
 					} else {
-						return "FAILURE: Unexpected LM Studio result type"
+						this.prediction = modelClient.complete(prompt, options)
+						const result = await this.prediction
+						if (
+							result &&
+							typeof result === "object" &&
+							"content" in result
+						) {
+							return result.content || ""
+						} else {
+							return "FAILURE: Unexpected LM Studio result type"
+						}
 					}
 				} catch (e: any) {
 					return "FAILURE: " + (e.message || String(e))
@@ -258,6 +279,7 @@ const connectionDefaults = {
 	promptFormat: PromptFormats.VICUNA,
 	tokenCounter: TokenCounterOptions.ESTIMATE,
 	extraJson: {
+		useChat: true, // Use chat (response api)
 		stream: true,
 		// think: false,
 		keepAlive: "300ms"
