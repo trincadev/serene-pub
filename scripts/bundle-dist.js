@@ -243,6 +243,13 @@ if (!target) {
 			stdio: "inherit",
 			env: { ...process.env, npm_config_platform: target.platform, npm_config_arch: target.arch }
 		})
+		// After npm install --production in the temp dir, rebuild native modules for the target
+		console.log(`Rebuilding native modules for ${target.name}...`)
+		child_process.execSync("npm rebuild", {
+			cwd: tempDir,
+			stdio: "inherit",
+			env: { ...process.env, npm_config_platform: target.platform, npm_config_arch: target.arch }
+		})
 		// Clean node_modules with modclean, preserving license files
 		console.log(`Cleaning node_modules with modclean for ${target.name}...`)
 		child_process.execSync(
