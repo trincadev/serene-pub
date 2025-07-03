@@ -73,3 +73,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Debug: List file types in build directory
+        if: failure()
+        run: |
+          echo "Listing file types in build and node_modules:"
+          find build -type f -exec file {} + || true
+          find node_modules -type f -name '*.node' -exec file {} + || true
+          echo "\nDependency tree (npm ls --all):"
+          npm ls --all || true
+
+      - name: Debug: Print Vite config
+        if: failure()
+        run: |
+          echo "\nVite config (vite.config.ts):"
+          cat vite.config.ts || true
+

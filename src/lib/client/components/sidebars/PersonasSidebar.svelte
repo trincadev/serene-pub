@@ -5,8 +5,6 @@
 	import * as Icons from "@lucide/svelte"
 	import PersonaForm from "../personaForms/PersonaForm.svelte"
 	import PersonaUnsavedChangesModal from "../modals/PersonaUnsavedChangesModal.svelte"
-	import { toaster } from "$lib/client/utils/toaster"
-	import { goto } from "$app/navigation"
 	import Avatar from "../Avatar.svelte"
 	import SidebarListItem from "../SidebarListItem.svelte"
 
