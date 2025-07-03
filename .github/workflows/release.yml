@@ -18,7 +18,7 @@ jobs:
           # - target: linux-arm
           #   os: ubuntu-latest
           # - target: linux-ppc64
-            os: ubuntu-latest
+          #   os: ubuntu-latest
           - target: macos-x64
             os: macos-latest
           # - target: macos-arm64
