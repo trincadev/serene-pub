@@ -67,6 +67,12 @@ jobs:
         run: node scripts/bundle-dist.js ${{ matrix.target }}
         continue-on-error: true
 
+      - name: Debug: Print last 50 lines of PersonasSidebar.svelte if build fails
+        if: failure()
+        run: |
+          echo "Last 50 lines of PersonasSidebar.svelte:"
+          tail -n 50 src/lib/client/components/sidebars/PersonasSidebar.svelte || true
+
       - name: Zip dist directory
         run: |
           cd dist
@@ -80,10 +86,4 @@ jobs:
           prerelease: ${{ contains(github.ref, 'alpha') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Debug: Print last 50 lines of PersonasSidebar.svelte if build fails
-        if: failure()
-        run: |
-          echo "Last 50 lines of PersonasSidebar.svelte:"
-          tail -n 50 src/lib/client/components/sidebars/PersonasSidebar.svelte || true
 
