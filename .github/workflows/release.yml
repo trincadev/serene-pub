@@ -41,6 +41,7 @@ jobs:
           if [ -d node_modules ]; then rm -rf node_modules; fi
 
       - name: Clean npm cache
+        shell: bash
         run: npm cache clean --force
 
       - name: Set up Node.js
@@ -49,6 +50,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
+        shell: bash
         run: |
           # Try npm ci first
           npm ci --legacy-peer-deps || {
@@ -60,14 +62,25 @@ jobs:
           npm audit fix --force || true
 
       - name: Fix rollup dependencies
+        shell: bash
         run: |
           # Remove problematic optional dependencies that might cause issues
           npm ls @rollup/rollup-darwin-arm64 || echo "rollup-darwin-arm64 not found, continuing..."
-          # Force reinstall rollup if there are issues
-          if [[ "${{ matrix.target }}" == *"linux"* ]]; then
-            npm install --save-dev @rollup/rollup-linux-x64-gnu@latest || true
-            npm install --save-dev @rollup/rollup-linux-arm64-gnu@latest || true
-          fi
+          # Force reinstall rollup if there are issues based on target platform
+          case "${{ matrix.target }}" in
+            linux*)
+              npm install --save-dev @rollup/rollup-linux-x64-gnu@latest || true
+              npm install --save-dev @rollup/rollup-linux-arm64-gnu@latest || true
+              ;;
+            windows*)
+              npm install --save-dev @rollup/rollup-win32-x64-msvc@latest || true
+              npm install --save-dev @rollup/rollup-win32-arm64-msvc@latest || true
+              ;;
+            macos*)
+              npm install --save-dev @rollup/rollup-darwin-x64@latest || true
+              npm install --save-dev @rollup/rollup-darwin-arm64@latest || true
+              ;;
+          esac
           # Clear any cached rollup builds
           npm cache clean --force
 
@@ -78,14 +91,16 @@ jobs:
           if [ -d dist ]; then rm -rf dist; fi
 
       - name: Print architecture info
+        shell: bash
         run: |
           echo "Node arch: $(node -p 'process.arch')"
           echo "Node platform: $(node -p 'process.platform')"
-          uname -a
-          uname -m
-          sysctl -n machdep.cpu.brand_string || true
+          uname -a || echo "uname not available"
+          uname -m || echo "uname -m not available"
+          sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "sysctl not available (not macOS)"
 
       - name: Build app
+        shell: bash
         run: |
           # Try building normally first
           npm run build || {
@@ -99,12 +114,19 @@ jobs:
           }
 
       - name: Bundle for ${{ matrix.target }}
+        shell: bash
         run: node scripts/bundle-dist.js ${{ matrix.target }}
 
       - name: Zip dist directory
+        shell: bash
         run: |
           cd dist
-          zip -r "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip" "serene-pub-*-${{ matrix.target }}"
+          if command -v zip >/dev/null 2>&1; then
+            zip -r "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip" "serene-pub-*-${{ matrix.target }}"
+          else
+            # Fallback for Windows without zip command
+            powershell -Command "Compress-Archive -Path 'serene-pub-*-${{ matrix.target }}' -DestinationPath '../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip'"
+          fi
           cd ..
 
       - name: Upload release assets
