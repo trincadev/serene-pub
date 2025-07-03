@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
-	import skio from "sveltekit-io"
-	import { onMount } from "svelte"
+	import * as skio from "sveltekit-io"
+	import { onMount, onDestroy } from "svelte"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import Avatar from "../Avatar.svelte"
 
@@ -24,18 +24,21 @@
 		isFavorite: boolean
 		_avatarFile?: File | undefined
 		_avatar: string
+		lorebookId: number | null
 	}
 
 	export interface Props {
 		characterId?: number
 		isSafeToClose: boolean
 		closeForm: () => void
+		onCancel?: () => void
 	}
 
 	let {
 		characterId,
 		isSafeToClose = $bindable(),
-		closeForm
+		closeForm = $bindable(),
+		onCancel = $bindable()
 	}: Props = $props()
 
 	const socket = skio.get()
@@ -58,7 +61,8 @@
 		isFavorite: false,
 		characterVersion: "",
 		_avatarFile: undefined,
-		_avatar: ""
+		_avatar: "",
+		lorebookId: null
 	})
 	let originalCharacterData: EditCharacterData = $state({
 		...editCharacterData
@@ -85,6 +89,7 @@
 	let showCancelModal = $state(false)
 	let newLangKey = $state("")
 	let newLangNote = $state("")
+	let lorebookList: Sockets.LorebookList.Response["lorebookList"] = $state([])
 
 	// Events: avatarChange, save, cancel
 	function handleAvatarChange(e: Event) {
@@ -155,41 +160,6 @@
 		showCancelModal = false
 	}
 
-	onMount(() => {
-		socket.on("createCharacter", (res) => {
-			if (!res.error) {
-				closeForm()
-			}
-		})
-
-		socket.on("updateCharacter", (res) => {
-			if (!res.error) {
-				closeForm()
-			}
-		})
-		if (characterId) {
-			socket.once("character", (message) => {
-				console.log(
-					"[CharacterForm] Received character data:",
-					message.character
-				)
-				character = message.character
-				editCharacterData = {
-					...editCharacterData,
-					...message.character
-				}
-				originalCharacterData = { ...editCharacterData }
-			})
-			socket.emit("character", { id: characterId })
-		}
-	})
-
-	$effect(() => {
-		isSafeToClose =
-			JSON.stringify(editCharacterData) ===
-			JSON.stringify(originalCharacterData)
-	})
-
 	// Helper for editing arrays
 	function addToArray(arr: string[], value = "") {
 		arr.push(value)
@@ -208,11 +178,54 @@
 	function removeObjectKey(obj: Record<string, string>, key: string) {
 		delete obj[key]
 	}
+
+	$effect(() => {
+		isSafeToClose =
+			JSON.stringify(editCharacterData) ===
+			JSON.stringify(originalCharacterData)
+	})
+
+	onMount(() => {
+		onCancel = handleCancel
+		socket.on("createCharacter", (res) => {
+			if (!res.error) {
+				closeForm()
+			}
+		})
+
+		socket.on("updateCharacter", (res) => {
+			if (!res.error) {
+				closeForm()
+			}
+		})
+		socket.on("lorebookList", (message: Sockets.LorebookList.Response) => {
+			lorebookList =
+				message.lorebookList.sort((a, b) =>
+					a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+				) || []
+		})
+		if (characterId) {
+			socket.once("character", (message: Sockets.Character.Response) => {
+				character = message.character
+				editCharacterData = {
+					...editCharacterData,
+					...message.character
+				}
+				originalCharacterData = { ...editCharacterData }
+			})
+			socket.emit("character", { id: characterId })
+		}
+		socket.emit("lorebookList", {})
+	})
+
+	onDestroy(() => {
+		socket.off("createCharacter")
+		socket.off("updateCharacter")
+		socket.off("character")
+	})
 </script>
 
-<div
-	class="border-primary bg-background animate-fade-in min-h-full rounded-lg border p-4 shadow-lg"
->
+<div class="animate-fade-inmin-h-full">
 	<h2 class="mb-4 text-lg font-bold">
 		{mode === "edit"
 			? `Edit: ${character.nickname || character.name}`
@@ -228,10 +241,11 @@
 		</button>
 		<button
 			type="button"
-			class="btn btn-sm preset-filled-primary-500 w-full"
+			class="btn btn-sm preset-filled-success-500 w-full"
 			onclick={onSave}
 			disabled={!isDataValid || isSafeToClose}
 		>
+			<Icons.Save size={16} />
 			{mode === "edit" ? "Update" : "Create"}
 		</button>
 	</div>
@@ -291,33 +305,39 @@
 			</div>
 		</div>
 		<div class="flex flex-col gap-1">
-			<label class="font-semibold" for="charName">Name*</label>
+			<label class="font-semibold flex gap-1" for="charName">
+				Name* <span
+					class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+					title="This field will be visible in prompts"
+				>
+					<Icons.ScanEye
+						size={16}
+						class="relative top-[1px] inline"
+					/>
+				</span>
+			</label>
 			<input
 				id="charName"
 				type="text"
 				bind:value={editCharacterData.name}
-				class="input bg-background border-muted w-full rounded border"
+				class="input"
 			/>
 		</div>
 		<div class="flex flex-col gap-1">
-			<label class="font-semibold" for="charNickname">Nickname</label>
+			<label class="font-semibold flex gap-1" for="charNickname">Nickname <span
+										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+										title="This field will be visible in prompts"
+									>
+										<Icons.ScanEye
+											size={16}
+											class="relative top-[1px] inline"
+										/>
+									</span></label>
 			<input
 				id="charNickname"
 				type="text"
 				bind:value={editCharacterData.nickname}
-				class="input bg-background border-muted w-full rounded border"
-			/>
-		</div>
-		<div class="flex flex-col gap-1">
-			<label class="font-semibold" for="charVersion">
-				Character Version
-			</label>
-			<input
-				id="charVersion"
-				type="text"
-				bind:value={editCharacterData.characterVersion}
-				class="input bg-background border-muted w-full rounded border"
-				placeholder="1.0"
+				class="input"
 			/>
 		</div>
 		<div class="flex flex-col gap-2">
@@ -326,14 +346,22 @@
 				class="flex items-center gap-2 text-sm font-semibold"
 				onclick={() => (expanded.description = !expanded.description)}
 			>
-				<span>Description*</span>
+				<span class="flex gap-1">Description <span
+										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+										title="This field will be visible in prompts"
+									>
+										<Icons.ScanEye
+											size={16}
+											class="relative top-[1px] inline"
+										/>
+									</span></span>
 				<span class="ml-1">{expanded.description ? "▼" : "►"}</span>
 			</button>
 			{#if expanded.description}
 				<textarea
 					rows="8"
 					bind:value={editCharacterData.description}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="Description..."
 				></textarea>
 			{/if}
@@ -344,14 +372,22 @@
 				class="flex items-center gap-2 text-sm font-semibold"
 				onclick={() => (expanded.personality = !expanded.personality)}
 			>
-				<span>Personality</span>
+				<span class="flex gap-1">Personality <span
+										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+										title="This field will be visible in prompts"
+									>
+										<Icons.ScanEye
+											size={16}
+											class="relative top-[1px] inline"
+										/>
+									</span></span>
 				<span class="ml-1">{expanded.personality ? "▼" : "►"}</span>
 			</button>
 			{#if expanded.personality}
 				<textarea
 					rows="8"
 					bind:value={editCharacterData.personality}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="Personality..."
 				></textarea>
 			{/if}
@@ -362,14 +398,22 @@
 				class="flex items-center gap-2 text-sm font-semibold"
 				onclick={() => (expanded.scenario = !expanded.scenario)}
 			>
-				<span>Scenario</span>
+				<span class="flex gap-1">Scenario <span
+										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+										title="This field will be visible in prompts (excluded from group chats)"
+									>
+										<Icons.ScanEye
+											size={16}
+											class="relative top-[1px] inline"
+										/>
+									</span></span>
 				<span class="ml-1">{expanded.scenario ? "▼" : "►"}</span>
 			</button>
 			{#if expanded.scenario}
 				<textarea
 					rows="8"
 					bind:value={editCharacterData.scenario}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="Scenario..."
 				></textarea>
 			{/if}
@@ -387,7 +431,7 @@
 				<textarea
 					rows="8"
 					bind:value={editCharacterData.firstMessage}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="First message..."
 				></textarea>
 			{/if}
@@ -408,17 +452,21 @@
 			{#if expanded.alternateGreetings}
 				<div class="flex flex-col gap-1">
 					{#each editCharacterData.alternateGreetings as greeting, idx (idx)}
-						<div class="flex items-center gap-2">
-							<input
-								type="text"
-								bind:value={
-									editCharacterData.alternateGreetings[idx]
-								}
-								class="input input-xs bg-background border-muted flex-1 rounded border"
-								placeholder="Greeting..."
-							/>
+						<div class="flex flex-col items-center gap-2">
+							<div class="w-full">
+								<textarea
+									rows="2"
+									bind:value={
+										editCharacterData.alternateGreetings[
+											idx
+										]
+									}
+									class="input input-xs bg-background border-muted w-full resize-y rounded border"
+									placeholder="Greeting..."
+								></textarea>
+							</div>
 							<button
-								class="btn btn-sm preset-filled-error-500"
+								class="btn btn-sm preset-tonal-error w-full"
 								type="button"
 								onclick={() =>
 									removeFromArray(
@@ -426,7 +474,7 @@
 										idx
 									)}
 							>
-								<Icons.Minus class="h-4 w-4" />
+								<Icons.Minus class="h-4 w-4" /> Delete
 							</button>
 						</div>
 					{/each}
@@ -455,7 +503,7 @@
 				<textarea
 					rows="4"
 					bind:value={editCharacterData.creatorNotes}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="Notes from the character creator..."
 				></textarea>
 			{/if}
@@ -556,17 +604,21 @@
 			{#if expanded.groupOnlyGreetings}
 				<div class="flex flex-col gap-1">
 					{#each editCharacterData.groupOnlyGreetings as greeting, idx (idx)}
-						<div class="flex items-center gap-2">
-							<input
-								type="text"
-								bind:value={
-									editCharacterData.groupOnlyGreetings[idx]
-								}
-								class="input input-xs bg-background border-muted flex-1 rounded border"
-								placeholder="Group greeting..."
-							/>
+						<div class="flex flex-col items-center gap-2">
+							<div class="w-full">
+								<textarea
+									rows="2"
+									bind:value={
+										editCharacterData.groupOnlyGreetings[
+											idx
+										]
+									}
+									class="textarea w-full resize-y rounded border"
+									placeholder="Group greeting..."
+								></textarea>
+							</div>
 							<button
-								class="btn btn-sm preset-filled-success-500"
+								class="btn btn-sm preset-tonal-error w-full"
 								type="button"
 								onclick={() =>
 									removeFromArray(
@@ -574,7 +626,7 @@
 										idx
 									)}
 							>
-								-
+								<Icons.Minus class="h-4 w-4" /> Delete
 							</button>
 						</div>
 					{/each}
@@ -598,7 +650,15 @@
 					(expanded.postHistoryInstructions =
 						!expanded.postHistoryInstructions)}
 			>
-				<span>Post-History Instructions</span>
+				<span class="flex gap-1">Post-History Instructions <span
+										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+										title="This field will be visible in prompts"
+									>
+										<Icons.ScanEye
+											size={16}
+											class="relative top-[1px] inline"
+										/>
+									</span></span>
 				<span class="ml-1">
 					{expanded.postHistoryInstructions ? "▼" : "►"}
 				</span>
@@ -607,11 +667,36 @@
 				<textarea
 					rows="4"
 					bind:value={editCharacterData.postHistoryInstructions}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 					placeholder="Instructions for post-history processing..."
 				></textarea>
 			{/if}
 		</div>
+		<div class="flex flex-col gap-1">
+			<label class="font-semibold" for="charVersion">
+				Character Version
+			</label>
+			<input
+				id="charVersion"
+				type="text"
+				bind:value={editCharacterData.characterVersion}
+				class="input"
+				placeholder="1.0"
+			/>
+		</div>
+		<!-- <div class="flex flex-col gap-2">
+			<label class="font-semibold" for="lorebookSelect">Lorebook</label>
+			<select
+				id="lorebookSelect"
+				class="select"
+				bind:value={editCharacterData.lorebookId}
+			>
+				<option value={null}>None</option>
+				{#each lorebookList as lb}
+					<option value={lb.id}>{`#${lb.id} - ${lb.name}`}</option>
+				{/each}
+			</select>
+		</div> -->
 		<div class="mt-2 flex items-center gap-2">
 			<Switch
 				name="favorite"

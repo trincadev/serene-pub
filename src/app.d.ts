@@ -3,13 +3,22 @@
 import type { Component } from "@lucide/svelte"
 import * as schema from "$lib/server/db/schema"
 import type { Schema } from "inspector/promises"
+import type { P } from "ollama/dist/shared/ollama.d792a03f.mjs"
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions/completions"
+import { FileAcceptDetails } from "../node_modules/@zag-js/file-upload/dist/index.d"
 
 // for information about these interfaces
 declare global {
 	namespace App {
 		// interface Error {}
-		// interface Locals {}
-		// interface PageData {}
+		interface Locals {
+			latestReleaseTag?: string
+			isNewerReleaseAvailable?: boolean
+		}
+		interface PageData {
+			latestReleaseTag?: string
+			isNewerReleaseAvailable?: boolean
+		}
 		// interface PageState {}
 		// interface Platform {}
 	}
@@ -23,7 +32,7 @@ declare global {
 		rightPanel: string | null
 		mobilePanel: string | null
 		isMobileMenuOpen: boolean
-		openPanel: (key: string) => void
+		openPanel: (args: { key: string; toggle?: boolean }) => void
 		closePanel: (args: {
 			panel: "left" | "right" | "mobile"
 		}) => Promise<boolean>
@@ -38,6 +47,12 @@ declare global {
 			string,
 			{ icon: Component<Icons.IconProps, {}, "">; title: string }
 		>
+		digest: {
+			characterId?: number
+			personaId?: number
+			chatPersonaId?: number
+			chatCharacterId?: number
+		}
 	}
 
 	interface UserCtx {
@@ -69,8 +84,14 @@ declare global {
 	type InsertPromptConfig = typeof schema.promptConfigs.$inferInsert
 	type SelectLorebook = typeof schema.lorebooks.$inferSelect
 	type InsertLorebook = typeof schema.lorebooks.$inferInsert
-	type SelectLorebookEntry = typeof schema.lorebookEntries.$inferSelect
-	type InsertLorebookEntry = typeof schema.lorebookEntries.$inferInsert
+	type SelectWorldLoreEntry = typeof schema.worldLoreEntries.$inferSelect
+	type InsertWorldLoreEntry = typeof schema.worldLoreEntries.$inferInsert
+	type SelectCharacterLoreEntry =
+		typeof schema.characterLoreEntries.$inferSelect
+	type InsertCharacterLoreEntry =
+		typeof schema.characterLoreEntries.$inferInsert
+	type SelectHistoryEntry = typeof schema.historyEntries.$inferSelect
+	type InsertHistoryEntry = typeof schema.historyEntries.$inferInsert
 	type SelectTag = typeof schema.tags.$inferSelect
 	type InsertTag = typeof schema.tags.$inferInsert
 	type SelectCharacterTag = typeof schema.characterTags.$inferSelect
@@ -87,6 +108,10 @@ declare global {
 	type InsertChatPersona = typeof schema.chatPersonas.$inferInsert
 	type SelectChatCharacter = typeof schema.chatCharacters.$inferSelect
 	type InsertChatCharacter = typeof schema.chatCharacters.$inferInsert
+	type SelectChatLorebook = typeof schema.chatLorebooks.$inferSelect
+	type InsertChatLorebook = typeof schema.chatLorebooks.$inferInsert
+	type SelectLorebookBinding = typeof schema.lorebookBindings.$inferSelect
+	type InsertLorebookBinding = typeof schema.lorebookBindings.$inferInsert
 
 	namespace Sockets {
 		namespace SamplingConfig {
@@ -150,10 +175,10 @@ declare global {
 			}
 		}
 		// PERSONAS
-		namespace PersonasList {
+		namespace PersonaList {
 			interface Call {}
 			interface Response {
-				personasList: Partial<SelectPersona>[]
+				personaList: Partial<SelectPersona>[]
 			}
 		}
 		namespace Persona {
@@ -191,10 +216,10 @@ declare global {
 			}
 		}
 		// CHARACTERS
-		namespace CharactersList {
+		namespace CharacterList {
 			interface Call {}
 			interface Response {
-				charactersList: Partial<SelectCharacter>[]
+				characterList: Partial<SelectCharacter>[]
 			}
 		}
 		namespace Character {
@@ -338,7 +363,7 @@ declare global {
 		}
 		namespace CreateChat {
 			interface Call {
-				chat: InsertChat & { userId?: undefined }
+				chat: InsertChat
 				personaIds: number[]
 				characterIds: number[]
 				characterPositions: Record<number, number>
@@ -514,6 +539,331 @@ declare global {
 				error?: string
 			}
 		}
+		namespace ChatMessageSwipeRight {
+			interface Call {
+				chatId: number
+				chatMessageId: number
+				count?: number
+			}
+			interface Response {
+				chatId: number
+				chatMessageId: number
+				done: boolean
+			}
+		}
+		namespace ChatMessageSwipeLeft {
+			interface Call {
+				chatId: number
+				chatMessageId: number
+			}
+			interface Response {
+				chatId: number
+				chatMessageId: number
+				done: boolean
+			}
+		}
+		// Lorebook List
+		namespace LorebookList {
+			interface Call {
+				userId?: number
+			}
+			interface Response {
+				lorebookList: SelectLorebook[]
+			}
+		}
+
+		// Single Lorebook
+		namespace Lorebook {
+			interface Call {
+				id: number
+			}
+			interface Response {
+				lorebook: SelectLorebook & {
+					worldLoreEntries: SelectWorldLoreEntry[]
+					characterLoreEntries: SelectCharacterLoreEntry[]
+					historyEntries: SelectHistoryEntry[]
+					lorebookBindings: SelectLorebookBinding[]
+				}
+			}
+		}
+
+		// Create Lorebook
+		namespace CreateLorebook {
+			interface Call {
+				name: string
+			}
+			interface Response {
+				lorebook: SelectLorebook
+			}
+		}
+
+		// Create Lorebook Binding
+		namespace CreateLorebookBinding {
+			interface Call {
+				lorebookBinding: {
+					lorebookId: number
+					characterId?: number | null
+					personaId?: number | null
+				}
+			}
+			interface Response {
+				lorebookBinding: SelectLorebookBinding
+			}
+		}
+
+		// Lorebook Binding List
+		namespace LorebookBindingList {
+			interface Call {
+				lorebookId: number
+				with?: {
+					character?: boolean
+					persona?: boolean
+				}
+			}
+			interface Response {
+				lorebookId: number
+				lorebookBindingList: SelectLorebookBinding[]
+			}
+		}
+
+		// Update Lorebook Binding
+		namespace UpdateLorebookBinding {
+			interface Call {
+				lorebookBinding: {
+					id: number
+					characterId?: number | null
+					personaId?: number | null
+				}
+			}
+			interface Response {
+				lorebookBinding: SelectLorebookBinding
+			}
+		}
+
+		// World Lore Entry List
+		namespace WorldLoreEntryList {
+			interface Call {
+				lorebookId: number
+			}
+			interface Response {
+				worldLoreEntryList: SelectWorldLoreEntry[]
+			}
+		}
+
+		// Create World Lore Entry
+		namespace CreateWorldLoreEntry {
+			interface Call {
+				worldLoreEntry: InsertWorldLoreEntry
+			}
+			interface Response {
+				worldLoreEntry: SelectWorldLoreEntry
+			}
+		}
+
+		// Update World Lore Entry
+		namespace UpdateWorldLoreEntry {
+			interface Call {
+				worldLoreEntry: {
+					id: number
+					name: string
+					content: string
+				}
+			}
+			interface Response {
+				worldLoreEntry: SelectWorldLoreEntry
+			}
+		}
+
+		// Delete World Lore Entry
+		namespace DeleteWorldLoreEntry {
+			interface Call {
+				id: number
+				lorebookId: number
+			}
+			interface Response {
+				// id: number,
+				// lorebookId: number
+			}
+		}
+
+		// Update Lorebook
+		namespace UpdateLorebook {
+			interface Call {
+				lorebook: {
+					id: number
+					name: string
+				}
+			}
+			interface Response {
+				lorebook: SelectLorebook
+			}
+		}
+
+		// Delete Lorebook
+		namespace DeleteLorebook {
+			interface Call {
+				id: number
+			}
+			interface Response {
+				id: number
+			}
+		}
+
+		// Update World Lore Entry Positions
+		namespace UpdateWorldLoreEntryPositions {
+			interface Call {
+				lorebookId: number
+				positions: Array<{ id: number; position: number }>
+			}
+			interface Response {
+				lorebookId: number
+			}
+		}
+
+		// Character Lore Entry List
+		namespace CharacterLoreEntryList {
+			interface Call {
+				lorebookId: number
+			}
+			interface Response {
+				characterLoreEntryList: SelectCharacterLoreEntry[]
+			}
+		}
+
+		// Create Character Lore Entry
+		namespace CreateCharacterLoreEntry {
+			interface Call {
+				characterLoreEntry: InsertCharacterLoreEntry
+			}
+			interface Response {
+				characterLoreEntry: SelectCharacterLoreEntry
+			}
+		}
+
+		// Update Character Lore Entry
+		namespace UpdateCharacterLoreEntry {
+			interface Call {
+				characterLoreEntry: SelectCharacterLoreEntry
+			}
+			interface Response {
+				characterLoreEntry: SelectCharacterLoreEntry
+			}
+		}
+
+		// Delete Character Lore Entry
+		namespace DeleteCharacterLoreEntry {
+			interface Call {
+				id: number
+				lorebookId: number
+			}
+			interface Response {
+				id: number
+				lorebookId: number
+			}
+		}
+
+		// Update Character Lore Entry Positions
+		namespace UpdateCharacterLoreEntryPositions {
+			interface Call {
+				lorebookId: number
+				positions: Array<{ id: number; position: number }>
+			}
+			interface Response {
+				lorebookId: number
+			}
+		}
+
+		namespace HistoryEntryList {
+			interface Call {
+				lorebookId: number
+			}
+			interface Response {
+				historyEntryList: SelectHistoryEntry[]
+			}
+		}
+
+		namespace CreateHistoryEntry {
+			interface Call {
+				historyEntry: InsertHistoryEntry
+			}
+			interface Response {
+				historyEntry: SelectHistoryEntry
+			}
+		}
+
+		namespace UpdateHistoryEntry {
+			interface Call {
+				historyEntry: SelectHistoryEntry
+			}
+			interface Response {
+				historyEntry: SelectHistoryEntry
+			}
+		}
+
+		namespace DeleteHistoryEntry {
+			interface Call {
+				id: number
+				lorebookId: number
+			}
+			interface Response {
+				id: number
+				lorebookId: number
+			}
+		}
+
+		namespace IterateNextHistoryEntry {
+			interface Call {
+				lorebookId: number
+			}
+			interface Response {
+				historyEntry: SelectHistoryEntry
+			}
+		}
+		// Character Card Import
+		namespace CharacterCardImport {
+			interface Call {
+				file: string // base64 or data URL
+			}
+			interface Response {
+				character: SelectCharacter
+				book: any | null // adjust type if you have a type for character_book
+			}
+		}
+
+		// Import Lorebook
+		namespace LorebookImport {
+			interface Call {
+				lorebookData: SpecV3.Lorebook
+				characterId?: number
+			}
+			interface Response {
+				lorebook: SelectLorebook & {
+					lorebookBindings: SelectLorebookBinding[]
+					worldLoreEntries: SelectWorldLoreEntry[]
+					characterLoreEntries: SelectCharacterLoreEntry[]
+					historyEntries: SelectHistoryEntry[]
+				}
+			}
+		}
+		// Toggle Chat Character Active
+		namespace ToggleChatCharacterActive {
+			interface Call {
+				chatId: number
+				characterId: number
+			}
+			interface Response {
+				chatId: number
+				characterId: number
+				isActive: boolean
+			}
+		}
+		namespace SetTheme {
+			interface Call {
+				theme: string
+				darkMode: boolean
+			}
+			interface Response {}
+		}
 	}
 
 	export interface CharaImportMetadata {
@@ -546,16 +896,15 @@ declare global {
 		spec_version: string
 	}
 
-	export type CompiledPrompt = (
-		| { prompt: string }
-		| { messages: Array<{ role: string; content: string }> }
-	) & {
+	export type CompiledPrompt = {
+		prompt?: string
+		messages?: ChatCompletionMessageParam[]
 		meta: {
 			tokenCounts: {
 				total: number
 				limit: number
 			}
-			messages: {
+			chatMessages: {
 				included: number
 				total: number
 				includedIds: number[]
@@ -580,6 +929,10 @@ declare global {
 				scenario: null | "character" | "chat"
 			}
 		}
+	}
+
+	interface FileAcceptDetails {
+		files: File[]
 	}
 }
 

@@ -28,20 +28,22 @@
     
 </script>
 
-<header class="sticky top-0 z-30 w-full">
+<header class="w-full">
     <div
-        class="bg-surface-100-900 bg-opacity-25 relative mx-auto flex w-full justify-between px-4 py-2 backdrop-blur md:w-[50%]"
+        class="bg-surface-100-900 bg-opacity-25 relative mx-auto flex w-full justify-between px-4 py-2 backdrop-blur"
     >
 
         <!-- Desktop left nav -->
         <div class="hidden flex-1 justify-start gap-2 md:flex">
             {#each Object.entries(panelsCtx.leftNav) as [key, item]}
+            {@const isOpen = panelsCtx.leftPanel === key}
                 <button
-                    class="btn-ghost"
                     title={item.title}
-                    onclick={() => panelsCtx.openPanel(key)}
+                    onclick={() => panelsCtx.openPanel({key})}
                 >
-                    <item.icon class="text-foreground h-5 w-5" />
+                    <item.icon 
+                    class="{isOpen ? "text-primary-800-200" : ""} h-5 w-5 hover:text-primary-500 transition-colors"
+                    />
                 </button>
             {/each}
         </div>
@@ -58,12 +60,13 @@
         <!-- Desktop right nav -->
         <div class="hidden flex-1 justify-end gap-2 md:flex">
             {#each Object.entries(panelsCtx.rightNav) as [key, item]}
+                {@const isOpen = panelsCtx.rightPanel === key}
                 <button
                     class="btn-ghost"
                     title={item.title}
-                    onclick={() => panelsCtx.openPanel(key)}
+                    onclick={() => panelsCtx.openPanel({key})}
                 >
-                    <item.icon class="text-foreground h-5 w-5" />
+                    <item.icon class="{isOpen ? "text-primary-800-200" : ""} h-5 w-5 hover:text-primary-500 transition-colors" />
                 </button>
             {/each}
         </div>
@@ -82,7 +85,9 @@
     </div>
 </header>
 
-<style>
+<style lang="postcss">
+	@reference "tailwindcss";
+    
     header {
         display: flex;
         justify-content: space-between;

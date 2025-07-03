@@ -23,7 +23,6 @@
 @import "@skeletonlabs/skeleton/themes/mint";
 @import "@skeletonlabs/skeleton/themes/mona";
 @import "@skeletonlabs/skeleton/themes/nouveau";
-@import "@skeletonlabs/skeleton/themes/reign";
 @import "@skeletonlabs/skeleton/themes/rose";
 @import "@skeletonlabs/skeleton/themes/seafoam";
 @import "@skeletonlabs/skeleton/themes/vintage";
@@ -44,13 +43,26 @@
 }
 
 .rendered-chat-message-content em {
-	@apply text-surface-700-300;
+	@apply text-surface-800-200;
 }
 
 .rendered-chat-message-content span.quoted-text {
-	@apply text-tertiary-900-100;
+	@apply text-tertiary-950-50;
 }
 
 .sidebar-list-item {
-    @apply card hover:preset-filled-surface-200-800 flex cursor-pointer items-center gap-2 rounded-lg p-2 transition;
+	@apply card hover:preset-filled-surface-200-800 flex cursor-pointer items-center gap-2 rounded-lg p-2 transition;
+}
+
+.tiptap.ProseMirror {
+	/* padding: 0.33em; */
+	@apply rounded-lg py-2 px-2 min-h-[6em];
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }

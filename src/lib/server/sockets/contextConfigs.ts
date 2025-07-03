@@ -13,7 +13,8 @@ export async function contextConfigsList(
             id: true,
             name: true,
             isImmutable: true
-        }
+        },
+        orderBy: (c, { asc }) => [asc(c.isImmutable), asc(c.name)],
     })
     const res: Sockets.ContextConfigsList.Response = { contextConfigsList }
     emitToUser("contextConfigsList", res)

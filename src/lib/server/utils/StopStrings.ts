@@ -2,7 +2,6 @@ import { PromptFormats } from "$lib/shared/constants/PromptFormats";
 
 export class StopStrings {
     static get({format, characters, personas}:{format: typeof PromptFormats.keys[0], characters: SelectCharacter[], personas: SelectPersona[]}): string[] {
-        console.log("stop string format:", format)
         let stopStrings: string[] = []
         
         switch (format) {
@@ -11,12 +10,12 @@ export class StopStrings {
                 stopStrings = [
                     "<|im_end|>",
                     // "<|im_start|>",
-                    // "system:",
-                    // "System:",
-                    // "user:",
-                    // "User:",
-                    // "assistant:",
-                    // "Assistant:"
+                    "system:",
+                    "System:",
+                    "user:",
+                    "User:",
+                    "assistant:",
+                    "Assistant:"
                 ];
                 break
             case PromptFormats.BASIC:
@@ -26,12 +25,12 @@ export class StopStrings {
                     // "*** char",
                     // "*** assistant",
                     // "*** system",
-                    // "system:",
-                    // "System:",
-                    // "user:",
-                    // "User:",
-                    // "assistant:",
-                    // "Assistant:"
+                    "system:",
+                    "System:",
+                    "user:",
+                    "User:",
+                    "assistant:",
+                    "Assistant:"
                 ];
                 break
             case PromptFormats.VICUNA:
@@ -42,12 +41,12 @@ export class StopStrings {
                     // "### Char:",
                     // "### Assistant:",
                     // "### System:",
-                    // "system:",
-                    // "System:",
-                    // "user:",
-                    // "User:",
-                    // "assistant:",
-                    // "Assistant:"
+                    "system:",
+                    "System:",
+                    "user:",
+                    "User:",
+                    "assistant:",
+                    "Assistant:"
                 ];
                 break
             case PromptFormats.OPENAI:
@@ -57,16 +56,31 @@ export class StopStrings {
                     // "<|char|>",
                     // "<|assistant|>",
                     // "<|system|>",
-                    // "system:",
-                    // "System:",
-                    // "user:",
-                    // "User:",
-                    // "assistant:",
-                    // "Assistant:"
+                    "system:",
+                    "System:",
+                    "user:",
+                    "User:",
+                    "assistant:",
+                    "Assistant:"
                 ];
                 break
+            case PromptFormats.LLAMA2_INST:
+                stopStrings = [
+                    "</s>",
+                    "User:",
+                    "Assistant:",
+                    "System:",
+                ]
+                break
             default:
-                stopStrings = [];
+                stopStrings = [
+                    "system:",
+                    "System:",
+                    "user:",
+                    "User:",
+                    "assistant:",
+                    "Assistant:"
+                ];
         }
 
 

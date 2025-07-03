@@ -8,6 +8,7 @@
 	import { toaster } from "$lib/client/utils/toaster"
 	import { page } from "$app/state"
 	import Avatar from "../Avatar.svelte"
+	import SidebarListItem from "../SidebarListItem.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -131,11 +132,22 @@
 		})
 	})
 
-	$effect.pre(() => {
-		const characterId = page.url.searchParams.get("chats-by-characterId")
-		if (characterId) {
-			searchByCharacterId = parseInt(characterId)
+	$effect(() => {
+		if (panelsCtx.digest.chatCharacterId) {
+			console.log(
+				"Searching chats by character ID:",
+				panelsCtx.digest.chatCharacterId
+			)
+			searchByCharacterId = panelsCtx.digest.chatCharacterId
 		}
+		if (panelsCtx.digest.chatPersonaId) {
+			searchByPersonaId = panelsCtx.digest.chatPersonaId
+		}
+		delete panelsCtx.digest.chatCharacterId
+		delete panelsCtx.digest.chatPersonaId
+	})
+
+	$effect(() => {
 		if (searchByCharacterId) {
 			socket.once("character", (msg: Sockets.Character.Response) => {
 				searchCharacter = msg.character
@@ -145,11 +157,9 @@
 			}
 			socket.emit("character", charIdReq)
 		}
+	})
 
-		const personaId = page.url.searchParams.get("chats-by-personaId")
-		if (personaId) {
-			searchByPersonaId = parseInt(personaId)
-		}
+	$effect(() => {
 		if (searchByPersonaId) {
 			socket.once("persona", (msg: Sockets.Persona.Response) => {
 				searchPersona = msg.persona
@@ -226,20 +236,11 @@
 			{:else}
 				<ul class="flex flex-col gap-2">
 					{#each filteredChats as chat}
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-						<li
-							class="sidebar-list-item flex items-center"
-							onclick={() => handleChatClick(chat)}
-                            title="Open Chat"
-						>
-							<div class="w-fit relative">
-								{#if chat}
-									{@const avatars = [
-										...(chat.chatCharacters || []).map(
-											(cc) => ({
-												type: "character",
-												data: cc.character
+					{@const avatars = [
+								...(chat.chatCharacters || []).map(
+									(cc) => ({
+										type: "character",
+										data: cc.character
 											})
 										),
 										...(chat.chatPersonas || []).map(
@@ -249,6 +250,13 @@
 											})
 										)
 									]}
+					<SidebarListItem
+						onclick={(e) => handleChatClick(chat)}
+						contentTitle="Go to chat"
+					>
+						{#snippet content()}
+						<div class="relative w-fit">
+							
 									<div
 										class="relative mr-2 flex flex-shrink-0 flex-grow-0 items-center"
 									>
@@ -269,7 +277,7 @@
 										{:else}
 											{#each avatars.slice(0, 3) as avatar, i}
 												<div
-													class="ml-[-3em] inline-block first:ml-0"
+													class="ml-[-2.25em] inline-block first:ml-0"
 													style="z-index: {10 - i};"
 												>
 													<Avatar
@@ -279,21 +287,20 @@
 											{/each}
 											{#if avatars.length > 3}
 												<div
-													class="px-1 text-xs aspect-square pt-[0.15em] select-none preset-tonal-secondary relative z-1 mb-auto rounded-full"
+													class="preset-tonal-secondary relative z-1 mb-auto aspect-square rounded-full px-1 pt-[0.15em] text-xs select-none"
 												>
 													+{avatars.length - 3}
 												</div>
 											{/if}
 										{/if}
 									</div>
-								{/if}
 							</div>
 							<div class="flex min-w-0 flex-col">
-								<div class="truncate font-semibold">
+								<div class="truncate font-semibold text-left">
 									{chat.name || "Untitled Chat"}
 								</div>
 								<div
-									class="text-muted-foreground line-clamp-2 text-xs"
+									class="text-muted-foreground line-clamp-2 text-xs text-left"
 								>
 									{#if chat.chatCharacters?.length}
 										{chat.chatCharacters
@@ -314,9 +321,11 @@
 									{/if}
 								</div>
 							</div>
-							<div class="ml-auto flex gap-4">
+						{/snippet}
+						{#snippet controls()}
+						<div class="ml-auto flex gap-4 flex-col">
 								<button
-									class="btn btn-sm text-primary-500 px-0"
+									class="btn btn-sm text-primary-500 p-4"
 									onclick={() => {
 										handleEditClick(chat.id!)
 									}}
@@ -325,7 +334,7 @@
 									<Icons.Edit size={16} />
 								</button>
 								<button
-									class="btn btn-sm text-error-500 px-0"
+									class="btn btn-sm text-error-500 p-4"
 									onclick={(e) => {
 										e.stopPropagation()
 										handleDeleteClick(chat.id!)
@@ -335,7 +344,8 @@
 									<Icons.Trash2 size={16} />
 								</button>
 							</div>
-						</li>
+						{/snippet}
+</SidebarListItem>
 					{/each}
 				</ul>
 			{/if}
@@ -346,7 +356,7 @@
 <Modal
 	open={showDeleteModal}
 	onOpenChange={(e) => (showDeleteModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}

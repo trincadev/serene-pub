@@ -7,7 +7,7 @@
 		open: boolean
 		personas: Partial<SelectPersona>[]
 		onOpenChange: (e: { open: boolean }) => void
-		onSelect: (persona: Partial<SelectPersona>) => void
+		onSelect: (persona: Partial<SelectPersona> & {id: number}) => void
 	}
 
 	let {
@@ -32,7 +32,7 @@
 <Modal
 	{open}
 	{onOpenChange}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-md"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}

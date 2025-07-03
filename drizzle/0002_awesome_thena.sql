@@ -1,0 +1,1 @@
+ALTER TABLE "chat_characters" ALTER COLUMN "is_active" SET DEFAULT true;

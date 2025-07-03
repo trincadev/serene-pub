@@ -16,4 +16,9 @@ if [ ! -f "$NODE_BIN" ]; then
   rm -f "$NODE_ARCHIVE"
 fi
 chmod +x "$NODE_BIN"
+
+echo "Starting Serene Pub..."
 "$NODE_BIN" "$DIR/build/index.js" "$@"
+
+echo "Press Enter to exit..."
+read

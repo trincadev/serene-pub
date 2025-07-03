@@ -1,9 +1,7 @@
 import { db } from "$lib/server/db"
-import { and, eq } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import * as schema from "$lib/server/db/schema"
 import { user as loadUser, user } from "./users"
-import { OllamaAdapter } from "../connectionAdapters/OllamaAdapter"
-import { OpenAIAdapter } from "../connectionAdapters/OpenAIAdapter"
 import { getConnectionAdapter } from "../utils/getConnectionAdapter"
 
 // --- CONNECTIONS SOCKET HANDLERS ---
@@ -18,7 +16,8 @@ export async function connectionsList(
 			id: true,
 			name: true,
 			type: true
-		}
+		},
+		orderBy: (c, { asc }) => [asc(c.type), asc(c.name)],
 	})
 	const res: Sockets.ConnectionsList.Response = { connectionsList }
 	emitToUser("connectionsList", res)
@@ -91,6 +90,7 @@ export async function updateConnection(
 	const res: Sockets.UpdateConnection.Response = { connection: updated }
 	emitToUser("updateConnection", res)
 	await user(socket, {}, emitToUser)
+	await connectionsList(socket, {}, emitToUser)
 }
 
 export async function deleteConnection(
@@ -144,8 +144,8 @@ export async function testConnection(
 	message: Sockets.TestConnection.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	let AdapterClass = getConnectionAdapter(message.connection.type)
-	if (!AdapterClass) {
+	const {Adapter, testConnection, listModels} = getConnectionAdapter(message.connection.type)
+	if (!Adapter) {
 		const res: Sockets.TestConnection.Response = {
 			ok: false,
 			error: "Unsupported connection type.",
@@ -156,11 +156,11 @@ export async function testConnection(
 	}
 
 	try {
-		const result = await AdapterClass!.testConnection(message.connection)
+		const result = await testConnection(message.connection)
 		let models: any[] = []
 		let error: string | null = null
 		if (result.ok) {
-			const modelsRes = await AdapterClass!.listModels(message.connection)
+			const modelsRes = await listModels(message.connection)
 			models = modelsRes.models || []
 			error = modelsRes.error || null
 		} else {
@@ -188,10 +188,10 @@ export async function refreshModels(
 	message: Sockets.RefreshModels.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	let AdapterClass = getConnectionAdapter(message.connection.type)
+	const { listModels } = getConnectionAdapter(message.connection.type)
 
 	try {
-		const result = await AdapterClass!.listModels(message.connection)
+		const result = await listModels(message.connection)
 		if (!result.models) {
 			const res: Sockets.RefreshModels.Response = {
 				error: "Failed to refresh models.",

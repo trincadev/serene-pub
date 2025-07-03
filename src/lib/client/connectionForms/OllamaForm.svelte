@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 	import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
-	import { onMount } from "svelte"
-	import skio from "sveltekit-io"
+	import { Switch } from "@skeletonlabs/skeleton-svelte"
+	import { onMount, onDestroy } from "svelte"
+	import * as skio from "sveltekit-io"
 
 	interface ExtraFieldData {
 		stream: boolean
@@ -10,6 +11,7 @@
 		think: boolean
 		keepAliveNumber: number
 		keepAliveUnit: string
+		useChat: boolean
 	}
 
 	interface ExtraJson {
@@ -17,6 +19,7 @@
 		raw?: boolean
 		think?: boolean
 		keepAlive?: string
+		useChat?: boolean
 	}
 
 	interface Props {
@@ -30,7 +33,8 @@
 		stream: false,
 		raw: false,
 		think: false,
-		keepAlive: "300ms"
+		keepAlive: "300ms",
+		useChat: true
 	}
 
 	let availableOllamaModels: Sockets.RefreshModels.Response["models"] =
@@ -61,20 +65,21 @@
 		} as Sockets.TestConnection.Call)
 	}
 
-	let isValid = $derived.by(() => {
-		return (
-			connection &&
-			connection.type === "ollama" &&
-			connection.baseUrl &&
-			connection.model
-		)
-	})
+	// let isValid = $derived.by(() => {
+	// 	return (
+	// 		connection &&
+	// 		connection.type === "ollama" &&
+	// 		connection.baseUrl &&
+	// 		connection.model
+	// 	)
+	// })
 
 	function extraJsonToExtraFields(extraJson: ExtraJson): ExtraFieldData {
 		return {
 			stream: extraJson.stream || false,
 			raw: extraJson.raw || false,
 			think: extraJson.think || false,
+			useChat: extraJson.useChat || true,
 			keepAliveNumber: extraJson.keepAlive
 				? parseInt(extraJson.keepAlive) || 300
 				: 300,
@@ -89,7 +94,8 @@
 			stream: fields.stream,
 			raw: fields.raw,
 			think: fields.think,
-			keepAlive: `${fields.keepAliveNumber}${fields.keepAliveUnit}`
+			keepAlive: `${fields.keepAliveNumber}${fields.keepAliveUnit}`,
+			useChat: fields.useChat || true
 		}
 	}
 
@@ -108,6 +114,11 @@
 			ollamaFields = extraJsonToExtraFields(defaultExtraJson)
 		}
 		handleRefreshModels()
+	})
+
+	onDestroy(() => {
+		socket.off("refreshModels")
+		socket.off("testConnection")
 	})
 </script>
 
@@ -147,18 +158,22 @@
 			{/if}
 		</button>
 	</div>
-	<div class="mt-2 flex flex-col gap-1">
-		<label class="font-semibold" for="promptFormat">Prompt Format</label>
-		<select
-			id="promptFormat"
-			class="select bg-background border-muted w-full rounded border"
-			bind:value={connection.promptFormat}
-		>
-			{#each PromptFormats.options as option}
-				<option value={option.value}>{option.label}</option>
-			{/each}
-		</select>
-	</div>
+	{#if !ollamaFields?.useChat}
+		<div class="mt-2 flex flex-col gap-1">
+			<label class="font-semibold" for="promptFormat">
+				Prompt Format
+			</label>
+			<select
+				id="promptFormat"
+				class="select bg-background border-muted w-full rounded border"
+				bind:value={connection.promptFormat}
+			>
+				{#each PromptFormats.options as option}
+					<option value={option.value}>{option.label}</option>
+				{/each}
+			</select>
+		</div>
+	{/if}
 	<div class="mt-2 flex flex-col gap-1">
 		<label class="font-semibold" for="tokenCounter">Token Counter</label>
 		<select
@@ -183,43 +198,9 @@
 				bind:value={connection.baseUrl}
 				placeholder="http://localhost:11434/"
 				required
-				class="input bg-background border-muted w-full rounded border"
+				class="input"
 			/>
 		</div>
-		{#if ollamaFields}
-			<div class="mt-2 flex flex-col gap-1">
-				<label class="font-semibold" for="stream">Stream</label>
-				<input
-					id="stream"
-					type="checkbox"
-					bind:checked={ollamaFields.stream}
-					class="input bg-background border-muted h-6 w-6 rounded border"
-				/>
-			</div>
-		{/if}
-		{#if ollamaFields}
-			<div class="mt-2 flex flex-col gap-1">
-				<label class="disabled font-semibold" for="raw">Raw</label>
-				<input
-					id="raw"
-					type="checkbox"
-					bind:checked={ollamaFields.raw}
-					class="input bg-background border-muted h-6 w-6 rounded border"
-					disabled
-				/>
-			</div>
-		{/if}
-		{#if ollamaFields}
-			<div class="mt-2 flex flex-col gap-1">
-				<label class="font-semibold" for="think">Think</label>
-				<input
-					id="think"
-					type="checkbox"
-					bind:checked={ollamaFields.think}
-					class="input bg-background border-muted h-6 w-6 rounded border"
-				/>
-			</div>
-		{/if}
 		{#if ollamaFields}
 			<div class="mt-2 flex flex-col gap-1">
 				<label class="font-semibold" for="keepAlive">Keep Alive</label>
@@ -243,6 +224,37 @@
 					</select>
 				</div>
 			</div>
+			<section class="w-full space-y-4 pt-4">
+				<div class="flex items-center justify-between gap-4">
+					<label class="font-semibold" for="useChat">
+						Use Chat Mode
+					</label>
+					<Switch
+						name="useChat"
+						checked={ollamaFields.useChat}
+						onCheckedChange={(e) =>
+							(ollamaFields!.useChat = e.checked)}
+					/>
+				</div>
+				<div class="flex items-center justify-between gap-4">
+					<label class="font-semibold" for="stream">Stream</label>
+					<Switch
+						name="stream"
+						checked={ollamaFields.stream}
+						onCheckedChange={(e) =>
+							(ollamaFields!.stream = e.checked)}
+					/>
+				</div>
+				<div class="flex items-center justify-between gap-4">
+					<label class="font-semibold" for="think">Think</label>
+					<Switch
+						name="think"
+						checked={ollamaFields.think}
+						onCheckedChange={(e) =>
+							(ollamaFields!.think = e.checked)}
+					/>
+				</div>
+			</section>
 		{/if}
 	</details>
 {/if}

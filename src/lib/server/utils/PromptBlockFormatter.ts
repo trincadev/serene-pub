@@ -1,6 +1,8 @@
 import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 import _ from "lodash"
 
+type BlockRole = "user" | "assistant" | "system" | "model" | "tool" | "function"
+
 export class PromptBlockFormatter {
 	static readonly CHATML_OPEN = "<|im_start|>"
 	static readonly CHATML_CLOSE = "<|im_end|>\n"
@@ -10,34 +12,52 @@ export class PromptBlockFormatter {
 	static readonly VICUNA_CLOSE = "\n"
 	static readonly OPENAI_OPEN = "<|"
 	static readonly OPENAI_CLOSE = "\n"
-	static readonly LLAMA2_INST_OPEN = "[INST] "
-	static readonly LLAMA2_INST_CLOSE = " [/INST]\n"
+	static readonly LLAMA2_INST_OPEN = "<s>[INST] "
+	static readonly LLAMA2_INST_CLOSE = " [/INST]></s>\n"
 	static readonly CLAUDE_OPEN = "Human: "
 	static readonly CLAUDE_CLOSE = "\nAssistant: "
 	static readonly INSTRUCT_OPEN = "### Instruction:\n"
 	static readonly INSTRUCT_CLOSE = "\n### Response:\n"
 
-	static chatmlOpen(role: string) {
+	static chatmlOpen(role: BlockRole) {
 		return `${PromptBlockFormatter.CHATML_OPEN}${role}\n`
 	}
 	static chatmlClose = PromptBlockFormatter.CHATML_CLOSE
-	static basicOpen(role: string) {
+	static basicOpen(role: BlockRole) {
 		return `${PromptBlockFormatter.BASIC_OPEN}${role}\n`
 	}
 	static basicClose = PromptBlockFormatter.BASIC_CLOSE
-	static vicunaOpen(role: string) {
+	static vicunaOpen(role: BlockRole) {
 		return `${PromptBlockFormatter.VICUNA_OPEN}${_.capitalize(role)}:\n`
 	}
 	static vicunaClose = PromptBlockFormatter.VICUNA_CLOSE
-	static openaiOpen(role: string) {
+	static openaiOpen(role: BlockRole) {
 		return `${PromptBlockFormatter.OPENAI_OPEN}${role}|>\n`
 	}
 	static openaiClose = PromptBlockFormatter.OPENAI_CLOSE
-	static llama2InstOpen(role: string) {
+	static llama2InstOpen(role: BlockRole) {
+		switch (role) {
+			case "system":
+				return "<s>[INST] <<SYS>>\n"
+			case "user":
+				return "<s>\n"
+			case "assistant":
+				return "<s>\n"
+		}
 		return PromptBlockFormatter.LLAMA2_INST_OPEN
 	}
-	static llama2InstClose = PromptBlockFormatter.LLAMA2_INST_CLOSE
-	static claudeOpen(role: string) {
+	static llama2InstClose(role: BlockRole) {
+		switch (role) {
+			case "system":
+				return "\n<</SYS>> [/INST]></s>\n"
+			case "user":
+				return "\n</s>\n"
+			case "assistant":
+				return "\n</s>\n"
+		}
+		return PromptBlockFormatter.LLAMA2_INST_CLOSE
+	}
+	static claudeOpen(role: BlockRole) {
 		return role === "user"
 			? PromptBlockFormatter.CLAUDE_OPEN
 			: PromptBlockFormatter.CLAUDE_CLOSE
@@ -47,6 +67,20 @@ export class PromptBlockFormatter {
 		return PromptBlockFormatter.INSTRUCT_OPEN
 	}
 	static instructClose = PromptBlockFormatter.INSTRUCT_CLOSE
+	static tekkenBlock({
+		system,
+		user,
+		assistant
+	}: {
+		system?: string
+		user: string
+		assistant?: string
+	}): string {
+		const sys = system ? ` <<SYS>>\n${system}\n<</SYS>>\n\n` : " "
+		const inst = `[INST]${sys}${user} [/INST]`
+		const reply = assistant ?? ""
+		return `<s>${inst}\n${reply}</s>\n`
+	}
 
 	static makeBlock({
 		format,
@@ -55,7 +89,7 @@ export class PromptBlockFormatter {
 		includeClose = true
 	}: {
 		format: string
-		role: string
+		role: BlockRole
 		content: string
 		includeClose?: boolean
 	}) {
@@ -88,7 +122,7 @@ export class PromptBlockFormatter {
 				return (
 					this.llama2InstOpen(role) +
 					content +
-					(includeClose ? this.llama2InstClose : "")
+					(includeClose ? this.llama2InstClose(role) : "")
 				)
 			case PromptFormats.CLAUDE:
 				return (
@@ -102,6 +136,9 @@ export class PromptBlockFormatter {
 					content +
 					(includeClose ? this.instructClose : "")
 				)
+			case PromptFormats.SPLIT_CHAT:
+				// Use /<@role:(user|assistant|system)>\s*/g, i.e. <@role:user>\n {content} \n
+				return `<@role:${role}>\n${content}\n`
 			default:
 				return (
 					this.chatmlOpen(role) +

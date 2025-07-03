@@ -13,7 +13,6 @@ export class Theme {
 	static NOSH = "nosh"
 	static NOUVEAU = "nouveau"
 	static PINE = "pine"
-	static REIGN = "reign"
 	static ROCKET = "rocket"
 	static ROSE = "rose"
 	static SAHARA = "sahara"
@@ -25,11 +24,11 @@ export class Theme {
 
 	static options: [string, string][] = [
 		[Theme.CATPPUCCIN, "Catppuccin"],
-		[Theme.CERBERUS, "Cerberus (Default)"],
+		[Theme.CERBERUS, "Cerberus"],
 		[Theme.CONCORD, "Concord"],
 		[Theme.CRIMSON, "Crimson"],
 		[Theme.FENNEC, "Fennec"],
-		[Theme.HAMLINDIGO, "Hamlindigo"],
+		[Theme.HAMLINDIGO, "Hamlindigo (Default)"],
 		[Theme.LEGACY, "Legacy"],
 		[Theme.MINT, "Mint"],
 		[Theme.MODERN, "Modern"],
@@ -37,7 +36,6 @@ export class Theme {
 		[Theme.NOSH, "Nosh"],
 		[Theme.NOUVEAU, "Nouveau"],
 		[Theme.PINE, "Pine"],
-		[Theme.REIGN, "Reign"],
 		[Theme.ROCKET, "Rocket"],
 		[Theme.ROSE, "Rose"],
 		[Theme.SAHARA, "Sahara"],

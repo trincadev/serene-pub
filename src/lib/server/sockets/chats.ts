@@ -1,10 +1,12 @@
 import { db } from "$lib/server/db"
 import * as schema from "$lib/server/db/schema"
-import { and, eq, inArray } from "drizzle-orm"
+import { and, asc, eq, inArray } from "drizzle-orm"
 import { generateResponse } from "../utils/generateResponse"
 import { getNextCharacterTurn } from "$lib/server/utils/getNextCharacterTurn"
 import type { BaseConnectionAdapter } from "../connectionAdapters/BaseConnectionAdapter"
 import { getConnectionAdapter } from "../utils/getConnectionAdapter"
+import { TokenCounters } from "$lib/server/utils/TokenCounterManager"
+import { GroupReplyStrategies } from "$lib/shared/constants/GroupReplyStrategies"
 
 // --- Global map for active adapters ---
 export const activeAdapters = new Map<string, BaseConnectionAdapter>()
@@ -90,17 +92,26 @@ export async function createChat(
 		})
 		for (const cc of chatCharacters) {
 			if (!cc.character) continue
-			const firstMessageContent = (cc.character.firstMessage || "").trim()
-			if (firstMessageContent) {
+			const greetings = buildCharacterFirstChatMessage({
+				character: cc.character,
+				isGroup: !!newChat.isGroup
+			})
+			if (greetings.length > 0) {
 				const newMessage: InsertChatMessage = {
 					userId,
 					chatId: newChat.id,
 					personaId: null,
 					characterId: cc.character.id,
 					role: "assistant",
-					content: firstMessageContent,
-					createdAt: new Date().toString(),
-					isGenerating: false
+					content: greetings[0],
+					isGenerating: false,
+					metadata: {
+						isGreeting: true,
+						swipes: {
+							currentIdx: 0,
+							history: greetings as any // Patch: force string[]
+						}
+					}
 				}
 				await db.insert(schema.chatMessages).values(newMessage)
 			}
@@ -141,7 +152,9 @@ async function getChatFromDB(chatId: number, userId: number) {
 				orderBy: (cp, { asc }) => asc(cp.position)
 			},
 			chatCharacters: { with: { character: true } },
-			chatMessages: true
+			chatMessages: {
+				orderBy: (cm, { asc }) => asc(cm.id)
+			}
 		}
 	})
 
@@ -150,10 +163,76 @@ async function getChatFromDB(chatId: number, userId: number) {
 	const chat = await res
 	if (chat) {
 		// Order the chatCharacters by position
-		chat.chatCharacters.sort((a, b) => a.position - b.position)
+		chat.chatCharacters.sort(
+			(a, b) => (a.position ?? 0) - (b.position ?? 0)
+		)
 		// Sort chatPersonas by position if it exists
 		if (chat.chatPersonas) {
-			chat.chatPersonas.sort((a, b) => a.position - b.position)
+			chat.chatPersonas.sort(
+				(a, b) => (a.position ?? 0) - (b.position ?? 0)
+			)
+		}
+	}
+	return chat
+}
+
+// Returns complete chat data for prompt compilation
+async function getPromptChatFromDb(chatId: number, userId: number) {
+	const chat = await db.query.chats.findFirst({
+		where: (c, { eq, and }) => and(eq(c.id, chatId), eq(c.userId, userId)),
+		with: {
+			chatMessages: {
+				where: (cm, { eq }) => eq(cm.isHidden, false),
+				orderBy: (cm, { asc }) => asc(cm.id)
+			},
+			chatCharacters: {
+				with: {
+					character: {
+						// with: { lorebook: true }
+					}
+				},
+				orderBy: (cc, { asc }) => asc(cc.position ?? 0)
+			},
+			chatPersonas: {
+				with: {
+					persona: {
+						// with: { lorebook: true }
+					}
+				},
+				orderBy: (cp, { asc }) => asc(cp.position ?? 0)
+			},
+			lorebook: {
+				with: {
+					lorebookBindings: {
+						with: { character: true, persona: true }
+					},
+					worldLoreEntries: true,
+					characterLoreEntries: {
+						with: {
+							lorebookBinding: {
+								with: {
+									character: true,
+									persona: true
+								}
+							}
+						}
+					},
+					historyEntries: true
+				}
+			}
+		}
+	})
+
+	if (chat) {
+		// Order the chatCharacters by position
+		chat.chatCharacters.sort(
+			(a, b) => (a.position ?? 0) - (b.position ?? 0)
+		)
+		// Sort chatPersonas by position if it exists
+		if (chat.chatPersonas) {
+			chat.chatPersonas.sort(
+				(a, b) => (a.position ?? 0) - (b.position ?? 0)
+			)
 		}
 	}
 	return chat
@@ -166,7 +245,7 @@ export async function sendPersonaMessage(
 ) {
 	const { chatId, personaId, content } = message
 	const userId = 1 // Replace with actual user id
-	let chat = await getChatFromDB(chatId, userId)
+	let chat = await getPromptChatFromDb(chatId, userId)
 	if (!chat) {
 		// Return a valid but empty chatMessage object with required fields set to null or default
 		const res: Sockets.SendPersonaMessage.Response = {
@@ -180,8 +259,7 @@ export async function sendPersonaMessage(
 		chatId,
 		personaId,
 		role: "user",
-		content,
-		createdAt: new Date().toString()
+		content
 	}
 	const [inserted] = await db
 		.insert(schema.chatMessages)
@@ -198,53 +276,61 @@ export async function sendPersonaMessage(
 	let maxTurns = 20 // Prevent infinite loops in case of data issues
 	let currentTurn = 1
 
-	while (chat && chat.chatCharacters.length > 0 && currentTurn <= maxTurns) {
-		currentTurn++
-		// Always fetch the latest chat state at the start of each loop
-		chat = await getChatFromDB(chatId, userId)
-		if (!chat) break
-		const nextCharacterId = getNextCharacterTurn(
-			{
-				chatMessages: chat!.chatMessages,
-				chatCharacters: chat!.chatCharacters.filter(
-					(cc) => cc.character !== null
-				) as any,
-				chatPersonas: chat!.chatPersonas.filter(
-					(cp) => cp.persona !== null
-				) as any
-			},
-			{ triggered: false }
-		)
-		console.log("Next character turn:", nextCharacterId)
-		if (!nextCharacterId) {
-			break
-		}
-		const nextCharacter = chat.chatCharacters.find(
-			(cc) => cc.character && cc.character.id === nextCharacterId
-		)
+	// Check if group and group reply strategy
+	if (
+		!chat.isGroup ||
+		chat.groupReplyStrategy !== GroupReplyStrategies.MANUAL
+	) {
+		while (
+			chat &&
+			chat.chatCharacters.length > 0 &&
+			currentTurn <= maxTurns
+		) {
+			currentTurn++
+			// Always fetch the latest chat state at the start of each loop
+			chat = await getPromptChatFromDb(chatId, userId)
+			if (!chat) break
+			const nextCharacterId = getNextCharacterTurn(
+				{
+					chatMessages: chat!.chatMessages,
+					chatCharacters: chat!.chatCharacters.filter(
+						(cc) => cc.character !== null
+					) as any,
+					chatPersonas: chat!.chatPersonas.filter(
+						(cp) => cp.persona !== null
+					) as any
+				},
+				{ triggered: false }
+			)
+			if (!nextCharacterId) {
+				break
+			}
+			const nextCharacter = chat.chatCharacters.find(
+				(cc) => cc.character && cc.character.id === nextCharacterId
+			)
 
-		if (!nextCharacter || !nextCharacter.character) break
-		const assistantMessage: InsertChatMessage = {
-			userId,
-			chatId,
-			personaId: null,
-			characterId: nextCharacter.character.id,
-			content: "",
-			role: "assistant",
-			createdAt: new Date().toString(),
-			isGenerating: true
+			if (!nextCharacter || !nextCharacter.character) break
+			const assistantMessage: InsertChatMessage = {
+				userId,
+				chatId,
+				personaId: null,
+				characterId: nextCharacter.character.id,
+				content: "",
+				role: "assistant",
+				isGenerating: true
+			}
+			const [generatingMessage] = await db
+				.insert(schema.chatMessages)
+				.values(assistantMessage)
+				.returning()
+			await generateResponse({
+				socket,
+				emitToUser,
+				chatId,
+				userId,
+				generatingMessage: generatingMessage as any
+			})
 		}
-		const [generatingMessage] = await db
-			.insert(schema.chatMessages)
-			.values(assistantMessage)
-			.returning()
-		await generateResponse({
-			socket,
-			emitToUser,
-			chatId,
-			userId,
-			generatingMessage: generatingMessage as any
-		})
 	}
 }
 
@@ -284,9 +370,11 @@ export async function updateChatMessage(
 	emitToUser: (event: string, data: any) => void
 ) {
 	const userId = 1 // Replace with actual user id
+	const data = { ...message.chatMessage }
+	delete data.id // Remove id to avoid conflicts with update
 	const [updated] = await db
 		.update(schema.chatMessages)
-		.set({ ...message.chatMessage, id: undefined })
+		.set({ ...data })
 		.where(
 			and(
 				eq(schema.chatMessages.id, message.chatMessage.id),
@@ -340,18 +428,33 @@ export async function regenerateChatMessage(
 		emitToUser("regenerateChatMessage", res)
 		return
 	}
-	const chat = await getChatFromDB(chatMessage.chatId, userId)
+	const chat = await getPromptChatFromDb(chatMessage.chatId, userId)
 	if (!chat) {
 		const res: Sockets.RegenerateChatMessage.Response = {
-			error: "Chat not found."
+			error: "Error Regenerating Message: Chat not found."
 		}
 		emitToUser("regenerateChatMessage", res)
 		return
 	}
 
+	const data: InsertChatMessage = {
+		...chatMessage,
+		content: "",
+		isGenerating: true
+	}
+	delete data.id // Remove id to avoid conflicts with update
+
+	// Check if we need to clear swipe history
+	if (
+		typeof (data.metadata?.swipes?.currentIdx || null) === "number" &&
+		(data.metadata?.swipes?.history.length || 0) > 0
+	) {
+		data.metadata!.swipes!.history[data.metadata!.swipes!.currentIdx!] = ""
+	}
+
 	await db
 		.update(schema.chatMessages)
-		.set({ isGenerating: true, content: "" })
+		.set(data)
 		.where(eq(schema.chatMessages.id, chatMessage.id))
 
 	try {
@@ -367,6 +470,7 @@ export async function regenerateChatMessage(
 			} as any
 		})
 	} catch (error) {
+		console.log("Error during regeneration:", error)
 		let [canceledMsg] = await db
 			.update(schema.chatMessages)
 			.set({
@@ -386,76 +490,100 @@ export async function promptTokenCount(
 	message: Sockets.PromptTokenCount.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	const userId = 1 // Replace with actual user id
-	const chat = await getChatFromDB(message.chatId, userId)
-	if (!chat) {
-		emitToUser("error", { error: "Chat not found." })
-		return
-	}
-	const user = await db.query.users.findFirst({
-		where: (u, { eq }) => eq(u.id, userId),
-		with: {
-			activeConnection: true,
-			activeSamplingConfig: true,
-			activeContextConfig: true,
-			activePromptConfig: true
+	try {
+		const userId = 1 // Replace with actual user id
+		const chat = await getPromptChatFromDb(message.chatId, userId)
+		if (!chat) {
+			emitToUser("error", { error: "Error Generating Prompt Token Count: Chat not found." })
+			return
 		}
-	})
-	if (
-		!chat ||
-		!user ||
-		!user.activeConnection ||
-		!user.activeSamplingConfig ||
-		!user.activeContextConfig ||
-		!user.activePromptConfig
-	) {
-		emitToUser("error", { error: "Chat or user configuration not found." })
-		return
-	}
-	let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
-	if (message.content && message.role) {
-		chatForPrompt.chatMessages.push({
-			id: -1,
-			chatId: chat.id,
-			userId: userId,
-			personaId: message.personaId ?? null,
-			characterId: null,
-			role: message.role,
-			content: message.content,
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString(),
-			isEdited: 0,
-			metadata: null,
-			isGenerating: false
+		const user = await db.query.users.findFirst({
+			where: (u, { eq }) => eq(u.id, userId),
+			with: {
+				activeConnection: true,
+				activeSamplingConfig: true,
+				activeContextConfig: true,
+				activePromptConfig: true
+			}
 		})
-	} // TODO fix
-	const currentCharacterId = getNextCharacterTurn(
-		{
-			chatMessages: chat.chatMessages,
-			chatCharacters: chat.chatCharacters.filter(
-				(cc: any) => cc && cc.character != null
-			) as any,
-			chatPersonas: chat.chatPersonas.filter(
-				(cp: any) => cp && cp.persona != null
-			) as any
-		},
-		{ triggered: true }
-	)
+		if (
+			!chat ||
+			!user ||
+			!user.activeConnection ||
+			!user.activeSamplingConfig ||
+			!user.activeContextConfig ||
+			!user.activePromptConfig
+		) {
+			emitToUser("error", {
+				error: "Incomplete configuration, failed to calculate token count."
+			})
+			return
+		}
+		let chatForPrompt = { ...chat, chatMessages: [...chat.chatMessages] }
+		// if (message.content && message.role) {
+		// 	// chatForPrompt.chatMessages.push({
+		// 	// 	id: -1,
+		// 	// 	chatId: chat.id,
+		// 	// 	userId: userId,
+		// 	// 	personaId: message.personaId ?? null,
+		// 	// 	characterId: null,
+		// 	// 	role: message.role,
+		// 	// 	content: message.content,
+		// 	// 	isEdited: 0,
+		// 	// 	metadata: null,
+		// 	// 	isGenerating: false,
+		// 	// 	adapterId: null,
+		// 	// 	isHidden: null
+		// 	// })
+		// }
+		const currentCharacterId = getNextCharacterTurn(
+			{
+				chatMessages: chat.chatMessages,
+				chatCharacters: chat.chatCharacters.filter(
+					(cc: any) => cc && cc.character != null
+				) as any,
+				chatPersonas: chat.chatPersonas.filter(
+					(cp: any) => cp && cp.persona != null
+				) as any
+			},
+			{ triggered: true }
+		)
 
-	const adapter = new (getConnectionAdapter(user.activeConnection.type))({
-		chat: chatForPrompt as any,
-		connection: user.activeConnection,
-		sampling: user.activeSamplingConfig,
-		contextConfig: user.activeContextConfig,
-		promptConfig: user.activePromptConfig,
-		currentCharacterId
-	})
-	const promptResult: Sockets.PromptTokenCount.Response =
-		await adapter.promptBuilder.compilePrompt()
-	emitToUser(
-		"promptTokenCount",
-		promptResult as Sockets.PromptTokenCount.Response
-	)
+		if (!currentCharacterId) {
+			emitToUser("error", { error: "No character available for prompt." })
+			return
+		}
+
+		const { Adapter } = getConnectionAdapter(user.activeConnection.type)
+
+		// Provide required params for Adapter (use defaults if not available)
+		const tokenCounter = new TokenCounters("estimate")
+		const tokenLimit = 4096
+		const contextThresholdPercent = 0.8
+
+		const adapter = new Adapter({
+			chat: chatForPrompt,
+			connection: user.activeConnection,
+			sampling: user.activeSamplingConfig,
+			contextConfig: user.activeContextConfig,
+			promptConfig: user.activePromptConfig,
+			currentCharacterId,
+			tokenCounter,
+			tokenLimit,
+			contextThresholdPercent
+		})
+		const promptResult: Sockets.PromptTokenCount.Response =
+			await adapter.compilePrompt({})
+		emitToUser(
+			"promptTokenCount",
+			promptResult as Sockets.PromptTokenCount.Response
+		)
+	} catch (error) {
+		console.error("Error in promptTokenCount:", error)
+		emitToUser("error", {
+			error: "Failed to calculate prompt token count."
+		})
+	}
 }
 
 export async function abortChatMessage(
@@ -477,7 +605,7 @@ export async function abortChatMessage(
 		return
 	}
 
-	;[chatMsg] = await db
+	[chatMsg] = await db
 		.update(schema.chatMessages)
 		.set({ isGenerating: false, adapterId: null })
 		.where(eq(schema.chatMessages.id, message.id))
@@ -529,12 +657,13 @@ export async function triggerGenerateMessage(
 	const msgLimit = 10
 	let currentMsg = 1
 	let triggered = true
+	let ok = true
 
-	while (currentMsg <= msgLimit) {
-		let chat = await getChatFromDB(message.chatId, userId)
+	while (currentMsg <= msgLimit && ok) {
+		let chat = await getPromptChatFromDb(message.chatId, userId)
 		if (!chat) {
 			const res: Sockets.TriggerGenerateMessage.Response = {
-				error: "Chat not found."
+				error: "Error Triggering Chat Message: Chat not found."
 			}
 			emitToUser("triggerGenerateMessage", res)
 			return
@@ -571,7 +700,6 @@ export async function triggerGenerateMessage(
 				characterId: nextCharacter.character.id,
 				content: "",
 				role: "assistant",
-				createdAt: new Date().toString(),
 				isGenerating: true
 			}
 			const [generatingMessage] = await db
@@ -583,7 +711,7 @@ export async function triggerGenerateMessage(
 				{ chatMessage: generatingMessage },
 				emitToUser
 			)
-			await generateResponse({
+			ok = await generateResponse({
 				socket,
 				emitToUser,
 				chatId: message.chatId,
@@ -611,8 +739,7 @@ export async function chatMessage(
 		}
 		emitToUser("chatMessage", res)
 		return
-	}
-	if (message.id) {
+	} else if (message.id) {
 		// If id is provided, fetch from database
 		const chatMessage = await db.query.chatMessages.findFirst({
 			where: (m, { eq }) => eq(m.id, message.id!)
@@ -624,8 +751,9 @@ export async function chatMessage(
 		const res: Sockets.ChatMessage.Response = { chatMessage }
 		emitToUser("chatMessage", res)
 		return
+	} else {
+		emitToUser("error", { error: "Must provide either id or chatMessage." })
 	}
-	emitToUser("error", { error: "Must provide either id or chatMessage." })
 }
 
 export async function updateChat(
@@ -634,19 +762,21 @@ export async function updateChat(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
+		console.log("Updating chat with message:", message)
 		const userId = 1 // Replace with actual user id
 
 		//  Select the chat to compare data
-		const existingChat = await getChatFromDB(message.chat.id, userId)
+		const existingChat = await getPromptChatFromDb(message.chat.id, userId)
 
 		// Update chat main fields
+		const data = { ...message.chat }
+		delete data.id // Remove id to avoid conflicts
 		await db
 			.update(schema.chats)
 			.set({
 				...message.chat,
 				isGroup: message.characterIds.length > 1,
-				userId: undefined,
-				id: undefined
+				userId: undefined
 			})
 			.where(
 				and(
@@ -797,19 +927,26 @@ export async function updateChat(
 			for (const cc of newChatCharacters) {
 				if (!cc.character) continue
 				if (!newCharacterIds.includes(cc.character.id)) continue
-				const firstMessageContent = (
-					cc.character.firstMessage || ""
-				).trim()
-				if (firstMessageContent) {
+				const greetings = buildCharacterFirstChatMessage({
+					character: cc.character,
+					isGroup: message.characterIds.length > 1
+				})
+				if (greetings.length > 0) {
 					const newMessage: InsertChatMessage = {
 						userId,
 						chatId: message.chat.id,
 						personaId: null,
 						characterId: cc.character.id,
 						role: "assistant",
-						content: firstMessageContent,
-						createdAt: new Date().toString(),
-						isGenerating: false
+						content: greetings[0],
+						isGenerating: false,
+						metadata: {
+							isGreeting: true,
+							swipes: {
+								currentIdx: 0,
+								history: greetings as any // Patch: force string[]
+							}
+						}
 					}
 					await db.insert(schema.chatMessages).values(newMessage)
 				}
@@ -827,4 +964,381 @@ export async function updateChat(
 		console.error("Error updating chat:", error)
 		emitToUser("error", { error: "Failed to update chat." })
 	}
+}
+
+export async function chatMessageSwipeRight(
+	socket: any,
+	message: Sockets.ChatMessageSwipeRight.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	const userId = 1 // Replace with actual user id
+	const chat = await db.query.chats.findFirst({
+		where: (c, { eq, and }) =>
+			and(eq(c.id, message.chatId), eq(c.userId, userId)),
+		with: {
+			chatMessages: true
+		}
+	})
+	if (!chat) {
+		const res = {
+			error: "Error Swiping Chat Message Right: Chat not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+	const chatMessage = chat.chatMessages.find(
+		(cm) => cm.id === message.chatMessageId
+	)
+	if (!chatMessage) {
+		const res = {
+			error: "Chat message not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.isGenerating) {
+		const res = {
+			error: "Message is still generating, please wait."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.isHidden) {
+		const res = {
+			error: "Message is hidden, cannot swipe right."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.role !== "assistant") {
+		const res = {
+			error: "Only assistant messages can be swiped right."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	interface MetaData {
+		swipes?: {
+			currentIdx: number | null
+			history: string[]
+		}
+	}
+
+	let isOnLastSwipe = false
+
+	// Check if metadata.swipes, if not, initialize it
+	const data: SelectChatMessage = {
+		...chatMessage,
+		metadata: {
+			...chatMessage.metadata,
+			swipes: {
+				currentIdx: null,
+				history: [],
+				...(chatMessage.metadata?.swipes || {})
+			}
+		}
+	}
+
+	// Check if we are on the last swipe (or if there are no swipes)
+	if (
+		!data.metadata!.swipes!.history.length ||
+		data.metadata!.swipes!.currentIdx === null
+	) {
+		isOnLastSwipe = true
+	} else {
+		isOnLastSwipe =
+			data.metadata!.swipes!.currentIdx ===
+			data.metadata!.swipes!.history.length - 1
+	}
+
+	if (!isOnLastSwipe) {
+		// If not on the last swipe, just update the current index and content
+		data.metadata!.swipes!.currentIdx =
+			(data.metadata!.swipes!.currentIdx || 0) + 1
+		data.content =
+			data.metadata!.swipes!.history[data.metadata!.swipes!.currentIdx] ||
+			""
+	} else {
+		if (data.metadata!.swipes!.currentIdx === null) {
+			;(data.metadata!.swipes!.currentIdx = 0),
+				data.metadata!.swipes!.history.push(data.content)
+		}
+		// Now increment the current index and content
+		data.metadata!.swipes!.currentIdx += 1
+		data.content = "" // Clear the message content
+		data.isGenerating = true // Set generating state to true
+		// Push the new empty content to history
+		data.metadata!.swipes!.history.push("") // Add an empty string to history
+	}
+
+	delete data.id
+
+	// Update the chat message in the database
+	const [updatedMessage] = await db
+		.update(schema.chatMessages)
+		.set({ ...data })
+		.where(eq(schema.chatMessages.id, chatMessage.id))
+		.returning()
+
+	if (!updatedMessage) {
+		const res = {
+			error: "Failed to update chat message."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (!updatedMessage.isGenerating) {
+		// If the message is not generating, emit the updated chatMessage
+		const chatMsgRes: Sockets.ChatMessage.Response = {
+			chatMessage: updatedMessage as any
+		}
+		emitToUser("chatMessage", chatMsgRes)
+		const res: Sockets.ChatMessageSwipeRight.Response = {
+			chatId: chat.id,
+			chatMessageId: updatedMessage.id,
+			done: true
+		}
+
+		emitToUser("chatMessageSwipeRight", res)
+		return
+	}
+
+	// If the message is generating, we need to start generating a response
+	await generateResponse({
+		socket,
+		emitToUser,
+		chatId: chat.id,
+		userId,
+		generatingMessage: updatedMessage as any
+	})
+
+	const res: Sockets.ChatMessageSwipeRight.Response = {
+		chatId: chat.id,
+		chatMessageId: updatedMessage.id,
+		done: true
+	}
+
+	emitToUser("chatMessageSwipeRight", res)
+}
+
+export async function chatMessageSwipeLeft(
+	socket: any,
+	message: Sockets.ChatMessageSwipeLeft.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	const userId = 1 // Replace with actual user id
+	const chat = await db.query.chats.findFirst({
+		where: (c, { eq, and }) =>
+			and(eq(c.id, message.chatId), eq(c.userId, userId)),
+		with: {
+			chatMessages: true
+		}
+	})
+	if (!chat) {
+		const res = {
+			error: "Error Swiping Chat Message Left: Chat not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+	const chatMessage = chat.chatMessages.find(
+		(cm) => cm.id === message.chatMessageId
+	)
+	if (!chatMessage) {
+		const res = {
+			error: "Chat message not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.isGenerating) {
+		const res = {
+			error: "Message is still generating, please wait."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.isHidden) {
+		const res = {
+			error: "Message is hidden, cannot swipe right."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (chatMessage.role !== "assistant") {
+		const res = {
+			error: "Only assistant messages can be swiped right."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	interface MetaData {
+		swipes?: {
+			currentIdx: number | null
+			history: string[]
+		}
+	}
+
+	let isOnLastSwipe = false
+
+	// Check if metadata.swipes, if not, initialize it
+	const data: SelectChatMessage = {
+		...chatMessage,
+		metadata: {
+			...chatMessage.metadata,
+			swipes: {
+				currentIdx: null,
+				history: [],
+				...(chatMessage.metadata?.swipes || {})
+			}
+		}
+	}
+
+	// Check if we are on the last left swipe (idx=0|null) (or if there are no swipes)
+	if (
+		!data.metadata!.swipes!.history.length ||
+		data.metadata!.swipes!.currentIdx === null ||
+		data.metadata!.swipes!.currentIdx === 0
+	) {
+		isOnLastSwipe = true
+	} else {
+		isOnLastSwipe =
+			data.metadata!.swipes!.currentIdx === 0 &&
+			data.metadata!.swipes!.history.length > 0
+	}
+
+	// If we are on the last left swipe, return an error
+	if (isOnLastSwipe) {
+		const res = {
+			error: "Already on the last left swipe, cannot swipe left."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	// If not on the last left swipe, just update the current index and content
+	data.metadata!.swipes!.currentIdx =
+		(data.metadata!.swipes!.currentIdx || 0) - 1
+	data.content =
+		data.metadata!.swipes!.history[data.metadata!.swipes!.currentIdx] || "" // Set content to the previous swipe content
+	// Update the chat message in the database
+	delete data.id
+	const [updatedMessage] = await db
+		.update(schema.chatMessages)
+		.set({ ...data })
+		.where(eq(schema.chatMessages.id, chatMessage.id))
+		.returning()
+
+	if (!updatedMessage) {
+		const res = {
+			error: "Failed to update chat message."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	const chatRes: Sockets.ChatMessage.Response = {
+		chatMessage: updatedMessage
+	}
+	socket.emit("chatMessage", chatRes)
+	const res: Sockets.ChatMessageSwipeLeft.Response = {
+		chatId: chat.id,
+		chatMessageId: updatedMessage.id,
+		done: true
+	}
+	emitToUser("chatMessageSwipeLeft", res)
+}
+
+// Builds the chatMessage history for the first chat message of a character, with history swipes for the user to choose from
+function buildCharacterFirstChatMessage({
+	character,
+	isGroup
+}: {
+	character: SelectCharacter
+	isGroup: boolean
+}): string[] {
+	console.log("Building first chat message for character:", character.name)
+	const history: string[] = []
+	if (!isGroup || !character.groupOnlyGreetings?.length) {
+		if (character.firstMessage) {
+			history.push(character.firstMessage.trim())
+		}
+		if (character.alternateGreetings) {
+			history.push(...character.alternateGreetings.map((g) => g.trim()))
+		}
+	} else if (character.groupOnlyGreetings?.length) {
+		// If this is a group chat, use only group greetings
+		history.push(...character.groupOnlyGreetings.map((g) => g.trim()))
+	} else {
+		// Fallback firstMessage if no greetings are available
+		history.push(
+			`Sits down at the table, "I didn't think you'd show up so soon."`
+		)
+	}
+	return history
+}
+
+export async function toggleChatCharacterActive(
+	socket: any,
+	message: Sockets.ToggleChatCharacterActive.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	const userId = 1 // Replace with actual user id
+	if (!userId) return
+
+	const chat = await db.query.chats.findFirst({
+		where: (c, { eq, and }) =>
+			and(eq(c.id, message.chatId), eq(c.userId, userId)),
+		with: {
+			chatCharacters: {
+				where: (cc, { eq }) => eq(cc.characterId, message.characterId)
+			}
+		}
+	})
+	if (!chat) {
+		const res = {
+			error: "Error toggling character active: Chat not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (!chat.chatCharacters || chat.chatCharacters.length === 0) {
+		const res = {
+			error: "Chat character not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	const chatCharacter = chat.chatCharacters[0]
+
+	await db
+		.update(schema.chatCharacters)
+		.set({ isActive: !chatCharacter.isActive })
+		.where(
+			and(
+				eq(schema.chatCharacters.characterId, message.characterId),
+				eq(schema.chatCharacters.chatId, message.chatId)
+			)
+		)
+
+	const res: Sockets.ToggleChatCharacterActive.Response = {
+		chatId: message.chatId,
+		characterId: message.characterId,
+		isActive: !chatCharacter.isActive
+	}
+
+	emitToUser("toggleChatCharacterActive", res)
+
+	await getChat(socket, { id: chat.id }, emitToUser)
 }

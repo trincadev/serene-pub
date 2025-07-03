@@ -3,7 +3,7 @@
 	import "../../../app.css"
 	import * as Icons from "@lucide/svelte"
 	import { fly, fade } from "svelte/transition"
-	import { onMount, setContext } from "svelte"
+	import { onMount, setContext, onDestroy } from "svelte"
 	import SamplingSidebar from "./sidebars/SamplingSidebar.svelte"
 	import ConnectionsSidebar from "./sidebars/ConnectionsSidebar.svelte"
 	import ContextSidebar from "./sidebars/ContextSidebar.svelte"
@@ -13,8 +13,7 @@
 	import ChatsSidebar from "./sidebars/ChatsSidebar.svelte"
 	import PromptsSidebar from "./sidebars/PromptsSidebar.svelte"
 	import TagsSidebar from "./sidebars/TagsSidebar.svelte"
-	import skio from "sveltekit-io"
-	import { Toaster } from "@skeletonlabs/skeleton-svelte"
+	import * as skio from "sveltekit-io"
 	import { toaster } from "$lib/client/utils/toaster"
 	import SettingsSidebar from "$lib/client/components/sidebars/SettingsSidebar.svelte"
 	import type { Snippet } from "svelte"
@@ -42,7 +41,7 @@
 		leftNav: {
 			sampling: {
 				icon: Icons.SlidersHorizontal,
-				title: "SamplingConfig"
+				title: "Sampling"
 			},
 			connections: { icon: Icons.Cable, title: "Connections" },
 			contexts: { icon: Icons.BookOpenText, title: "Contexts" },
@@ -52,66 +51,83 @@
 		rightNav: {
 			personas: { icon: Icons.UserCog, title: "Personas" },
 			characters: { icon: Icons.Users, title: "Characters" },
-			lorebooks: { icon: Icons.BookMarked, title: "Lorebooks" },
+			lorebooks: { icon: Icons.BookMarked, title: "Lorebooks+" },
 			tags: { icon: Icons.Tag, title: "Tags" },
 			chats: { icon: Icons.MessageSquare, title: "Chats" }
-		}
+		},
+		digest: {}
 	})
+	// TODO use setTheme socket call
 	let themeCtx: ThemeCtx = $state({
-		mode: localStorage.getItem("mode") as "light" | "dark" || "dark",
-		theme: localStorage.getItem("theme") || Theme.CERBERUS
+		mode: (localStorage.getItem("mode") as "light" | "dark") || "dark",
+		theme: localStorage.getItem("theme") || Theme.HAMLINDIGO
 	})
 
-	function openPanel(which: string) {
+	function openPanel({
+		key,
+		toggle = true
+	}: {
+		key: string
+		toggle?: boolean
+	}): void {
 		// Determine which nav the key belongs to
 		const isLeft = Object.prototype.hasOwnProperty.call(
 			panelsCtx.leftNav,
-			which
+			key
 		)
 		const isRight = Object.prototype.hasOwnProperty.call(
 			panelsCtx.rightNav,
-			which
+			key
 		)
 		const isMobile = window.innerWidth < 768
 		if (isMobile) {
-			if (panelsCtx.mobilePanel === which) {
-				closePanel({ panel: "mobile" })
+			if (panelsCtx.mobilePanel === key) {
+				if (toggle) {
+					closePanel({ panel: "mobile" })
+				}
+				// else do nothing (leave open)
 			} else if (panelsCtx.mobilePanel) {
 				closePanel({ panel: "mobile" }).then((res) => {
 					if (res) {
-						panelsCtx.mobilePanel = which
+						panelsCtx.mobilePanel = key
 						panelsCtx.leftPanel = null
 						panelsCtx.rightPanel = null
 					}
 				})
 			} else {
-				panelsCtx.mobilePanel = which
+				panelsCtx.mobilePanel = key
 				panelsCtx.leftPanel = null
 				panelsCtx.rightPanel = null
 			}
 		} else if (isLeft) {
-			if (panelsCtx.leftPanel === which) {
-				closePanel({ panel: "left" })
+			if (panelsCtx.leftPanel === key) {
+				if (toggle) {
+					closePanel({ panel: "left" })
+				}
+				// else do nothing (leave open)
 			} else if (panelsCtx.leftPanel) {
 				closePanel({ panel: "left" }).then((res) => {
 					if (res) {
-						panelsCtx.leftPanel = which
+						panelsCtx.leftPanel = key
 					}
 				})
 			} else {
-				panelsCtx.leftPanel = which
+				panelsCtx.leftPanel = key
 			}
 		} else if (isRight) {
-			if (panelsCtx.rightPanel === which) {
-				closePanel({ panel: "right" })
+			if (panelsCtx.rightPanel === key) {
+				if (toggle) {
+					closePanel({ panel: "right" })
+				}
+				// else do nothing (leave open)
 			} else if (panelsCtx.rightPanel) {
 				closePanel({ panel: "right" }).then((res) => {
 					if (res) {
-						panelsCtx.rightPanel = which
+						panelsCtx.rightPanel = key
 					}
 				})
 			} else {
-				panelsCtx.rightPanel = which
+				panelsCtx.rightPanel = key
 			}
 		}
 	}
@@ -136,7 +152,7 @@
 	}
 
 	function handleMobilePanelClick(key: string) {
-		panelsCtx.openPanel(key)
+		panelsCtx.openPanel({ key })
 		panelsCtx.isMobileMenuOpen = false
 	}
 
@@ -167,21 +183,28 @@
 
 		socket.emit("user", {})
 	})
+
+	onDestroy(() => {
+		socket.off("user")
+		socket.off("error")
+	})
 </script>
 
 {#if !!userCtx.user}
 	<div
-		class="bg-surface-100-900 relative flex min-h-screen w-[100%] max-w-[100%] flex-col justify-between"
+		class="bg-surface-100-900 relative h-full max-h-[100dvh] w-full justify-between"
 	>
-		<Header />
 		<div
-			class="relative mx-auto flex w-full flex-1 flex-col gap-1 gap-2 lg:flex-row"
+			class="relative flex h-svh min-w-full max-w-full flex-1 flex-col lg:flex-row lg:gap-2 overflow-hidden"
 		>
 			<!-- Left Sidebar -->
 			<aside class="desktop-sidebar">
 				{#if panelsCtx.leftPanel}
+					{@const title =
+						panelsCtx.leftNav[panelsCtx.leftPanel]?.title ||
+						panelsCtx.leftPanel}
 					<div
-						class="bg-surface-50-950 me-2 flex h-full w-full flex-col rounded-r-lg"
+						class="bg-surface-50-950 me-2 flex h-full w-full flex-col overflow-y-auto rounded-r-lg"
 						in:fly={{ x: -100, duration: 200 }}
 						out:fly={{ x: -100, duration: 200 }}
 					>
@@ -189,7 +212,7 @@
 							<span
 								class="text-foreground text-lg font-semibold capitalize"
 							>
-								{panelsCtx.leftPanel}
+								{title}
 							</span>
 							<button
 								class="btn-ghost"
@@ -225,14 +248,20 @@
 				{/if}
 			</aside>
 			<!-- Main Content -->
-			<main class="bg-surface-50-950">
-				{@render children?.()}
+			<main class="flex flex-col h-full overflow-hidden">
+				<Header />
+				<div class="flex-1 overflow-auto">
+					{@render children?.()}
+				</div>
 			</main>
 			<!-- Right Sidebar -->
-			<aside class="desktop-sidebar">
+			<aside class="desktop-sidebar pt-1">
 				{#if panelsCtx.rightPanel}
+					{@const title =
+						panelsCtx.rightNav[panelsCtx.rightPanel]?.title ||
+						panelsCtx.rightPanel}
 					<div
-						class="bg-surface-50-950 flex h-full w-full flex-col rounded-l-lg"
+						class="bg-surface-50-950 flex h-full w-full flex-col overflow-y-auto rounded-l-lg"
 						in:fly={{ x: 100, duration: 200 }}
 						out:fly={{ x: 100, duration: 200 }}
 					>
@@ -240,7 +269,7 @@
 							<span
 								class="text-foreground text-lg font-semibold capitalize"
 							>
-								{panelsCtx.rightPanel}
+								{title}
 							</span>
 							<button
 								class="btn-ghost"
@@ -277,8 +306,12 @@
 			</aside>
 		</div>
 		{#if panelsCtx.mobilePanel}
+			{@const title =
+				{ ...panelsCtx.leftNav, ...panelsCtx.rightNav }[
+					panelsCtx.mobilePanel
+				]?.title || panelsCtx.mobilePanel}
 			<div
-				class="bg-surface-100-900 fixed inset-0 z-[51] flex flex-col lg:hidden"
+				class="bg-surface-100-900 fixed inset-0 z-[51] flex flex-col overflow-y-auto lg:hidden"
 			>
 				<div
 					class="border-border flex items-center justify-between border-b p-4"
@@ -366,7 +399,7 @@
 						<Icons.X class="text-foreground h-6 w-6" />
 					</button>
 				</div>
-				<div class="flex flex-col gap-4 p-4 text-2xl">
+				<div class="flex flex-col gap-4 overflow-y-auto p-4 text-2xl">
 					{#each Object.entries( { ...panelsCtx.rightNav, ...panelsCtx.leftNav } ) as [key, item]}
 						<button
 							class="btn-ghost flex items-center gap-2"
@@ -383,20 +416,18 @@
 	</div>
 {/if}
 
-<Toaster {toaster}></Toaster>
-
 <style lang="postcss">
 	@reference "tailwindcss";
 
 	/* w-[100%] lg:min-w-[50%] lg:w-[50%] */
 
 	main {
-		@apply relative m-0 min-h-[calc(100vh-4.5rem)] basis-1/2 flex-col rounded-t-lg p-0 px-2 lg:max-w-[50%];
+		@apply relative m-0 lg:max-w-[50%] lg:basis-1/2;
 	}
 
 	/* w-[25%] max-w-[25%] */
 
 	.desktop-sidebar {
-		@apply sticky top-[2rem] z-30 hidden h-[calc(100vh-4.5rem)] basis-1/4 overflow-x-hidden lg:block;
+		@apply hidden min-h-full max-h-full basis-1/4 overflow-x-hidden lg:block py-1;
 	}
 </style>

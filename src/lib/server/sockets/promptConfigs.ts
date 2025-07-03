@@ -14,7 +14,8 @@ export async function promptConfigsList(
             id: true,
             name: true,
             isImmutable: true
-        }
+        },
+        orderBy: (c, { asc }) => [asc(c.isImmutable), asc(c.name)],
     })
     const res: Sockets.PromptConfigsList.Response = { promptConfigsList }
     emitToUser("promptConfigsList", res)

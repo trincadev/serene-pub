@@ -1,13 +1,20 @@
 <script lang="ts">
-	import skio from "sveltekit-io"
-	import { getContext, onMount } from "svelte"
+	import * as skio from "sveltekit-io"
+	import { getContext, onDestroy, onMount } from "svelte"
 	import * as Icons from "@lucide/svelte"
 	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import OllamaForm from "$lib/client/connectionForms/OllamaForm.svelte"
 	// import ChatGPTForm from "$lib/client/connectionForms/ChatGPTForm.svelte"
 	import OpenAIForm from "$lib/client/connectionForms/OpenAIForm.svelte"
 	import LmStudioForm from "$lib/client/connectionForms/LMStudioForm.svelte"
-	import { CONNECTION_TYPES } from "$lib/shared/constants/ConnectionTypes"
+	import {
+		CONNECTION_TYPE,
+		CONNECTION_TYPES
+	} from "$lib/shared/constants/ConnectionTypes"
+	import LlamaCppForm from "$lib/client/connectionForms/LlamaCppForm.svelte"
+	import { toaster } from "$lib/client/utils/toaster"
+	import { PromptFormats } from "$lib/shared/constants/PromptFormats"
+	import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -17,8 +24,203 @@
 	let userCtx: UserCtx = getContext("userCtx")
 	const socket = skio.get()
 
+	const OAIChatPresets: {name:string, value: number, connectionDefaults: {
+			baseUrl: string,
+			promptFormat?: string,
+			tokenCounter?: string,
+			extraJson: {
+				stream: boolean,
+				prerenderPrompt: boolean
+				apiKey: string
+			}
+		}
+	}[] = [
+		{
+			name: "Empty",
+			value: 0,
+			connectionDefaults: {
+				baseUrl: "",
+				promptFormat: PromptFormats.VICUNA,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: ""
+				}
+			}
+		},
+		{
+			name: "Ollama",
+			value: 1,
+			connectionDefaults: {
+				baseUrl: "http://localhost:11434/v1/",
+				promptFormat: PromptFormats.VICUNA,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "ollama",
+				}
+			}
+		},
+		// {
+		// 	name: "LM Studio",
+		// 	value: 2,
+		// 	connectionDefaults: {
+		// 		baseUrl: "http://localhost:1234/v1/",
+		// 		promptFormat: PromptFormats.VICUNA,
+		// 		tokenCounter: TokenCounterOptions.ESTIMATE,
+		// 		extraJson: {
+		// 			stream: true,
+		// 			prerenderPrompt: false,
+		// 			apiKey: "",
+		// 		}
+		// 	}
+		// }
+		{
+			name: "OpenRouter",
+			value: 3,
+			connectionDefaults: {
+				baseUrl: "https://openrouter.ai/api/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "OpenAI (Official)",
+			value: 4,
+			connectionDefaults: {
+				baseUrl: "https://api.openai.com/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.OPENAI_GPT4O,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "LocalAI",
+			value: 5,
+			connectionDefaults: {
+				baseUrl: "http://localhost:8080/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "AnyScale",
+			value: 6,
+			connectionDefaults: {
+				baseUrl: "https://api.endpoints.anyscale.com/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "Groq",
+			value: 7,
+			connectionDefaults: {
+				baseUrl: "https://api.groq.com/openai/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "Together AI",
+			value: 8,
+			connectionDefaults: {
+				baseUrl: "https://api.together.xyz/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "DeepInfra",
+			value: 9,
+			connectionDefaults: {
+				baseUrl: "https://api.deepinfra.com/v1/openai/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "Fireworks AI",
+			value: 10,
+			connectionDefaults: {
+				baseUrl: "https://api.fireworks.ai/inference/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "Perplexity AI",
+			value: 11,
+			connectionDefaults: {
+				baseUrl: "https://api.perplexity.ai/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		},
+		{
+			name: "KoboldCPP",
+			value: 12,
+			connectionDefaults: {
+				baseUrl: "http://localhost:5001/v1/",
+				promptFormat: PromptFormats.OPENAI,
+				tokenCounter: TokenCounterOptions.ESTIMATE,
+				extraJson: {
+					stream: true,
+					prerenderPrompt: false,
+					apiKey: "",
+				}
+			}
+		}
+	]
+
 	// --- State ---
-	let connectionsList = $state([])
+	let connectionsList: SelectConnection[] = $state([])
 	let connection: Sockets.Connection.Response["connection"] | undefined =
 		$state()
 	let originalConnection = $state()
@@ -36,6 +238,8 @@
 	let showNewConnectionModal = $state(false)
 	let newConnectionName = $state("")
 	let newConnectionType = $state(CONNECTION_TYPES[0].value)
+	let newConnectionOAIChatPreset: number | undefined = $state()
+	let showDeleteModal = $state(false)
 
 	function handleSelectChange(e: Event) {
 		socket.emit("setUserActiveConnection", {
@@ -48,11 +252,28 @@
 		showNewConnectionModal = true
 	}
 	function handleNewConnectionConfirm() {
-		if (!newConnectionName.trim()) return
+		if (!newConnectionName.trim()) {
+			toaster.error({ title: "Connection name is required" })
+			return
+		}
+		if (newConnectionType === CONNECTION_TYPE.OPENAI_CHAT) {
+			const preset = OAIChatPresets.find(
+				(p) => p.value === newConnectionOAIChatPreset
+			)
+			if (!preset) {
+				toaster.error({ title: "Invalid OpenAI Chat preset" })
+				return
+			}
+		}
 		const newConn = {
 			name: newConnectionName.trim(),
 			type: newConnectionType,
-			enabled: true
+			enabled: true,
+			...(newConnectionType === CONNECTION_TYPE.OPENAI_CHAT
+				? OAIChatPresets.find(
+						(p) => p.value === newConnectionOAIChatPreset
+				  )?.connectionDefaults
+				: {})
 		}
 		socket.emit("createConnection", { connection: newConn })
 		showNewConnectionModal = false
@@ -67,15 +288,18 @@
 		connection = { ...originalConnection }
 	}
 	function handleDelete() {
-		if (
-			confirm(
-				"Are you sure you want to delete this connection? This cannot be undone."
-			)
-		) {
+		showDeleteModal = true
+	}
+	function handleDeleteModalConfirm() {
+		if (connection) {
 			socket.emit("deleteConnection", { id: connection.id })
 		}
+		showDeleteModal = false
 	}
-	async function handleOnClose() {
+	function handleDeleteModalCancel() {
+		showDeleteModal = false
+	}
+	function handleOnClose() {
 		if (!unsavedChanges) return true
 		showConfirmModal = true
 		return new Promise<boolean>((resolve) => {
@@ -90,31 +314,43 @@
 		showConfirmModal = false
 		if (confirmResolve) confirmResolve(false)
 	}
-	function handleTestConnection() {
-		testResult = null
-		socket.emit("testConnection", { connection })
-	}
 	function handleRefreshModels() {
 		refreshModelsResult = null
 		socket.emit("refreshModels", { baseUrl: connection?.baseUrl })
 	}
-	function handleFieldChange(key: string, value: any) {
-		connection = { ...connection, [key]: value }
-	}
 
 	onMount(() => {
-		socket.on("connectionsList", (msg) => {
-			connectionsList = msg.connectionsList
-		})
-		socket.on("connection", (msg) => {
+		socket.on(
+			"connectionsList",
+			(msg: Sockets.ConnectionsList.Response) => {
+				connectionsList = msg.connectionsList
+					.slice()
+					.sort((a, b) => a.name!.localeCompare(b.name!))
+			}
+		)
+		socket.on("connection", (msg: Sockets.Connection.Response) => {
 			connection = { ...msg.connection }
 			originalConnection = { ...msg.connection }
 		})
-		socket.on("testConnection", (msg) => {
+		socket.on("testConnection", (msg: Sockets.TestConnection.Response) => {
 			testResult = msg
 		})
-		socket.on("refreshModels", (msg) => {
+		socket.on("refreshModels", (msg: Sockets.RefreshModels.Response) => {
 			refreshModelsResult = msg.models || []
+		})
+		socket.on(
+			"updateConnection",
+			(msg: Sockets.UpdateConnection.Response) => {
+				toaster.success({ title: "Connection Updated" })
+			}
+		)
+		socket.on("deleteConnection", (msg: Sockets.DeleteConnection.Response) => {
+			toaster.success({ title: "Connection Deleted" })
+			connection = undefined
+			originalConnection = undefined
+		})
+		socket.on("createConnection", (msg: Sockets.CreateConnection.Response) => {
+			toaster.success({ title: "Connection Created" })
 		})
 		socket.emit("connectionsList", {})
 		if (userCtx.user?.activeConnectionId) {
@@ -125,6 +361,17 @@
 		if (connection?.type === "ollama" && connection.baseUrl) {
 			handleRefreshModels()
 		}
+	})
+
+	onDestroy(() => {
+		socket.off("connectionsList")
+		socket.off("connection")
+		socket.off("testConnection")
+		socket.off("refreshModels")
+		socket.off("updateConnection")
+		socket.off("deleteConnection")
+		socket.off("createConnection")
+		onclose = undefined
 	})
 </script>
 
@@ -161,10 +408,15 @@
 		<select
 			class="select bg-background border-muted rounded border"
 			onchange={handleSelectChange}
-			bind:value={userCtx.user.activeConnectionId}
+			bind:value={userCtx!.user!.activeConnectionId}
+			disabled={unsavedChanges}
 		>
 			{#each connectionsList as c}
-				<option value={c.id}>{c.name} ({c.type})</option>
+				<option value={c.id}>
+					{c.name} ({CONNECTION_TYPE.options.find(
+						(t) => t.value === c.type
+					)!.label})
+				</option>
 			{/each}
 		</select>
 	</div>
@@ -173,10 +425,11 @@
 			<div class="my-4 flex">
 				<button
 					type="button"
-					class="btn preset-filled-primary-500 w-full"
+					class="btn btn-sm preset-filled-success-500 w-full"
 					onclick={handleUpdate}
 					disabled={!unsavedChanges}
 				>
+					<Icons.Save size={16} />
 					Save
 				</button>
 			</div>
@@ -186,15 +439,17 @@
 					id="name"
 					type="text"
 					bind:value={connection.name}
-					class="input bg-background border-muted w-full rounded border"
+					class="input"
 				/>
 			</div>
-			{#if connection.type === "ollama"}
+			{#if connection.type === CONNECTION_TYPE.OLLAMA}
 				<OllamaForm bind:connection />
-			{:else if connection.type === "openai"}
+			{:else if connection.type === CONNECTION_TYPE.OPENAI_CHAT}
 				<OpenAIForm bind:connection />
-			{:else if connection.type === "lmstudio"}
+			{:else if connection.type === CONNECTION_TYPE.LM_STUDIO}
 				<LmStudioForm bind:connection />
+			{:else if connection.type === CONNECTION_TYPE.LLAMACPP_COMPLETION}
+				<LlamaCppForm bind:connection />
 			{/if}
 			<div class="mt-4 flex flex-col gap-2">
 				{#if connection.type === "ollama"}
@@ -227,7 +482,7 @@
 <Modal
 	open={showConfirmModal}
 	onOpenChange={(e) => (showConfirmModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -259,14 +514,14 @@
 <Modal
 	open={showNewConnectionModal}
 	onOpenChange={(e) => (showNewConnectionModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
 		<header class="flex justify-between">
 			<h2 class="h2">Create New Connection</h2>
 		</header>
-		<article class="flex flex-col gap-4">
+		<article class="flex flex-col gap-2">
 			<div>
 				<label class="font-semibold" for="newConnName">Name</label>
 				<input
@@ -290,10 +545,39 @@
 					bind:value={newConnectionType}
 				>
 					{#each CONNECTION_TYPES as t}
-						<option value={t.value}>{t.label}</option>
+						<option value={t.value} disabled={t.value===CONNECTION_TYPE.LM_STUDIO}>{t.label}</option>
 					{/each}
 				</select>
 			</div>
+			{#if newConnectionType === CONNECTION_TYPE.OPENAI_CHAT}
+				<div class="mt-2">
+					<label class="font-semibold" for="oaiChatPreset">
+						Preset
+					</label>
+					<select
+						id="oaiChatPreset"
+						class="select w-full"
+						bind:value={newConnectionOAIChatPreset}
+					>
+						{#each OAIChatPresets as preset}
+							<option value={preset.value}>
+								{preset.name}
+							</option>
+						{/each}
+					</select>
+				</div>
+			{/if}
+			{#if !!newConnectionType}
+				{@const connectionType = CONNECTION_TYPES.find(
+					(t) => t.value === newConnectionType
+				)}
+				<div class="bg-surface-500/25 flex flex-col gap-2 rounded p-4 mt-4">
+					<span class="preset-filled-primary-500 p-2">
+						Difficulty: {connectionType?.difficulty}
+					</span>
+					{@html connectionType?.description}
+				</div>
+			{/if}
 		</article>
 		<footer class="mt-4 flex justify-end gap-4">
 			<button
@@ -308,6 +592,37 @@
 				disabled={!newConnectionName.trim()}
 			>
 				Create
+			</button>
+		</footer>
+	{/snippet}
+</Modal>
+<Modal
+	open={showDeleteModal}
+	onOpenChange={(e) => (showDeleteModal = e.open)}
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	backdropClasses="backdrop-blur-sm"
+>
+	{#snippet content()}
+		<header class="flex justify-between">
+			<h2 class="h2">Delete Connection</h2>
+		</header>
+		<article>
+			<p class="opacity-60">
+				Are you sure you want to delete this connection? This cannot be undone.
+			</p>
+		</article>
+		<footer class="flex justify-end gap-4">
+			<button
+				class="btn preset-filled-surface-500"
+				onclick={handleDeleteModalCancel}
+			>
+				Cancel
+			</button>
+			<button
+				class="btn preset-filled-error-500"
+				onclick={handleDeleteModalConfirm}
+			>
+				Delete
 			</button>
 		</footer>
 	{/snippet}

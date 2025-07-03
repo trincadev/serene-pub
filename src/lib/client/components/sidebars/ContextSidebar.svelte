@@ -1,9 +1,10 @@
 <script lang="ts">
     import * as skio from "sveltekit-io"
-    import { getContext, onMount } from "svelte"
+    import { getContext, onDestroy, onMount } from "svelte"
     import * as Icons from "@lucide/svelte"
     import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
     import NewNameModal from "../modals/NewNameModal.svelte"
+	import { toaster } from "$lib/client/utils/toaster"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -42,10 +43,6 @@
         if (selectedConfigId) {
             socket.emit("contextConfig", { id: selectedConfigId })
         }
-    })
-
-    $effect(() => {
-        console.log("Context config changed:", $state.snapshot(contextConfig))
     })
 
     function handleDelete() {
@@ -125,11 +122,24 @@
         socket.on("createContextConfig", (msg: Sockets.CreateContextConfig.Response) => {
             selectedConfigId = msg.contextConfig.id
         })
+        socket.on("updateContextConfig", (msg: Sockets.UpdateContextConfig.Response) => {
+            contextConfig = { ...msg.contextConfig }
+            originalData = { ...msg.contextConfig }
+            toaster.success({title:"Context config saved successfully."})
+        })
         socket.emit("contextConfigsList", {})
         socket.emit("contextConfig", {
             id: selectedConfigId
         })
         onclose = handleOnClose
+    })
+
+    onDestroy(() => {
+        socket.off("contextConfigsList")
+        socket.off("contextConfig")
+        socket.off("createContextConfig")
+        socket.off("updateContextConfig")
+        onclose = undefined
     })
 </script>
 
@@ -156,7 +166,7 @@
         </button>
     </div>
     <div class="mb-6 flex items-center gap-2">
-        <select class="select w-full" bind:value={selectedConfigId}>
+        <select class="select w-full" bind:value={selectedConfigId} disabled={unsavedChanges}>
             {#each configsList.filter((c) => c.isImmutable) as c}
                 <option value={c.id}>{c.name}{c.isImmutable ? "*" : ""}</option>
             {/each}
@@ -168,10 +178,12 @@
     {#if contextConfig}
         <div class="mt-4 mb-4 flex w-full justify-end gap-2">
             <button
-                class="btn preset-filled-primary-500 w-full"
+                class="btn btn-sm preset-filled-success-500 w-full"
                 onclick={handleSave}
-                disabled={contextConfig.isImmutable || !unsavedChanges}>Save</button
-            >
+                disabled={contextConfig.isImmutable || !unsavedChanges}>
+                <Icons.Save size={16} />
+                Save
+                </button>
         </div>
         <div class="flex flex-col gap-4">
             <div class="flex flex-col gap-1">
@@ -196,12 +208,12 @@
                     <label class="font-semibold" for="contextTemplate">Template</label>
                     <textarea
                         id="template"
-                        rows="8"
+                        rows="20"
                         bind:value={contextConfig.template}
                         class="input w-full"
                     ></textarea>
                 </div>
-                <div class="flex flex-col gap-4">
+                <!-- <div class="flex flex-col gap-4">
                     <div class="flex flex-col gap-1">
                         <label class="flex items-center gap-2 font-semibold disabled">
                             <input
@@ -221,7 +233,7 @@
                             </p>
                         </div>
                     </div>
-                </div>
+                </div> -->
             {/if}
         </div>
     {/if}

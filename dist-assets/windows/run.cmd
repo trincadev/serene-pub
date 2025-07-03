@@ -8,6 +8,7 @@ set NODE_ARCHIVE=node-archive.win.zip
 set NODE_DIR=node-v20.13.1-win-x64
 set NODE_BIN_PATH=%NODE_DIR%\node.exe
 
+REM Download Node.js if needed
 if not exist "%NODE_BIN%" (
   echo Downloading Node.js...
   powershell -Command "Invoke-WebRequest -Uri %NODE_URL% -OutFile %NODE_ARCHIVE%"
@@ -16,4 +17,8 @@ if not exist "%NODE_BIN%" (
   rmdir /s /q %NODE_DIR%
   del %NODE_ARCHIVE%
 )
+
+echo Starting Serene Pub...
 "%NODE_BIN%" "%DIR%build\index.js" %*
+
+pause

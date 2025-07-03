@@ -1,13 +1,12 @@
 <script lang="ts">
-	import skio from "sveltekit-io"
+	import * as skio from "sveltekit-io"
 	import { getContext, onMount } from "svelte"
 	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import PersonaForm from "../personaForms/PersonaForm.svelte"
 	import PersonaUnsavedChangesModal from "../modals/PersonaUnsavedChangesModal.svelte"
-	import { toaster } from "$lib/client/utils/toaster"
-	import { goto } from "$app/navigation"
 	import Avatar from "../Avatar.svelte"
+	import SidebarListItem from "../SidebarListItem.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -18,7 +17,7 @@
 	const socket = skio.get()
 	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 
-	let personasList = $state([])
+	let personaList: Sockets.PersonaList.Response["personaList"] = $state([])
 	let search = $state("")
 	let personaId: number | undefined = $state()
 	let isCreating = $state(false)
@@ -27,24 +26,37 @@
 	let personaToDelete: number | undefined = $state(undefined)
 	let showUnsavedChangesModal = $state(false)
 	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
+	let onEditFormCancel: (() => void) | undefined = $state()
 
 	onMount(() => {
-		socket.emit("personasList", {})
+		socket.emit("personaList", {})
 		onclose = handleOnClose
 	})
 
-	socket.on("personasList", (msg) => {
-		personasList = msg.personasList
+	socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
+		personaList = msg.personaList
 	})
 
 	let filteredPersonas = $derived.by(() => {
-		if (!search) return personasList
-		return personasList.filter(
+		if (!search) return personaList
+		return personaList.filter(
 			(p) =>
-				p.name.toLowerCase().includes(search.toLowerCase()) ||
+				p.name!.toLowerCase().includes(search.toLowerCase()) ||
 				(p.description &&
 					p.description.toLowerCase().includes(search.toLowerCase()))
 		)
+	})
+
+	$effect(() => {
+		if (panelsCtx.digest.personaId) {
+			// Check if we have unsaved changes
+			if (personaId !== panelsCtx.digest.characterId && !isSafeToClosePersonasForm) {
+				onEditFormCancel?.()
+			} else { // If no unsaved changes, just set the characterId
+				personaId = panelsCtx.digest.personaId
+			}
+			delete panelsCtx.digest.personaId
+		}
 	})
 
 	function handleCreateClick() {
@@ -108,16 +120,12 @@
 	}
 
 	function handlePersonaClick(
-		persona: Sockets.PersonasList.Response["personasList"][0]
+		persona: Sockets.PersonaList.Response["personaList"][0]
 	) {
-		const url = new URL(window.location.href)
-		if (persona.id !== undefined) {
-			url.searchParams.set("chats-by-personaId", persona.id.toString())
-			goto(url.pathname + url.search, {replaceState: true})
-			// Open chat sidebar
-			panelsCtx.openPanel("chats")
-		}
+		panelsCtx.digest.chatPersonaId = persona.id
+		panelsCtx.openPanel({key:"chats", toggle: false})
 	}
+
 </script>
 
 <div class="text-foreground h-full p-4">
@@ -125,12 +133,14 @@
 		<PersonaForm
 			bind:isSafeToClose={isSafeToClosePersonasForm}
 			closeForm={closePersonasForm}
+			bind:onCancel={onEditFormCancel}
 		/>
 	{:else if personaId}
 		<PersonaForm
 			bind:isSafeToClose={isSafeToClosePersonasForm}
 			{personaId}
 			closeForm={closePersonasForm}
+			bind:onCancel={onEditFormCancel}
 		/>
 	{:else}
 		<div class="mb-2 flex gap-2">
@@ -146,7 +156,7 @@
 			<input
 				type="text"
 				placeholder="Search personas..."
-				class="input bg-background border-muted w-full rounded border"
+				class="input"
 				bind:value={search}
 			/>
 		</div>
@@ -157,57 +167,61 @@
 				</div>
 			{:else}
 				{#each filteredPersonas as p}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div
-						class="sidebar-list-item"
+					<SidebarListItem
+						id={p.id}
 						onclick={() => handlePersonaClick(p)}
+						contentTitle="Go to persona chats"
 					>
-						<span class="text-muted-foreground w-[2.5em] text-xs">
-							#{p.id}
-						</span>
-						<!-- <Avatar
-							src={p.avatar}
-							size="w-[4em] h-[4em]"
-							name={p.name}
-							imageClasses="object-cover"
-						>
-							<Icons.User size={36} />
-						</Avatar> -->
-						<Avatar char={p} />
-						<div class="min-w-0 flex-1">
-							<div class="truncate">{p.name ?? "Unnamed"}</div>
-							{#if p.description}
-								<div
-									class="text-muted-foreground truncate text-xs"
+						{#snippet content()}
+						<Avatar
+									src={p.avatar || ""}
+									size="w-[4em] h-[4em] min-w-[4em] min-h-[4em]"
+									imageClasses="object-cover"
+									name={p.name!}
 								>
-									{p.description}
+									<Icons.User size={36} />
+								</Avatar>
+							<div class="flex gap-2 relative  flex-1">
+								
+								<div class="flex-1 relative">
+									<div class="truncate font-semibold text-left">
+										{p.name}
+									</div>
+									{#if p.description}
+										<div
+											class="text-muted-foreground line-clamp-2 text-xs text-left"
+										>
+											{p.description}
+										</div>
+									{/if}
 								</div>
-							{/if}
-						</div>
-						<div class="flex gap-4">
-							<button
-								class="btn btn-sm text-primary-500 px-0"
-								onclick={(e) => {
-									e.stopPropagation()
-									handleEditClick(p.id)
-								}}
-								title="Edit Persona"
-							>
-								<Icons.Edit size={16} />
-							</button>
-							<button
-								class="btn btn-sm text-error-500 px-0"
-								onclick={(e) => {
-									e.stopPropagation()
-									handleDeleteClick(p.id)
-								}}
-								title="Delete Personar"
-							>
-								<Icons.Trash2 size={16} />
-							</button>
-						</div>
-					</div>
+							</div>
+						{/snippet}
+						{#snippet controls()}
+							<div class="flex flex-col gap-4">
+								<button
+									class="btn btn-sm text-primary-500 p-2"
+									onclick={(e) => {
+										e.stopPropagation()
+										handleEditClick(p.id!)
+									}}
+									title="Edit Character"
+								>
+									<Icons.Edit size={16} />
+								</button>
+								<button
+									class="btn btn-sm text-error-500 p-2"
+									onclick={(e) => {
+										e.stopPropagation()
+										handleDeleteClick(p.id!)
+									}}
+									title="Delete Character"
+								>
+									<Icons.Trash2 size={16} />
+								</button>
+							</div>
+						{/snippet}
+					</SidebarListItem>
 				{/each}
 			{/if}
 		</div>
@@ -217,7 +231,7 @@
 <Modal
 	open={showDeleteModal}
 	onOpenChange={(e) => (showDeleteModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}

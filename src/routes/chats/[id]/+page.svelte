@@ -16,10 +16,12 @@
 	let editChatMessage: SelectChatMessage | undefined = $state()
 	let draftCompiledPrompt: CompiledPrompt | undefined = $state()
 	let userCtx: UserCtx = getContext("userCtx")
+	let panelsCtx: PanelsCtx = getContext("panelsCtx")
 	let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
 	let contextExceeded = $derived(
 		!!draftCompiledPrompt
-			? draftCompiledPrompt!.meta.tokenCounts.total > draftCompiledPrompt!.meta.tokenCounts.limit
+			? draftCompiledPrompt!.meta.tokenCounts.total >
+					draftCompiledPrompt!.meta.tokenCounts.limit
 			: false
 	)
 	let openMobileMsgControls: number | undefined = $state(undefined)
@@ -35,6 +37,28 @@
 			return chat.chatMessages[chat.chatMessages.length - 1]
 		}
 		return undefined
+	})
+
+	let lastPersonaMessage: SelectChatMessage | undefined = $derived.by(() => {
+		if (chat && chat.chatMessages.length > 0) {
+			return chat.chatMessages
+				.slice()
+				.reverse()
+				.find((msg: SelectChatMessage) => msg.personaId)
+		}
+		return undefined
+	})
+
+	let canRegenerateLastMessage: boolean = $derived.by(() => {
+		return (
+			(!lastMessage?.metadata?.isGreeting &&
+				!!lastMessage &&
+				!lastMessage.isGenerating &&
+				!lastMessage.isHidden &&
+				(!lastPersonaMessage ||
+					lastPersonaMessage.id < lastMessage.id)) ||
+			false
+		)
 	})
 
 	function handleSend() {
@@ -128,8 +152,9 @@
 			!lastMessage ||
 			lastMessage.isGenerating ||
 			!!editChatMessage
-		)
+		) {
 			return
+		}
 		if (promptTokenCountTimeout) clearTimeout(promptTokenCountTimeout)
 		promptTokenCountTimeout = setTimeout(() => {
 			socket.emit("promptTokenCount", {
@@ -141,7 +166,25 @@
 		}, 2000)
 	})
 
-	let chatMessagesContainer: HTMLDivElement | null = null
+	let chatMessagesContainer: HTMLDivElement | null = $state(null)
+
+	// Auto-scroll to bottom when messages change or container is mounted
+	$effect(() => {
+		// React to changes in messages and container
+		const messagesLength = chat?.chatMessages?.length ?? 0
+		if (chatMessagesContainer && messagesLength > 0) {
+			// Use setTimeout to ensure DOM has updated
+			setTimeout(() => {
+				if (chatMessagesContainer) {
+					chatMessagesContainer.scrollTo({
+						top: chatMessagesContainer.scrollHeight,
+						behavior: "smooth"
+					})
+				}
+			// }, 50) // Slightly longer delay to ensure content is rendered
+			}, 30)
+		}
+	})
 
 	function handleEditMessage(e: Event, msg: SelectChatMessage) {
 		e.stopPropagation()
@@ -207,17 +250,81 @@
 	function onSelectTriggerCharacterMessage(characterId: number) {
 		showTriggerCharacterMessageModal = false
 		openMobileMsgControls = undefined
-		socket.emit("triggerGenerateMessage", { chatId, characterId, once:true })
+		socket.emit("triggerGenerateMessage", {
+			chatId,
+			characterId,
+			once: true
+		})
+	}
+
+	function handleCharacterNameClick(msg: SelectChatMessage): void {
+		if (msg.characterId) {
+			panelsCtx.openPanel({ key: "characters", toggle: false })
+			panelsCtx.digest.characterId = msg.characterId
+		} else if (msg.personaId) {
+			panelsCtx.openPanel({ key: "personas", toggle: false })
+			panelsCtx.digest.personaId = msg.personaId
+		}
+	}
+
+	function swipeRight(msg: SelectChatMessage): void {
+		const req: Sockets.ChatMessageSwipeRight.Call = {
+			chatId: chatId,
+			chatMessageId: msg.id
+		}
+		socket.emit("chatMessageSwipeRight", req)
+	}
+
+	function swipeLeft(msg: SelectChatMessage): void {
+		const req: Sockets.ChatMessageSwipeLeft.Call = {
+			chatId: chatId,
+			chatMessageId: msg.id
+		}
+		socket.emit("chatMessageSwipeLeft", req)
+	}
+
+	function canSwipeRight(
+		msg: SelectChatMessage,
+		isGreeting: boolean
+	): boolean {
+		if (msg.isGenerating) return false
+		if (lastPersonaMessage && lastPersonaMessage.id >= msg.id) {
+			return false
+		}
+		if (isGreeting) {
+			const idx = msg.metadata?.swipes?.currentIdx
+			const len = msg.metadata?.swipes?.history?.length ?? 0
+			if (typeof idx !== "number" || len === 0) return false
+			return idx < len - 1
+		}
+		return true
+	}
+
+	function showSwipeControls(
+		msg: SelectChatMessage,
+		isGreeting: boolean
+	): boolean {
+		let res = false
+		if (msg.id === lastMessage?.id && !isGreeting) {
+			// If this is the last message, we always show swipe controls
+			res = canRegenerateLastMessage
+		} else if (msg.isGenerating) {
+			res = false
+		} else if (msg.role === "user") {
+			return false
+		} else if (openMobileMsgControls === msg.id) {
+			res = true
+		} else if (isGreeting) {
+			res = (lastPersonaMessage?.id ?? 0) < msg.id
+		}
+		return res
 	}
 
 	onMount(() => {
 		socket.on("chat", (msg: Sockets.Chat.Response) => {
 			if (msg.chat.id === Number.parseInt(page.params.id)) {
 				chat = msg.chat
-				// Instantly jump to bottom on chat update
-				if (!openMobileMsgControls) {
-					window.scrollTo(0, document.body.scrollHeight)
-				}
+				// Auto-scroll is handled by the $effect
 			}
 		})
 
@@ -236,14 +343,46 @@
 						chatMessages: [...chat.chatMessages, msg.chatMessage]
 					}
 				}
+				// Auto-scroll is handled by the $effect
 			}
-			if (!openMobileMsgControls) {
-				setTimeout(() => {
-					window.scrollTo({
-						top: document.body.scrollHeight,
-						behavior: "smooth"
-					})
-				}, 0)
+		})
+
+		socket.on(
+			"updateCharacter",
+			(msg: Sockets.UpdateCharacter.Response) => {
+				const charId = msg.character?.id
+				if (!charId || !chat) return
+
+				// Update chat characters if the character is in the chat
+				const chatCharacterIndex = chat.chatCharacters.findIndex(
+					(c: SelectChatCharacter) => c.characterId === charId
+				)
+				if (chatCharacterIndex !== -1) {
+					const updatedChatCharacters = [...chat.chatCharacters]
+					updatedChatCharacters[chatCharacterIndex] = {
+						...updatedChatCharacters[chatCharacterIndex],
+						character: msg.character
+					}
+					chat = { ...chat, chatCharacters: updatedChatCharacters }
+				}
+			}
+		)
+
+		socket.on("updatePersona", (msg: Sockets.UpdatePersona.Response) => {
+			const personaId = msg.persona?.id
+			if (!personaId || !chat) return
+
+			// Update chat personas if the persona is in the chat
+			const chatPersonaIndex = chat.chatPersonas.findIndex(
+				(p: SelectChatPersona) => p.personaId === personaId
+			)
+			if (chatPersonaIndex !== -1) {
+				const updatedChatPersonas = [...chat.chatPersonas]
+				updatedChatPersonas[chatPersonaIndex] = {
+					...updatedChatPersonas[chatPersonaIndex],
+					persona: msg.persona
+				}
+				chat = { ...chat, chatPersonas: updatedChatPersonas }
 			}
 		})
 
@@ -254,6 +393,19 @@
 			}
 		)
 	})
+
+	let showAvatarModal = $state(false)
+	let avatarModalSrc: string | undefined = $state(undefined)
+
+	function handleAvatarClick(
+		char: SelectCharacter | SelectPersona | undefined
+	) {
+		if (!char) return
+		if (char.avatar) {
+			avatarModalSrc = char.avatar
+			showAvatarModal = true
+		}
+	}
 </script>
 
 <svelte:head>
@@ -261,138 +413,222 @@
 	<meta name="description" content="Serene Pub" />
 </svelte:head>
 
-<div class="flex h-full w-full flex-col lg:px-2">
-	<div class="chat-messages flex-1" bind:this={chatMessagesContainer}>
-		{#if !chat || chat.chatMessages.length === 0}
-			<div class="text-muted mt-8 text-center">No messages yet.</div>
-		{:else}
-			<ul class="flex flex-col gap-3 py-2">
-				{#each chat.chatMessages as msg (msg.id)}
-					{@const character = getMessageCharacter(msg)}
-					<li
-						class="bg-primary-50-950 flex flex-col rounded-lg p-2 lg:p-4"
-						class:opacity-50={msg.isHidden &&
-							editChatMessage?.id !== msg.id}
-					>
-						<div class="flex justify-between gap-2">
-							<div class="flex gap-2">
-								<span>
-									<!-- <Avatar
-										src={character?.avatar ?? ""}
-										size="w-[4em] h-[4em]"
-										name={character?.nickname ||
-											character?.name ||
-											"Unknown"}
-										background="preset-filled-primary-500"
-										imageClasses="object-cover"
-									>
-										<Icons.User size={36} />
-									</Avatar> -->
-									<Avatar char={character} />
-								</span>
-								<span
-									class="funnel-display text-[1.1em] font-bold"
-								>
-									{character?.nickname ||
-										character?.name ||
-										"Unknown"}
-								</span>
-							</div>
-							{#if editChatMessage && editChatMessage.id === msg.id}
-								<div class="flex gap-2">
-									<button
-										class="btn btn-sm msg-cntrl-icon preset-filled-surface-500"
-										title="Cancel Edit"
-										onclick={handleCancelEditMessage}
-									>
-										<Icons.X size={16} />
-									</button>
-									<button
-										class="btn btn-sm msg-cntrl-icon preset-filled-success-500"
-										title="Save"
-										onclick={handleSaveEditMessage}
-									>
-										<Icons.Save size={16} class="mx-4" />
-									</button>
-								</div>
-							{:else}
-								<div class="hidden gap-2 lg:flex">
-									{@render messageControls(msg)}
-								</div>
-								<div class="lg:hidden">
-									<Popover
-										open={openMobileMsgControls === msg.id}
-										onOpenChange={(e) =>
-											(openMobileMsgControls = e.open
-												? msg.id
-												: undefined)}
-										positioning={{ placement: "bottom" }}
-										triggerBase="btn btn-sm hover:bg-primary-600-400 {openMobileMsgControls ===
-										msg.id
-											? 'bg-primary-600-400'
-											: ''}"
-										contentBase="card bg-primary-200-800 p-4 space-y-4 max-w-[320px]"
-										arrow
-										arrowBackground="!bg-primary-200 dark:!bg-primary-800"
-										zIndex="1000"
-									>
-										{#snippet trigger()}
-											<Icons.EllipsisVertical size={20} />
-										{/snippet}
-										{#snippet content()}
-											<header
-												class="flex justify-between"
-											>
-												<p class="text-xl font-bold">
-													Popover Example
-												</p>
-											</header>
-											<article
-												class="flex flex-col gap-4"
-											>
-												{@render messageControls(msg)}
-											</article>
-										{/snippet}
-									</Popover>
-								</div>
-							{/if}
-						</div>
-
-						<div class="flex h-fit rounded p-2 text-left">
-							{#if msg.content === "" && msg.isGenerating}
-								<div class="wrapper">
-									<div class="circle"></div>
-									<div class="circle"></div>
-									<div class="circle"></div>
-									<div class="shadow"></div>
-									<div class="shadow"></div>
-									<div class="shadow"></div>
-								</div>
-							{:else if editChatMessage && editChatMessage.id === msg.id}
-								<div
-									class="chat-input-bar bg-surface-100-900 w-full rounded-xl p-2 pb-2 align-middle lg:pb-4"
-								>
-									<MessageComposer
-										bind:markdown={editChatMessage.content}
-										onSend={handleMessageUpdate}
-									/>
-								</div>
-							{:else}
-								<div class="rendered-chat-message-content">
-									{@html renderMarkdownWithQuotedText(
-										msg.content
-									)}
-								</div>
-							{/if}
-						</div>
-					</li>
-				{/each}
-			</ul>
-		{/if}
-	</div>
-	<!-- NEW CHAT MESSAGE FORM -->
+<div class="relative flex h-full flex-col">
 	<div
-		class="chat-input-bar preset-tonal-surface gap-4 pb-3 align-middle lg:pb-4"
+		id="chat-history"
+		class="flex flex-1 flex-col gap-3 overflow-auto"
+		bind:this={chatMessagesContainer}
+	>
+		<div class="p-2">
+			{#if !chat || chat.chatMessages.length === 0}
+				<div class="text-muted mt-8 text-center">No messages yet.</div>
+			{:else}
+				<ul class="flex flex-1 flex-col gap-3">
+					{#each chat.chatMessages as msg (msg.id)}
+						{@const character = getMessageCharacter(msg)}
+						{@const isGreeting = !!msg.metadata?.isGreeting}
+						<li
+							class="preset-filled-primary-50-950 flex flex-col rounded-lg p-2"
+							class:opacity-50={msg.isHidden &&
+								editChatMessage?.id !== msg.id}
+						>
+							<div class="flex justify-between gap-2">
+								<div class="group flex gap-2">
+									<span>
+										<!-- Make avatar clickable -->
+										<button
+											class="m-0 w-fit p-0"
+											onclick={() =>
+												handleAvatarClick(character)}
+											title="View Avatar"
+										>
+											<Avatar char={character} />
+										</button>
+									</span>
+									<div class="flex flex-col">
+										<span class="flex gap-1">
+											<button
+												class="funnel-display mx-0 inline-block w-fit px-0 text-[1.1em] font-bold hover:underline"
+												onclick={(e) =>
+													handleCharacterNameClick(
+														msg
+													)}
+												title="Edit"
+											>
+												<span class="text-nowrap">
+													{character?.nickname ||
+														character?.name ||
+														"Unknown"}
+												</span>
+											</button>
+											{#if isGreeting}
+												<span
+													class="text-muted mt-1 text-xs opacity-50"
+													title="Greeting message"
+												>
+													<Icons.Handshake
+														size={16}
+													/>
+												</span>
+											{/if}
+										</span>
+									</div>
+								</div>
+
+								{#if editChatMessage && editChatMessage.id === msg.id}
+									<div class="flex gap-2">
+										<button
+											class="btn btn-sm msg-cntrl-icon preset-filled-surface-500"
+											title="Cancel Edit"
+											onclick={handleCancelEditMessage}
+										>
+											<Icons.X size={16} />
+										</button>
+										<button
+											class="btn btn-sm msg-cntrl-icon preset-filled-success-500"
+											title="Save"
+											onclick={handleSaveEditMessage}
+										>
+											<Icons.Save
+												size={16}
+												class="mx-4"
+											/>
+										</button>
+									</div>
+								{:else}
+									<div class="flex w-full flex-col gap-2">
+										<div
+											class="ml-auto hidden gap-2 lg:flex"
+										>
+											{@render messageControls(msg)}
+										</div>
+										<div class="ml-auto lg:hidden">
+											<Popover
+												open={openMobileMsgControls ===
+													msg.id}
+												onOpenChange={(e) =>
+													(openMobileMsgControls =
+														e.open
+															? msg.id
+															: undefined)}
+												positioning={{
+													placement: "bottom"
+												}}
+												triggerBase="btn btn-sm hover:bg-primary-600-400 {openMobileMsgControls ===
+												msg.id
+													? 'bg-primary-600-400'
+													: ''}"
+												contentBase="card bg-primary-200-800 p-4 space-y-4 max-w-[320px]"
+												arrow
+												arrowBackground="!bg-primary-200 dark:!bg-primary-800"
+												zIndex="1000"
+											>
+												{#snippet trigger()}
+													<Icons.EllipsisVertical
+														size={20}
+													/>
+												{/snippet}
+												{#snippet content()}
+													<header
+														class="flex justify-between"
+													>
+														<p
+															class="text-xl font-bold"
+														>
+															Popover Example
+														</p>
+													</header>
+													<article
+														class="flex flex-col gap-4"
+													>
+														{@render messageControls(
+															msg
+														)}
+													</article>
+												{/snippet}
+											</Popover>
+										</div>
+										{#if showSwipeControls(msg, isGreeting)}
+											<div class="ml-auto flex gap-6">
+												{#if ![null, undefined].includes(msg.metadata?.swipes?.currentIdx) && msg.metadata?.swipes?.history && msg.metadata?.swipes.history.length > 1}
+													<button
+														class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
+														title="Swipe Left"
+														onclick={() =>
+															swipeLeft(msg)}
+														disabled={!msg.metadata
+															.swipes
+															.currentIdx ||
+															msg.metadata.swipes
+																.history
+																.length <= 1 ||
+															msg.isGenerating}
+													>
+														<Icons.ChevronLeft
+															size={24}
+														/>
+													</button>
+													<span
+														class="text-surface-700-300 mt-[0.2rem] h-fit select-none"
+													>
+														{msg.metadata.swipes
+															.currentIdx +
+															1}/{msg.metadata
+															.swipes.history
+															.length}
+													</span>
+												{/if}
+												<button
+													class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
+													title="Swipe Right"
+													onclick={() =>
+														swipeRight(msg)}
+													disabled={!canSwipeRight(
+														msg,
+														isGreeting
+													)}
+												>
+													<Icons.ChevronRight
+														size={24}
+													/>
+												</button>
+											</div>
+										{/if}
+									</div>
+								{/if}
+							</div>
+
+							<div class="flex h-fit rounded p-2 text-left">
+								{#if msg.content === "" && msg.isGenerating}
+									{@render generatingAnimation()}
+								{:else if editChatMessage && editChatMessage.id === msg.id}
+									<div
+										class="chat-input-bar bg-surface-100-900 w-full rounded-xl p-2 pb-2 align-middle lg:pb-4"
+									>
+										<MessageComposer
+											bind:markdown={
+												editChatMessage.content
+											}
+											onSend={handleMessageUpdate}
+										/>
+									</div>
+								{:else}
+									<div class="rendered-chat-message-content">
+										{@html renderMarkdownWithQuotedText(
+											msg.content
+										)}
+									</div>
+								{/if}
+							</div>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+	</div>
+
+	<div
+		class="chat-input-bar preset-tonal-surface gap-4 pb-2 align-middle lg:rounded-t-lg lg:pb-4"
 		class:hidden={!!editChatMessage}
 	>
 		<MessageComposer
@@ -418,26 +654,18 @@
 			{#snippet leftControls()}
 				{#if chat?.chatPersonas?.[0]?.persona}
 					{@const persona = chat?.chatPersonas?.[0]?.persona}
-					<div class="hidden flex-col lg:flex lg:gap-2">
-						<span>
-							<!-- <Avatar
-								src={persona.avatar ?? ""}
-								size="w-[4em] h-[4em]"
-								name={persona?.name ?? "Unknown"}
-								background="preset-filled-primary-500"
-								imageClasses="object-cover"
-							>
-								<Icons.User size={36} />
-							</Avatar> -->
+					<div class="hidden flex-col lg:ml-2 lg:flex lg:gap-2">
+						<span class="ml-1">
 							<Avatar char={persona} />
 						</span>
 					</div>
+					<div class="lg:hidden"></div>
 				{/if}
 			{/snippet}
 			{#snippet rightControls()}
 				{#if !lastMessage?.isGenerating && !editChatMessage}
 					<button
-						class="hover:preset-tonal-success hidden h-auto rounded-lg p-3 text-center lg:block"
+						class="hover:preset-tonal-success mr-3 rounded-lg text-center lg:block lg:h-auto lg:p-3"
 						type="button"
 						disabled={!newMessage.trim() ||
 							lastMessage?.isGenerating}
@@ -449,7 +677,7 @@
 				{:else if lastMessage?.isGenerating}
 					<button
 						title="Stop Generation"
-						class="text-error-500 hover:preset-tonal-error h-auto rounded-lg p-3 text-center"
+						class="text-error-500 hover:preset-tonal-error mr-3 rounded-lg text-center lg:h-auto lg:p-3"
 						type="button"
 						onclick={handleAbortLastMessage}
 					>
@@ -464,7 +692,7 @@
 <Modal
 	open={showDeleteMessageModal}
 	onOpenChange={onOpenMessageDeleteChange}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -496,13 +724,16 @@
 <Modal
 	open={showDraftCompiledPromptModal}
 	onOpenChange={(details) => (showDraftCompiledPromptModal = details.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-md"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-full w-[60em]"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
-		<header class="flex justify-between items-center">
+		<header class="flex items-center justify-between">
 			<h2 class="h2">Prompt Details</h2>
-			<button class="btn btn-sm" onclick={() => (showDraftCompiledPromptModal = false)}>
+			<button
+				class="btn btn-sm"
+				onclick={() => (showDraftCompiledPromptModal = false)}
+			>
 				<Icons.X size={20} />
 			</button>
 		</header>
@@ -511,27 +742,53 @@
 				<div class="mb-2">
 					<b>Prompt Tokens:</b>
 					<span class:text-error-500={contextExceeded}>
-						{draftCompiledPrompt.meta.tokenCounts.total} / {draftCompiledPrompt.meta.tokenCounts.limit}
+						{draftCompiledPrompt.meta.tokenCounts.total} / {draftCompiledPrompt
+							.meta.tokenCounts.limit}
 					</span>
 				</div>
 				<div class="mb-2">
 					<b>Messages Inserted:</b>
-					{draftCompiledPrompt.meta.messages.included} / {draftCompiledPrompt.meta.messages.total}
+					{draftCompiledPrompt.meta.chatMessages.included} / {draftCompiledPrompt
+						.meta.chatMessages.total}
 				</div>
 				<div class="mb-2">
-					<b>Prompt Format:</b> {draftCompiledPrompt.meta.promptFormat}
+					<b>Prompt Format:</b>
+					{draftCompiledPrompt.meta.promptFormat}
 				</div>
-				<div class="mb-2">
-					<b>Truncation Reason:</b> {draftCompiledPrompt.meta.truncationReason || 'None'}
-				</div>
-				<div class="mb-2">
-					<b>Timestamp:</b> {draftCompiledPrompt.meta.timestamp}
-				</div>
+				<!-- <div class="mb-2">
+					<b>Truncation Reason:</b>
+					{draftCompiledPrompt.meta.sources.lorebooks?.truncationReason || "None"}
+				</div> -->
+				<!-- <div class="mb-2">
+					<b>Timestamp:</b>
+					{draftCompiledPrompt.meta.timestamp}
+				</div> -->
+				<!-- <div class="mb-2">
+					<b>World Lore:</b>
+					{draftCompiledPrompt.meta.lorebooks?.worldLore
+						.included || 0}
+					/
+					{draftCompiledPrompt.meta.sources.lorebooks?.worldLore
+						.total || 0}
+				</div> -->
+				<!-- <div class="mb-2">
+					<b>Character Lore:</b>
+					{draftCompiledPrompt.meta.sources.lorebooks?.characterLore
+						.included || 0}/{draftCompiledPrompt.meta.sources.lorebooks?.characterLore.total || 0}
+				</div> -->
+				<!-- <div class="mb-2">
+					<b>History:</b>
+					{draftCompiledPrompt.meta.sources.lorebooks?.history
+						.included || 0}/{draftCompiledPrompt.meta.sources.lorebooks?.history.total || 0}
+				</div> -->
 				<div class="mb-2">
 					<b>Characters Used:</b>
 					<ul class="ml-4 list-disc">
 						{#each draftCompiledPrompt.meta.sources.characters as char}
-							<li>{char.name} {char.nickname ? `(${char.nickname})` : ''}</li>
+							<li>
+								{char.name}
+								{char.nickname ? `(${char.nickname})` : ""}
+							</li>
 						{/each}
 					</ul>
 				</div>
@@ -544,11 +801,14 @@
 					</ul>
 				</div>
 				<div class="mb-2">
-					<b>Scenario Source:</b> {draftCompiledPrompt.meta.sources.scenario || 'None'}
+					<b>Scenario Source:</b>
+					{draftCompiledPrompt.meta.sources.scenario || "None"}
 				</div>
 				<div class="mb-2">
 					<b>Prompt Preview:</b>
-					<pre class="bg-surface-200-800 rounded p-2 overflow-x-auto text-xs max-h-64 whitespace-pre-wrap">{draftCompiledPrompt.prompt || JSON.stringify(draftCompiledPrompt.messages)}</pre>
+					<pre
+						class="bg-surface-200-800 max-h-64 overflow-x-auto rounded p-2 text-xs whitespace-pre-wrap">{draftCompiledPrompt.prompt ||
+							JSON.stringify(draftCompiledPrompt.messages)}</pre>
 				</div>
 			{:else}
 				<div class="text-muted">No compiled prompt data available.</div>
@@ -568,7 +828,7 @@
 <Modal
 	open={showTriggerCharacterMessageModal}
 	onOpenChange={(e) => (showTriggerCharacterMessageModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-md"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -588,50 +848,88 @@
 			bind:value={triggerCharacterSearch}
 		/>
 		<div class="flex flex-col gap-2">
-			{#each (chat?.chatCharacters || [])
-				.filter(cc => {
-					const c = cc.character
-					if (!c) return false
-					const s = triggerCharacterSearch.trim().toLowerCase()
-					if (!s) return true
-					return (
-						c.name?.toLowerCase().includes(s) ||
-						c.nickname?.toLowerCase().includes(s) ||
-						c.description?.toLowerCase().includes(s) ||
-						c.creatorNotes?.toLowerCase().includes(s)
-					)
-				}) as any[] as typeof chat.chatCharacters
-				as filtered
-			}
+			{#each (chat?.chatCharacters || []).filter((cc) => {
+				const c = cc.character
+				if (!c) return false
+				const s = triggerCharacterSearch.trim().toLowerCase()
+				if (!s) return true
+				return c.name?.toLowerCase().includes(s) || c.nickname
+						?.toLowerCase()
+						.includes(s) || c.description
+						?.toLowerCase()
+						.includes(s) || c.creatorNotes
+						?.toLowerCase()
+						.includes(s)
+			}) as any[] as typeof chat.chatCharacters as filtered}
 				<button
 					class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full max-w-[25em] gap-3 overflow-hidden rounded p-3"
-					onclick={() => onSelectTriggerCharacterMessage(filtered.character.id)}
+					onclick={() =>
+						onSelectTriggerCharacterMessage(filtered.character.id)}
 				>
 					<div class="w-fit">
 						<Avatar char={filtered.character} />
 					</div>
 					<div class="relative flex w-0 min-w-0 flex-1 flex-col">
 						<div class="w-full truncate text-left font-semibold">
-							{filtered.character.nickname || filtered.character.name}
+							{filtered.character.nickname ||
+								filtered.character.name}
 						</div>
 						<div
 							class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs"
 						>
-							{filtered.character.creatorNotes || filtered.character.description || ""}
+							{filtered.character.creatorNotes ||
+								filtered.character.description ||
+								""}
 						</div>
 					</div>
 				</button>
-		{/each}
+			{/each}
 		</div>
 	{/snippet}
 </Modal>
 
-{#snippet messageControls(msg: SelectChatMessage)}
-	<div class="hidden gap-6 lg:flex">
-		<span class="text-surface-500 mx-6">
-			{new Date(msg.createdAt).toLocaleString()}
-		</span>
+<Modal
+	open={showAvatarModal}
+	onOpenChange={(e) => (showAvatarModal = e.open)}
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md flex flex-col items-center"
+	backdropClasses="backdrop-blur-sm"
+>
+	{#snippet content()}
+		<header class="flex w-full justify-between">
+			<h2 class="h2">Avatar</h2>
+			<button
+				class="btn btn-sm"
+				onclick={() => (showAvatarModal = false)}
+			>
+				<Icons.X size={20} />
+			</button>
+		</header>
+		<article class="flex w-full flex-col items-center">
+			{#if avatarModalSrc}
+				<img
+					src={avatarModalSrc}
+					alt="Avatar"
+					class="border-surface-300 max-h-[60vh] max-w-full rounded-lg border"
+				/>
+			{:else}
+				<div class="text-muted">No avatar image available.</div>
+			{/if}
+		</article>
+	{/snippet}
+</Modal>
+
+{#snippet generatingAnimation()}
+	<div class="wrapper">
+		<div class="circle"></div>
+		<div class="circle"></div>
+		<div class="circle"></div>
+		<div class="shadow"></div>
+		<div class="shadow"></div>
+		<div class="shadow"></div>
 	</div>
+{/snippet}
+
+{#snippet messageControls(msg: SelectChatMessage)}
 	<button
 		class="btn btn-sm msg-cntrl-icon hover:preset-filled-secondary-500"
 		class:preset-filled-secondary-500={msg.isHidden}
@@ -669,7 +967,7 @@
 		<button
 			class="btn btn-sm msg-cntrl-icon hover:preset-filled-warning-500"
 			title="Regenerate Response"
-			disabled={msg.isHidden}
+			disabled={!canRegenerateLastMessage}
 			onclick={(e) => handleRegenerateMessage(e, msg)}
 		>
 			<Icons.RefreshCw size={16} />
@@ -718,7 +1016,7 @@
 			class="btn preset-filled-warning-500"
 			title="Regenerate Last Message"
 			onclick={handleRegenerateLastMessage}
-			disabled={!lastMessage || lastMessage.isGenerating}
+			disabled={!canRegenerateLastMessage}
 		>
 			<Icons.RefreshCw size={24} />
 		</button>
@@ -740,39 +1038,38 @@
 			<Icons.Info size={24} />
 		</button>
 		<div class="flex flex-col text-sm">
-		{#if draftCompiledPrompt}
-			<div>
-				<b>Prompt Tokens:</b>
-				<span class:text-error-500={contextExceeded}>
-					{draftCompiledPrompt.meta.tokenCounts.total} / {draftCompiledPrompt.meta.tokenCounts.limit}
-				</span>
-			</div>
-			<div>
-				<b>Messages Inserted:</b>
-				{draftCompiledPrompt.meta.messages.included} / {draftCompiledPrompt.meta.messages.total}
-				<span class="text-surface-500">(Includes current draft)</span>
-			</div>
-		{:else}
-			<div class="text-muted">No prompt statistics available.</div>
-		{/if}
-	</div>
+			{#if draftCompiledPrompt}
+				<div>
+					<b>Prompt Tokens:</b>
+					<span class:text-error-500={contextExceeded}>
+						{draftCompiledPrompt.meta.tokenCounts.total} / {draftCompiledPrompt
+							.meta.tokenCounts.limit}
+					</span>
+				</div>
+				<div>
+					<b>Messages Inserted:</b>
+					{draftCompiledPrompt.meta.chatMessages.included} / {draftCompiledPrompt
+						.meta.chatMessages.total}
+					<span class="text-surface-500">
+						(Includes current draft)
+					</span>
+				</div>
+			{:else}
+				<div class="text-muted">No prompt statistics available.</div>
+			{/if}
+		</div>
 	</div>
 {/snippet}
 
 <style lang="postcss">
 	@reference "tailwindcss";
 
-	.chat-messages {
+	/* .chat-messages {
 		overflow-y: auto;
 		flex: 1 1 0%;
 		padding-bottom: 0.5rem;
-	}
+	} */
 	.chat-input-bar {
-		position: sticky;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		z-index: 10;
 	}
 	/* Loader styles from Uiverse.io by mobinkakei */
 	.wrapper {

@@ -1,1 +1,0 @@
-ALTER TABLE `chat_messages` ADD `adapter_id` text;

@@ -1,10 +1,11 @@
 <script lang="ts">
     import * as skio from "sveltekit-io"
-    import { getContext, onMount } from "svelte"
+    import { getContext, onDestroy, onMount } from "svelte"
     import * as Icons from "@lucide/svelte"
     import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
     import PromptConfigUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"
     import NewNameModal from '../modals/NewNameModal.svelte'
+	import { toaster } from "$lib/client/utils/toaster"
 
     interface Props {
         onclose?: () => Promise<boolean> | undefined
@@ -118,11 +119,23 @@
         socket.on("createPromptConfig", (msg: Sockets.CreatePromptConfig.Response) => {
             selectedPromptId = msg.promptConfig.id
         })
+        socket.on("updatePromptConfig", (msg: Sockets.UpdatePromptConfig.Response) => {
+            if (msg.promptConfig.id === promptConfig.id) {
+                toaster.success({title: "Prompt Config Updated"})
+            }
+        })
         socket.emit("promptConfigsList", {})
         if (selectedPromptId) {
             socket.emit("promptConfig", { id: selectedPromptId })
         }
         onclose = handleOnClose
+    })
+
+    onDestroy(() => {
+        socket.off("promptConfigsList")
+        socket.off("promptConfig")
+        socket.off("createPromptConfig")
+        socket.off("updatePromptConfig")
     })
 </script>
 
@@ -161,10 +174,12 @@
     {#if promptConfig}
         <div class="mt-4 mb-4 flex w-full justify-end gap-2">
             <button
-                class="btn preset-filled-primary-500 w-full"
+                class="btn btn-sm preset-filled-success-500 w-full"
                 onclick={handleSave}
-                disabled={promptConfig.isImmutable || !unsavedChanges}>Save</button
-            >
+                disabled={promptConfig.isImmutable || !unsavedChanges}>
+                <Icons.Save size={16} />
+                Save
+                </button>
         </div>
         <div class="flex flex-col gap-4">
             <div class="flex flex-col gap-1">

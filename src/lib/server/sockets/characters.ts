@@ -4,15 +4,14 @@ import * as schema from "$lib/server/db/schema"
 import * as fsPromises from "fs/promises"
 import { getCharacterDataDir, handleCharacterAvatarUpload } from "../utils"
 import { CharacterCard } from "@lenml/char-card-reader"
-import fs from "fs"
 import { fileTypeFromBuffer } from "file-type"
 
-export async function charactersList(
+export async function characterList(
 	socket: any,
-	message: Sockets.CharactersList.Call,
+	message: Sockets.CharacterList.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	const charactersList = await db.query.characters.findMany({
+	const characterList = await db.query.characters.findMany({
 		columns: {
 			id: true,
 			name: true,
@@ -22,10 +21,11 @@ export async function charactersList(
 			description: true,
 			creatorNotes: true
 		},
-		where: (c, { eq }) => eq(c.userId, 1) // TODO: Replace with actual user id
+		where: (c, { eq }) => eq(c.userId, 1), // TODO: Replace with actual user id
+		orderBy: (c, { asc }) => asc(c.id)
 	})
-	const res: Sockets.CharactersList.Response = { charactersList }
-	emitToUser("charactersList", res)
+	const res: Sockets.CharacterList.Response = { characterList }
+	emitToUser("characterList", res)
 }
 
 export async function character(
@@ -62,7 +62,7 @@ export async function createCharacter(
 			})
 		}
 
-		await charactersList(socket, {}, emitToUser)
+		await characterList(socket, {}, emitToUser)
 
 		const res: Sockets.CreateCharacter.Response = { character }
 		emitToUser("createCharacter", res)
@@ -107,7 +107,7 @@ export async function updateCharacter(
 	}
 
 	const res: Sockets.UpdateCharacter.Response = { character: updated }
-	await charactersList(socket, {}, emitToUser)
+	await characterList(socket, {}, emitToUser)
 	emitToUser("updateCharacter", res)
 }
 
@@ -125,7 +125,7 @@ export async function deleteCharacter(
 				eq(schema.characters.userId, userId)
 			)
 		)
-	await charactersList(socket, {}, emitToUser)
+	await characterList(socket, {}, emitToUser)
 	// Delete the character data directory if it exists
 	const avatarDir = getCharacterDataDir({
 		characterId: message.characterId,
@@ -138,7 +138,7 @@ export async function deleteCharacter(
 	}
 	// Emit the delete event
 	const res: Sockets.DeleteCharacter.Response = { id: message.characterId }
-	await charactersList(socket, {}, emitToUser)
+	await characterList(socket, {}, emitToUser)
 	emitToUser("deleteCharacter", res)
 }
 
@@ -159,25 +159,26 @@ export async function characterCardImport(
             v3Data.creation_date && !isNaN(Number(v3Data.creation_date))
                 ? new Date(Number(v3Data.creation_date)).toISOString()
                 : new Date().toISOString()
+
         const data: InsertCharacter = {
-            userId,
-            name: v3Data.name || "Imported Character",
-            description: v3Data.description || "",
-            personality: v3Data.personality || "",
-            scenario: v3Data.scenario || "",
-            firstMessage: v3Data.first_mes || "",
-            exampleDialogues: v3Data.mes_example || "",
-            nickname: v3Data.nickname || "",
-            alternateGreetings: v3Data.alternate_greetings || [],
-            creatorNotes: v3Data.creator_notes || "",
-            creatorNotesMultilingual: v3Data.creator_notes_multilingual || {},
-            groupOnlyGreetings: v3Data.group_only_greetings || [],
-            postHistoryInstructions: v3Data.post_history_instructions || "",
-            source: v3Data.source || [],
-            assets: v3Data.assets || [],
-            createdAt: creationDate,
-            extensions: v3Data.extensions || []
-        }
+			userId,
+			name: v3Data.name || "Imported Character",
+			description: v3Data.description || "",
+			personality: v3Data.personality || "",
+			scenario: v3Data.scenario || "",
+			firstMessage: v3Data.first_mes || "",
+			exampleDialogues: v3Data.mes_example || "",
+			nickname: v3Data.nickname || "",
+			alternateGreetings: v3Data.alternate_greetings || [],
+			creatorNotes: v3Data.creator_notes || "",
+			creatorNotesMultilingual: v3Data.creator_notes_multilingual || {},
+			groupOnlyGreetings: v3Data.group_only_greetings || [],
+			postHistoryInstructions: v3Data.post_history_instructions || "",
+			source: v3Data.source || [],
+			assets: v3Data.assets || [],
+			createdAt: creationDate,
+			extensions: v3Data.extensions || [],
+		}
 
         const [character] = await db
             .insert(schema.characters)
@@ -208,7 +209,7 @@ export async function characterCardImport(
 
         const mimeType = await detectMimeType(base64)
 
-        console.log("Extracted mime type:", mimeType)
+        // console.log("Extracted mime type:", mimeType)
         const supportedMimeTypes = [
             "image/png",
             "image/apng",
@@ -227,9 +228,9 @@ export async function characterCardImport(
         // TODO: Import tags
         // TODO: Import lorebook
 
-        const res: Sockets.CharacterCardImport.Response = { character }
-        emitToUser("createCharacter", res)
-        await charactersList(socket, {}, emitToUser)
+        const res: Sockets.CharacterCardImport.Response = { character, book: v3Data.character_book || null }
+        emitToUser("characterCardImport", res)
+        await characterList(socket, {}, emitToUser)
     } catch (e: any) {
         console.error("Error importing character card:", e)
         emitToUser("error", {

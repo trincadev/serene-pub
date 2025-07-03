@@ -3,7 +3,12 @@
         "Chara",
         "chatml",
         "cooldown",
+        "dndzone",
         "dynatemp",
+        "GGUF",
+        "HAMLINDIGO",
+        "initialise",
+        "LLAMACPP",
         "lmstudio",
         "logit",
         "lorebook",
@@ -12,7 +17,13 @@
         "Ngram",
         "nsigma",
         "Ollama",
+        "onconsider",
+        "onfinalize",
+        "pglite",
         "Roleplay",
-        "skio"
+        "skeletonlabs",
+        "skio",
+        "Tekken",
+        "uuidv"
     ]
 }

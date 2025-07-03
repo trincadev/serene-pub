@@ -11,7 +11,8 @@ export async function sampling(
     emitToUser: (event: string, data: any) => void
 ) {
     const sampling = await db.query.samplingConfigs.findFirst({
-        where: (w, { eq }) => eq(w.id, message.id)
+        where: (w, { eq }) => eq(w.id, message.id),
+        orderBy: (w, { asc }) => [asc(w.isImmutable), asc(w.name)],
     })
     emitToUser("sampling", { sampling })
 }
@@ -95,7 +96,6 @@ export async function updateSamplingConfig(
     message: { sampling: any },
     emitToUser: (event: string, data: any) => void
 ) {
-    console.log("updateSamplingConfig", message)
     const id = message.sampling.id
     delete message.sampling.id // Remove id from sampling object to avoid conflicts
     const currentSamplingConfig = await db.query.samplingConfigs.findFirst({

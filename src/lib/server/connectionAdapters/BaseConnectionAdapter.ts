@@ -1,19 +1,46 @@
-import { PromptBuilder } from "../utils/PromptBuilder"
+import { PromptBuilder } from "../utils/promptBuilder"
 import type { TokenCounters } from "../utils/TokenCounterManager"
 
+export interface BasePromptChat extends SelectChat {
+		chatCharacters?: (SelectChatCharacter & {
+			character: SelectCharacter & { lorebook?: SelectLorebook }
+		})[]
+		chatPersonas?: (SelectChatPersona & {
+			persona: SelectPersona & { lorebook?: SelectLorebook }
+		})[]
+		chatMessages: SelectChatMessage[]
+		lorebook: SelectLorebook & {
+			lorebookBindings: (SelectLorebookBinding & {
+				character?: SelectCharacter
+				persona?: SelectPersona
+			})[]
+		}
+	}
+
+// Generic interface for constructor parameters
+export interface BaseConnectionAdapterParams {
+	connection: SelectConnection
+	sampling: SelectSamplingConfig
+	contextConfig: SelectContextConfig
+	promptConfig: SelectPromptConfig
+	chat: BaseChat
+	currentCharacterId: number
+	tokenCounter: TokenCounters
+	tokenLimit: number
+	contextThresholdPercent: number
+}
+
+// Types for abstract functions
+export type ListModelsFn = (connection: SelectConnection) => Promise<{ models: any[]; error?: string }>
+export type TestConnectionFn = (connection: SelectConnection) => Promise<{ ok: boolean; error?: string }>
+
 export abstract class BaseConnectionAdapter {
-	static connectionDefaults: Record<string, any>
-	static samplingKeyMap: Record<string, string>
 
 	connection: SelectConnection
 	sampling: SelectSamplingConfig
 	contextConfig: SelectContextConfig
 	promptConfig: SelectPromptConfig
-	chat: SelectChat & {
-		chatCharacters: (SelectChatCharacter & { character: SelectCharacter })[]
-		chatPersonas: (SelectChatPersona & { persona: SelectPersona })[]
-		chatMessages: SelectChatMessage[]
-	}
+	chat: BaseChat
 	currentCharacterId: number
 	isAborting = false
 	promptBuilder: PromptBuilder
@@ -28,37 +55,12 @@ export abstract class BaseConnectionAdapter {
 		tokenCounter,
 		tokenLimit,
 		contextThresholdPercent
-	}: {
-		connection: SelectConnection
-		sampling: SelectSamplingConfig
-		contextConfig: SelectContextConfig
-		promptConfig: SelectPromptConfig
-		chat: SelectChat & {
-			chatCharacters?: (SelectChatCharacter & {
-				character: SelectCharacter
-			})[]
-			chatPersonas?: (SelectChatPersona & { persona: SelectPersona })[]
-			chatMessages: SelectChatMessage[]
-		}
-		currentCharacterId: number
-		tokenCounter: TokenCounters
-		tokenLimit: number
-		contextThresholdPercent: number
-	}) {
+	}: BaseConnectionAdapterParams) {
 		this.connection = connection
 		this.sampling = sampling
 		this.contextConfig = contextConfig
 		this.promptConfig = promptConfig
-		this.chat = {
-			...chat,
-			chatCharacters: (chat.chatCharacters || []).filter(
-				(cc: any) => cc && cc.character
-			),
-			chatPersonas: (chat.chatPersonas || []).filter(
-				(cp: any) => cp && cp.persona
-			),
-			chatMessages: chat.chatMessages || []
-		}
+		this.chat = chat
 		this.currentCharacterId = currentCharacterId
 		this.promptBuilder = new PromptBuilder({
 			connection: this.connection,
@@ -73,14 +75,27 @@ export abstract class BaseConnectionAdapter {
 		})
 	}
 
+	compilePrompt(args: {}): Promise<CompiledPrompt> {
+		return this.promptBuilder.compilePrompt(args)
+	}
+
 	abstract generate(): Promise<
-		[
-			string | ((cb: (chunk: string) => void) => Promise<void>),
-			CompiledPrompt
-		]
+		{
+			completionResult: string | ((cb: (chunk: string) => void) => Promise<void>),
+			compiledPrompt: CompiledPrompt,
+			isAborted: boolean
+		}
 	>
 
 	abort() {
 		this.isAborting = true
 	}
+}
+
+export interface AdapterExports {
+	Adapter: new (args: BaseConnectionAdapterParams) => BaseConnectionAdapter,
+	listModels: ListModelsFn
+	testConnection: TestConnectionFn,
+	connectionDefaults: Record<string, any>
+	samplingKeyMap: Record<string, string>
 }
