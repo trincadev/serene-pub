@@ -6,11 +6,11 @@ import fs from "fs"
 import { dev } from "$app/environment"
 import { drizzle } from "drizzle-orm/pglite"
 import { sync } from "./defaults"
-import { startPg } from "./postgres"
 
 // const { firstInit, pglite } = await startPg()
 
-export let db = drizzle(pglite, { schema })
+export let db = drizzle(dbConfig.dbPath, { schema })
+export { schema }
 
 // Compare two version strings in '0.0.0' format
 export function compareVersions(a: string, b: string): -1 | 0 | 1 {
@@ -46,8 +46,19 @@ async function runMigrations() {
 	}
 }
 
+// Check if database has been initialized by looking for a specific table
+let hasTables = false
+try {
+	// Try to query a table that should exist after migrations
+	await db.execute("SELECT 1 FROM users LIMIT 1")
+	hasTables = true
+} catch (error) {
+	// Table doesn't exist, database needs initialization
+	hasTables = false
+}
+
 // Run migrations if in production environment
-if (!dev || firstInit) {
+if (!dev || !hasTables) {
 	// If it doesn't exist, create a meta.json file in the data directory
 	const metaPath = dbConfig.dataDir + "/meta.json"
 	// Check if the file exists
@@ -76,7 +87,7 @@ if (!dev || firstInit) {
 			break
 		case -1:
 			console.log("Running migrations to update database schema...")
-			await runMigrations(meta.version)
+			await runMigrations()
 			meta.version = appVersion
 			fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2))
 			console.log(`Updated meta.json to version ${appVersion}.`)

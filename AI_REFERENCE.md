@@ -28,7 +28,7 @@ Serene Pub is a modern, customizable chat application designed for immersive rol
 - **Node.js** - JavaScript runtime
 - **SvelteKit Server** - Server-side rendering and API routes
 - **Socket.IO Server** - Real-time WebSocket communication via `sveltekit-io`
-- **PostgreSQL** - Database with embedded deployment
+- **PostgreSQL** - Database via pglite
 - **Drizzle ORM** - Type-safe SQL ORM with migrations
 - **TypeScript** - Server-side type safety
 - **Sqlite** - Deprecated database, removing in 0.4.0
@@ -52,7 +52,7 @@ Serene Pub is a modern, customizable chat application designed for immersive rol
 ### Key Dependencies
 - `@sveltejs/adapter-node` - Node.js deployment adapter
 - `drizzle-orm` & `drizzle-kit` - Database ORM and migration tools
-- `embedded-postgres` - Embedded PostgreSQL for portable deployment
+- `pglite` - Embedded PostgreSQL for portable deployment
 - `pg` - PostgreSQL client library
 - `openai` - OpenAI API client
 - `ollama` - Ollama API client
