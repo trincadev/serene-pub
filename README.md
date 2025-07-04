@@ -4,6 +4,8 @@
 
 > **⚠️ Serene Pub is in alpha! Expect bugs and rapid changes. This project is under heavy development.**
 
+- [Official Discord](https://discord.gg/3kUx3MDcSa)
+
 ---
 
 ## Table of Contents
