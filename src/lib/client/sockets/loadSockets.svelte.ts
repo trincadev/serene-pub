@@ -8,11 +8,8 @@ const socketCtx = $state({
 
 // createContext('socketCtx', socketsCtx)
 
-export async function loadSocketsClient() {
-	const res = await axios.get("/api/sockets-endpoint")
-	const host = res.data.endpoint
-
-	const io = await skio.setup(host, {
+export async function loadSocketsClient({url}:{url: string}) {
+	const io = await skio.setup(url, {
 		cors: { origin: "*", credentials: false },
 		maxHttpBufferSize: 1e8
 	})
@@ -22,6 +19,6 @@ export async function loadSocketsClient() {
 	}
 
 	if (dev) {
-		console.log("Client socket initialized:", host)
+		console.log("Client socket initialized:", url)
 	}
 }

@@ -18,7 +18,11 @@
 	let showUpdateBar = $state(true)
 
 	if (browser) {
-		loadSocketsClient().then(() => {
+		const domain = `${page.url.protocol}//${page.url.host}`
+		const url = new URL(domain)
+		url.port = "3001" // Ensure the port is set to 3001
+		console.log(`Serene Pub is running on domain: ${domain}`)
+		loadSocketsClient({url}).then(() => {
 			socketsInitialized = true
 		})
 	}

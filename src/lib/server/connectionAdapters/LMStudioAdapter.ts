@@ -177,7 +177,7 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 			maxTokens: this.sampling.responseTokensEnabled
 				? this.sampling.responseTokens || 2048
 				: 2048,
-			...this.mapSamplingConfig()
+			...this.mapSamplingConfig(),
 		}
 
 		// --- LM Studio SDK integration ---
