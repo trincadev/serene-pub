@@ -29,9 +29,11 @@ function getSocketsPort() {
 
 export async function loadSocketsServer() {
   const host = `${getSocketsHttpMode()}://${getSocketsHostIP()}:${getSocketsPort()}`;
+  // Force binding to 0.0.0.0 instead
+  const binding = `${getSocketsHttpMode()}://0.0.0.0:${getSocketsPort()}`;
   process.env.PUBLIC_SOCKETS_ENDPOINT = host;
 
-  const io = await skio.setup(host, {
+  const io = await skio.setup(binding, {
     cors: { origin: '*', credentials: false },
     maxHttpBufferSize: 1e8
   });
