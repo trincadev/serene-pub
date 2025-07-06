@@ -4,7 +4,15 @@
 
 > **⚠️ Serene Pub is in alpha! Expect bugs and rapid changes. This project is under heavy development.**
 
-- [Official Discord](https://discord.gg/3kUx3MDcSa)
+<p align="center">
+  <b><a href="https://github.com/doolijb/serene-pub">Repo</a> •
+  <a href="https://github.com/doolijb/serene-pub/wiki/Home">Wiki</a> •
+  <a href="https://github.com/doolijb/serene-pub/releases">Downloads</a> •
+  <a href="https://github.com/doolijb/serene-pub/issues">Issues</a> •
+  <a href="https://discord.gg/3kUx3MDcSa">Discord</a> •
+  <a href="https://buymeacoffee.com/serenepub">Buy Me a Coffee</a></b>
+</p>
+
 
 ---
 
@@ -13,6 +21,7 @@
 - [Screenshots](#-screenshots)
 - [Features](#-features)
 - [Quick Start / Download](#-quick-start)
+- [Installation & Setup](#installation--setup)
 - [Documentation & Help](#-documentation--help)
 - [Planned Features](#-planned-features)
 - [Considered Features](#-considered-features)
@@ -114,7 +123,7 @@ Linux, MacOS and Windows are supported!
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
 6. Add your first AI connection and start chatting!
 
-### Build from Source
+### Source Code
 
 #### Requirements
 
@@ -124,10 +133,10 @@ Linux, MacOS and Windows are supported!
 #### Steps
 
 1. Clone this repo
-2. `bun i` to install dependencies
-3. `bun run db:migrate` to set up the database
-4. `bun run dev` to start the dev server
-5. Visit [http://localhost:5173](http://localhost:5173)
+2. `npm i` to install dependencies
+3. `npm run dev` to start the dev server, or `npm run dev:host`
+4. Visit [http://localhost:5173](http://localhost:5173)
+
 
 ---
 
@@ -269,7 +278,6 @@ Serene Pub supports a variety of AI model connections, both local and cloud-base
 - 📅 Lorebooks+ features: custom calendars, "eras" historical categories, and more
 - 🕹️ Text adventure & narrator modes
 - 🖼️ Image generation
-- Monte Carlo tree search
 
 ---
 
@@ -294,5 +302,3 @@ Serene Pub is community-driven! Bug fixes, features, and feedback are welcome. P
 AGPL-3.0. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md) for details.
 
 <p align="center"><b>Serene Pub — Play more, tweak less. 100% open source.</b></p>
-
-

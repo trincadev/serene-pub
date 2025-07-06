@@ -28,3 +28,5 @@ vite.config.ts.timestamp-*
 
 # TODO
 /launcher.sh
+
+package-lock.json
