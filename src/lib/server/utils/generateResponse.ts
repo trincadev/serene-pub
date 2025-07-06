@@ -82,6 +82,13 @@ export async function generateResponse({
 	// Store adapter in global map
 	activeAdapters.set(adapterId, adapter)
 
+	const currentCharacter = chat?.chatCharacters.find(
+		(cc) => cc.character?.id === adapter.currentCharacterId
+	)
+
+	const charName = currentCharacter?.character?.nickname || currentCharacter?.character?.name || ""
+	const startString = `${charName}:`
+
 	// Generate completion
 	let { completionResult, compiledPrompt, isAborted } =
 		await adapter.generate() // TODO: save compiledPrompt to chatMessages
@@ -95,8 +102,20 @@ export async function generateResponse({
 				}
 				content += chunk
 
+				let stagedContent = content.replace(startString, "")
+				// If stagedContent length is <= startString, remove partial startString
+				if (stagedContent.length <= startString.length) {
+					// Check if content starts with startString substring
+					if (content.startsWith(startString.substring(0, stagedContent.length))) {
+						stagedContent = ""
+					}
+				}
+
 				// --- SWIPE HISTORY LOGIC ---
-				let updateData: any = { content, isGenerating: true }
+				let updateData: any = { 
+					content: stagedContent.trim(),
+					isGenerating: true 
+				}
 				if (
 					generatingMessage.metadata &&
 					generatingMessage.metadata.swipes &&
@@ -150,7 +169,7 @@ export async function generateResponse({
 				}
 			})
 			// Final update: mark as not generating, clear adapterId
-			content = content.trim()
+			content = content.replace(startString, "").trim()
 			const ret = await db
 				.update(schema.chatMessages)
 				.set({ content, isGenerating: false, adapterId: null })
@@ -183,8 +202,7 @@ export async function generateResponse({
 				emitToUser
 			)
 		} else {
-			content = completionResult
-			content = content.trim()
+			content = completionResult.replace(startString, "").trim()
 
 			// --- SWIPE HISTORY LOGIC (non-streamed) ---
 			let updateData: any = {

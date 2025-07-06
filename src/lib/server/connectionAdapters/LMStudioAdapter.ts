@@ -145,7 +145,12 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 			characters: this.chat.chatCharacters?.map((c) => c.character) || [],
 			personas: this.chat.chatPersonas?.map((p) => p.persona) || []
 		}
-		const stopStrings = StopStrings.get(promptContext)
+		const stopStrings = StopStrings.get({
+			format: promptFormat,
+			characters: this.chat.chatCharacters?.map((cc) => cc.character),
+			personas: this.chat.chatPersonas?.map((cp) => cp.persona),
+			currentCharacterId: this.currentCharacterId
+		})
 		const characterName =
 			this.chat.chatCharacters?.[0]?.character?.nickname ||
 			this.chat.chatCharacters?.[0]?.character?.name ||
@@ -191,7 +196,10 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 					let abortedEarly = false
 					try {
 						if (useChat && messages) {
-							this.prediction = modelClient.respond(messages, options)
+							this.prediction = modelClient.respond(
+								messages,
+								options
+							)
 							for await (const part of this.prediction) {
 								if (part?.content) {
 									const newChunk = part.content
@@ -201,7 +209,10 @@ class LMStudioAdapter extends BaseConnectionAdapter {
 								}
 							}
 						} else {
-							this.prediction = modelClient.complete(prompt, options)
+							this.prediction = modelClient.complete(
+								prompt,
+								options
+							)
 							for await (const part of this.prediction) {
 								if (part?.content) {
 									const newChunk = part.content
