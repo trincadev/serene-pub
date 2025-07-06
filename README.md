@@ -269,6 +269,7 @@ Serene Pub supports a variety of AI model connections, both local and cloud-base
 - 📅 Lorebooks+ features: custom calendars, "eras" historical categories, and more
 - 🕹️ Text adventure & narrator modes
 - 🖼️ Image generation
+- Monte Carlo tree search
 
 ---
 

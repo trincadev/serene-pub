@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from "$app/environment"
 	import Layout from "$lib/client/components/Layout.svelte"
-	import { loadSocketsClient } from "$lib/client/sockets/loadSockets.svelte"
+	import { loadSocketsClient } from "$lib/client/sockets/loadSockets.client"
     import type { Snippet } from "svelte"
 	import { page } from "$app/state"
 	import * as Icons from "@lucide/svelte"
@@ -18,7 +18,9 @@
 	let showUpdateBar = $state(true)
 
 	if (browser) {
-		loadSocketsClient().then(() => {
+		const domain = page.url.hostname
+		console.log(`Serene Pub is running on domain: ${domain}`)
+		loadSocketsClient({domain}).then(() => {
 			socketsInitialized = true
 		})
 	}
