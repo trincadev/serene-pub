@@ -99,7 +99,8 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 			StopStrings.get({
 				format: promptFormat,
 				characters: this.chat.chatCharacters?.map((cc) => cc.character),
-				personas: this.chat.chatPersonas?.map((cp) => cp.persona)
+				personas: this.chat.chatPersonas?.map((cp) => cp.persona),
+				currentCharacterId: this.currentCharacterId
 			}) || []
 
 		const openaiClient = new OpenAI({

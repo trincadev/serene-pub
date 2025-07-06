@@ -292,7 +292,8 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 			format: this.connection.promptFormat || "chatml",
 			characters:
 				this.chat.chatCharacters?.map((cc) => cc.character) || [],
-			personas: this.chat.chatPersonas?.map((cp) => cp.persona) || []
+			personas: this.chat.chatPersonas?.map((cp) => cp.persona) || [],
+			currentCharacterId: this.currentCharacterId
 		})
 		const characterName =
 			this.chat.chatCharacters?.[0]?.character?.nickname ||
