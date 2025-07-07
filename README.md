@@ -28,6 +28,7 @@
 - [How to Update](#-how-to-update)
 - [Contributing](#-contributing)
 - [License](#-license)
+- [Special Thanks](#-special-thanks)
 
 # 🦊 Serene Pub
 
@@ -300,5 +301,13 @@ Serene Pub is community-driven! Bug fixes, features, and feedback are welcome. P
 ## 🛡️ License
 
 AGPL-3.0. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md) for details.
+
+---
+
+## 🙏 Special Thanks
+
+Special thanks to **crazyaphro** for Q/A, **M3d4r** for editing the Wiki, and **Nivelle** for early feedback.
+
+---
 
 <p align="center"><b>Serene Pub — Play more, tweak less. 100% open source.</b></p>
