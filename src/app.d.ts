@@ -6,6 +6,7 @@ import type { Schema } from "inspector/promises"
 import type { P } from "ollama/dist/shared/ollama.d792a03f.mjs"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions/completions"
 import { FileAcceptDetails } from "../node_modules/@zag-js/file-upload/dist/index.d"
+import type { ListResponse } from "ollama"
 
 // for information about these interfaces
 declare global {
@@ -71,6 +72,13 @@ declare global {
 		theme: string
 	}
 
+	interface SystemSettingsCtx {
+		settings: {
+			ollamaManagerEnabled: boolean
+			ollamaManagerBaseUrl: string
+		}
+	}
+
 	// Model select and insert
 	type SelectUser = typeof schema.users.$inferSelect
 	type InsertUser = typeof schema.users.$inferInsert
@@ -114,6 +122,20 @@ declare global {
 	type InsertLorebookBinding = typeof schema.lorebookBindings.$inferInsert
 
 	namespace Sockets {
+		namespace SystemSettings {
+			interface Call {}
+			interface Response {
+				systemSettings: {
+					ollamaManagerEnabled: boolean
+					ollamaManagerBaseUrl: string
+				}
+			}
+		}
+		namespace Error {
+			interface Response {
+				error: string
+			}
+		}
 		namespace SamplingConfig {
 			interface Call {
 				id: number
@@ -320,6 +342,131 @@ declare global {
 			interface Response {
 				models: any[]
 				error: string | null
+			}
+		}
+		// --- OLLAMA ---
+		namespace OllamaSetBaseUrl {
+			interface Call {
+				baseUrl: string
+			}
+			interface Response {
+				success: boolean
+			}
+		}
+		namespace OllamaModelsList {
+			interface Call {}
+			interface Response {
+				models: any[]
+			}
+		}
+		namespace OllamaDeleteModel {
+			interface Call {
+				modelName: string
+			}
+			interface Response {
+				success: boolean
+			}
+		}
+		namespace OllamaConnectModel {
+			interface Call {
+				modelName: string
+			}
+			interface Response {
+				success: boolean
+			}
+		}
+		namespace OllamaListRunningModels {
+			interface Call {}
+			interface Response {
+				models: ListResponse["models"]
+			}
+		}
+		namespace OllamaPullModel {
+			interface Call {
+				modelName: string
+			}
+			interface Response {
+				success: boolean
+				error?: string
+				progress?: any
+			}
+		}
+		namespace OllamaStopModel {
+			interface Call {
+				modelName: string
+			}
+			interface Response {
+				success: boolean
+			}
+		}
+		namespace OllamaVersion {
+			interface Call {}
+			interface Response {
+				version?: string
+			}
+		}
+		namespace OllamaIsUpdateAvailable {
+			interface Call {}
+			interface Response {
+				updateAvailable: boolean
+				currentVersion?: string
+				latestVersion?: string
+				error?: string
+			}
+		}
+		namespace OllamaSearchAvailableModels {
+			interface Call {
+				search: string
+				source: string
+			}
+			interface Response {
+				models: Array<{
+					name: string
+					description?: string
+					size?: string
+					tags?: string[]
+					popular?: boolean
+					url?: string
+					downloads?: number
+					updatedAtStr?: string
+					createdAt?: Date
+					likes?: number
+					trendingScore?: number
+				}>
+				error?: string
+			}
+		}
+		namespace OllamaHuggingFaceSiblingsList {
+			interface Call {
+				modelId: string
+			}
+			interface Response {
+				baseUrl: string,
+				siblings: Array<{
+					id: string
+					likes: number
+					trendingScore: number
+					private: boolean
+					downloads: number
+					tags: string[]
+					library_name: string
+					createdAt: string
+					modelId: string
+					rfilename?: string
+					size?: number
+					quantization?: string
+				}>
+				error?: string
+			}
+		}
+		// --- APP SETTINGS ---
+		namespace UpdateOllamaManagerEnabled {
+			interface Call {
+				enabled: boolean
+			}
+			interface Response {
+				success: boolean
+				enabled?: boolean
 			}
 		}
 		// --- WEIGHTS ---
@@ -863,6 +1010,20 @@ declare global {
 				darkMode: boolean
 			}
 			interface Response {}
+		}
+		// --- USER ---
+		namespace User {
+			interface Call {}
+			interface Response {
+				user:
+					| (SelectUser & {
+							activeConnection: SelectConnection | null
+							activeSamplingConfig: SelectSamplingConfig | null
+							activeContextConfig: SelectContextConfig | null
+							activePromptConfig: SelectPromptConfig | null
+					  })
+					| undefined
+			}
 		}
 	}
 

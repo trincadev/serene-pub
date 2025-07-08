@@ -57,10 +57,22 @@
 		},
 		digest: {}
 	})
-	// TODO use setTheme socket call
 	let themeCtx: ThemeCtx = $state({
 		mode: (localStorage.getItem("mode") as "light" | "dark") || "dark",
 		theme: localStorage.getItem("theme") || Theme.HAMLINDIGO
+	})
+	let systemSettingsCtx: SystemSettingsCtx = $state({
+		settings: {
+			ollamaManagerEnabled: false,
+			ollamaManagerBaseUrl: ""
+		}
+	})
+
+	$effect(() => {
+		console.log(
+			"Layout systemSettingsCtx",
+			$state.snapshot(systemSettingsCtx)
+		)
 	})
 
 	function openPanel({
@@ -168,24 +180,33 @@
 		document.documentElement.setAttribute("data-theme", theme)
 	})
 
-	setContext("panelsCtx", panelsCtx as PanelsCtx)
-	setContext("userCtx", userCtx)
-	setContext("themeCtx", themeCtx)
-
 	onMount(() => {
-		socket.on("user", (message) => {
+		setContext("panelsCtx", panelsCtx as PanelsCtx)
+		setContext("userCtx", userCtx)
+		setContext("themeCtx", themeCtx)
+		setContext("systemSettingsCtx", systemSettingsCtx)
+
+		socket.on("user", (message: Sockets.User.Response) => {
 			userCtx.user = message.user
 		})
+		socket.on(
+			"systemSettings",
+			(message: Sockets.SystemSettings.Response) => {
+				systemSettingsCtx.settings = message.systemSettings
+			}
+		)
 
 		socket.on("error", (message: Sockets.Error.Response) => {
 			toaster.error({ title: "Error", description: message.error })
 		})
 
 		socket.emit("user", {})
+		socket.emit("systemSettings", {})
 	})
 
 	onDestroy(() => {
 		socket.off("user")
+		socket.off("systemSettings")
 		socket.off("error")
 	})
 </script>
@@ -195,7 +216,7 @@
 		class="bg-surface-100-900 relative h-full max-h-[100dvh] w-full justify-between"
 	>
 		<div
-			class="relative flex h-svh min-w-full max-w-full flex-1 flex-col lg:flex-row lg:gap-2 overflow-hidden"
+			class="relative flex h-svh max-w-full min-w-full flex-1 flex-col overflow-hidden lg:flex-row lg:gap-2"
 		>
 			<!-- Left Sidebar -->
 			<aside class="desktop-sidebar">
@@ -248,7 +269,7 @@
 				{/if}
 			</aside>
 			<!-- Main Content -->
-			<main class="flex flex-col h-full overflow-hidden">
+			<main class="flex h-full flex-col overflow-hidden">
 				<Header />
 				<div class="flex-1 overflow-auto">
 					{@render children?.()}
@@ -428,6 +449,6 @@
 	/* w-[25%] max-w-[25%] */
 
 	.desktop-sidebar {
-		@apply hidden min-h-full max-h-full basis-1/4 overflow-x-hidden lg:block py-1;
+		@apply hidden max-h-full min-h-full basis-1/4 overflow-x-hidden py-1 lg:block;
 	}
 </style>

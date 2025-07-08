@@ -4,7 +4,6 @@
 	import * as Icons from "@lucide/svelte"
 	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import OllamaForm from "$lib/client/connectionForms/OllamaForm.svelte"
-	// import ChatGPTForm from "$lib/client/connectionForms/ChatGPTForm.svelte"
 	import OpenAIForm from "$lib/client/connectionForms/OpenAIForm.svelte"
 	import LmStudioForm from "$lib/client/connectionForms/LMStudioForm.svelte"
 	import {
@@ -15,6 +14,7 @@
 	import { toaster } from "$lib/client/utils/toaster"
 	import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 	import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
+	import OllamaManager from "$lib/client/components/ollamaManager/OllamaManager.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -22,14 +22,19 @@
 
 	let { onclose = $bindable() }: Props = $props()
 	let userCtx: UserCtx = getContext("userCtx")
+	let systemSettingsCtx: SystemSettingsCtx = getContext("systemSettingsCtx")
+
 	const socket = skio.get()
 
-	const OAIChatPresets: {name:string, value: number, connectionDefaults: {
-			baseUrl: string,
-			promptFormat?: string,
-			tokenCounter?: string,
+	const OAIChatPresets: {
+		name: string
+		value: number
+		connectionDefaults: {
+			baseUrl: string
+			promptFormat?: string
+			tokenCounter?: string
 			extraJson: {
-				stream: boolean,
+				stream: boolean
 				prerenderPrompt: boolean
 				apiKey: string
 			}
@@ -59,7 +64,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "ollama",
+					apiKey: "ollama"
 				}
 			}
 		},
@@ -87,7 +92,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -101,7 +106,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -115,7 +120,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -129,7 +134,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -143,7 +148,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -157,7 +162,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -171,7 +176,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -185,7 +190,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -199,7 +204,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -213,7 +218,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		}
@@ -240,6 +245,7 @@
 	let newConnectionType = $state(CONNECTION_TYPES[0].value)
 	let newConnectionOAIChatPreset: number | undefined = $state()
 	let showDeleteModal = $state(false)
+	let showOllamaManager = $state(false)
 
 	function handleSelectChange(e: Event) {
 		socket.emit("setUserActiveConnection", {
@@ -272,7 +278,7 @@
 			...(newConnectionType === CONNECTION_TYPE.OPENAI_CHAT
 				? OAIChatPresets.find(
 						(p) => p.value === newConnectionOAIChatPreset
-				  )?.connectionDefaults
+					)?.connectionDefaults
 				: {})
 		}
 		socket.emit("createConnection", { connection: newConn })
@@ -318,6 +324,14 @@
 		refreshModelsResult = null
 		socket.emit("refreshModels", { baseUrl: connection?.baseUrl })
 	}
+	function onOllamaManagerClick() {
+		if (systemSettingsCtx.settings.ollamaManagerEnabled) {
+			showOllamaManager = true
+		}
+	}
+	function onOllamaManagerClickClose() {
+		showOllamaManager = false
+	}
 
 	onMount(() => {
 		socket.on(
@@ -344,20 +358,26 @@
 				toaster.success({ title: "Connection Updated" })
 			}
 		)
-		socket.on("deleteConnection", (msg: Sockets.DeleteConnection.Response) => {
-			toaster.success({ title: "Connection Deleted" })
-			connection = undefined
-			originalConnection = undefined
-		})
-		socket.on("createConnection", (msg: Sockets.CreateConnection.Response) => {
-			toaster.success({ title: "Connection Created" })
-		})
+		socket.on(
+			"deleteConnection",
+			(msg: Sockets.DeleteConnection.Response) => {
+				toaster.success({ title: "Connection Deleted" })
+				connection = undefined
+				originalConnection = undefined
+			}
+		)
+		socket.on(
+			"createConnection",
+			(msg: Sockets.CreateConnection.Response) => {
+				toaster.success({ title: "Connection Created" })
+			}
+		)
 		socket.emit("connectionsList", {})
 		if (userCtx.user?.activeConnectionId) {
 			socket.emit("connection", { id: userCtx.user.activeConnectionId })
 		}
 		onclose = handleOnClose
-		// If ollama, fetch models
+
 		if (connection?.type === "ollama" && connection.baseUrl) {
 			handleRefreshModels()
 		}
@@ -375,109 +395,113 @@
 	})
 </script>
 
-<div class="text-foreground p-4">
-	<div class="mt-2 mb-2 flex gap-2 sm:mt-0">
-		<button
-			type="button"
-			class="btn btn-sm preset-filled-primary-500"
-			onclick={handleNew}
-		>
-			<Icons.Plus size={16} />
-		</button>
-		<button
-			type="button"
-			class="btn btn-sm preset-filled-secondary-500"
-			onclick={handleReset}
-			disabled={!unsavedChanges}
-		>
-			<Icons.RefreshCcw size={16} />
-		</button>
-		<button
-			type="button"
-			class="btn btn-sm preset-filled-error-500"
-			onclick={handleDelete}
-			disabled={!connection}
-		>
-			<Icons.X size={16} />
-		</button>
-	</div>
-	<div
-		class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center"
-		class:hidden={!connectionsList.length}
-	>
-		<select
-			class="select bg-background border-muted rounded border"
-			onchange={handleSelectChange}
-			bind:value={userCtx!.user!.activeConnectionId}
-			disabled={unsavedChanges}
-		>
-			{#each connectionsList as c}
-				<option value={c.id}>
-					{c.name} ({CONNECTION_TYPE.options.find(
-						(t) => t.value === c.type
-					)!.label})
-				</option>
-			{/each}
-		</select>
-	</div>
-	{#if !!connection}
-		{#key connection.id}
-			<div class="my-4 flex">
+{#if showOllamaManager && systemSettingsCtx.settings.ollamaManagerEnabled}
+	<OllamaManager onClose={() => (showOllamaManager = false)} close={onOllamaManagerClickClose} />
+{:else}
+	<div class="text-foreground p-4">
+		<div class="mt-2 mb-2 flex justify-between gap-2 sm:mt-0">
+			<div class="gap-2">
 				<button
 					type="button"
-					class="btn btn-sm preset-filled-success-500 w-full"
-					onclick={handleUpdate}
-					disabled={!unsavedChanges}
+					class="btn btn-sm preset-filled-primary-500"
+					onclick={handleNew}
+					title="Create New Connection"
+					aria-label="Create New Connection"
 				>
-					<Icons.Save size={16} />
-					Save
+					<Icons.Plus size={16} />
+				</button>
+				<button
+					type="button"
+					class="btn btn-sm preset-filled-secondary-500"
+					onclick={handleReset}
+					disabled={!unsavedChanges}
+					title="Reset Changes"
+					aria-label="Reset Changes"
+				>
+					<Icons.RefreshCcw size={16} />
+				</button>
+				<button
+					type="button"
+					class="btn btn-sm preset-filled-error-500"
+					onclick={handleDelete}
+					disabled={!connection}
+				>
+					<Icons.X size={16} />
 				</button>
 			</div>
-			<div class="flex flex-col gap-1">
-				<label class="font-semibold" for="name">Name</label>
-				<input
-					id="name"
-					type="text"
-					bind:value={connection.name}
-					class="input"
-				/>
-			</div>
-			{#if connection.type === CONNECTION_TYPE.OLLAMA}
-				<OllamaForm bind:connection />
-			{:else if connection.type === CONNECTION_TYPE.OPENAI_CHAT}
-				<OpenAIForm bind:connection />
-			{:else if connection.type === CONNECTION_TYPE.LM_STUDIO}
-				<LmStudioForm bind:connection />
-			{:else if connection.type === CONNECTION_TYPE.LLAMACPP_COMPLETION}
-				<LlamaCppForm bind:connection />
-			{/if}
-			<div class="mt-4 flex flex-col gap-2">
-				{#if connection.type === "ollama"}
-					{#if refreshModelsResult}
-						<div class="mt-1 text-sm">
-							{#if refreshModelsResult.models?.length}
-								<div>
-									Available Models: {refreshModelsResult.models.join(
-										", "
-									)}
-								</div>
-							{:else if refreshModelsResult.error}
-								<span class="text-error">
-									{refreshModelsResult.error}
-								</span>
-							{/if}
-						</div>
-					{/if}
+			<div>
+				{#if systemSettingsCtx.settings.ollamaManagerEnabled}
+					<button
+						type="button"
+						class="btn btn-sm preset-filled-secondary-500"
+						aria-label="Ollama Manager"
+						onclick={onOllamaManagerClick}
+						title="Ollama Manager"
+					>
+						Ollama
+					</button>
 				{/if}
 			</div>
-		{/key}
-	{/if}
-	{#if !connectionsList.length}
-		<div class="text-muted-foreground py-8 text-center">
-			No connections found. Create a new connection to get started.
 		</div>
-	{/if}
-</div>
+		<div
+			class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center"
+			class:hidden={!connectionsList.length}
+		>
+			<select
+				class="select bg-background border-muted rounded border"
+				onchange={handleSelectChange}
+				bind:value={userCtx!.user!.activeConnectionId}
+				disabled={unsavedChanges}
+			>
+				{#each connectionsList as c}
+					<option value={c.id}>
+						{c.name} ({CONNECTION_TYPE.options.find(
+							(t) => t.value === c.type
+						)!.label})
+					</option>
+				{/each}
+			</select>
+		</div>
+		{#if !!connection}
+			{#key connection.id}
+				<div class="my-4 flex">
+					<button
+						type="button"
+						class="btn btn-sm preset-filled-success-500 w-full"
+						onclick={handleUpdate}
+						disabled={!unsavedChanges}
+					>
+						<Icons.Save size={16} />
+						Save
+					</button>
+				</div>
+				<div class="flex flex-col gap-1">
+					<label class="font-semibold" for="name">Name</label>
+					<input
+						id="name"
+						type="text"
+						bind:value={connection.name}
+						class="input"
+					/>
+				</div>
+				{#if connection.type === CONNECTION_TYPE.OLLAMA}
+					<OllamaForm bind:connection />
+				{:else if connection.type === CONNECTION_TYPE.OPENAI_CHAT}
+					<OpenAIForm bind:connection />
+				{:else if connection.type === CONNECTION_TYPE.LM_STUDIO}
+					<LmStudioForm bind:connection />
+				{:else if connection.type === CONNECTION_TYPE.LLAMACPP_COMPLETION}
+					<LlamaCppForm bind:connection />
+				{/if}
+			{/key}
+		{/if}
+		{#if !connectionsList.length}
+			<div class="text-muted-foreground py-8 text-center">
+				No connections found. Create a new connection to get started.
+			</div>
+		{/if}
+	</div>
+{/if}
 
 <Modal
 	open={showConfirmModal}
@@ -571,7 +595,9 @@
 				{@const connectionType = CONNECTION_TYPES.find(
 					(t) => t.value === newConnectionType
 				)}
-				<div class="bg-surface-500/25 flex flex-col gap-2 rounded p-4 mt-4">
+				<div
+					class="bg-surface-500/25 mt-4 flex flex-col gap-2 rounded p-4"
+				>
 					<span class="preset-filled-primary-500 p-2">
 						Difficulty: {connectionType?.difficulty}
 					</span>
@@ -608,7 +634,8 @@
 		</header>
 		<article>
 			<p class="opacity-60">
-				Are you sure you want to delete this connection? This cannot be undone.
+				Are you sure you want to delete this connection? This cannot be
+				undone.
 			</p>
 		</article>
 		<footer class="flex justify-end gap-4">

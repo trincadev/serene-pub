@@ -6,7 +6,17 @@ import {
 	setUserActiveConnection,
 	testConnection,
 	refreshModels,
-	createConnection
+	createConnection,
+	ollamaSetBaseUrl,
+	ollamaModelsList,
+	ollamaDeleteModel,
+	ollamaListRunningModels,
+	ollamaPullModel,
+	ollamaVersion,
+	ollamaIsUpdateAvailable,
+	ollamaConnectModel,
+	ollamaSearchAvailableModels,
+	ollamaHuggingFaceSiblingsList
 } from "./connections"
 import {
 	sampling,
@@ -91,6 +101,7 @@ import {
 	iterateNextHistoryEntry,
 	lorebookImport
 } from "./lorebooks"
+import { updateOllamaManagerEnabled, systemSettings } from "./systemSettings"
 
 const userId = 1 // Replace with actual user id
 
@@ -126,6 +137,23 @@ export function connectSockets(io: {
 		register(socket, setUserActiveConnection, emitToUser)
 		register(socket, testConnection, emitToUser)
 		register(socket, refreshModels, emitToUser)
+		register(socket, ollamaConnectModel, emitToUser)
+		register(socket, ollamaSearchAvailableModels, emitToUser)
+		register(socket, ollamaHuggingFaceSiblingsList, emitToUser)
+
+		// Ollama
+		register(socket, ollamaSetBaseUrl, emitToUser)
+		register(socket, ollamaModelsList, emitToUser)
+		register(socket, ollamaDeleteModel, emitToUser)
+		register(socket, ollamaListRunningModels, emitToUser)
+		register(socket, ollamaPullModel, emitToUser)
+		register(socket, ollamaVersion, emitToUser)
+		register(socket, ollamaIsUpdateAvailable, emitToUser)
+
+		// App Settings
+		register(socket, systemSettings, emitToUser)
+		register(socket, updateOllamaManagerEnabled, emitToUser)
+
 		// Characters
 		register(socket, characterList, emitToUser)
 		register(socket, character, emitToUser)
@@ -193,7 +221,7 @@ export function connectSockets(io: {
 		register(socket, updateHistoryEntry, emitToUser)
 		register(socket, deleteHistoryEntry, emitToUser)
 		register(socket, iterateNextHistoryEntry, emitToUser)
-        register(socket, lorebookImport, emitToUser)
+		register(socket, lorebookImport, emitToUser)
 		console.log(`Socket connected: ${socket.id} for user ${userId}`)
 	})
 }
