@@ -133,7 +133,14 @@ declare global {
 		}
 		namespace Error {
 			interface Response {
-				error: string
+				error: string,
+				description?: string,
+			}
+		}
+		namespace Success {
+			interface Response {
+				title: string,
+				description?: string,
 			}
 		}
 		namespace SamplingConfig {
@@ -391,12 +398,30 @@ declare global {
 				progress?: any
 			}
 		}
+		namespace OllamaPullProgress {
+			interface Response {
+				modelName: string
+				status: string
+				completed?: number
+				total?: number
+			}
+		}
 		namespace OllamaStopModel {
 			interface Call {
 				modelName: string
 			}
 			interface Response {
 				success: boolean
+			}
+		}
+		namespace OllamaCancelPull {
+			interface Call {
+				modelName: string
+			}
+			interface Response {
+				success: boolean
+				modelName?: string
+				error?: string
 			}
 		}
 		namespace OllamaVersion {
@@ -441,7 +466,7 @@ declare global {
 				modelId: string
 			}
 			interface Response {
-				baseUrl: string,
+				baseUrl?: string,
 				siblings: Array<{
 					id: string
 					likes: number

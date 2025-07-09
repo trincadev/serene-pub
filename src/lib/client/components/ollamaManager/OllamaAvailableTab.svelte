@@ -2,9 +2,10 @@
 	import * as Icons from "@lucide/svelte"
 	import * as skio from "sveltekit-io"
 	import { onMount, onDestroy } from "svelte"
-	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import { OllamaModelSearchSource } from "$lib/shared/constants/OllamaModelSource"
+	import HuggingFaceQuantizationModal from "$lib/client/components/modals/HuggingFaceQuantizationModal.svelte"
+	import OllamaDownloadProgressModal from "$lib/client/components/modals/OllamaDownloadProgressModal.svelte"
 
 	interface OllamaModel {
 		name: string
@@ -19,7 +20,6 @@
 
 	const socket = skio.get()
 
-	// State
 	let searchString = $state("")
 	let downloadingModels = $state(new Set<string>())
 	let installedModels: Sockets.OllamaModelsList.Response["models"] = $state(
@@ -29,23 +29,39 @@
 	let availableModels: Sockets.OllamaSearchAvailableModels.Response["models"] =
 		$state([])
 	let isSearching = $state(false)
-	
-	// Hugging Face modal state
 	let showHuggingFaceModal = $state(false)
 	let selectedModelForDownload: string | null = $state(null)
-	let huggingFaceSiblings: Sockets.OllamaHuggingFaceSiblingsList.Response["siblings"] = $state([])
+	let huggingFaceSiblings: Sockets.OllamaHuggingFaceSiblingsList.Response["siblings"] =
+		$state([])
 	let isLoadingSiblings = $state(false)
 
-	// Check if model is already installed
+	let downloadingQuants: {
+		[key: string]: {
+			modelName: string
+			status: string
+			files: { [key: string]: { total: number; completed: number } }
+		}
+	} = $state({})
+
+	// Track which models are being downloaded to handle completion
+	let currentlyDownloading = $state(new Set<string>())
+
+	let isAnyDownloadInProgress = $derived(
+		!!Object.keys(downloadingQuants).length
+	)
+
 	function isModelInstalled(modelName: string): boolean {
 		return installedModels.some((model) => model.name.startsWith(modelName))
 	}
 
-	// Download/Pull a model (mock)
+	$effect(() => {
+		console.log("downloadingQuantizations:", downloadingQuants)
+		console.log("isAnyDownloadInProgress:", isAnyDownloadInProgress)
+	})
+
 	async function downloadModel(modelName: string) {
 		try {
 			downloadingModels.add(modelName)
-			toaster.info({ title: `Downloading ${modelName}...` })
 
 			// Simulate download delay
 			await new Promise((resolve) => setTimeout(resolve, 2000))
@@ -72,7 +88,6 @@
 		}
 	}
 
-	// Search for available models
 	function searchAvailableModels() {
 		isSearching = true
 		socket.emit("ollamaSearchAvailableModels", {
@@ -81,19 +96,17 @@
 		} as Sockets.OllamaSearchAvailableModels.Call)
 	}
 
-	// Open Hugging Face download modal
 	function openHuggingFaceModal(modelId: string) {
 		selectedModelForDownload = modelId
 		showHuggingFaceModal = true
 		isLoadingSiblings = true
 		huggingFaceSiblings = []
-		
+
 		socket.emit("ollamaHuggingFaceSiblingsList", {
 			modelId: modelId
 		} as Sockets.OllamaHuggingFaceSiblingsList.Call)
 	}
 
-	// Close Hugging Face modal
 	function closeHuggingFaceModal() {
 		showHuggingFaceModal = false
 		selectedModelForDownload = null
@@ -101,23 +114,46 @@
 		isLoadingSiblings = false
 	}
 
-	// Helper function to extract numeric value from quantization for sorting
-	function getQuantizationSortValue(quantization: string | undefined): number {
-		if (!quantization) return 0
-		
-		// Extract the main number (e.g., "Q4_K_M" -> 4, "Q8_0" -> 8)
-		const match = quantization.match(/[Qq](\d+)/)
-		return match ? parseInt(match[1]) : 0
+	function downloadHuggingFaceQuantization(
+		modelId: string,
+		rfilename: string
+	) {
+		const huggingFaceUrl = `hf.co/${modelId}:${rfilename}`
+
+		// Track this model as currently downloading
+		currentlyDownloading.add(huggingFaceUrl)
+
+		// Emit the pull request to Ollama
+		socket.emit("ollamaPullModel", {
+			modelName: huggingFaceUrl
+		} as Sockets.OllamaPullModel.Call)
 	}
 
-	// Sort siblings by quantization level (highest to lowest)
-	let sortedSiblings = $derived([...huggingFaceSiblings].sort((a, b) => {
-		const aValue = getQuantizationSortValue(a.quantization)
-		const bValue = getQuantizationSortValue(b.quantization)
-		return bValue - aValue // Descending order
-	}))
+	function cancelModelDownload(modelName: string) {
+		// Remove from downloading quants locally
+		delete downloadingQuants[modelName]
+		// Remove from currently downloading set
+		currentlyDownloading.delete(modelName)
+		
+		// Emit cancel request to server
+		socket.emit("ollamaCancelPull", {
+			modelName: modelName
+		} as Sockets.OllamaCancelPull.Call)
+	}
 
-	// Debounced search when query or source changes
+	function clearDoneDownloads() {
+		// Remove downloads that are done (canceled, success, error, or complete)
+		for (const [key, progress] of Object.entries(downloadingQuants)) {
+			const status = progress.status.toLowerCase()
+			const isComplete = Object.values(progress.files).length > 0 && 
+				Object.values(progress.files).every(file => file.total > 0 && file.completed >= file.total)
+			
+			if (status === "canceled" || status === "success" || status === "error" || isComplete) {
+				delete downloadingQuants[key]
+			}
+		}
+	}
+
 	$effect(() => {
 		const _search = searchString.trim()
 		const _source = selectedSource
@@ -157,12 +193,65 @@
 		socket.on(
 			"ollamaPullModel",
 			(message: Sockets.OllamaPullModel.Response) => {
-				// Handle model pull if needed
+				// Handle model pull completion/error only - no progress handling
+				console.log("Pull model response:", message)
 				if (message.success) {
-					// Refresh installed models to update UI
+					// Mark the most recent download as successful
+					for (const modelName of currentlyDownloading) {
+						if (downloadingQuants[modelName]) {
+							downloadingQuants[modelName].status = "success"
+							currentlyDownloading.delete(modelName)
+							break
+						}
+					}
 					socket.emit("ollamaModelsList", {})
 					toaster.success({ title: "Model downloaded successfully" })
+					closeHuggingFaceModal()
+				} else if (message.error) {
+					// Mark the most recent download as error
+					for (const modelName of currentlyDownloading) {
+						if (downloadingQuants[modelName]) {
+							downloadingQuants[modelName].status = "error"
+							currentlyDownloading.delete(modelName)
+							break
+						}
+					}
+					toaster.error({ title: message.error })
 				}
+			}
+		)
+
+		socket.on(
+			"ollamaPullProgress",
+			(message: Sockets.OllamaPullProgress.Response) => {
+				closeHuggingFaceModal()
+				// console.log("Pull progress update:", message)
+				// Update progress for the downloading quantization
+				const modelName = message.modelName
+
+				console.log("Pull progress:", message)
+
+				let file: string | undefined
+				if (message.status.toLowerCase() !== "pulling manifest" && message.status.includes("pulling ")) {
+					file = message.status.split("pulling ")[1]
+				}
+
+				if (!downloadingQuants[modelName]) {
+					downloadingQuants[modelName] = {
+						modelName: modelName,
+						status: message.status,
+						files: {}
+					}
+				}
+
+				if (file) {
+					downloadingQuants[modelName].files[file] = {
+						total: message.total || 0,
+						completed: message.completed || 0
+					}
+				}
+
+				downloadingQuants[modelName].status = message.status
 			}
 		)
 
@@ -176,7 +265,18 @@
 				} else {
 					huggingFaceSiblings = message.siblings || []
 				}
-				console.log("Hugging Face siblings (sorted):", $state.snapshot(huggingFaceSiblings))
+			}
+		)
+
+		socket.on(
+			"ollamaCancelPull",
+			(message: Sockets.OllamaCancelPull.Response) => {
+				if (message.success && message.modelName) {
+					// Remove from downloading quants
+					delete downloadingQuants[message.modelName]
+				} else if (message.error) {
+					toaster.error({ title: message.error })
+				}
 			}
 		)
 
@@ -188,7 +288,9 @@
 		socket.off("ollamaModelsList")
 		socket.off("ollamaSearchAvailableModels")
 		socket.off("ollamaPullModel")
+		socket.off("ollamaPullProgress")
 		socket.off("ollamaHuggingFaceSiblingsList")
+		socket.off("ollamaCancelPull")
 	})
 </script>
 
@@ -240,137 +342,134 @@
 		{#each availableModels as model}
 			<div class="card preset-tonal p-4">
 				<div class="flex flex-col gap-2">
-						<!-- Header with name and badges -->
-						<div class="flex items-start justify-between">
-							<div class="flex flex-wrap items-center gap-2">
-								<h4 class="text-lg font-semibold">
-									{model.name}
-								</h4>
-							</div>
+					<!-- Header with name and badges -->
+					<div class="flex items-start justify-between">
+						<div class="flex flex-wrap items-center gap-2">
+							<h4 class="text-lg font-semibold">
+								{model.name}
+							</h4>
 						</div>
+					</div>
 
-						<div>
-							{#if model.popular}
-									<span
-										class="badge bg-primary-500 rounded-full px-2 py-1 text-xs text-white"
-									>
-										<Icons.TrendingUp
-											size={12}
-											class="mr-1 inline"
-										/>
-										Popular
-									</span>
-								{/if}
-								{#if model.trendingScore && model.trendingScore > 0.7}
-									<span
-										class="badge rounded-full bg-orange-500 px-2 py-1 text-xs text-white"
-									>
-										<Icons.Flame
-											size={12}
-											class="mr-1 inline"
-										/>
-										Trending
-									</span>
-								{/if}
+					<div>
+						{#if model.popular}
+							<span
+								class="badge bg-primary-500 rounded-full px-2 py-1 text-xs text-white"
+							>
+								<Icons.TrendingUp
+									size={12}
+									class="mr-1 inline"
+								/>
+								Popular
+							</span>
+						{/if}
+						{#if model.trendingScore && model.trendingScore > 0.7}
+							<span
+								class="badge rounded-full bg-orange-500 px-2 py-1 text-xs text-white"
+							>
+								<Icons.Flame size={12} class="mr-1 inline" />
+								Trending
+							</span>
+						{/if}
+					</div>
+
+					<!-- Description -->
+					<p class="text-surface-500 mb-3 line-clamp-2 text-sm">
+						{model.description || "No description available"}
+					</p>
+
+					<!-- Tags -->
+					{#if model.tags && model.tags.length > 0}
+						<div class="mb-3 flex flex-wrap gap-1">
+							{#each model.tags.slice(0, 4) as tag}
+								<span
+									class="badge bg-surface-200-800 text-surface-700-300 rounded px-2 py-1 text-xs"
+								>
+									{tag}
+								</span>
+							{/each}
+							{#if model.tags.length > 4}
+								<span class="text-surface-500 text-xs">
+									+{model.tags.length - 4} more
+								</span>
+							{/if}
 						</div>
+					{/if}
 
-						<!-- Description -->
-						<p class="text-surface-500 mb-3 line-clamp-2 text-sm">
-							{model.description || "No description available"}
-						</p>
-
-						<!-- Tags -->
-						{#if model.tags && model.tags.length > 0}
-							<div class="mb-3 flex flex-wrap gap-1">
-								{#each model.tags.slice(0, 4) as tag}
-									<span
-										class="badge bg-surface-200-800 text-surface-700-300 rounded px-2 py-1 text-xs"
-									>
-										{tag}
-									</span>
-								{/each}
-								{#if model.tags.length > 4}
-									<span class="text-surface-500 text-xs">
-										+{model.tags.length - 4} more
-									</span>
-								{/if}
+					<!-- Metadata row -->
+					<div
+						class="text-surface-500 flex flex-wrap items-center gap-4 text-xs"
+					>
+						{#if model.size}
+							<div class="flex items-center gap-1">
+								<Icons.HardDrive size={12} />
+								<span>{model.size}</span>
 							</div>
 						{/if}
-
-						<!-- Metadata row -->
-						<div
-							class="text-surface-500 flex flex-wrap items-center gap-4 text-xs"
+						{#if model.downloads}
+							<div class="flex items-center gap-1">
+								<Icons.Download size={12} />
+								<span>
+									{model.downloads.toLocaleString()} downloads
+								</span>
+							</div>
+						{/if}
+						{#if model.likes}
+							<div class="flex items-center gap-1">
+								<Icons.Heart size={12} />
+								<span>
+									{model.likes.toLocaleString()} likes
+								</span>
+							</div>
+						{/if}
+						{#if model.updatedAtStr}
+							<div class="flex items-center gap-1">
+								<Icons.Clock size={12} />
+								<span>Updated {model.updatedAtStr}</span>
+							</div>
+						{/if}
+					</div>
+					<div class="flex min-w-[100px] gap-2">
+						<button
+							class="btn btn-sm {isModelInstalled(model.name)
+								? 'preset-filled-success-500'
+								: 'preset-filled-primary-500'}"
+							onclick={() => {
+								if (
+									selectedSource ===
+									OllamaModelSearchSource.HUGGING_FACE
+								) {
+									openHuggingFaceModal(model.name)
+								} else {
+									downloadModel(model.name)
+								}
+							}}
+							disabled={downloadingModels.has(model.name) ||
+								isModelInstalled(model.name)}
 						>
-							{#if model.size}
-								<div class="flex items-center gap-1">
-									<Icons.HardDrive size={12} />
-									<span>{model.size}</span>
-								</div>
+							{#if downloadingModels.has(model.name)}
+								<Icons.Loader2 size={14} class="animate-spin" />
+								Installing...
+							{:else if isModelInstalled(model.name)}
+								<Icons.Check size={14} />
+								Installed
+							{:else}
+								<Icons.Download size={14} />
+								Install
 							{/if}
-							{#if model.downloads}
-								<div class="flex items-center gap-1">
-									<Icons.Download size={12} />
-									<span>
-										{model.downloads.toLocaleString()} downloads
-									</span>
-								</div>
-							{/if}
-							{#if model.likes}
-								<div class="flex items-center gap-1">
-									<Icons.Heart size={12} />
-									<span>
-										{model.likes.toLocaleString()} likes
-									</span>
-								</div>
-							{/if}
-							{#if model.updatedAtStr}
-								<div class="flex items-center gap-1">
-									<Icons.Clock size={12} />
-									<span>Updated {model.updatedAtStr}</span>
-								</div>
-							{/if}
-						</div>
-						<div class="flex min-w-[100px] gap-2">
-							<button
-								class="btn btn-sm {isModelInstalled(model.name)
-									? 'preset-filled-success-500'
-									: 'preset-filled-primary-500'}"
-								onclick={() => {
-									if (selectedSource === OllamaModelSearchSource.HUGGING_FACE) {
-										openHuggingFaceModal(model.name)
-									} else {
-										downloadModel(model.name)
-									}
-								}}
-								disabled={downloadingModels.has(model.name) ||
-									isModelInstalled(model.name)}
+						</button>
+						{#if model.url}
+							<a
+								href={model.url}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="btn btn-sm preset-filled-secondary-500 text-center"
 							>
-								{#if downloadingModels.has(model.name)}
-									<Icons.Loader2
-										size={14}
-										class="animate-spin"
-									/>
-									Installing...
-								{:else if isModelInstalled(model.name)}
-									<Icons.Check size={14} />
-									Installed
-								{:else}
-									<Icons.Download size={14} />
-									Install
-								{/if}
-							</button>
-							{#if model.url}
-								<a
-									href={model.url}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="btn btn-sm preset-filled-secondary-500 text-center"
-								>
-									<Icons.ExternalLink size={14} />
-									View
-								</a>
-							{/if}
-						</div>
+								<Icons.ExternalLink size={14} />
+								View
+							</a>
+						{/if}
+					</div>
 				</div>
 			</div>
 		{/each}
@@ -378,103 +477,19 @@
 </div>
 
 <!-- Hugging Face Download Modal -->
-<Modal
-	open={showHuggingFaceModal}
-	onOpenChange={(e) => (showHuggingFaceModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl w-[50em] max-w-dvw-lg"
-	backdropClasses="backdrop-blur-sm"
->
-	{#snippet content()}
-		<header class="flex justify-between">
-			<h2 class="h2">Select Quantization</h2>
-		</header>
-		<article class="space-y-4">
-			<div>
-				<p class="text-surface-500 text-sm mb-2">
-					Choose a quantization level for <strong>{selectedModelForDownload}</strong>
-				</p>
-				<div class="bg-surface-200-800 p-3 rounded-lg">
-					<p class="text-xs text-surface-600-400">
-						<strong>About Quantizations:</strong> These are compressed variants of the model that reduce file size and memory usage while maintaining good performance. Higher numbers (Q8) preserve more quality but use more resources, while lower numbers (Q4) are more efficient but with slight quality trade-offs.
-					</p>
-				</div>
-			</div>
+<HuggingFaceQuantizationModal
+	bind:open={showHuggingFaceModal}
+	{selectedModelForDownload}
+	{huggingFaceSiblings}
+	{isLoadingSiblings}
+	onClose={closeHuggingFaceModal}
+	onDownload={downloadHuggingFaceQuantization}
+/>
 
-			{#if isLoadingSiblings}
-				<div class="p-6 text-center">
-					<Icons.Loader2 class="mx-auto mb-4 animate-spin" size={32} />
-					<p class="text-sm opacity-75">Loading available quantizations...</p>
-				</div>
-			{:else if sortedSiblings.length === 0}
-				<div class="p-6 text-center">
-					<Icons.AlertCircle class="text-surface-500 mx-auto mb-4" size={48} />
-					<p class="text-sm opacity-75">
-						No GGUF quantizations are available for this model.
-					</p>
-				</div>
-			{:else}
-				<div class="space-y-3 max-h-96 overflow-y-auto">
-					{#each sortedSiblings as sibling, index}
-						<div class="card bg-surface-200-800 p-4">
-							<div class="flex items-center justify-between">
-								<div class="flex-1">
-									<div class="flex items-center gap-2 mb-2">
-										<h5 class="font-semibold">
-											{sibling.quantization || 'Unknown file'}
-										</h5>
-										
-										<!-- Add special labels -->
-										{#if index === 0 && sortedSiblings.length > 1}
-											<span class="badge bg-blue-500 text-white text-xs px-2 py-1 rounded">
-												Larger
-											</span>
-										{:else if index === sortedSiblings.length - 1 && sortedSiblings.length > 1}
-											<span class="badge bg-green-500 text-white text-xs px-2 py-1 rounded">
-												Smaller
-											</span>
-										{/if}
-										
-										{#if sibling.quantization === 'Q4_K_M'}
-											<span class="badge bg-orange-500 text-white text-xs px-2 py-1 rounded">
-												Recommended
-											</span>
-										{/if}
-									</div>
-									
-									<div class="flex items-center gap-4 text-xs text-surface-500">
-										{#if sibling.size}
-											<div class="flex items-center gap-1">
-												<Icons.HardDrive size={12} />
-												<span>{(sibling.size / (1024 * 1024 * 1024)).toFixed(2)} GB</span>
-											</div>
-										{/if}
-									</div>
-								</div>
-								
-								<button 
-									class="btn btn-sm preset-filled-primary-500"
-									onclick={() => {
-										// TODO: Implement actual download logic
-										toaster.info({ title: `Download will be implemented for ${sibling.rfilename}` })
-										closeHuggingFaceModal()
-									}}
-								>
-									<Icons.Download size={14} />
-									Download
-								</button>
-							</div>
-						</div>
-					{/each}
-				</div>
-			{/if}
-		</article>
-		<footer class="flex justify-end gap-4">
-			<button 
-				class="btn preset-tonal"
-				onclick={closeHuggingFaceModal}
-			>
-				Cancel
-			</button>
-		</footer>
-	{/snippet}
-</Modal>
+<!-- Download Progress Modal -->
+<OllamaDownloadProgressModal
+	open={isAnyDownloadInProgress}
+	downloadingQuants={downloadingQuants}
+	onCancel={cancelModelDownload}
+	onClose={clearDoneDownloads}
+/>

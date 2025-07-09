@@ -197,7 +197,17 @@
 		)
 
 		socket.on("error", (message: Sockets.Error.Response) => {
-			toaster.error({ title: "Error", description: message.error })
+			toaster.error({
+				title: message.error,
+				description: message.description
+			})
+		})
+
+		socket.on("success", (message: Sockets.Success.Response) => {
+			toaster.success({
+				title: message.title,
+				description: message.description
+			})
 		})
 
 		socket.emit("user", {})
@@ -208,6 +218,7 @@
 		socket.off("user")
 		socket.off("systemSettings")
 		socket.off("error")
+		socket.off("success")
 	})
 </script>
 
