@@ -6,6 +6,7 @@
 	import { onMount, setContext, onDestroy } from "svelte"
 	import SamplingSidebar from "./sidebars/SamplingSidebar.svelte"
 	import ConnectionsSidebar from "./sidebars/ConnectionsSidebar.svelte"
+	import OllamaSidebar from "./sidebars/OllamaSidebar.svelte"
 	import ContextSidebar from "./sidebars/ContextSidebar.svelte"
 	import LorebooksSidebar from "./sidebars/LorebooksSidebar.svelte"
 	import PersonasSidebar from "./sidebars/PersonasSidebar.svelte"
@@ -18,6 +19,7 @@
 	import SettingsSidebar from "$lib/client/components/sidebars/SettingsSidebar.svelte"
 	import type { Snippet } from "svelte"
 	import { Theme } from "$lib/client/consts/Theme"
+	import OllamaIcon from "./icons/OllamaIcon.svelte"
 
 	interface Props {
 		children?: Snippet
@@ -38,16 +40,7 @@
 		onLeftPanelClose: undefined,
 		onRightPanelClose: undefined,
 		onMobilePanelClose: undefined,
-		leftNav: {
-			sampling: {
-				icon: Icons.SlidersHorizontal,
-				title: "Sampling"
-			},
-			connections: { icon: Icons.Cable, title: "Connections" },
-			contexts: { icon: Icons.BookOpenText, title: "Contexts" },
-			prompts: { icon: Icons.MessageCircle, title: "Prompts" },
-			settings: { icon: Icons.Settings, title: "Settings" }
-		},
+		leftNav: {},
 		rightNav: {
 			personas: { icon: Icons.UserCog, title: "Personas" },
 			characters: { icon: Icons.Users, title: "Characters" },
@@ -73,6 +66,25 @@
 			"Layout systemSettingsCtx",
 			$state.snapshot(systemSettingsCtx)
 		)
+	})
+
+	// Update leftNav based on Ollama Manager setting
+	$effect(() => {
+		const baseLeftNav = {
+			sampling: {
+				icon: Icons.SlidersHorizontal,
+				title: "Sampling"
+			},
+			connections: { icon: Icons.Cable, title: "Connections" },
+			...(systemSettingsCtx.settings.ollamaManagerEnabled && {
+				ollama: { icon: OllamaIcon, title: "Ollama Manager" }
+			}),
+			contexts: { icon: Icons.BookOpenText, title: "Contexts" },
+			prompts: { icon: Icons.MessageCircle, title: "Prompts" },
+			settings: { icon: Icons.Settings, title: "Settings" }
+		}
+
+		panelsCtx.leftNav = baseLeftNav
 	})
 
 	function openPanel({
@@ -262,6 +274,10 @@
 								<ConnectionsSidebar
 									bind:onclose={panelsCtx.onLeftPanelClose}
 								/>
+							{:else if panelsCtx.leftPanel === "ollama"}
+								<OllamaSidebar
+									bind:onclose={panelsCtx.onLeftPanelClose}
+								/>
 							{:else if panelsCtx.leftPanel === "contexts"}
 								<ContextSidebar
 									bind:onclose={panelsCtx.onLeftPanelClose}
@@ -367,6 +383,10 @@
 						/>
 					{:else if panelsCtx.mobilePanel === "connections"}
 						<ConnectionsSidebar
+							bind:onclose={panelsCtx.onMobilePanelClose}
+						/>
+					{:else if panelsCtx.mobilePanel === "ollama"}
+						<OllamaSidebar
 							bind:onclose={panelsCtx.onMobilePanelClose}
 						/>
 					{:else if panelsCtx.mobilePanel === "contexts"}

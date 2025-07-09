@@ -69,7 +69,7 @@
 			handleClose()
 		}
 	}}
-	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-2xl border border-surface-300-700 w-[40em] max-w-dvw-lg"
+	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-2xl border border-surface-300-700 w-[40em] max-w-dvw-lg max-h-[90dvh]"
 	backdropClasses="backdrop-blur-md bg-black/20"
 >
 	{#snippet content()}

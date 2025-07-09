@@ -14,7 +14,6 @@
 	import { toaster } from "$lib/client/utils/toaster"
 	import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 	import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
-	import OllamaManager from "$lib/client/components/ollamaManager/OllamaManager.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -245,7 +244,6 @@
 	let newConnectionType = $state(CONNECTION_TYPES[0].value)
 	let newConnectionOAIChatPreset: number | undefined = $state()
 	let showDeleteModal = $state(false)
-	let showOllamaManager = $state(false)
 
 	function handleSelectChange(e: Event) {
 		socket.emit("setUserActiveConnection", {
@@ -324,14 +322,6 @@
 		refreshModelsResult = null
 		socket.emit("refreshModels", { baseUrl: connection?.baseUrl })
 	}
-	function onOllamaManagerClick() {
-		if (systemSettingsCtx.settings.ollamaManagerEnabled) {
-			showOllamaManager = true
-		}
-	}
-	function onOllamaManagerClickClose() {
-		showOllamaManager = false
-	}
 
 	onMount(() => {
 		socket.on(
@@ -395,10 +385,7 @@
 	})
 </script>
 
-{#if showOllamaManager && systemSettingsCtx.settings.ollamaManagerEnabled}
-	<OllamaManager onClose={() => (showOllamaManager = false)} close={onOllamaManagerClickClose} />
-{:else}
-	<div class="text-foreground p-4">
+<div class="text-foreground p-4">
 		<div class="mt-2 mb-2 flex justify-between gap-2 sm:mt-0">
 			<div class="gap-2">
 				<button
@@ -428,19 +415,6 @@
 				>
 					<Icons.X size={16} />
 				</button>
-			</div>
-			<div>
-				{#if systemSettingsCtx.settings.ollamaManagerEnabled}
-					<button
-						type="button"
-						class="btn btn-sm preset-filled-secondary-500"
-						aria-label="Ollama Manager"
-						onclick={onOllamaManagerClick}
-						title="Ollama Manager"
-					>
-						Ollama
-					</button>
-				{/if}
 			</div>
 		</div>
 		<div
@@ -501,7 +475,6 @@
 			</div>
 		{/if}
 	</div>
-{/if}
 
 <Modal
 	open={showConfirmModal}

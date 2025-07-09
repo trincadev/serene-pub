@@ -92,6 +92,8 @@
 		socket.off("ollamaVersion")
 		socket.off("ollamaSetBaseUrl")
 	})
+
+	onClose = () => true
 </script>
 
 <div class="flex h-full flex-col">
