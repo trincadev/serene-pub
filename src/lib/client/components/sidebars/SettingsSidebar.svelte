@@ -134,6 +134,24 @@
 				<span>Repository</span>
 			</a>
 			<a
+				href="https://github.com/doolijb/serene-pub/wiki"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="btn preset-filled-surface-500"
+			>
+				<Icons.BookOpen size={16} />
+				<span>Wiki</span>
+			</a>
+			<a
+				href="https://discord.gg/3kUx3MDcSa"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="btn preset-filled-tertiary-500"
+			>
+				<Icons.MessageSquare size={16} />
+				<span>Discord</span>
+			</a>
+			<a
 				href="https://github.com/doolijb/serene-pub/issues"
 				target="_blank"
 				rel="noopener noreferrer"

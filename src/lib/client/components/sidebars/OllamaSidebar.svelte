@@ -9,6 +9,7 @@
 	import OllamaDownloadsTab from "../ollamaManager/OllamaDownloadsTab.svelte"
 	import * as skio from "sveltekit-io"
 	import { toaster } from "$lib/client/utils/toaster"
+	import OllamaIcon from "../icons/OllamaIcon.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -128,54 +129,78 @@
 		</div>
 	{:else if !isConnected}
 		<!-- Connection setup -->
-		<div class="flex flex-1 items-center justify-center p-4">
-			<div class="w-full max-w-md space-y-4">
+		<div class="flex items-center justify-center p-4 mt-10">
+			<div class="w-full max-w-md space-y-6">
 				<div class="text-center">
-					<Icons.Server
-						class="text-muted-foreground mx-auto mb-4 h-12 w-12"
-					/>
+                    <OllamaIcon class="text-muted-foreground mx-auto mb-4 h-12 w-12" />
 					<h3 class="text-foreground mb-2 text-lg font-semibold">
 						Connect to Ollama
 					</h3>
 					<p class="text-muted-foreground mb-4 text-sm">
-						Enter your Ollama server URL to get started.
+						Connect to your Ollama server to manage AI models locally.
 					</p>
 				</div>
 
+				<!-- Don't have Ollama installed? -->
+				<div class="bg-surface-200 dark:bg-surface-800 rounded-lg border p-4">
+					<div class="flex items-start gap-3">
+						<Icons.Download class="text-primary-500 mt-0.5 h-5 w-5 flex-shrink-0" />
+						<div class="flex-1">
+							<h4 class="text-foreground mb-1 text-sm font-medium">
+								Don't have Ollama installed?
+							</h4>
+							<p class="text-muted-foreground mb-3 text-xs">
+								Download and install Ollama to run AI models locally on your machine. It's easy!
+							</p>
+							<a
+								href="https://ollama.ai/download"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="btn btn-sm preset-filled-primary-500 inline-flex items-center gap-2"
+							>
+								<Icons.ExternalLink class="h-4 w-4" />
+								Download Ollama
+							</a>
+						</div>
+					</div>
+				</div>
+
+				<!-- Connection form -->
 				<div class="space-y-3">
 					<div>
 						<label
 							class="text-foreground mb-1 block text-sm font-medium"
 							for="ollamaBaseUrl"
 						>
-							Ollama Base URL
+							Ollama Server URL
 						</label>
 						<input
 							id="ollamaBaseUrl"
 							type="text"
 							bind:value={baseUrlField}
-							placeholder="http://localhost:11434/"
+							placeholder="http://localhost:11434"
 							class="input w-full"
 						/>
 					</div>
 
 					<div class="flex gap-2">
 						<button
-							class="btn btn-primary flex-1"
+							class="btn preset-filled-primary-500 flex-1"
 							onclick={handleSaveBaseUrl}
 							disabled={isSavingBaseUrl}
 						>
 							{#if isSavingBaseUrl}
 								<Icons.Loader2 class="h-4 w-4 animate-spin" />
-								Saving...
+								Connecting...
 							{:else}
 								<Icons.Save class="h-4 w-4" />
 								Save & Connect
 							{/if}
 						</button>
 						<button
-							class="btn btn-secondary"
+							class="btn preset-filled-secondary-500"
 							onclick={checkConnection}
+							title="Test connection to Ollama server"
 						>
 							<Icons.RefreshCw class="h-4 w-4" />
 							Test

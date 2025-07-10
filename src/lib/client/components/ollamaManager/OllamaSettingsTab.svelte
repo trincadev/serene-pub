@@ -3,6 +3,7 @@
 	import { toaster } from "$lib/client/utils/toaster"
 	import * as skio from "sveltekit-io"
 	import { onMount, onDestroy, getContext } from "svelte"
+	import OllamaIcon from "../icons/OllamaIcon.svelte"
 
 	interface OllamaModel {
 		name: string
@@ -21,10 +22,8 @@
 	let currentVersion = $state("")
 	let updateAvailable = $state(false)
 	let latestVersion = $state("")
-	let isConnected = $state(true)
 	let isCheckingUpdates = $state(false)
 	let isSavingBaseUrl = $state(false)
-	let installedModels: OllamaModel[] = $state([])
 	let showDeleteModal = $state(false)
 	let modelToDelete: OllamaModel | null = $state(null)
 	let baseUrlField = $state("")
@@ -158,6 +157,32 @@
 
 <div class="space-y-6 p-4">
 	<!-- Version Information -->
+	 <div class="text-center mt-8">
+		<OllamaIcon class="text-muted-foreground mx-auto mb-4 h-16 w-16" />
+		<span class="h5">Ollama</span>
+		<!-- Links to documentation and GitHub -->
+		<div class="flex items-center justify-center gap-4 mb-6">
+			<a
+				href="https://ollama.ai/docs"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="text-muted-foreground hover:text-primary-500 transition-colors text-xs flex items-center gap-1"
+			>
+				<Icons.BookOpen class="h-3 w-3" />
+				Documentation
+			</a>
+			<div class="text-muted-foreground">•</div>
+			<a
+				href="https://github.com/ollama/ollama"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="text-muted-foreground hover:text-primary-500 transition-colors text-xs flex items-center gap-1"
+			>
+				<Icons.Github class="h-3 w-3" />
+				GitHub
+			</a>
+		</div>
+	 </div>
 	<div class="card bg-surface-100-800 flex flex-col gap-4 p-4">
 		<div>
 			<label class="block text-sm font-medium" for="baseUrl">
