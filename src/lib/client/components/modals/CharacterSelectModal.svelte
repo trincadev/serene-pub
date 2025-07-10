@@ -7,7 +7,7 @@
 		open: boolean
 		characters: Partial<SelectCharacter>[]
 		onOpenChange: (e: { open: boolean }) => void
-		onSelect: (character: Partial<SelectCharacter> & {id:number}) => void
+		onSelect: (character: Partial<SelectCharacter> & { id: number }) => void
 	}
 
 	let {
@@ -38,7 +38,7 @@
 <Modal
 	{open}
 	{onOpenChange}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-h-[95dvh] relative overflow-hidden w-[50em] max-w-95dvw"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -57,27 +57,42 @@
 			placeholder="Search characters..."
 			bind:value={search}
 		/>
-		<div class="flex flex-col gap-2">
-			{#each filtered as c}
-				<button
-					class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full max-w-[25em] gap-3 overflow-hidden rounded p-3"
-					onclick={() => onSelect(c)}
-				>
-					<div class="w-fit">
-						<Avatar char={c} />
+		<div class="max-h-[60dvh] min-h-0 overflow-y-auto">
+			<div class="relative flex flex-col pr-2 lg:flex-row lg:flex-wrap">
+				{#if filtered.length === 0}
+					<div class="text-surface-500 text-center">
+						No characters found
 					</div>
-					<div class="relative flex w-0 min-w-0 flex-1 flex-col">
-						<div class="w-full truncate text-left font-semibold">
-							{c.nickname || c.name}
-						</div>
-						<div
-							class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs"
+				{/if}
+				{#each filtered as c}
+					<div class="flex p-1 lg:basis-1/2">
+						<button
+							class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-2"
+							onclick={() => onSelect(c)}
 						>
-							{c.creatorNotes || c.description || ""}
-						</div>
+							<div class="w-fit">
+								<Avatar char={c} />
+							</div>
+							<div
+								class="relative flex w-0 min-w-0 flex-1 flex-col"
+							>
+								<div
+									class="w-full truncate text-left font-semibold"
+								>
+									{c.nickname || c.name}
+								</div>
+								<div
+									class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs"
+								>
+									{c.creatorNotes ||
+										c.description ||
+										"No description"}
+								</div>
+							</div>
+						</button>
 					</div>
-				</button>
-			{/each}
+				{/each}
+			</div>
 		</div>
 	{/snippet}
 </Modal>

@@ -828,12 +828,12 @@
 <Modal
 	open={showTriggerCharacterMessageModal}
 	onOpenChange={(e) => (showTriggerCharacterMessageModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-h-[95dvh] relative overflow-hidden w-[50em] max-w-95dvw"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
 		<header class="mb-2 flex items-center justify-between">
-			<h2 class="h2">Select Character</h2>
+			<h2 class="h2">Trigger Character</h2>
 			<button
 				class="btn btn-sm"
 				onclick={() => (showTriggerCharacterMessageModal = false)}
@@ -847,43 +847,47 @@
 			placeholder="Search characters..."
 			bind:value={triggerCharacterSearch}
 		/>
-		<div class="flex flex-col gap-2">
-			{#each (chat?.chatCharacters || []).filter((cc) => {
-				const c = cc.character
-				if (!c) return false
-				const s = triggerCharacterSearch.trim().toLowerCase()
-				if (!s) return true
-				return c.name?.toLowerCase().includes(s) || c.nickname
-						?.toLowerCase()
-						.includes(s) || c.description
-						?.toLowerCase()
-						.includes(s) || c.creatorNotes
-						?.toLowerCase()
-						.includes(s)
-			}) as any[] as typeof chat.chatCharacters as filtered}
-				<button
-					class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full max-w-[25em] gap-3 overflow-hidden rounded p-3"
-					onclick={() =>
-						onSelectTriggerCharacterMessage(filtered.character.id)}
-				>
-					<div class="w-fit">
-						<Avatar char={filtered.character} />
-					</div>
-					<div class="relative flex w-0 min-w-0 flex-1 flex-col">
-						<div class="w-full truncate text-left font-semibold">
-							{filtered.character.nickname ||
-								filtered.character.name}
-						</div>
-						<div
-							class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs"
+		<div class="max-h-[60dvh] min-h-0 overflow-y-auto">
+			<div class="relative flex flex-col pr-2 lg:flex-row lg:flex-wrap">
+				{#each (chat?.chatCharacters || []).filter((cc) => {
+					const c = cc.character
+					if (!c) return false
+					const s = triggerCharacterSearch.trim().toLowerCase()
+					if (!s) return true
+					return c.name?.toLowerCase().includes(s) || c.nickname
+							?.toLowerCase()
+							.includes(s) || c.description
+							?.toLowerCase()
+							.includes(s) || c.creatorNotes
+							?.toLowerCase()
+							.includes(s)
+				}) as any[] as typeof chat.chatCharacters as filtered}
+					<div class="flex p-1 lg:basis-1/2">
+						<button
+							class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-2"
+							onclick={() =>
+								onSelectTriggerCharacterMessage(filtered.character.id)}
 						>
-							{filtered.character.creatorNotes ||
-								filtered.character.description ||
-								""}
-						</div>
+							<div class="w-fit">
+								<Avatar char={filtered.character} />
+							</div>
+							<div class="relative flex w-0 min-w-0 flex-1 flex-col">
+								<div class="w-full truncate text-left font-semibold">
+									{filtered.character.nickname ||
+										filtered.character.name}
+								</div>
+								<div
+									class="text-surface-500 group-hover:text-surface-800-200 line-clamp-2 w-full text-left text-xs"
+								>
+									{filtered.character.creatorNotes ||
+										filtered.character.description ||
+										"No description"}
+								</div>
+							</div>
+						</button>
 					</div>
-				</button>
-			{/each}
+				{/each}
+			</div>
 		</div>
 	{/snippet}
 </Modal>
