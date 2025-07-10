@@ -103,7 +103,9 @@ import {
 	ollamaPullModel,
 	ollamaVersion,
 	ollamaIsUpdateAvailable,
-	ollamaCancelPull
+	ollamaCancelPull,
+	ollamaGetDownloadProgress,
+	ollamaClearDownloadHistory
 } from "./ollama"
 
 const userId = 1 // Replace with actual user id
@@ -155,6 +157,8 @@ export function connectSockets(io: {
 		register(socket, ollamaCancelPull, emitToUser)
 		register(socket, ollamaVersion, emitToUser)
 		register(socket, ollamaIsUpdateAvailable, emitToUser)
+		register(socket, ollamaGetDownloadProgress, emitToUser)
+		register(socket, ollamaClearDownloadHistory, emitToUser)
 
 		// App Settings
 		register(socket, systemSettings, emitToUser)

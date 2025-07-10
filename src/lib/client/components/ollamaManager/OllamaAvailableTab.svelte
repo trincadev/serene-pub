@@ -5,7 +5,7 @@
 	import { toaster } from "$lib/client/utils/toaster"
 	import { OllamaModelSearchSource } from "$lib/shared/constants/OllamaModelSource"
 	import HuggingFaceQuantizationModal from "$lib/client/components/modals/HuggingFaceQuantizationModal.svelte"
-	import OllamaDownloadProgressModal from "$lib/client/components/modals/OllamaDownloadProgressModal.svelte"
+	import OllamaManualPullModal from "$lib/client/components/modals/OllamaManualPullModal.svelte"
 
 	interface OllamaModel {
 		name: string
@@ -18,10 +18,16 @@
 		}
 	}
 
+	interface Props {
+		// Callback when a download starts - to switch tabs
+		onDownloadStart?: (modelName: string) => void
+	}
+
+	let { onDownloadStart }: Props = $props()
+
 	const socket = skio.get()
 
 	let searchString = $state("")
-	let downloadingModels = $state(new Set<string>())
 	let installedModels: Sockets.OllamaModelsList.Response["models"] = $state(
 		[]
 	)
@@ -30,62 +36,17 @@
 		$state([])
 	let isSearching = $state(false)
 	let showHuggingFaceModal = $state(false)
+	let showOllamaManualPullModal = $state(false)
 	let selectedModelForDownload: string | null = $state(null)
 	let huggingFaceSiblings: Sockets.OllamaHuggingFaceSiblingsList.Response["siblings"] =
 		$state([])
 	let isLoadingSiblings = $state(false)
 
-	let downloadingQuants: {
-		[key: string]: {
-			modelName: string
-			status: string
-			files: { [key: string]: { total: number; completed: number } }
-		}
-	} = $state({})
-
-	// Track which models are being downloaded to handle completion
+	// Track which models are being downloaded locally (for UI state only)
 	let currentlyDownloading = $state(new Set<string>())
-
-	let isAnyDownloadInProgress = $derived(
-		!!Object.keys(downloadingQuants).length
-	)
 
 	function isModelInstalled(modelName: string): boolean {
 		return installedModels.some((model) => model.name.startsWith(modelName))
-	}
-
-	$effect(() => {
-		console.log("downloadingQuantizations:", downloadingQuants)
-		console.log("isAnyDownloadInProgress:", isAnyDownloadInProgress)
-	})
-
-	async function downloadModel(modelName: string) {
-		try {
-			downloadingModels.add(modelName)
-
-			// Simulate download delay
-			await new Promise((resolve) => setTimeout(resolve, 2000))
-
-			// Add to installed models
-			const newModel: OllamaModel = {
-				name: `${modelName}:latest`,
-				size: Math.floor(Math.random() * 5000000000) + 1000000000, // Random size 1-5GB
-				digest: `sha256:${Math.random().toString(36).substring(2, 15)}`,
-				modified_at: new Date().toISOString(),
-				details: {
-					parameter_size: "7B",
-					quantization_level: "Q4_0"
-				}
-			}
-
-			installedModels = [...installedModels, newModel]
-			toaster.success({ title: `${modelName} downloaded successfully` })
-		} catch (error) {
-			console.error("Download failed:", error)
-			toaster.error({ title: `Failed to download ${modelName}` })
-		} finally {
-			downloadingModels.delete(modelName)
-		}
 	}
 
 	function searchAvailableModels() {
@@ -116,9 +77,11 @@
 
 	function downloadHuggingFaceQuantization(
 		modelId: string,
-		rfilename: string
+		quant: string
 	) {
-		const huggingFaceUrl = `hf.co/${modelId}:${rfilename}`
+
+		const huggingFaceUrl = `hf.co/${modelId}:${quant}`
+		console.log("Downloading Hugging Face quantization:", huggingFaceUrl)
 
 		// Track this model as currently downloading
 		currentlyDownloading.add(huggingFaceUrl)
@@ -127,31 +90,36 @@
 		socket.emit("ollamaPullModel", {
 			modelName: huggingFaceUrl
 		} as Sockets.OllamaPullModel.Call)
+
+		// Close modal and switch to downloads tab
+		closeHuggingFaceModal()
+		onDownloadStart?.(huggingFaceUrl)
 	}
 
-	function cancelModelDownload(modelName: string) {
-		// Remove from downloading quants locally
-		delete downloadingQuants[modelName]
-		// Remove from currently downloading set
-		currentlyDownloading.delete(modelName)
-		
-		// Emit cancel request to server
-		socket.emit("ollamaCancelPull", {
-			modelName: modelName
-		} as Sockets.OllamaCancelPull.Call)
+	function openOllamaManualPullModal(modelName: string) {
+		selectedModelForDownload = modelName
+		showOllamaManualPullModal = true
 	}
 
-	function clearDoneDownloads() {
-		// Remove downloads that are done (canceled, success, error, or complete)
-		for (const [key, progress] of Object.entries(downloadingQuants)) {
-			const status = progress.status.toLowerCase()
-			const isComplete = Object.values(progress.files).length > 0 && 
-				Object.values(progress.files).every(file => file.total > 0 && file.completed >= file.total)
-			
-			if (status === "canceled" || status === "success" || status === "error" || isComplete) {
-				delete downloadingQuants[key]
-			}
-		}
+	function closeOllamaManualPullModal() {
+		showOllamaManualPullModal = false
+		selectedModelForDownload = null
+	}
+
+	function handleOllamaInstallConfirm(cleanedModelName: string) {
+		console.log("Installing Ollama model:", cleanedModelName)
+
+		// Track this model as currently downloading
+		currentlyDownloading.add(cleanedModelName)
+
+		// Emit the pull request to Ollama
+		socket.emit("ollamaPullModel", {
+			modelName: cleanedModelName
+		} as Sockets.OllamaPullModel.Call)
+
+		// Close modal and switch to downloads tab
+		closeOllamaManualPullModal()
+		onDownloadStart?.(cleanedModelName)
 	}
 
 	$effect(() => {
@@ -196,62 +164,12 @@
 				// Handle model pull completion/error only - no progress handling
 				console.log("Pull model response:", message)
 				if (message.success) {
-					// Mark the most recent download as successful
-					for (const modelName of currentlyDownloading) {
-						if (downloadingQuants[modelName]) {
-							downloadingQuants[modelName].status = "success"
-							currentlyDownloading.delete(modelName)
-							break
-						}
-					}
 					socket.emit("ollamaModelsList", {})
 					toaster.success({ title: "Model downloaded successfully" })
 					closeHuggingFaceModal()
 				} else if (message.error) {
-					// Mark the most recent download as error
-					for (const modelName of currentlyDownloading) {
-						if (downloadingQuants[modelName]) {
-							downloadingQuants[modelName].status = "error"
-							currentlyDownloading.delete(modelName)
-							break
-						}
-					}
 					toaster.error({ title: message.error })
 				}
-			}
-		)
-
-		socket.on(
-			"ollamaPullProgress",
-			(message: Sockets.OllamaPullProgress.Response) => {
-				closeHuggingFaceModal()
-				// console.log("Pull progress update:", message)
-				// Update progress for the downloading quantization
-				const modelName = message.modelName
-
-				console.log("Pull progress:", message)
-
-				let file: string | undefined
-				if (message.status.toLowerCase() !== "pulling manifest" && message.status.includes("pulling ")) {
-					file = message.status.split("pulling ")[1]
-				}
-
-				if (!downloadingQuants[modelName]) {
-					downloadingQuants[modelName] = {
-						modelName: modelName,
-						status: message.status,
-						files: {}
-					}
-				}
-
-				if (file) {
-					downloadingQuants[modelName].files[file] = {
-						total: message.total || 0,
-						completed: message.completed || 0
-					}
-				}
-
-				downloadingQuants[modelName].status = message.status
 			}
 		)
 
@@ -268,18 +186,6 @@
 			}
 		)
 
-		socket.on(
-			"ollamaCancelPull",
-			(message: Sockets.OllamaCancelPull.Response) => {
-				if (message.success && message.modelName) {
-					// Remove from downloading quants
-					delete downloadingQuants[message.modelName]
-				} else if (message.error) {
-					toaster.error({ title: message.error })
-				}
-			}
-		)
-
 		// Load initial installed models
 		refreshInstalled()
 	})
@@ -288,7 +194,6 @@
 		socket.off("ollamaModelsList")
 		socket.off("ollamaSearchAvailableModels")
 		socket.off("ollamaPullModel")
-		socket.off("ollamaPullProgress")
 		socket.off("ollamaHuggingFaceSiblingsList")
 		socket.off("ollamaCancelPull")
 	})
@@ -441,16 +346,11 @@
 								) {
 									openHuggingFaceModal(model.name)
 								} else {
-									downloadModel(model.name)
+									openOllamaManualPullModal(model.name)
 								}
 							}}
-							disabled={downloadingModels.has(model.name) ||
-								isModelInstalled(model.name)}
 						>
-							{#if downloadingModels.has(model.name)}
-								<Icons.Loader2 size={14} class="animate-spin" />
-								Installing...
-							{:else if isModelInstalled(model.name)}
+							{#if isModelInstalled(model.name)}
 								<Icons.Check size={14} />
 								Installed
 							{:else}
@@ -486,10 +386,10 @@
 	onDownload={downloadHuggingFaceQuantization}
 />
 
-<!-- Download Progress Modal -->
-<OllamaDownloadProgressModal
-	open={isAnyDownloadInProgress}
-	downloadingQuants={downloadingQuants}
-	onCancel={cancelModelDownload}
-	onClose={clearDoneDownloads}
+<!-- Ollama Install Modal -->
+<OllamaManualPullModal
+	open={showOllamaManualPullModal}
+	modelName={selectedModelForDownload || ""}
+	onclose={closeOllamaManualPullModal}
+	onconfirm={handleOllamaInstallConfirm}
 />

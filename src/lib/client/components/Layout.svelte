@@ -161,18 +161,18 @@
 	}: {
 		panel: "left" | "right" | "mobile"
 	}) {
-		let res: boolean
+		let res: boolean = true // Default to allowing close
 		if (panel === "mobile") {
-			res = await panelsCtx.onMobilePanelClose!()
+			res = panelsCtx.onMobilePanelClose ? await panelsCtx.onMobilePanelClose() : true
 			panelsCtx.mobilePanel = res ? null : panelsCtx.mobilePanel
 		} else if (panel === "left") {
-			res = await panelsCtx.onLeftPanelClose!()
+			res = panelsCtx.onLeftPanelClose ? await panelsCtx.onLeftPanelClose() : true
 			panelsCtx.leftPanel = res ? null : panelsCtx.leftPanel
 		} else if (panel === "right") {
-			res = await panelsCtx.onRightPanelClose!()
+			res = panelsCtx.onRightPanelClose ? await panelsCtx.onRightPanelClose() : true
 			panelsCtx.rightPanel = res ? null : panelsCtx.rightPanel
 		}
-		return res!
+		return res
 	}
 
 	function handleMobilePanelClick(key: string) {

@@ -8,7 +8,7 @@
 		huggingFaceSiblings: any[]
 		isLoadingSiblings: boolean
 		onClose: () => void
-		onDownload: (modelId: string, rfilename: string) => void
+		onDownload: (modelId: string, quant: string) => void
 	}
 
 	let {
@@ -148,11 +148,11 @@
 									onclick={() => {
 										if (
 											selectedModelForDownload &&
-											sibling.rfilename
+											sibling.quantization
 										) {
 											onDownload(
 												selectedModelForDownload,
-												sibling.rfilename
+												sibling.quantization
 											)
 										}
 									}}

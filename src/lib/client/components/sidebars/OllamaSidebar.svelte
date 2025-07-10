@@ -1,11 +1,12 @@
 <script lang="ts">
 	import * as Icons from "@lucide/svelte"
-	import { getContext, onMount, onDestroy, tick } from "svelte"
+	import { getContext, onMount, onDestroy } from "svelte"
 	import { Tabs } from "@skeletonlabs/skeleton-svelte"
 	import type { ValueChangeDetails } from "@zag-js/tabs"
 	import OllamaInstalledTab from "../ollamaManager/OllamaInstalledTab.svelte"
 	import OllamaAvailableTab from "../ollamaManager/OllamaAvailableTab.svelte"
 	import OllamaSettingsTab from "../ollamaManager/OllamaSettingsTab.svelte"
+	import OllamaDownloadsTab from "../ollamaManager/OllamaDownloadsTab.svelte"
 	import * as skio from "sveltekit-io"
 	import { toaster } from "$lib/client/utils/toaster"
 
@@ -18,7 +19,9 @@
 	const socket = skio.get()
 
 	// State
-	let activeTab = $state<"installed" | "available" | "settings">("installed")
+	let activeTab = $state<
+		"installed" | "available" | "downloads" | "settings"
+	>("installed")
 	let themeCtx: ThemeCtx = $state(getContext("themeCtx"))
 	let isConnected = $state(false)
 	let systemSettingsCtx: SystemSettingsCtx = $state(
@@ -29,7 +32,16 @@
 
 	// Handle tab switching
 	function handleTabChange(e: ValueChangeDetails): void {
-		activeTab = e.value as "installed" | "available" | "settings"
+		activeTab = e.value as
+			| "installed"
+			| "available"
+			| "downloads"
+			| "settings"
+	}
+
+	// Handle download start - switch to downloads tab
+	function handleDownloadStart(modelName: string) {
+		activeTab = "downloads"
 	}
 
 	// Check connection to Ollama
@@ -103,11 +115,13 @@
 	{#if !systemSettingsCtx.settings.ollamaManagerEnabled}
 		<div class="flex flex-1 items-center justify-center p-4">
 			<div class="text-center">
-				<Icons.AlertCircle class="mx-auto mb-4 h-12 w-12 text-warning-500" />
-				<h3 class="mb-2 text-lg font-semibold text-foreground">
+				<Icons.AlertCircle
+					class="text-warning-500 mx-auto mb-4 h-12 w-12"
+				/>
+				<h3 class="text-foreground mb-2 text-lg font-semibold">
 					Ollama Manager Disabled
 				</h3>
-				<p class="text-sm text-muted-foreground">
+				<p class="text-muted-foreground text-sm">
 					Enable Ollama Manager in Settings to use this feature.
 				</p>
 			</div>
@@ -117,18 +131,23 @@
 		<div class="flex flex-1 items-center justify-center p-4">
 			<div class="w-full max-w-md space-y-4">
 				<div class="text-center">
-					<Icons.Server class="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-					<h3 class="mb-2 text-lg font-semibold text-foreground">
+					<Icons.Server
+						class="text-muted-foreground mx-auto mb-4 h-12 w-12"
+					/>
+					<h3 class="text-foreground mb-2 text-lg font-semibold">
 						Connect to Ollama
 					</h3>
-					<p class="mb-4 text-sm text-muted-foreground">
+					<p class="text-muted-foreground mb-4 text-sm">
 						Enter your Ollama server URL to get started.
 					</p>
 				</div>
 
 				<div class="space-y-3">
 					<div>
-						<label class="block text-sm font-medium text-foreground mb-1" for="ollamaBaseUrl">
+						<label
+							class="text-foreground mb-1 block text-sm font-medium"
+							for="ollamaBaseUrl"
+						>
 							Ollama Base URL
 						</label>
 						<input
@@ -177,9 +196,15 @@
 						{/if}
 					</Tabs.Control>
 					<Tabs.Control value="available">
-						<Icons.Download size={20} class="inline" />
+						<Icons.Search size={20} class="inline" />
 						{#if activeTab === "available"}
 							Available
+						{/if}
+					</Tabs.Control>
+					<Tabs.Control value="downloads">
+						<Icons.Download size={20} class="inline" />
+						{#if activeTab === "downloads"}
+							Downloads
 						{/if}
 					</Tabs.Control>
 					<Tabs.Control value="settings">
@@ -197,7 +222,12 @@
 					</Tabs.Panel>
 					<Tabs.Panel value="available">
 						{#if activeTab === "available"}
-							<OllamaAvailableTab />
+							<OllamaAvailableTab onDownloadStart={handleDownloadStart} />
+						{/if}
+					</Tabs.Panel>
+					<Tabs.Panel value="downloads">
+						{#if activeTab === "downloads"}
+							<OllamaDownloadsTab />
 						{/if}
 					</Tabs.Panel>
 					<Tabs.Panel value="settings">

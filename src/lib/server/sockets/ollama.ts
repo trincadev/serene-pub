@@ -12,6 +12,33 @@ import { emit } from "process"
 
 let cancelingPulls: string[] = []
 
+// Global download progress tracking
+let downloadingQuants: {
+	[key: string]: {
+		modelName: string
+		status: string
+		isDone: boolean // Indicates if it's "done" processing regardless of success or not
+		files: { [key: string]: { total: number; completed: number } }
+	}
+} = {}
+
+// Function to emit download progress to all connected clients
+function emitDownloadProgress(emitToAll: (event: string, data: any) => void) {
+	emitToAll("ollamaDownloadProgress", { downloadingQuants })
+}
+
+// Function to get current download progress
+export async function ollamaGetDownloadProgress(
+	socket: any,
+	message: {},
+	emitToUser: (event: string, data: any) => void
+) {
+	// Send current download progress as complete state
+	emitToUser("ollamaPullProgress", {
+		downloadingQuants
+	})
+}
+
 export async function ollamaSetBaseUrl(
 	socket: any,
 	message: Sockets.OllamaSetBaseUrl.Call,
@@ -188,6 +215,15 @@ export async function ollamaPullModel(
         if (cancelingPulls.includes(message.modelName)) {
             cancelingPulls = cancelingPulls.filter(name => name !== message.modelName)
         }
+
+		// Initialize download tracking
+		downloadingQuants[message.modelName] = {
+			modelName: message.modelName,
+			status: "starting",
+			isDone: false,
+			files: {}
+		}
+
 		const { ollamaManagerBaseUrl: baseUrl } = (await db.query.systemSettings.findFirst())!
 		const ollama = new Ollama({
 			host: baseUrl
@@ -203,41 +239,93 @@ export async function ollamaPullModel(
             if (cancelingPulls.includes(message.modelName)) {
                 cancelingPulls = cancelingPulls.filter(name => name !== message.modelName)
                 stream.abort()
+
+				// Update server state
+				if (downloadingQuants[message.modelName]) {
+					downloadingQuants[message.modelName].status = "cancelled"
+					downloadingQuants[message.modelName].isDone = true
+				}
+
+                // Emit cancellation with full state
                 emitToUser("ollamaPullProgress", {
-                    modelName: message.modelName,
-                    status: "canceled"
+                    downloadingQuants
                 })
                 
-                // // Send final response for canceled download
-                // const cancelRes: Sockets.OllamaPullModel.Response = {
-                //     success: false,
-                // }
-                // emitToUser("ollamaPullModel", cancelRes)
                 return
             }
-			// Emit progress updates
+			// Emit progress updates and update server state
 			if (chunk.status) {
-				console.log("Ollama pull progress:", chunk)
+				// Update server-side tracking
+				if (downloadingQuants[message.modelName]) {
+
+					let fileName: string | undefined
+
+					if (chunk.status.includes("pulling ") && !chunk.status.includes("pulling manifest")) {
+						fileName = chunk.status.split("pulling ")[1]
+					}
+
+					downloadingQuants[message.modelName].status = chunk.status
+					if (fileName) {
+						downloadingQuants[message.modelName].files[fileName] = {
+							total: chunk.total || 0,
+							completed: chunk.completed || 0
+						}
+					}
+				}
+
+				// Emit the entire downloadingQuants object for full state sync
 				emitToUser("ollamaPullProgress", {
-					modelName: message.modelName,
-					status: chunk.status,
-					completed: chunk.completed,
-					total: chunk.total
+					downloadingQuants
 				})
 			}
 		}
+
+		// Update status to success
+		if (downloadingQuants[message.modelName]) {
+			downloadingQuants[message.modelName].status = "success"
+			downloadingQuants[message.modelName].isDone = true
+		}
+
+		// Emit final progress with full state
+		emitToUser("ollamaPullProgress", {
+			downloadingQuants
+		})
 		
 		const res: Sockets.OllamaPullModel.Response = {
 			success: true
 		}
 		emitToUser("ollamaPullModel", res)
+
+		const successRes: Sockets.Success.Response = {
+			title: "Ollama Manager",
+			description: `Model ${message.modelName} downloaded successfully!`
+		}
+
 	} catch (error: any) {
 		console.error("Ollama pull model error:", error)
+
+		// Update server state for error
+		if (downloadingQuants[message.modelName]) {
+			downloadingQuants[message.modelName].status = "error"
+			downloadingQuants[message.modelName].isDone = true
+		}
+
+		// Emit error progress with full state
+		emitToUser("ollamaPullProgress", {
+			downloadingQuants
+		})
+
 		const res: Sockets.OllamaPullModel.Response = {
 			success: false,
 			error: "Failed to download model"
 		}
 		emitToUser("ollamaPullModel", res)
+
+		const errorRes: Sockets.Error.Response = {
+			error: "Ollama Manager",
+			description: "Failed to download model"
+		}
+		emitToUser("error", errorRes)
 	}
 }
 
@@ -465,6 +553,33 @@ export async function ollamaHuggingFaceSiblingsList(
 	}
 }
 
+export async function ollamaClearDownloadHistory(
+	socket: any,
+	message: Sockets.OllamaClearDownloadHistory.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		// Clear the download progress tracking
+		Object.keys(downloadingQuants).forEach(modelName => {
+			if (downloadingQuants[modelName].isDone) {
+				delete downloadingQuants[modelName]
+			}
+		})
+		cancelingPulls = []
+
+		const res: Sockets.OllamaClearDownloadHistory.Response = {
+			success: true
+		}
+		emitToUser("ollamaClearDownloadHistory", res)
+	} catch (error: any) {
+		console.error("Ollama clear download history error:", error)
+		const res: Sockets.Error.Response = {
+			error: "Failed to clear download history"
+		}
+		emitToUser("error", res)
+	}
+}
+
 // Helper function to compare semantic versions
 function compareVersions(version1: string, version2: string): number {
 	const v1parts = version1.split('.').map(Number)
@@ -492,6 +607,12 @@ export async function ollamaCancelPull(
 		// Add the model to the canceling pulls array
 		if (!cancelingPulls.includes(message.modelName)) {
 			cancelingPulls.push(message.modelName)
+		}
+
+		// If the model is currently downloading, update its status
+		if (downloadingQuants[message.modelName]) {
+			downloadingQuants[message.modelName].status = "cancelled"
+			downloadingQuants[message.modelName].isDone = true
 		}
 		
 		const res = {

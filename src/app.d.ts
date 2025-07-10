@@ -400,10 +400,14 @@ declare global {
 		}
 		namespace OllamaPullProgress {
 			interface Response {
-				modelName: string
-				status: string
-				completed?: number
-				total?: number
+				downloadingQuants: {
+					[key: string]: {
+						modelName: string
+						status: string
+						isDone: boolean
+						files: { [key: string]: { total: number; completed: number } }
+					}
+				}
 			}
 		}
 		namespace OllamaStopModel {
@@ -482,6 +486,19 @@ declare global {
 					quantization?: string
 				}>
 				error?: string
+			}
+		}
+		namespace OllamaGetDownloadProgress {
+			interface Call {}
+			interface Response {
+				// This endpoint doesn't return a direct response,
+				// it triggers ollamaPullProgress events for each active download
+			}
+		}
+		namespace OllamaClearDownloadHistory {
+			interface Call {}
+			interface Response {
+				success: boolean
 			}
 		}
 		// --- APP SETTINGS ---
