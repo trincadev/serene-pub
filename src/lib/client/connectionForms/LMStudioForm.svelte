@@ -12,9 +12,17 @@
 
 	const socket = skio.get()
 	let availableLMStudioModels: { model: string; name: string }[] = $state([])
-	let testResult: { ok: boolean; error?: string; models?: any[] } | null =
+	let testResult: { ok: boolean; error?: string | null; models?: any[] } | null =
 		$state(null)
-	let extraFields = $state(extraJsonToExtraFields(connection.extraJson || {}))
+	
+	// Initialize extraFields from connection.extraJson, but don't make it reactive to connection changes
+	let extraFields = $state({
+		stream: connection.extraJson?.stream ?? true,
+		think: connection.extraJson?.think ?? false,
+		ttl: connection.extraJson?.ttl ?? 60,
+		raw: connection.extraJson?.raw ?? true,
+		useChat: connection.extraJson?.useChat ?? true
+	})
 
 	function handleRefreshModels() {
 		socket.emit("refreshModels", {
@@ -28,27 +36,6 @@
 			connection
 		} as Sockets.TestConnection.Call)
 	}
-
-	function extraJsonToExtraFields(extraJson: any) {
-		return {
-			stream: extraJson?.stream ?? true,
-			think: extraJson?.think ?? false,
-			ttl: extraJson?.ttl ?? 60,
-			raw: extraJson?.raw ?? true,
-			useChat: extraJson?.useChat ?? true
-		}
-	}
-
-	$effect(() => {
-		connection.extraJson = {
-			...connection.extraJson,
-			stream: extraFields.stream,
-			think: extraFields.think,
-			ttl: extraFields.ttl,
-			raw: extraFields.raw,
-			useChat: extraFields.useChat
-		}
-	})
 
 	socket.on("refreshModels", (msg: Sockets.RefreshModels.Response) => {
 		if (msg.models) availableLMStudioModels = msg.models
@@ -192,6 +179,12 @@
 					type="checkbox"
 					id="useChat"
 					bind:checked={extraFields.useChat}
+					onchange={() => {
+						connection.extraJson = {
+							...connection.extraJson,
+							useChat: extraFields.useChat
+						}
+					}}
 				/>
 			</div>
 			<div class="mt-2 flex items-center gap-2">
@@ -217,6 +210,12 @@
 					class="input"
 					placeholder="60"
 					min="1"
+					onchange={() => {
+						connection.extraJson = {
+							...connection.extraJson,
+							ttl: extraFields.ttl
+						}
+					}}
 				/>
 			</div>
 		</div>

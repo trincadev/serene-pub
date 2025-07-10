@@ -48,8 +48,6 @@ export async function createConnection(
 	let data = { ...message.connection }
 	const Adapter = getConnectionAdapter(data.type)
 	data = { ...Adapter.connectionDefaults, ...data }
-	// Ensure id is present for SelectConnection
-	// Remove id for insert to avoid UNIQUE constraint error
 	if ("id" in data) delete data.id
 	try {
 		const modelsRes = await Adapter.listModels(data as any)
