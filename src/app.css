@@ -38,6 +38,14 @@
 	font-style: normal;
 }
 
+.rendered-chat-message-content {
+	overflow-x: auto;
+}
+
+.rendered-chat-message-content p {
+	word-wrap:break-word;
+}
+
 .rendered-chat-message-content p + p {
 	margin-top: 1em;
 }
