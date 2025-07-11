@@ -49,28 +49,26 @@ export async function createConnection(
 	let data = { ...message.connection }
 	const Adapter = getConnectionAdapter(data.type)
 	data = { ...Adapter.connectionDefaults, ...data }
-	// Ensure id is present for SelectConnection
-	// Remove id for insert to avoid UNIQUE constraint error
 	if ("id" in data) delete data.id
-	try {
-		const modelsRes = await Adapter.listModels(data as any)
-		if (modelsRes.error) {
-			const res = { error: modelsRes.error }
-			emitToUser("error", res)
-			return
-		}
-		if (!modelsRes.models || modelsRes.models.length === 0) {
-			const res = { error: "No models found for this connection." }
-			emitToUser("error", res)
-		} else {
-			data.model = modelsRes.models[0].id
-		}
-	} catch (error: any) {
-		console.error("Error fetching models:", error)
-		const res = { error: "Failed to fetch models for this connection." }
-		emitToUser("error", res)
-		return
-	}
+	// try {
+	// 	const modelsRes = await Adapter.listModels(data as any)
+	// 	if (modelsRes.error) {
+	// 		const res = { error: modelsRes.error }
+	// 		emitToUser("error", res)
+	// 		return
+	// 	}
+	// 	if (!modelsRes.models || modelsRes.models.length === 0) {
+	// 		const res = { error: "No models found for this connection." }
+	// 		emitToUser("error", res)
+	// 	} else {
+	// 		data.model = modelsRes.models[0].id
+	// 	}
+	// } catch (error: any) {
+	// 	console.error("Error fetching models:", error)
+	// 	const res = { error: "Failed to fetch models for this connection." }
+	// 	emitToUser("error", res)
+	// 	return
+	// }
 	// Always remove id before insert to let DB auto-increment
 	if ("id" in data) delete data.id
 	const [conn] = await db.insert(schema.connections).values(data).returning()
