@@ -461,33 +461,12 @@ declare global {
 					createdAt?: Date
 					likes?: number
 					trendingScore?: number
+					pullOptions?: { label: string; pull: string}[]
 				}>
 				error?: string
 			}
 		}
-		namespace OllamaHuggingFaceSiblingsList {
-			interface Call {
-				modelId: string
-			}
-			interface Response {
-				baseUrl?: string,
-				siblings: Array<{
-					id: string
-					likes: number
-					trendingScore: number
-					private: boolean
-					downloads: number
-					tags: string[]
-					library_name: string
-					createdAt: string
-					modelId: string
-					rfilename?: string
-					size?: number
-					quantization?: string
-				}>
-				error?: string
-			}
-		}
+
 		namespace OllamaGetDownloadProgress {
 			interface Call {}
 			interface Response {

@@ -6,6 +6,7 @@
 	import { OllamaModelSearchSource } from "$lib/shared/constants/OllamaModelSource"
 	import HuggingFaceQuantizationModal from "$lib/client/components/modals/HuggingFaceQuantizationModal.svelte"
 	import OllamaManualPullModal from "$lib/client/components/modals/OllamaManualPullModal.svelte"
+	import OllamaInstructionModal from "$lib/client/components/modals/OllamaInstructionModal.svelte"
 
 	interface OllamaModel {
 		name: string
@@ -36,11 +37,10 @@
 		$state([])
 	let isSearching = $state(false)
 	let showHuggingFaceModal = $state(false)
+	let showOllamaInstructionModal = $state(false)
 	let showOllamaManualPullModal = $state(false)
 	let selectedModelForDownload: string | null = $state(null)
-	let huggingFaceSiblings: Sockets.OllamaHuggingFaceSiblingsList.Response["siblings"] =
-		$state([])
-	let isLoadingSiblings = $state(false)
+	let selectedModel: Sockets.OllamaSearchAvailableModels.Response["models"][0] | null = $state(null)
 
 	// Track which models are being downloaded locally (for UI state only)
 	let currentlyDownloading = $state(new Set<string>())
@@ -57,47 +57,55 @@
 		} as Sockets.OllamaSearchAvailableModels.Call)
 	}
 
-	function openHuggingFaceModal(modelId: string) {
-		selectedModelForDownload = modelId
+	function openHuggingFaceModal(model: Sockets.OllamaSearchAvailableModels.Response["models"][0]) {
+		selectedModelForDownload = model.name
+		selectedModel = model
 		showHuggingFaceModal = true
-		isLoadingSiblings = true
-		huggingFaceSiblings = []
-
-		socket.emit("ollamaHuggingFaceSiblingsList", {
-			modelId: modelId
-		} as Sockets.OllamaHuggingFaceSiblingsList.Call)
 	}
 
 	function closeHuggingFaceModal() {
 		showHuggingFaceModal = false
 		selectedModelForDownload = null
-		huggingFaceSiblings = []
-		isLoadingSiblings = false
+		selectedModel = null
 	}
 
 	function downloadHuggingFaceQuantization(
 		modelId: string,
-		quant: string
+		pullOption: { label: string; pull: string }
 	) {
 
-		const huggingFaceUrl = `hf.co/${modelId}:${quant}`
-		console.log("Downloading Hugging Face quantization:", huggingFaceUrl)
+		console.log("Downloading Hugging Face quantization:", pullOption.pull)
 
 		// Track this model as currently downloading
-		currentlyDownloading.add(huggingFaceUrl)
+		currentlyDownloading.add(modelId)
 
 		// Emit the pull request to Ollama
 		socket.emit("ollamaPullModel", {
-			modelName: huggingFaceUrl
+			modelName: pullOption.pull
 		} as Sockets.OllamaPullModel.Call)
 
 		// Close modal and switch to downloads tab
 		closeHuggingFaceModal()
-		onDownloadStart?.(huggingFaceUrl)
+		onDownloadStart?.(pullOption.pull)
 	}
 
 	function openOllamaManualPullModal(modelName: string) {
 		selectedModelForDownload = modelName
+		showOllamaManualPullModal = true
+	}
+
+	function openOllamaInstructionModal(modelName: string) {
+		selectedModelForDownload = modelName
+		showOllamaInstructionModal = true
+	}
+
+	function closeOllamaInstructionModal() {
+		showOllamaInstructionModal = false
+		selectedModelForDownload = null
+	}
+
+	function handleInstructionContinue() {
+		showOllamaInstructionModal = false
 		showOllamaManualPullModal = true
 	}
 
@@ -173,19 +181,6 @@
 			}
 		)
 
-		socket.on(
-			"ollamaHuggingFaceSiblingsList",
-			(message: Sockets.OllamaHuggingFaceSiblingsList.Response) => {
-				isLoadingSiblings = false
-				if (message.error) {
-					toaster.error({ title: message.error })
-					huggingFaceSiblings = []
-				} else {
-					huggingFaceSiblings = message.siblings || []
-				}
-			}
-		)
-
 		// Load initial installed models
 		refreshInstalled()
 	})
@@ -194,14 +189,34 @@
 		socket.off("ollamaModelsList")
 		socket.off("ollamaSearchAvailableModels")
 		socket.off("ollamaPullModel")
-		socket.off("ollamaHuggingFaceSiblingsList")
 		socket.off("ollamaCancelPull")
 	})
 </script>
 
 <!-- Search for available models -->
-<div class="px-4 py-2">
+<div class="px-4 py-2 flex flex-col gap-2">
 	<div class="flex gap-2">
+		<button
+			class="btn preset-filled-primary-500 flex-1"
+			onclick={() => {
+				showOllamaManualPullModal = true
+			}}
+		>
+				<Icons.Download size={16} />
+				Manual Download
+		</button>
+		<select
+			id="source"
+			name="source"
+			aria-label="Model search source"
+			class="select bg-background border-muted w-fit rounded border"
+			bind:value={selectedSource}
+		>
+			{#each OllamaModelSearchSource.options as option}
+				<option value={option.value}>{option.label}</option>
+			{/each}
+		</select>
+	</div>
 		<div class="relative flex-1">
 			<Icons.Search
 				class="text-surface-500 absolute top-1/2 left-3 -translate-y-1/2 transform"
@@ -215,18 +230,7 @@
 				bind:value={searchString}
 			/>
 		</div>
-		<select
-			id="source"
-			name="source"
-			aria-label="Model search source"
-			class="select bg-background border-muted w-fit rounded border"
-			bind:value={selectedSource}
-		>
-			{#each OllamaModelSearchSource.options as option}
-				<option value={option.value}>{option.label}</option>
-			{/each}
-		</select>
-	</div>
+		
 </div>
 
 <div class="space-y-3 p-4">
@@ -259,7 +263,7 @@
 					<div>
 						{#if model.popular}
 							<span
-								class="badge bg-primary-500 rounded-full px-2 py-1 text-xs text-white"
+								class="badge preset-filled-tertiary-500 rounded-full px-2 py-1 text-x"
 							>
 								<Icons.TrendingUp
 									size={12}
@@ -270,7 +274,7 @@
 						{/if}
 						{#if model.trendingScore && model.trendingScore > 0.7}
 							<span
-								class="badge rounded-full bg-orange-500 px-2 py-1 text-xs text-white"
+								class="badge rounded-full preset-filled-secondary-500 px-2 py-1 text-xs"
 							>
 								<Icons.Flame size={12} class="mr-1 inline" />
 								Trending
@@ -344,7 +348,12 @@
 									selectedSource ===
 									OllamaModelSearchSource.HUGGING_FACE
 								) {
-									openHuggingFaceModal(model.name)
+									openHuggingFaceModal(model)
+								} else if (
+									selectedSource ===
+									OllamaModelSearchSource.OLLAMA_DB
+								) {
+									openOllamaInstructionModal(model.name)
 								} else {
 									openOllamaManualPullModal(model.name)
 								}
@@ -380,8 +389,7 @@
 <HuggingFaceQuantizationModal
 	bind:open={showHuggingFaceModal}
 	{selectedModelForDownload}
-	{huggingFaceSiblings}
-	{isLoadingSiblings}
+	{selectedModel}
 	onClose={closeHuggingFaceModal}
 	onDownload={downloadHuggingFaceQuantization}
 />
@@ -392,4 +400,12 @@
 	modelName={selectedModelForDownload || ""}
 	onclose={closeOllamaManualPullModal}
 	onconfirm={handleOllamaInstallConfirm}
+/>
+
+<!-- Ollama Instruction Modal -->
+<OllamaInstructionModal
+	bind:open={showOllamaInstructionModal}
+	modelName={selectedModelForDownload || ""}
+	onClose={closeOllamaInstructionModal}
+	onContinue={handleInstructionContinue}
 />

@@ -50,15 +50,15 @@ export async function ollamaSetBaseUrl(
 		const url = new URL(message.baseUrl)
 		if (!["http:", "https:"].includes(url.protocol)) {
 			emitToUser("error", {
-				error: 'Invalid URL protocol'
+				error: "Invalid URL protocol"
 			})
-			throw new Error('Invalid URL protocol')
+			throw new Error("Invalid URL protocol")
 		}
 
 		await db.update(schema.systemSettings).set({
 			ollamaManagerBaseUrl: message.baseUrl
 		})
-		
+
 		const res: Sockets.OllamaSetBaseUrl.Response = {
 			success: true
 		}
@@ -78,11 +78,12 @@ export async function ollamaModelsList(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-		const { ollamaManagerBaseUrl: baseUrl } = (await db.query.systemSettings.findFirst())!
+		const { ollamaManagerBaseUrl: baseUrl } =
+			(await db.query.systemSettings.findFirst())!
 		const ollama = new Ollama({
 			host: baseUrl
 		})
-		
+
 		const result = await ollama.list()
 		const res: Sockets.OllamaModelsList.Response = {
 			models: result.models || []
@@ -91,7 +92,7 @@ export async function ollamaModelsList(
 	} catch (error: any) {
 		console.error("Ollama models list error:", error)
 		const res = {
-			error: "Failed to list models",
+			error: "Failed to list models"
 		}
 		emitToUser("error", res)
 	}
@@ -103,28 +104,32 @@ export async function ollamaDeleteModel(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-		const { ollamaManagerBaseUrl: baseUrl } = (await db.query.systemSettings.findFirst())!
+		const { ollamaManagerBaseUrl: baseUrl } =
+			(await db.query.systemSettings.findFirst())!
 		const ollama = new Ollama({
 			host: baseUrl
 		})
-		
+
 		await ollama.delete({ model: message.modelName })
 		const res: Sockets.OllamaDeleteModel.Response = {
 			success: true
 		}
 		emitToUser("ollamaDeleteModel", res)
 
-		await db.delete(schema.connections).where(and(
-			eq(schema.connections.type, "ollama"),
-			eq(schema.connections.model, message.modelName)
-		))
-
+		await db
+			.delete(schema.connections)
+			.where(
+				and(
+					eq(schema.connections.type, "ollama"),
+					eq(schema.connections.model, message.modelName)
+				)
+			)
 	} catch (error: any) {
 		console.error("Ollama delete model error:", error)
 		const res: Sockets.OllamaDeleteModel.Response = {
 			success: false
 		}
-		emitToUser("error", {error: "Failed to delete model"})
+		emitToUser("error", { error: "Failed to delete model" })
 	}
 }
 
@@ -133,37 +138,40 @@ export async function ollamaConnectModel(
 	message: Sockets.OllamaConnectModel.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-
 	const userId = 1
 
 	try {
-		
 		let existingConnection = await db.query.connections.findFirst({
-			where: (c, { eq }) => and(
-				eq(c.type, "ollama"),
-				eq(c.model, message.modelName)
-			)
+			where: (c, { eq }) =>
+				and(eq(c.type, "ollama"), eq(c.model, message.modelName))
 		})
 
 		if (!existingConnection) {
 			// Parse and create a shorter name for the connection
-			const connectionName: string = message.modelName.split("/").pop()! as string
+			const connectionName: string = message.modelName
+				.split("/")
+				.pop()! as string
 			// Create a new connection if it doesn't exist
 			const data = {
 				...ollamaAdapter.connectionDefaults,
 				name: connectionName,
-				model: message.modelName,
+				model: message.modelName
 			}
 			console.log("Creating connection", data)
-			const [newConnection] = await db.insert(schema.connections).values(data as InsertConnection).returning()
+			const [newConnection] = await db
+				.insert(schema.connections)
+				.values(data as InsertConnection)
+				.returning()
 			existingConnection = newConnection
 		}
 
-		await db.update(schema.users)
+		await db
+			.update(schema.users)
 			.set({
 				activeConnectionId: existingConnection.id
-			}).where(eq(schema.users.id, userId))
-		
+			})
+			.where(eq(schema.users.id, userId))
+
 		await loadUser(socket, {}, emitToUser)
 		await connectionsList(socket, {}, emitToUser)
 
@@ -186,11 +194,12 @@ export async function ollamaListRunningModels(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-		const { ollamaManagerBaseUrl: baseUrl } = (await db.query.systemSettings.findFirst())!
+		const { ollamaManagerBaseUrl: baseUrl } =
+			(await db.query.systemSettings.findFirst())!
 		const ollama = new Ollama({
 			host: baseUrl
 		})
-		
+
 		const result = await ollama.ps()
 		const res: Sockets.OllamaListRunningModels.Response = {
 			models: result.models || []
@@ -211,10 +220,12 @@ export async function ollamaPullModel(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-        // Remove from cancelingPulls if it exists
-        if (cancelingPulls.includes(message.modelName)) {
-            cancelingPulls = cancelingPulls.filter(name => name !== message.modelName)
-        }
+		// Remove from cancelingPulls if it exists
+		if (cancelingPulls.includes(message.modelName)) {
+			cancelingPulls = cancelingPulls.filter(
+				(name) => name !== message.modelName
+			)
+		}
 
 		// Initialize download tracking
 		downloadingQuants[message.modelName] = {
@@ -224,21 +235,24 @@ export async function ollamaPullModel(
 			files: {}
 		}
 
-		const { ollamaManagerBaseUrl: baseUrl } = (await db.query.systemSettings.findFirst())!
+		const { ollamaManagerBaseUrl: baseUrl } =
+			(await db.query.systemSettings.findFirst())!
 		const ollama = new Ollama({
 			host: baseUrl
 		})
-		
+
 		// For streaming progress, we could implement progress callbacks
-		const stream = await ollama.pull({ 
+		const stream = await ollama.pull({
 			model: message.modelName,
 			stream: true
 		})
-		
+
 		for await (const chunk of stream) {
-            if (cancelingPulls.includes(message.modelName)) {
-                cancelingPulls = cancelingPulls.filter(name => name !== message.modelName)
-                stream.abort()
+			if (cancelingPulls.includes(message.modelName)) {
+				cancelingPulls = cancelingPulls.filter(
+					(name) => name !== message.modelName
+				)
+				stream.abort()
 
 				// Update server state
 				if (downloadingQuants[message.modelName]) {
@@ -246,21 +260,23 @@ export async function ollamaPullModel(
 					downloadingQuants[message.modelName].isDone = true
 				}
 
-                // Emit cancellation with full state
-                emitToUser("ollamaPullProgress", {
-                    downloadingQuants
-                })
-                
-                return
-            }
+				// Emit cancellation with full state
+				emitToUser("ollamaPullProgress", {
+					downloadingQuants
+				})
+
+				return
+			}
 			// Emit progress updates and update server state
 			if (chunk.status) {
 				// Update server-side tracking
 				if (downloadingQuants[message.modelName]) {
-
 					let fileName: string | undefined
 
-					if (chunk.status.includes("pulling ") && !chunk.status.includes("pulling manifest")) {
+					if (
+						chunk.status.includes("pulling ") &&
+						!chunk.status.includes("pulling manifest")
+					) {
 						fileName = chunk.status.split("pulling ")[1]
 					}
 
@@ -290,7 +306,7 @@ export async function ollamaPullModel(
 		emitToUser("ollamaPullProgress", {
 			downloadingQuants
 		})
-		
+
 		const res: Sockets.OllamaPullModel.Response = {
 			success: true
 		}
@@ -300,7 +316,6 @@ export async function ollamaPullModel(
 			title: "Ollama Manager",
 			description: `Model ${message.modelName} downloaded successfully!`
 		}
-
 	} catch (error: any) {
 		console.error("Ollama pull model error:", error)
 
@@ -335,17 +350,17 @@ export async function ollamaVersion(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-		
-		const { ollamaManagerBaseUrl: baseUrl } = (await db.query.systemSettings.findFirst())!
+		const { ollamaManagerBaseUrl: baseUrl } =
+			(await db.query.systemSettings.findFirst())!
 		// const ollama = new Ollama({
 		// 	host: baseUrl
 		// })
 		const response = await fetch(`${baseUrl}/api/version`)
-		
+
 		if (!response.ok) {
 			throw new Error(`HTTP ${response.status}: ${response.statusText}`)
 		}
-		
+
 		const result = await response.json()
 		const res: Sockets.OllamaVersion.Response = {
 			version: result.version
@@ -367,33 +382,39 @@ export async function ollamaIsUpdateAvailable(
 ) {
 	try {
 		// Get current version using direct HTTP request
-		const { ollamaManagerBaseUrl: baseUrl } = (await db.query.systemSettings.findFirst())!
+		const { ollamaManagerBaseUrl: baseUrl } =
+			(await db.query.systemSettings.findFirst())!
 		const versionResponse = await fetch(`${baseUrl}/api/version`)
-		
+
 		if (!versionResponse.ok) {
-			throw new Error(`HTTP ${versionResponse.status}: ${versionResponse.statusText}`)
+			throw new Error(
+				`HTTP ${versionResponse.status}: ${versionResponse.statusText}`
+			)
 		}
-		
+
 		const versionResult = await versionResponse.json()
 		const currentVersion = versionResult.version
-		
+
 		// Fetch the latest version from Ollama's GitHub releases API
-		const githubResponse = await fetch('https://api.github.com/repos/ollama/ollama/releases/latest')
-		
+		const githubResponse = await fetch(
+			"https://api.github.com/repos/ollama/ollama/releases/latest"
+		)
+
 		if (!githubResponse.ok) {
 			throw new Error(`GitHub API error: ${githubResponse.status}`)
 		}
-		
+
 		const latestRelease = await githubResponse.json()
 		const latestVersion = latestRelease.tag_name
-		
+
 		// Compare versions (remove 'v' prefix if present)
-		const currentVersionClean = currentVersion.replace(/^v/, '')
-		const latestVersionClean = latestVersion.replace(/^v/, '')
-		
+		const currentVersionClean = currentVersion.replace(/^v/, "")
+		const latestVersionClean = latestVersion.replace(/^v/, "")
+
 		// Simple version comparison (works for semantic versioning)
-		const updateAvailable = compareVersions(latestVersionClean, currentVersionClean) > 0
-		
+		const updateAvailable =
+			compareVersions(latestVersionClean, currentVersionClean) > 0
+
 		const res: Sockets.OllamaIsUpdateAvailable.Response = {
 			updateAvailable,
 			currentVersion: currentVersion,
@@ -431,16 +452,18 @@ export async function ollamaSearchAvailableModels(
 		}> = []
 
 		if (source === OllamaModelSearchSource.OLLAMA_DB) {
-			const response = await fetch(`https://ollamadb.dev/api/v1/models?limit=25&search=${encodeURIComponent(search)}`)
-			
+			const response = await fetch(
+				`https://ollamadb.dev/api/v1/models?limit=25&search=${encodeURIComponent(search)}`
+			)
+
 			if (!response.ok) {
 				throw new Error(`OllamaDB API error: ${response.status}`)
 			}
-			
+
 			const data = await response.json()
 
 			// console.log("OllamaDB response:", data)
-			
+
 			// Transform ollamadb.dev response to our format
 			models = (data.models || []).map((model: any) => ({
 				name: model.model_identifier || model.model_name,
@@ -448,34 +471,94 @@ export async function ollamaSearchAvailableModels(
 				size: model.size,
 				url: model.url,
 				downloads: model.pulls,
-				updatedAtStr: model.last_updated_str,
+				updatedAtStr: model.last_updated_str
 			}))
 		} else if (source === OllamaModelSearchSource.HUGGING_FACE) {
 			const response = await fetch(
-				`https://huggingface.co/api/models?search=${encodeURIComponent(search)}&filter=gguf&limit=25&sort=trendingScore`
+				`https://huggingface.co/api/models?search=${encodeURIComponent(search)}&filter=gguf&limit=50&sort=trendingScore&full=True&config=True"`
 			)
-			
+
 			if (!response.ok) {
 				throw new Error(`Hugging Face API error: ${response.status}`)
 			}
-			
+
 			const data = await response.json()
 
-			// console.log("Hugging Face response:", data)
-			
+			console.log("Hugging Face response:", data)
+
+			const textTags = [
+				"text-generation",
+				"text-classification",
+				"fill-mask",
+				"question-answering",
+				"summarization",
+				"translation",
+				"token-classification",
+				"conversational",
+				"image-text-to-text",
+			]
+
+			// Filter out private and gated models
+			const filteredData = (data || []).filter((model: any) => {
+				// Exclude private models
+				if (model.private === true) {
+					return false
+				}
+
+				// Exclude gated models (both boolean true and 'auto')
+				if (model.gated !== false) {
+					return false
+				}
+
+				// Exclude models that don't match the search or aren't text-based
+				if (!textTags.includes(model.pipeline_tag)) {
+					return false
+				}
+
+				return true
+			})
+
 			// Transform Hugging Face response to our format
-			models = (data || []).map((model: any) => ({
-				name: model.id || model.modelId,
-				description: model.description || model.pipeline_tag,
-				size: undefined, // Hugging Face doesn't provide size in search
-				tags: model.tags || [],
-				popular: model.likes > 100 || false,
-				url: `https://hf.co/${model.id || model.modelId}`,
-				createdAt: model.createdAt,
-				downloads: model.downloads,
-				likes: model.likes,
-				trendingScore: model.trendingScore,
-			}))
+			models = filteredData.map((model: any) => {
+				const ggufSiblings = model.siblings.filter(
+					(sibling: { rfilename: string }) =>
+						sibling.rfilename.endsWith(".gguf")
+				)
+				const pullOptions: { label: string; pull: string }[] =
+					ggufSiblings
+						.filter(
+							(sibling: { rfilename: string }) =>
+								sibling.rfilename
+									.split("-")
+									.pop()
+									?.startsWith("Q") &&
+								sibling.rfilename.includes(".gguf")
+						)
+						.map((sibling: { rfilename: string }) => {
+							const quant = sibling.rfilename
+								.replace(".gguf", "")
+								.split("-")
+								.pop()
+							let pull = `hf.co/${model.id}:${quant}`
+							return { label: quant, pull }
+						})
+				return {
+					name: model.id || model.modelId,
+					description: model.description || model.pipeline_tag,
+					size: undefined, // Hugging Face doesn't provide size in search
+					tags: model.tags || [],
+					popular: model.likes > 100 || false,
+					url: `https://hf.co/${model.id || model.modelId}`,
+					createdAt: model.createdAt,
+					downloads: model.downloads,
+					likes: model.likes,
+					trendingScore: model.trendingScore,
+					pullOptions: pullOptions
+				}
+			})
+
+			// Filter out models that don't have pull options
+			models = models.filter((model) => model.pullOptions.length > 0)
 		}
 
 		const res: Sockets.OllamaSearchAvailableModels.Response = {
@@ -492,67 +575,6 @@ export async function ollamaSearchAvailableModels(
 	}
 }
 
-export async function ollamaHuggingFaceSiblingsList(
-	socket: any,
-	message: Sockets.OllamaHuggingFaceSiblingsList.Call,
-	emitToUser: (event: string, data: any) => void
-) {
-	try {
-		const { modelId } = message
-		
-		// Fetch the model details from Hugging Face API
-		const response = await fetch(`https://huggingface.co/api/models/${encodeURIComponent(modelId)}`)
-		
-		if (!response.ok) {
-			throw new Error(`Hugging Face API error: ${response.status}`)
-		}
-		
-		const modelData = await response.json()
-
-		console.log("Hugging Face model data:", modelData)
-		
-		// Get siblings from the model data
-		const siblings = modelData.siblings || []
-		
-		// Transform siblings to our format and extract quantization info
-		const transformedSiblings = siblings.map((sibling: any) => {
-			// Extract quantization level from filename if it's a GGUF file
-			let quantization: string | undefined
-			if (sibling.rfilename && sibling.rfilename.includes('.gguf')) {
-				// Common quantization patterns: Q4_0, Q4_K_M, Q5_K_S, Q8_0, etc.
-				const quantMatch = sibling.rfilename.match(/[Qq](\d+)(?:_[KkMmSs])?(?:_[MmSs])?/i)
-				if (quantMatch) {
-					quantization = quantMatch[0].toUpperCase()
-				}
-			}
-			
-			return {
-				rfilename: sibling.rfilename,
-				size: sibling.size,
-				quantization: quantization
-			}
-		})
-		
-		// Filter to only include GGUF files
-		const ggufSiblings = transformedSiblings.filter((sibling: any) => 
-			sibling.rfilename && sibling.rfilename.toLowerCase().includes('.gguf') && !!sibling.quantization
-		)
-		
-		const res: Sockets.OllamaHuggingFaceSiblingsList.Response = {
-			baseUrl: `https://hf.com/${modelData.id || modelData.modelId}`,
-			siblings: ggufSiblings
-		}
-		emitToUser("ollamaHuggingFaceSiblingsList", res)
-	} catch (error: any) {
-		console.error("Ollama Hugging Face siblings list error:", error)
-		const res: Sockets.OllamaHuggingFaceSiblingsList.Response = {
-			siblings: [],
-			error: "Failed to fetch model siblings"
-		}
-		emitToUser("ollamaHuggingFaceSiblingsList", res)
-	}
-}
-
 export async function ollamaClearDownloadHistory(
 	socket: any,
 	message: Sockets.OllamaClearDownloadHistory.Call,
@@ -560,7 +582,7 @@ export async function ollamaClearDownloadHistory(
 ) {
 	try {
 		// Clear the download progress tracking
-		Object.keys(downloadingQuants).forEach(modelName => {
+		Object.keys(downloadingQuants).forEach((modelName) => {
 			if (downloadingQuants[modelName].isDone) {
 				delete downloadingQuants[modelName]
 			}
@@ -582,19 +604,19 @@ export async function ollamaClearDownloadHistory(
 
 // Helper function to compare semantic versions
 function compareVersions(version1: string, version2: string): number {
-	const v1parts = version1.split('.').map(Number)
-	const v2parts = version2.split('.').map(Number)
-	
+	const v1parts = version1.split(".").map(Number)
+	const v2parts = version2.split(".").map(Number)
+
 	const maxLength = Math.max(v1parts.length, v2parts.length)
-	
+
 	for (let i = 0; i < maxLength; i++) {
 		const v1part = v1parts[i] || 0
 		const v2part = v2parts[i] || 0
-		
+
 		if (v1part > v2part) return 1
 		if (v1part < v2part) return -1
 	}
-	
+
 	return 0
 }
 
@@ -614,7 +636,7 @@ export async function ollamaCancelPull(
 			downloadingQuants[message.modelName].status = "cancelled"
 			downloadingQuants[message.modelName].isDone = true
 		}
-		
+
 		const res = {
 			success: true,
 			modelName: message.modelName

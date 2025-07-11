@@ -95,7 +95,6 @@ import { updateOllamaManagerEnabled, systemSettings } from "./systemSettings"
 import {
 	ollamaConnectModel,
 	ollamaSearchAvailableModels,
-	ollamaHuggingFaceSiblingsList,
 	ollamaSetBaseUrl,
 	ollamaModelsList,
 	ollamaDeleteModel,
@@ -148,7 +147,6 @@ export function connectSockets(io: {
 		// Ollama Manager
 		register(socket, ollamaConnectModel, emitToUser)
 		register(socket, ollamaSearchAvailableModels, emitToUser)
-		register(socket, ollamaHuggingFaceSiblingsList, emitToUser)
 		register(socket, ollamaSetBaseUrl, emitToUser)
 		register(socket, ollamaModelsList, emitToUser)
 		register(socket, ollamaDeleteModel, emitToUser)
