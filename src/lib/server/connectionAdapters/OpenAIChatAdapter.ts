@@ -1,4 +1,7 @@
-import { BaseConnectionAdapter, type AdapterExports } from "./BaseConnectionAdapter"
+import {
+	BaseConnectionAdapter,
+	type AdapterExports
+} from "./BaseConnectionAdapter"
 import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
 import { TokenCounters } from "../utils/TokenCounterManager"
 import { OpenAI } from "openai"
@@ -57,20 +60,18 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 		return super.compilePrompt({ useChatFormat, ...args })
 	}
 
-	async generate(): Promise<
-		{
-			completionResult: string | ((cb: (chunk: string) => void) => Promise<void>),
-			compiledPrompt: CompiledPrompt,
-			isAborted: boolean
-		}
-	> {
+	async generate(): Promise<{
+		completionResult:
+			| string
+			| ((cb: (chunk: string) => void) => Promise<void>)
+		compiledPrompt: CompiledPrompt
+		isAborted: boolean
+	}> {
 		const apiKey = this.connection.extraJson?.apiKey
-		const baseURL =
-			this.connection.baseUrl || connectionDefaults.baseUrl
+		const baseURL = this.connection.baseUrl || connectionDefaults.baseUrl
 		const model = this.connection.model || "gpt-3.5-turbo"
 		const stream = this.connection.extraJson?.stream || false
-		const compiledPrompt: CompiledPrompt =
-			await this.compilePrompt({})
+		const compiledPrompt: CompiledPrompt = await this.compilePrompt({})
 
 		// Configure messages
 		let messages: Array<ChatCompletionMessageParam> = []
@@ -111,7 +112,7 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 		try {
 			if (stream) {
 				return {
-					completionResult:async (cb: (chunk: string) => void) => {
+					completionResult: async (cb: (chunk: string) => void) => {
 						const streamResp =
 							await openaiClient.chat.completions.create({
 								...params,
@@ -143,7 +144,11 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 				) {
 					content = response.choices[0].message.content || ""
 				}
-				return {completionResult: content, compiledPrompt, isAborted: this.isAborting}
+				return {
+					completionResult: content,
+					compiledPrompt,
+					isAborted: this.isAborting
+				}
 			}
 		} catch (err: any) {
 			console.error(
@@ -211,8 +216,7 @@ async function listModels(
 ): Promise<{ models: any[]; error?: string }> {
 	try {
 		const apiKey = connection.extraJson?.apiKey
-		const baseURL =
-			connection.baseUrl || connectionDefaults.baseUrl
+		const baseURL = connection.baseUrl || connectionDefaults.baseUrl
 		const openai = new OpenAI({
 			apiKey,
 			baseURL: baseURL || undefined
@@ -237,8 +241,7 @@ async function testConnection(
 ): Promise<{ ok: boolean; error?: string }> {
 	try {
 		const apiKey = connection.extraJson?.apiKey
-		const baseURL =
-			connection.baseUrl || connectionDefaults.baseUrl
+		const baseURL = connection.baseUrl || connectionDefaults.baseUrl
 		const openai = new OpenAI({
 			apiKey,
 			baseURL: baseURL || undefined

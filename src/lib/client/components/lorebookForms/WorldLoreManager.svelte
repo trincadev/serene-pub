@@ -127,7 +127,6 @@
 		entry: SelectWorldLoreEntry
 		warn?: boolean
 	}): boolean {
-
 		if (!entry.name.trim()) {
 			if (warn) {
 				toaster.error({ title: "Name is required" })
@@ -143,7 +142,6 @@
 	}: {
 		entry: SelectWorldLoreEntry | (InsertWorldLoreEntry & { _uuid: string })
 	}) {
-		
 		if (!entryIsValid({ entry, warn: true })) {
 			return
 		}

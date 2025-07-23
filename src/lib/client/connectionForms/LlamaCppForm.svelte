@@ -29,7 +29,8 @@
 		testResult = msg
 	})
 
-	let testResult: { ok: boolean; error?: string; models?: any[] } | null = $state(null)
+	let testResult: { ok: boolean; error?: string; models?: any[] } | null =
+		$state(null)
 
 	function handleTestConnection() {
 		testResult = null

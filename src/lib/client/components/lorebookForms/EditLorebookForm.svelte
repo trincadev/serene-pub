@@ -43,7 +43,7 @@
 			await tick() // Force state to update
 		})
 		socket.on("updateLorebook", async (msg: Sockets.Lorebook.Response) => {
-			toaster.success({title:"Lorebook updated successfully"})
+			toaster.success({ title: "Lorebook updated successfully" })
 		})
 		const lorebookReq: Sockets.Lorebook.Call = { id: lorebookId }
 		socket.emit("lorebook", lorebookReq)

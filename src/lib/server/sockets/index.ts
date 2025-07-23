@@ -91,6 +91,15 @@ import {
 	iterateNextHistoryEntry,
 	lorebookImport
 } from "./lorebooks"
+import {
+	tagsList,
+	createTag,
+	updateTag,
+	deleteTag,
+	tagRelatedData,
+	addTagToCharacter,
+	removeTagFromCharacter
+} from "./tags"
 
 const userId = 1 // Replace with actual user id
 
@@ -174,8 +183,8 @@ export function connectSockets(io: {
 		register(socket, lorebookList, emitToUser)
 		register(socket, lorebook, emitToUser)
 		register(socket, createLorebook, emitToUser)
-		register(socket, deleteLorebook, emitToUser),
-			register(socket, lorebookBindingList, emitToUser)
+		;(register(socket, deleteLorebook, emitToUser),
+			register(socket, lorebookBindingList, emitToUser))
 		register(socket, createLorebookBinding, emitToUser)
 		register(socket, updateLorebookBinding, emitToUser)
 		register(socket, worldLoreEntryList, emitToUser)
@@ -193,7 +202,15 @@ export function connectSockets(io: {
 		register(socket, updateHistoryEntry, emitToUser)
 		register(socket, deleteHistoryEntry, emitToUser)
 		register(socket, iterateNextHistoryEntry, emitToUser)
-        register(socket, lorebookImport, emitToUser)
+		register(socket, lorebookImport, emitToUser)
+		// Tags
+		register(socket, tagsList, emitToUser)
+		register(socket, createTag, emitToUser)
+		register(socket, updateTag, emitToUser)
+		register(socket, deleteTag, emitToUser)
+		register(socket, tagRelatedData, emitToUser)
+		register(socket, addTagToCharacter, emitToUser)
+		register(socket, removeTagFromCharacter, emitToUser)
 		console.log(`Socket connected: ${socket.id} for user ${userId}`)
 	})
 }

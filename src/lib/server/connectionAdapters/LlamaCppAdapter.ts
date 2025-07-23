@@ -279,13 +279,13 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 		return result
 	}
 
-	async generate(): Promise<
-		{
-			completionResult: string | ((cb: (chunk: string) => void) => Promise<void>),
-			compiledPrompt: CompiledPrompt,
-			isAborted: boolean
-		}
-	> {
+	async generate(): Promise<{
+		completionResult:
+			| string
+			| ((cb: (chunk: string) => void) => Promise<void>)
+		compiledPrompt: CompiledPrompt
+		isAborted: boolean
+	}> {
 		const stream = this.connection.extraJson?.stream || false
 		// Prepare stop strings
 		const stopStrings = StopStrings.get({
@@ -308,8 +308,7 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 			Handlebars.compile(str)(stopContext)
 		)
 
-		const compiledPrompt: CompiledPrompt =
-			await this.compilePrompt({})
+		const compiledPrompt: CompiledPrompt = await this.compilePrompt({})
 		let prompt: string
 		if (
 			"prompt" in compiledPrompt &&
@@ -342,7 +341,7 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 			return {
 				completionResult: async (cb: (chunk: string) => void) => {
 					let content = ""
-					let cancelTokenSource = axios.CancelToken.source();
+					let cancelTokenSource = axios.CancelToken.source()
 					try {
 						const response = await axios.post<CompletionResponse>(
 							baseUrl + "/completion",
@@ -356,20 +355,26 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 						let buffer = ""
 						for await (const chunk of Readable.from(stream)) {
 							if (this.isAborting) {
-								cancelTokenSource.cancel("Request aborted by user.");
-								break;
+								cancelTokenSource.cancel(
+									"Request aborted by user."
+								)
+								break
 							}
 							buffer += chunk.toString()
 							let lines = buffer.split(/\r?\n/)
 							buffer = lines.pop() || ""
 							for (const line of lines) {
 								const trimmed = line.trim()
-								if (!trimmed || !trimmed.startsWith("data:")) continue
+								if (!trimmed || !trimmed.startsWith("data:"))
+									continue
 								const jsonStr = trimmed.slice(5).trim()
 								if (!jsonStr) continue
 								try {
 									const data = JSON.parse(jsonStr)
-									if (typeof data.content === "string" && data.content.length > 0) {
+									if (
+										typeof data.content === "string" &&
+										data.content.length > 0
+									) {
 										content += data.content
 										cb(data.content)
 									}
@@ -386,10 +391,14 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 				isAborted: this.isAborting
 			}
 		} else {
-			const abortController = new AbortController();
+			const abortController = new AbortController()
 			if (this.isAborting) {
-				abortController.abort();
-				return {completionResult: "FAILURE: Request aborted by user.", compiledPrompt, isAborted: true};
+				abortController.abort()
+				return {
+					completionResult: "FAILURE: Request aborted by user.",
+					compiledPrompt,
+					isAborted: true
+				}
 			}
 			try {
 				const response = await axios.post<CompletionResponse>(
@@ -399,12 +408,28 @@ class LlamaCppAdapter extends BaseConnectionAdapter {
 				)
 				const result = response.data
 				const content = result?.content || result?.response || ""
-				return {completionResult: content, compiledPrompt, isAborted: this.isAborting}
-			} catch (e: any) {
-				if (axios.isCancel?.(e) || e?.code === 'ERR_CANCELED' || e?.message?.includes('aborted')) {
-					return {completionResult: "FAILURE: Request aborted by user.", compiledPrompt, isAborted: true}
+				return {
+					completionResult: content,
+					compiledPrompt,
+					isAborted: this.isAborting
 				}
-				return {completionResult: "FAILURE: " + (e.message || String(e)), compiledPrompt, isAborted: true}
+			} catch (e: any) {
+				if (
+					axios.isCancel?.(e) ||
+					e?.code === "ERR_CANCELED" ||
+					e?.message?.includes("aborted")
+				) {
+					return {
+						completionResult: "FAILURE: Request aborted by user.",
+						compiledPrompt,
+						isAborted: true
+					}
+				}
+				return {
+					completionResult: "FAILURE: " + (e.message || String(e)),
+					compiledPrompt,
+					isAborted: true
+				}
 			}
 		}
 	}

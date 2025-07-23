@@ -181,7 +181,7 @@
 						behavior: "smooth"
 					})
 				}
-			// }, 50) // Slightly longer delay to ensure content is rendered
+				// }, 50) // Slightly longer delay to ensure content is rendered
 			}, 30)
 		}
 	})
@@ -866,13 +866,19 @@
 						<button
 							class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-2"
 							onclick={() =>
-								onSelectTriggerCharacterMessage(filtered.character.id)}
+								onSelectTriggerCharacterMessage(
+									filtered.character.id
+								)}
 						>
 							<div class="w-fit">
 								<Avatar char={filtered.character} />
 							</div>
-							<div class="relative flex w-0 min-w-0 flex-1 flex-col">
-								<div class="w-full truncate text-left font-semibold">
+							<div
+								class="relative flex w-0 min-w-0 flex-1 flex-col"
+							>
+								<div
+									class="w-full truncate text-left font-semibold"
+								>
 									{filtered.character.nickname ||
 										filtered.character.name}
 								</div>

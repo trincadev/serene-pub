@@ -97,7 +97,6 @@ if (!dev || !hasTables) {
 			)
 			throw new Error("Unexpected version comparison result")
 	}
-
 } else {
 	await runMigrations()
 	await sync()

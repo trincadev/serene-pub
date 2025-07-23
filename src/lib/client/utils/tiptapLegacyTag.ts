@@ -32,7 +32,8 @@ const createPasteTransformPlugin = (type: any) => {
 				if (node.isText && node.text) {
 					let m
 					let lastIndex = 0
-					let parts: (string | { tag: string, original: string })[] = []
+					let parts: (string | { tag: string; original: string })[] =
+						[]
 					LEGACY_TAG_REGEX.lastIndex = 0
 					while ((m = LEGACY_TAG_REGEX.exec(node.text)) !== null) {
 						if (m.index > lastIndex) {
@@ -54,7 +55,10 @@ const createPasteTransformPlugin = (type: any) => {
 							} else {
 								frag = frag.append(
 									Fragment.from(
-										type.create({ tag: part.tag, original: part.original })
+										type.create({
+											tag: part.tag,
+											original: part.original
+										})
 									)
 								)
 							}
@@ -107,8 +111,12 @@ const LegacyTag = Node.create({
 			},
 			original: {
 				default: "",
-				parseHTML: (element) => element.getAttribute("data-original") || "",
-				renderHTML: (attributes) => attributes.original ? { "data-original": attributes.original } : {}
+				parseHTML: (element) =>
+					element.getAttribute("data-original") || "",
+				renderHTML: (attributes) =>
+					attributes.original
+						? { "data-original": attributes.original }
+						: {}
 			}
 		}
 	},

@@ -5,7 +5,7 @@ export class StopStrings {
 		format,
 		characters,
 		personas,
-        currentCharacterId
+		currentCharacterId
 	}: {
 		format: (typeof PromptFormats.keys)[0]
 		characters: SelectCharacter[]
@@ -73,10 +73,10 @@ export class StopStrings {
 
 		// Iterate through characters and personas to add their names
 		characters.forEach((character) => {
-            if (character.id === currentCharacterId) {
-                // Skip the current character to avoid premature stops
-                return
-            }
+			if (character.id === currentCharacterId) {
+				// Skip the current character to avoid premature stops
+				return
+			}
 			if (character.name) {
 				const charStop = `${character.name}:`
 				stopStrings.push(charStop)

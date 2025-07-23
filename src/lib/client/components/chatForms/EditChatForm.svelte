@@ -305,9 +305,11 @@
 					onfinalize={(e) => (selectedCharacters = e.detail.items)}
 				>
 					{#each selectedCharacters as c (c.id)}
-						{@const isActive = chat ? !!chat?.chatCharacters?.find(
-							(cc) => cc.characterId === c.id
-						)?.isActive : true}
+						{@const isActive = chat
+							? !!chat?.chatCharacters?.find(
+									(cc) => cc.characterId === c.id
+								)?.isActive
+							: true}
 						<div class="flex gap-2">
 							<div
 								class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"

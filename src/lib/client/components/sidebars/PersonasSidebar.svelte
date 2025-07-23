@@ -50,9 +50,13 @@
 	$effect(() => {
 		if (panelsCtx.digest.personaId) {
 			// Check if we have unsaved changes
-			if (personaId !== panelsCtx.digest.characterId && !isSafeToClosePersonasForm) {
+			if (
+				personaId !== panelsCtx.digest.characterId &&
+				!isSafeToClosePersonasForm
+			) {
 				onEditFormCancel?.()
-			} else { // If no unsaved changes, just set the characterId
+			} else {
+				// If no unsaved changes, just set the characterId
 				personaId = panelsCtx.digest.personaId
 			}
 			delete panelsCtx.digest.personaId
@@ -123,9 +127,8 @@
 		persona: Sockets.PersonaList.Response["personaList"][0]
 	) {
 		panelsCtx.digest.chatPersonaId = persona.id
-		panelsCtx.openPanel({key:"chats", toggle: false})
+		panelsCtx.openPanel({ key: "chats", toggle: false })
 	}
-
 </script>
 
 <div class="text-foreground h-full p-4">
@@ -173,23 +176,24 @@
 						contentTitle="Go to persona chats"
 					>
 						{#snippet content()}
-						<Avatar
-									src={p.avatar || ""}
-									size="w-[4em] h-[4em] min-w-[4em] min-h-[4em]"
-									imageClasses="object-cover"
-									name={p.name!}
-								>
-									<Icons.User size={36} />
-								</Avatar>
-							<div class="flex gap-2 relative  flex-1">
-								
-								<div class="flex-1 relative">
-									<div class="truncate font-semibold text-left">
+							<Avatar
+								src={p.avatar || ""}
+								size="w-[4em] h-[4em] min-w-[4em] min-h-[4em]"
+								imageClasses="object-cover"
+								name={p.name!}
+							>
+								<Icons.User size={36} />
+							</Avatar>
+							<div class="relative flex flex-1 gap-2">
+								<div class="relative flex-1">
+									<div
+										class="truncate text-left font-semibold"
+									>
 										{p.name}
 									</div>
 									{#if p.description}
 										<div
-											class="text-muted-foreground line-clamp-2 text-xs text-left"
+											class="text-muted-foreground line-clamp-2 text-left text-xs"
 										>
 											{p.description}
 										</div>

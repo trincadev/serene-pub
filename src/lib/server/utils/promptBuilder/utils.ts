@@ -3,7 +3,9 @@ import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 /**
  * Parse a split chat prompt into OpenAI chat format
  */
-export function parseSplitChatPrompt(prompt: string): ChatCompletionMessageParam[] {
+export function parseSplitChatPrompt(
+	prompt: string
+): ChatCompletionMessageParam[] {
 	const blocks = prompt.split(/(?=<@role:(user|assistant|system)>\s*)/g)
 	// TODO: populate the name param, but local models may ignore it anyway
 	const messages = blocks
@@ -28,7 +30,9 @@ export function isHistoryEntry(entry: any): entry is SelectHistoryEntry {
 /**
  * Helper type guard for extended lorebook
  */
-export function hasLorebookEntries(lorebook: any): lorebook is SelectLorebook & {
+export function hasLorebookEntries(
+	lorebook: any
+): lorebook is SelectLorebook & {
 	worldLoreEntries: SelectWorldLoreEntry[]
 	characterLoreEntries: SelectCharacterLoreEntry[]
 	historyEntries: SelectHistoryEntry[]

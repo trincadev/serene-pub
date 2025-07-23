@@ -17,7 +17,7 @@ export async function connectionsList(
 			name: true,
 			type: true
 		},
-		orderBy: (c, { asc }) => [asc(c.type), asc(c.name)],
+		orderBy: (c, { asc }) => [asc(c.type), asc(c.name)]
 	})
 	const res: Sockets.ConnectionsList.Response = { connectionsList }
 	emitToUser("connectionsList", res)
@@ -147,7 +147,9 @@ export async function testConnection(
 	message: Sockets.TestConnection.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	const {Adapter, testConnection, listModels} = getConnectionAdapter(message.connection.type)
+	const { Adapter, testConnection, listModels } = getConnectionAdapter(
+		message.connection.type
+	)
 	if (!Adapter) {
 		const res: Sockets.TestConnection.Response = {
 			ok: false,
@@ -166,7 +168,7 @@ export async function testConnection(
 			const modelsRes = await listModels(message.connection)
 			if (modelsRes.error) {
 				emitToUser("error", {
-					error: modelsRes.error,
+					error: modelsRes.error
 				})
 				return
 			}
@@ -203,7 +205,7 @@ export async function refreshModels(
 		const result = await listModels(message.connection)
 		if (result.error) {
 			const res = {
-				error: result.error,
+				error: result.error
 			}
 			emitToUser("error", res)
 		} else if (!result.models) {

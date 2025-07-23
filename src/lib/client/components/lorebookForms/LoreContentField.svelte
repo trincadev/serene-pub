@@ -5,7 +5,7 @@
 	import LorebookBindingTag from "../../utils/tiptapLorebookBindingTag"
 	import * as Icons from "@lucide/svelte"
 	import { Popover } from "@skeletonlabs/skeleton-svelte"
-    import Placeholder from '@tiptap/extension-placeholder'
+	import Placeholder from "@tiptap/extension-placeholder"
 	import LegacyTag from "$lib/client/utils/tiptapLegacyTag"
 	import type { EditorView } from "prosemirror-view"
 
@@ -16,7 +16,7 @@
 
 	let { content = $bindable(), lorebookBindingList = $bindable() }: Props =
 		$props()
-		
+
 	let editor: Editor
 	let editorEl: HTMLDivElement
 	let isBold = $state(false)
@@ -51,56 +51,65 @@
 	}
 
 	function getContentWithCharTags(editor: Editor): string {
-		if (!editor) return "";
-		const doc = editor.state.doc;
-		let result = "";
+		if (!editor) return ""
+		const doc = editor.state.doc
+		let result = ""
 		doc.descendants((node) => {
 			if (node.type.name === "LorebookBindingTag") {
-				result += `{char:${node.attrs.id}}`;
+				result += `{char:${node.attrs.id}}`
 			} else if (node.type.name === "legacyTag") {
 				result += node.attrs.original
 			} else if (node.isText) {
-				result += node.text;
+				result += node.text
 			} else if (node.isBlock) {
-				result += "\n";
+				result += "\n"
 			}
-			return true;
-		});
-		return result;
+			return true
+		})
+		return result
 	}
 
 	// Helper: parse {char:N} and legacy tags in plain text to Tiptap doc JSON
 	function parseCharTagsToTiptapDoc(text: string) {
-		const parts = [];
-		let lastIndex = 0;
+		const parts = []
+		let lastIndex = 0
 		// Regex for {char:N} and legacy tags ({user}, {char}, {persona}, {character})
-		const regex = /\{char:(\d+)\}|\{(user|char|persona|character)\}/g;
-		let match;
+		const regex = /\{char:(\d+)\}|\{(user|char|persona|character)\}/g
+		let match
 		while ((match = regex.exec(text)) !== null) {
 			if (match.index > lastIndex) {
-				parts.push({ type: 'text', text: text.slice(lastIndex, match.index) });
+				parts.push({
+					type: "text",
+					text: text.slice(lastIndex, match.index)
+				})
 			}
 			if (match[1]) {
 				// {char:N}
-				parts.push({ type: 'LorebookBindingTag', attrs: { id: match[1] } });
+				parts.push({
+					type: "LorebookBindingTag",
+					attrs: { id: match[1] }
+				})
 			} else if (match[2]) {
 				// legacy tags: {user}, {char}, {persona}, {character}
-				parts.push({ type: 'legacyTag', attrs: { tag: `{${match[2]}}`, original: `{${match[2]}}` } });
+				parts.push({
+					type: "legacyTag",
+					attrs: { tag: `{${match[2]}}`, original: `{${match[2]}}` }
+				})
 			}
-			lastIndex = match.index + match[0].length;
+			lastIndex = match.index + match[0].length
 		}
 		if (lastIndex < text.length) {
-			parts.push({ type: 'text', text: text.slice(lastIndex) });
+			parts.push({ type: "text", text: text.slice(lastIndex) })
 		}
 		return {
-			type: 'doc',
+			type: "doc",
 			content: [
 				{
-					type: 'paragraph',
+					type: "paragraph",
 					content: parts
 				}
 			]
-		};
+		}
 	}
 
 	function forceRawContentCopy(view: EditorView, arg1: () => string) {
@@ -123,10 +132,10 @@
 			extensions: [
 				StarterKit,
 				LorebookBindingTag.configure({ getLabel, getCharType }),
-                LegacyTag.configure({}),
-                // Placeholder.configure({
-                //     placeholder: ({ node }) => "A subterranean metropolis carved into the bones of a long-dead titan..."
-                // }),
+				LegacyTag.configure({})
+				// Placeholder.configure({
+				//     placeholder: ({ node }) => "A subterranean metropolis carved into the bones of a long-dead titan..."
+				// }),
 			],
 			onUpdate: ({ editor }) => {
 				content = getContentWithCharTags(editor)
@@ -141,9 +150,7 @@
 	})
 </script>
 
-<div
-	class=""
->
+<div class="">
 	<div class="tiptap-toolbar mb-1">
 		<Popover
 			open={addBindingOpenState}
@@ -174,7 +181,9 @@
 							class:preset-filled-surface-500={!!binding.personaId}
 							class:preset-filled-warning-500={!char}
 							onclick={() => {
-								editor.commands.insertLorebookBindingTag(binding.binding)
+								editor.commands.insertLorebookBindingTag(
+									binding.binding
+								)
 								addBindingOpenState = false
 							}}
 							title={char
@@ -216,7 +225,7 @@
 	<div
 		bind:this={editorEl}
 		class="tiptap-content preset-filled-surface-200-800 rounded-lg"
-        placeholder="A subterranean metropolis carved into the bones of a long-dead titan..."
+		placeholder="A subterranean metropolis carved into the bones of a long-dead titan..."
 	></div>
 </div>
 
@@ -224,6 +233,5 @@
 	@reference "tailwindcss";
 
 	:global {
-		
 	}
 </style>

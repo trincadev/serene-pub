@@ -1,0 +1,1 @@
+ALTER TABLE "tags" ADD COLUMN "color_preset" text DEFAULT 'preset-filled-primary-500' NOT NULL;

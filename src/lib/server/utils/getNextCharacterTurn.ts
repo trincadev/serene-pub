@@ -11,10 +11,11 @@ export function getNextCharacterTurn(
 	if (!chat.chatCharacters?.length || !chat.chatPersonas?.length) return null
 
 	// Sort characters by .position (lowest first)
-	const sortedCharacters = chat.chatCharacters.filter((cc) => cc.isActive).slice().sort(
-		(a, b) => (a.position ?? 0) - (b.position ?? 0)
-	)
-	const personaIds = chat.chatPersonas.map(cp => cp.persona.id)
+	const sortedCharacters = chat.chatCharacters
+		.filter((cc) => cc.isActive)
+		.slice()
+		.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+	const personaIds = chat.chatPersonas.map((cp) => cp.persona.id)
 
 	// Find the index of the last persona message
 	let lastPersonaIdx = -1
@@ -33,7 +34,9 @@ export function getNextCharacterTurn(
 		// For each character in order, check if they have a message in the pool
 		for (const cc of sortedCharacters) {
 			const hasMessage = pool.some(
-				msg => msg.role === "assistant" && msg.characterId === cc.character.id
+				(msg) =>
+					msg.role === "assistant" &&
+					msg.characterId === cc.character.id
 			)
 			if (!hasMessage) {
 				return cc.character.id
@@ -45,7 +48,9 @@ export function getNextCharacterTurn(
 		for (const cc of sortedCharacters) {
 			const recentPool = pool.slice(-1 * (cc.position ?? 1))
 			const hasRecentReply = recentPool.some(
-				msg => msg.role === "assistant" && msg.characterId === cc.character.id
+				(msg) =>
+					msg.role === "assistant" &&
+					msg.characterId === cc.character.id
 			)
 			if (!hasRecentReply) {
 				return cc.character.id

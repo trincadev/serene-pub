@@ -236,27 +236,22 @@
 			{:else}
 				<ul class="flex flex-col gap-2">
 					{#each filteredChats as chat}
-					{@const avatars = [
-								...(chat.chatCharacters || []).map(
-									(cc) => ({
-										type: "character",
-										data: cc.character
-											})
-										),
-										...(chat.chatPersonas || []).map(
-											(cp) => ({
-												type: "persona",
-												data: cp.persona
-											})
-										)
-									]}
-					<SidebarListItem
-						onclick={(e) => handleChatClick(chat)}
-						contentTitle="Go to chat"
-					>
-						{#snippet content()}
-						<div class="relative w-fit">
-							
+						{@const avatars = [
+							...(chat.chatCharacters || []).map((cc) => ({
+								type: "character",
+								data: cc.character
+							})),
+							...(chat.chatPersonas || []).map((cp) => ({
+								type: "persona",
+								data: cp.persona
+							}))
+						]}
+						<SidebarListItem
+							onclick={(e) => handleChatClick(chat)}
+							contentTitle="Go to chat"
+						>
+							{#snippet content()}
+								<div class="relative w-fit">
 									<div
 										class="relative mr-2 flex flex-shrink-0 flex-grow-0 items-center"
 									>
@@ -294,58 +289,61 @@
 											{/if}
 										{/if}
 									</div>
-							</div>
-							<div class="flex min-w-0 flex-col">
-								<div class="truncate font-semibold text-left">
-									{chat.name || "Untitled Chat"}
 								</div>
-								<div
-									class="text-muted-foreground line-clamp-2 text-xs text-left"
-								>
-									{#if chat.chatCharacters?.length}
-										{chat.chatCharacters
-											.map(
-												(cc) =>
-													cc.character?.nickname ||
-													cc.character?.name
-											)
-											.filter(Boolean)
-											.join(", ")}
-									{/if}
-									{chat.chatPersonas?.length ? "," : ""}
-									{#if chat.chatPersonas?.length}
-										{chat.chatPersonas
-											.map((cp) => cp.persona?.name)
-											.filter(Boolean)
-											.join(", ")}
-									{/if}
+								<div class="flex min-w-0 flex-col">
+									<div
+										class="truncate text-left font-semibold"
+									>
+										{chat.name || "Untitled Chat"}
+									</div>
+									<div
+										class="text-muted-foreground line-clamp-2 text-left text-xs"
+									>
+										{#if chat.chatCharacters?.length}
+											{chat.chatCharacters
+												.map(
+													(cc) =>
+														cc.character
+															?.nickname ||
+														cc.character?.name
+												)
+												.filter(Boolean)
+												.join(", ")}
+										{/if}
+										{chat.chatPersonas?.length ? "," : ""}
+										{#if chat.chatPersonas?.length}
+											{chat.chatPersonas
+												.map((cp) => cp.persona?.name)
+												.filter(Boolean)
+												.join(", ")}
+										{/if}
+									</div>
 								</div>
-							</div>
-						{/snippet}
-						{#snippet controls()}
-						<div class="ml-auto flex gap-4 flex-col">
-								<button
-									class="btn btn-sm text-primary-500 p-4"
-									onclick={() => {
-										handleEditClick(chat.id!)
-									}}
-									title="Edit Character"
-								>
-									<Icons.Edit size={16} />
-								</button>
-								<button
-									class="btn btn-sm text-error-500 p-4"
-									onclick={(e) => {
-										e.stopPropagation()
-										handleDeleteClick(chat.id!)
-									}}
-									title="Delete Character"
-								>
-									<Icons.Trash2 size={16} />
-								</button>
-							</div>
-						{/snippet}
-</SidebarListItem>
+							{/snippet}
+							{#snippet controls()}
+								<div class="ml-auto flex flex-col gap-4">
+									<button
+										class="btn btn-sm text-primary-500 p-4"
+										onclick={() => {
+											handleEditClick(chat.id!)
+										}}
+										title="Edit Character"
+									>
+										<Icons.Edit size={16} />
+									</button>
+									<button
+										class="btn btn-sm text-error-500 p-4"
+										onclick={(e) => {
+											e.stopPropagation()
+											handleDeleteClick(chat.id!)
+										}}
+										title="Delete Character"
+									>
+										<Icons.Trash2 size={16} />
+									</button>
+								</div>
+							{/snippet}
+						</SidebarListItem>
 					{/each}
 				</ul>
 			{/if}

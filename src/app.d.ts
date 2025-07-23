@@ -864,6 +864,67 @@ declare global {
 			}
 			interface Response {}
 		}
+		// TAGS
+		namespace TagsList {
+			interface Call {}
+			interface Response {
+				tagsList: SelectTag[]
+			}
+		}
+		namespace CreateTag {
+			interface Call {
+				tag: InsertTag
+			}
+			interface Response {
+				tag: SelectTag
+			}
+		}
+		namespace UpdateTag {
+			interface Call {
+				tag: SelectTag
+			}
+			interface Response {
+				tag: SelectTag
+			}
+		}
+		namespace DeleteTag {
+			interface Call {
+				id: number
+			}
+			interface Response {
+				id: number
+			}
+		}
+		namespace TagRelatedData {
+			interface Call {
+				tagId: number
+			}
+			interface Response {
+				characters: SelectCharacter[]
+				personas: SelectPersona[]
+				chats: SelectChat[]
+			}
+		}
+		namespace AddTagToCharacter {
+			interface Call {
+				characterId: number
+				tagId: number
+			}
+			interface Response {
+				characterId: number
+				tagId: number
+			}
+		}
+		namespace RemoveTagFromCharacter {
+			interface Call {
+				characterId: number
+				tagId: number
+			}
+			interface Response {
+				characterId: number
+				tagId: number
+			}
+		}
 	}
 
 	export interface CharaImportMetadata {

@@ -32,7 +32,7 @@
 	const DefaultHistoryEntry: InsertHistoryEntry = {
 		year: 1,
 		month: null,
-		day:null,
+		day: null,
 		content: "",
 		keys: "",
 		useRegex: false,
@@ -54,9 +54,13 @@
 	let isReordering = $state(false)
 	let deleteEntryId: number | null = $state(null)
 	let showDeleteConfirmModal = $state(false)
-	let filteredEntries: SelectHistoryEntry[] = $derived.by(() => getFilteredEntries())
+	let filteredEntries: SelectHistoryEntry[] = $derived.by(() =>
+		getFilteredEntries()
+	)
 	let maxDateValue: number = $derived.by(() => {
-		return filteredEntries.length ? getEntryDateValue(filteredEntries[0]) : 0
+		return filteredEntries.length
+			? getEntryDateValue(filteredEntries[0])
+			: 0
 	})
 
 	$effect(() => {
@@ -341,8 +345,16 @@
 	})
 
 	// --- Reactive sorted/filter logic for display and current date ---
-	$effect(() => {filteredEntries = getFilteredEntries().slice().sort((a, b) => getEntryDateValue(b) - getEntryDateValue(a))})
-	$effect(() => {maxDateValue = filteredEntries.length ? getEntryDateValue(filteredEntries[0]) : 0})
+	$effect(() => {
+		filteredEntries = getFilteredEntries()
+			.slice()
+			.sort((a, b) => getEntryDateValue(b) - getEntryDateValue(a))
+	})
+	$effect(() => {
+		maxDateValue = filteredEntries.length
+			? getEntryDateValue(filteredEntries[0])
+			: 0
+	})
 </script>
 
 {#if isReady}
@@ -394,7 +406,9 @@
 				{@const isEditing = entry.id in editEntriesData || !entry.id}
 				{@const isFirstWithMaxDate =
 					getEntryDateValue(entry) === maxDateValue &&
-					filteredEntries.findIndex(e => getEntryDateValue(e) === maxDateValue) === filteredEntries.indexOf(entry)}
+					filteredEntries.findIndex(
+						(e) => getEntryDateValue(e) === maxDateValue
+					) === filteredEntries.indexOf(entry)}
 				{#key entry}
 					{#if isEditing}
 						<!-- Edit mode: show the form -->
@@ -596,9 +610,7 @@
 								<strong>Date:</strong>
 								{entry.year}{entry.month
 									? `-${entry.month}`
-									: ""}{entry.day
-									? `-${entry.day}`
-									: ""}
+									: ""}{entry.day ? `-${entry.day}` : ""}
 								{#if entry.year === 0 && entry.month === 0 && entry.day === 0}
 									<span
 										class="text-tertiary-500 ml-2 text-sm"
@@ -758,7 +770,10 @@
 
 <DeleteLorebookEntryConfirmModal
 	open={showDeleteConfirmModal}
-	onOpenChange={(e) => {showDeleteConfirmModal = e.open; deleteEntryId = null}}
+	onOpenChange={(e) => {
+		showDeleteConfirmModal = e.open
+		deleteEntryId = null
+	}}
 	onConfirm={onDeleteConfirm}
 	onCancel={onDeleteCancel}
 />

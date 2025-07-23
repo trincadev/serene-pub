@@ -3,6 +3,7 @@
 	import * as Icons from "@lucide/svelte"
 	import * as skio from "sveltekit-io"
 	import { onMount, onDestroy } from "svelte"
+	import { z } from "zod"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import Avatar from "../Avatar.svelte"
 
@@ -16,7 +17,7 @@
 		scenario: string
 		firstMessage: string
 		alternateGreetings: string[]
-		exampleDialogues: string
+		exampleDialogues: string[]
 		creatorNotes: string
 		creatorNotesMultilingual: Record<string, string>
 		groupOnlyGreetings: string[]
@@ -25,7 +26,29 @@
 		_avatarFile?: File | undefined
 		_avatar: string
 		lorebookId: number | null
+		characterVersion?: string
 	}
+
+	// Zod validation schema
+	const characterSchema = z.object({
+		name: z.string().min(1, "Name is required").trim(),
+		nickname: z.string().optional(),
+		description: z.string().min(1, "Description is required").trim(),
+		personality: z.string().optional(),
+		scenario: z.string().optional(),
+		firstMessage: z.string().optional(),
+		alternateGreetings: z.array(z.string()).optional(),
+		exampleDialogues: z.array(z.string()).optional(),
+		creatorNotes: z.string().optional(),
+		creatorNotesMultilingual: z.record(z.string()).optional(),
+		groupOnlyGreetings: z.array(z.string()).optional(),
+		postHistoryInstructions: z.string().optional(),
+		characterVersion: z.string().optional(),
+		isFavorite: z.boolean().optional(),
+		lorebookId: z.number().nullable().optional()
+	})
+
+	type ValidationErrors = Record<string, string>
 
 	export interface Props {
 		characterId?: number
@@ -36,7 +59,7 @@
 
 	let {
 		characterId,
-		isSafeToClose = $bindable(),
+		isSafeToClose: hasChanges = $bindable(),
 		closeForm = $bindable(),
 		onCancel = $bindable()
 	}: Props = $props()
@@ -53,7 +76,7 @@
 		scenario: "",
 		firstMessage: "",
 		alternateGreetings: [],
-		exampleDialogues: "",
+		exampleDialogues: [],
 		creatorNotes: "",
 		creatorNotesMultilingual: {},
 		groupOnlyGreetings: [],
@@ -65,7 +88,25 @@
 		lorebookId: null
 	})
 	let originalCharacterData: EditCharacterData = $state({
-		...editCharacterData
+		id: undefined,
+		name: "",
+		nickname: "",
+		avatar: "",
+		description: "",
+		personality: "",
+		scenario: "",
+		firstMessage: "",
+		alternateGreetings: [],
+		exampleDialogues: [],
+		creatorNotes: "",
+		creatorNotesMultilingual: {},
+		groupOnlyGreetings: [],
+		postHistoryInstructions: "",
+		isFavorite: false,
+		characterVersion: "",
+		_avatarFile: undefined,
+		_avatar: "",
+		lorebookId: null
 	})
 	let expanded = $state({
 		description: true,
@@ -79,19 +120,45 @@
 		groupOnlyGreetings: false,
 		postHistoryInstructions: false
 	})
-	let character = $state(undefined)
+	let character: Sockets.Character.Response["character"] | undefined =
+		$state(undefined)
 	let mode: "create" | "edit" = $derived.by(() =>
 		!!character ? "edit" : "create"
 	)
-	let isDataValid = $derived(
-		!!editCharacterData?.name?.trim() && !!editCharacterData?.name?.trim()
-	)
 	let showCancelModal = $state(false)
+	let validationErrors: ValidationErrors = $state({})
 	let newLangKey = $state("")
 	let newLangNote = $state("")
 	let lorebookList: Sockets.LorebookList.Response["lorebookList"] = $state([])
+	let formContainer: HTMLDivElement
+	let validationTimeout: NodeJS.Timeout
 
 	// Events: avatarChange, save, cancel
+	function validateFormDebounced() {
+		clearTimeout(validationTimeout)
+		validationTimeout = setTimeout(() => {
+			validateForm()
+		}, 300) // 300ms debounce
+	}
+
+	function validateForm(): boolean {
+		const result = characterSchema.safeParse(editCharacterData)
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
+	}
+
 	function handleAvatarChange(e: Event) {
 		const input = e.target as HTMLInputElement | null
 		if (!input || !input.files || input.files.length === 0) return
@@ -108,6 +175,12 @@
 	}
 
 	function onSave() {
+		// Validate the form first
+		if (!validateForm()) {
+			// Validation failed, errors are already set in validationErrors
+			return
+		}
+
 		if (mode === "create") {
 			// Create new character
 			handleCreate()
@@ -144,10 +217,10 @@
 	}
 
 	function handleCancel() {
-		if (isSafeToClose) {
-			closeForm()
-		} else {
+		if (hasChanges) {
 			showCancelModal = true
+		} else {
+			closeForm()
 		}
 	}
 
@@ -179,22 +252,55 @@
 		delete obj[key]
 	}
 
+	function handleKeydown(e: KeyboardEvent) {
+		// Only handle shortcuts if this form is focused or contains the active element
+		if (!formContainer?.contains(document.activeElement)) return
+
+		// Ctrl+S / Cmd+S to save
+		if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+			e.preventDefault()
+			onSave()
+		}
+		// Escape to cancel
+		else if (e.key === "Escape") {
+			e.preventDefault()
+			handleCancel()
+		}
+	}
+
+	// Add debounced validation effect
 	$effect(() => {
-		isSafeToClose =
-			JSON.stringify(editCharacterData) ===
+		// Only validate if we have some data and it's not the initial empty state
+		if (
+			editCharacterData.name ||
+			Object.keys(validationErrors).length > 0
+		) {
+			validateFormDebounced()
+		}
+	})
+
+	$effect(() => {
+		hasChanges =
+			JSON.stringify(editCharacterData) !==
 			JSON.stringify(originalCharacterData)
 	})
 
 	onMount(() => {
 		onCancel = handleCancel
-		socket.on("createCharacter", (res) => {
+
+		// Add keyboard event listener
+		document.addEventListener("keydown", handleKeydown)
+
+		socket.on("createCharacter", (res: any) => {
 			if (!res.error) {
+				validationErrors = {} // Clear any validation errors on success
 				closeForm()
 			}
 		})
 
-		socket.on("updateCharacter", (res) => {
+		socket.on("updateCharacter", (res: any) => {
 			if (!res.error) {
+				validationErrors = {} // Clear any validation errors on success
 				closeForm()
 			}
 		})
@@ -207,9 +313,40 @@
 		if (characterId) {
 			socket.once("character", (message: Sockets.Character.Response) => {
 				character = message.character
+				const characterData = { ...message.character }
+
+				// Handle migration from old string format to new array format
+				if (typeof characterData.exampleDialogues === "string") {
+					characterData.exampleDialogues = (
+						characterData.exampleDialogues as string
+					)
+						.split("<START>")
+						.map((d: string) => d.trim())
+						.filter((d: string) => d !== "")
+				} else if (!Array.isArray(characterData.exampleDialogues)) {
+					characterData.exampleDialogues = []
+				}
+
 				editCharacterData = {
 					...editCharacterData,
-					...message.character
+					...characterData,
+					avatar: characterData.avatar ?? "",
+					nickname: characterData.nickname ?? "",
+					personality: characterData.personality ?? "",
+					scenario: characterData.scenario ?? "",
+					firstMessage: characterData.firstMessage ?? "",
+					creatorNotes: characterData.creatorNotes ?? "",
+					creatorNotesMultilingual:
+						characterData.creatorNotesMultilingual ?? {},
+					groupOnlyGreetings: Array.isArray(
+						characterData.groupOnlyGreetings
+					)
+						? characterData.groupOnlyGreetings
+						: [],
+					postHistoryInstructions:
+						characterData.postHistoryInstructions ?? "",
+					characterVersion:
+						characterData.characterVersion ?? undefined
 				}
 				originalCharacterData = { ...editCharacterData }
 			})
@@ -222,46 +359,65 @@
 		socket.off("createCharacter")
 		socket.off("updateCharacter")
 		socket.off("character")
+
+		// Remove keyboard event listener and clear timeout
+		document.removeEventListener("keydown", handleKeydown)
+		clearTimeout(validationTimeout)
 	})
 </script>
 
-<div class="animate-fade-inmin-h-full">
-	<h2 class="mb-4 text-lg font-bold">
+<div
+	class="animate-fade-inmin-h-full"
+	bind:this={formContainer}
+	role="dialog"
+	aria-labelledby="form-title"
+	aria-modal="false"
+>
+	<h1 class="mb-4 text-lg font-bold" id="form-title">
 		{mode === "edit"
-			? `Edit: ${character.nickname || character.name}`
+			? `Edit: ${character?.nickname || character?.name || "Character"}`
 			: "Create Character"}
-	</h2>
-	<div class="mt-4 mb-4 flex gap-2">
+	</h1>
+	<div class="mt-4 mb-4 flex gap-2" role="group" aria-label="Form actions">
 		<button
 			type="button"
 			class="btn btn-sm preset-filled-surface-500 w-full"
 			onclick={handleCancel}
+			aria-describedby="form-title"
 		>
 			Cancel
 		</button>
 		<button
 			type="button"
 			class="btn btn-sm preset-filled-success-500 w-full"
+			class:preset-filled-success-500={hasChanges}
+			class:preset-tonal-success={!hasChanges}
 			onclick={onSave}
-			disabled={!isDataValid || isSafeToClose}
+			aria-describedby="form-title"
+			aria-label={`${mode === "edit" ? "Update" : "Create"} character${hasChanges ? " (has unsaved changes)" : ""}`}
 		>
-			<Icons.Save size={16} />
+			<Icons.Save size={16} aria-hidden="true" />
 			{mode === "edit" ? "Update" : "Create"}
 		</button>
 	</div>
-	<div class="flex flex-col gap-4">
-		<div class="flex items-center gap-4">
-			<span>
+	<div class="flex flex-col gap-4" role="form" aria-labelledby="form-title">
+		<fieldset
+			class="flex items-center gap-4"
+			aria-labelledby="avatar-section"
+		>
+			<legend id="avatar-section" class="sr-only">Avatar Settings</legend>
+			<div aria-label="Current avatar preview">
 				<Avatar
 					src={editCharacterData._avatar || editCharacterData.avatar}
 					char={editCharacterData}
 				/>
-			</span>
+			</div>
 			<div class="flex w-full flex-col gap-2">
 				<div class="flex w-full items-center justify-center">
 					<label
 						for="dropzone-file"
-						class="flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-800"
+						class="flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-800"
+						aria-describedby="avatar-help"
 					>
 						<div
 							class="flex w-full flex-col items-center justify-center"
@@ -288,7 +444,12 @@
 							class="hidden"
 							accept="image/*"
 							onchange={handleAvatarChange}
+							aria-describedby="avatar-help"
 						/>
+						<div id="avatar-help" class="sr-only">
+							Upload an image file for the character avatar.
+							Supported formats: JPG, PNG, GIF
+						</div>
 					</label>
 				</div>
 				<button
@@ -299,20 +460,23 @@
 						editCharacterData._avatar = ""
 					}}
 					disabled={!editCharacterData._avatarFile}
+					aria-label="Clear selected avatar image"
 				>
 					Clear Selection
 				</button>
 			</div>
-		</div>
-		<div class="flex flex-col gap-1">
-			<label class="font-semibold flex gap-1" for="charName">
+		</fieldset>
+		<fieldset class="flex flex-col gap-1">
+			<label class="flex gap-1 font-semibold" for="charName">
 				Name* <span
 					class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
 					title="This field will be visible in prompts"
+					aria-label="This field will be visible in prompts"
 				>
 					<Icons.ScanEye
 						size={16}
 						class="relative top-[1px] inline"
+						aria-hidden="true"
 					/>
 				</span>
 			</label>
@@ -320,93 +484,180 @@
 				id="charName"
 				type="text"
 				bind:value={editCharacterData.name}
-				class="input"
+				class="input {validationErrors.name
+					? 'border-red-500 focus:border-red-500'
+					: ''}"
+				oninput={() => {
+					// Clear validation error when user starts typing
+					if (validationErrors.name) {
+						const { name, ...rest } = validationErrors
+						validationErrors = rest
+					}
+				}}
+				aria-required="true"
+				aria-invalid={validationErrors.name ? "true" : "false"}
+				aria-describedby={validationErrors.name
+					? "name-error"
+					: undefined}
 			/>
-		</div>
-		<div class="flex flex-col gap-1">
-			<label class="font-semibold flex gap-1" for="charNickname">Nickname <span
-										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
-										title="This field will be visible in prompts"
-									>
-										<Icons.ScanEye
-											size={16}
-											class="relative top-[1px] inline"
-										/>
-									</span></label>
+			{#if validationErrors.name}
+				<p
+					class="mt-1 text-sm text-red-500"
+					id="name-error"
+					role="alert"
+				>
+					{validationErrors.name}
+				</p>
+			{/if}
+		</fieldset>
+		<fieldset class="flex flex-col gap-1">
+			<label class="flex gap-1 font-semibold" for="charNickname">
+				Nickname <span
+					class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+					title="This field will be visible in prompts"
+					aria-label="This field will be visible in prompts"
+				>
+					<Icons.ScanEye
+						size={16}
+						class="relative top-[1px] inline"
+						aria-hidden="true"
+					/>
+				</span>
+			</label>
 			<input
 				id="charNickname"
 				type="text"
 				bind:value={editCharacterData.nickname}
 				class="input"
 			/>
-		</div>
-		<div class="flex flex-col gap-2">
+		</fieldset>
+		<fieldset class="flex flex-col gap-2">
 			<button
 				type="button"
 				class="flex items-center gap-2 text-sm font-semibold"
 				onclick={() => (expanded.description = !expanded.description)}
+				aria-expanded={expanded.description}
+				aria-controls="description-content"
+				id="description-toggle"
 			>
-				<span class="flex gap-1">Description <span
-										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
-										title="This field will be visible in prompts"
-									>
-										<Icons.ScanEye
-											size={16}
-											class="relative top-[1px] inline"
-										/>
-									</span></span>
-				<span class="ml-1">{expanded.description ? "▼" : "►"}</span>
+				<span class="flex gap-1">
+					Description* <span
+						class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+						title="This field will be visible in prompts"
+						aria-label="This field will be visible in prompts"
+					>
+						<Icons.ScanEye
+							size={16}
+							class="relative top-[1px] inline"
+							aria-hidden="true"
+						/>
+					</span>
+				</span>
+				<span class="ml-1" aria-hidden="true">
+					{expanded.description ? "▼" : "►"}
+				</span>
 			</button>
 			{#if expanded.description}
-				<textarea
-					rows="8"
-					bind:value={editCharacterData.description}
-					class="input"
-					placeholder="Description..."
-				></textarea>
+				<div
+					id="description-content"
+					role="region"
+					aria-labelledby="description-toggle"
+				>
+					<textarea
+						rows="8"
+						bind:value={editCharacterData.description}
+						class="input {validationErrors.description
+							? 'border-red-500 focus:border-red-500'
+							: ''}"
+						placeholder="Description..."
+						aria-label="Character description"
+						aria-required="true"
+						aria-invalid={validationErrors.description
+							? "true"
+							: "false"}
+						aria-describedby={validationErrors.description
+							? "description-error"
+							: undefined}
+						oninput={() => {
+							// Clear validation error when user starts typing
+							if (validationErrors.description) {
+								const { description, ...rest } =
+									validationErrors
+								validationErrors = rest
+							}
+						}}
+					></textarea>
+					{#if validationErrors.description}
+						<p
+							class="mt-1 text-sm text-red-500"
+							id="description-error"
+							role="alert"
+						>
+							{validationErrors.description}
+						</p>
+					{/if}
+				</div>
 			{/if}
-		</div>
-		<div class="flex flex-col gap-2">
+		</fieldset>
+		<fieldset class="flex flex-col gap-2">
 			<button
 				type="button"
 				class="flex items-center gap-2 text-sm font-semibold"
 				onclick={() => (expanded.personality = !expanded.personality)}
+				aria-expanded={expanded.personality}
+				aria-controls="personality-content"
+				id="personality-toggle"
 			>
-				<span class="flex gap-1">Personality <span
-										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
-										title="This field will be visible in prompts"
-									>
-										<Icons.ScanEye
-											size={16}
-											class="relative top-[1px] inline"
-										/>
-									</span></span>
-				<span class="ml-1">{expanded.personality ? "▼" : "►"}</span>
+				<span class="flex gap-1">
+					Personality <span
+						class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+						title="This field will be visible in prompts"
+						aria-label="This field will be visible in prompts"
+					>
+						<Icons.ScanEye
+							size={16}
+							class="relative top-[1px] inline"
+							aria-hidden="true"
+						/>
+					</span>
+				</span>
+				<span class="ml-1" aria-hidden="true">
+					{expanded.personality ? "▼" : "►"}
+				</span>
 			</button>
 			{#if expanded.personality}
-				<textarea
-					rows="8"
-					bind:value={editCharacterData.personality}
-					class="input"
-					placeholder="Personality..."
-				></textarea>
+				<div
+					id="personality-content"
+					role="region"
+					aria-labelledby="personality-toggle"
+				>
+					<textarea
+						rows="8"
+						bind:value={editCharacterData.personality}
+						class="input"
+						placeholder="Personality..."
+						aria-label="Character personality"
+					></textarea>
+				</div>
 			{/if}
-		</div>
+		</fieldset>
 		<div class="flex flex-col gap-2">
 			<button
 				type="button"
 				class="flex items-center gap-2 text-sm font-semibold"
 				onclick={() => (expanded.scenario = !expanded.scenario)}
 			>
-				<span class="flex gap-1">Scenario <span
-										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
-										title="This field will be visible in prompts (excluded from group chats)"
-									>
-										<Icons.ScanEye
-											size={16}
-											class="relative top-[1px] inline"
-										/>
-									</span></span>
+				<span class="flex gap-1">
+					Scenario <span
+						class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+						title="This field will be visible in prompts (excluded from group chats)"
+					>
+						<Icons.ScanEye
+							size={16}
+							class="relative top-[1px] inline"
+						/>
+					</span>
+				</span>
 				<span class="ml-1">{expanded.scenario ? "▼" : "►"}</span>
 			</button>
 			{#if expanded.scenario}
@@ -436,6 +687,93 @@
 				></textarea>
 			{/if}
 		</div>
+		<fieldset class="flex flex-col gap-2">
+			<button
+				type="button"
+				class="flex items-center gap-2 text-sm font-semibold"
+				onclick={() =>
+					(expanded.exampleDialogues = !expanded.exampleDialogues)}
+				aria-expanded={expanded.exampleDialogues}
+				aria-controls="example-dialogues-content"
+				id="example-dialogues-toggle"
+			>
+				<span class="flex gap-1">
+					Example Dialogues <span
+						class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+						title="This field will be visible in prompts"
+						aria-label="This field will be visible in prompts"
+					>
+						<Icons.ScanEye
+							size={16}
+							class="relative top-[1px] inline"
+							aria-hidden="true"
+						/>
+					</span>
+				</span>
+				<span class="ml-1" aria-hidden="true">
+					{expanded.exampleDialogues ? "▼" : "►"}
+				</span>
+			</button>
+			{#if expanded.exampleDialogues}
+				<div
+					id="example-dialogues-content"
+					role="region"
+					aria-labelledby="example-dialogues-toggle"
+				>
+					<div
+						class="flex flex-col gap-1"
+						role="list"
+						aria-label="Example dialogues"
+					>
+						{#each editCharacterData.exampleDialogues as dialogue, idx (idx)}
+							<div
+								class="flex flex-col items-center gap-2"
+								role="listitem"
+							>
+								<div class="w-full">
+									<textarea
+										rows="4"
+										bind:value={
+											editCharacterData.exampleDialogues[
+												idx
+											]
+										}
+										class="input resize-y"
+										placeholder="Example dialogue..."
+										aria-label={`Example dialogue ${idx + 1}`}
+									></textarea>
+								</div>
+								<button
+									class="btn btn-sm preset-tonal-error w-full"
+									type="button"
+									onclick={() =>
+										removeFromArray(
+											editCharacterData.exampleDialogues,
+											idx
+										)}
+									aria-label={`Delete example dialogue ${idx + 1}`}
+								>
+									<Icons.Minus
+										class="h-4 w-4"
+										aria-hidden="true"
+									/> Delete
+								</button>
+							</div>
+						{/each}
+						<button
+							class="btn btn-sm preset-filled-primary-500 mt-1"
+							type="button"
+							onclick={() =>
+								addToArray(editCharacterData.exampleDialogues)}
+							aria-label="Add new example dialogue"
+						>
+							<Icons.Plus class="h-4 w-4" aria-hidden="true" />
+							Add Example Dialogue
+						</button>
+					</div>
+				</div>
+			{/if}
+		</fieldset>
 		<div class="flex flex-col gap-2">
 			<button
 				type="button"
@@ -650,15 +988,17 @@
 					(expanded.postHistoryInstructions =
 						!expanded.postHistoryInstructions)}
 			>
-				<span class="flex gap-1">Post-History Instructions <span
-										class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
-										title="This field will be visible in prompts"
-									>
-										<Icons.ScanEye
-											size={16}
-											class="relative top-[1px] inline"
-										/>
-									</span></span>
+				<span class="flex gap-1">
+					Post-History Instructions <span
+						class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+						title="This field will be visible in prompts"
+					>
+						<Icons.ScanEye
+							size={16}
+							class="relative top-[1px] inline"
+						/>
+					</span>
+				</span>
 				<span class="ml-1">
 					{expanded.postHistoryInstructions ? "▼" : "►"}
 				</span>
@@ -697,15 +1037,19 @@
 				{/each}
 			</select>
 		</div> -->
-		<div class="mt-2 flex items-center gap-2">
+		<fieldset class="mt-2 flex items-center gap-2">
 			<Switch
 				name="favorite"
 				checked={editCharacterData.isFavorite}
 				onCheckedChange={(e) =>
 					(editCharacterData.isFavorite = e.checked)}
+				aria-describedby="favorite-description"
 			/>
-			<label for="Favorite" class="font-semibold">Favorite</label>
-		</div>
+			<label for="favorite" class="font-semibold">Favorite</label>
+			<span id="favorite-description" class="sr-only">
+				Mark this character as a favorite for easier access
+			</span>
+		</fieldset>
 	</div>
 </div>
 
@@ -715,3 +1059,17 @@
 	onConfirm={handleCancelModalDiscard}
 	onCancel={handleCancelModalCancel}
 />
+
+<style>
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+</style>

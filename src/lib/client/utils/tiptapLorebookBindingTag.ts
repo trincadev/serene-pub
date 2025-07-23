@@ -19,13 +19,13 @@ const CHAR_TAG_REGEX = /\{char:(\d+)\}/g
 
 // Custom input rule: replace all {char:N} in the changed text node
 function LorebookBindingTagInputRule(type: any) {
-  return new InputRule({
-    find: /\{char:(\d+)\}/g,
-    handler: ({ range, match, commands }) => {
-      commands.deleteRange(range)
-      commands.insertContent({ type: type.name, attrs: { id: match[1] } })
-    }
-  });
+	return new InputRule({
+		find: /\{char:(\d+)\}/g,
+		handler: ({ range, match, commands }) => {
+			commands.deleteRange(range)
+			commands.insertContent({ type: type.name, attrs: { id: match[1] } })
+		}
+	})
 }
 
 const createPasteTransformPlugin = (type: any) => {
@@ -113,9 +113,9 @@ const LorebookBindingTag = Node.create<LorebookBindingTagOptions>({
 	addOptions() {
 		return {
 			getLabel: (raw: string) => `{char:${id}}`,
-            getCharType: (raw: string) => {
-                return "unknown"
-            }
+			getCharType: (raw: string) => {
+				return "unknown"
+			}
 		}
 	},
 
@@ -138,19 +138,25 @@ const LorebookBindingTag = Node.create<LorebookBindingTagOptions>({
 	},
 
 	renderHTML({ node, HTMLAttributes }) {
-		const raw = `{char:${node.attrs.id}}`;
-		const charType = this.options.getCharType(raw);
-		let typeClass = '';
-		if (charType === 'character') typeClass = 'preset-filled-primary-500';
-		else if (charType === 'persona') typeClass = 'preset-filled-secondary-500';
-		else typeClass = 'preset-filled-warning-500';
+		const raw = `{char:${node.attrs.id}}`
+		const charType = this.options.getCharType(raw)
+		let typeClass = ""
+		if (charType === "character") typeClass = "preset-filled-primary-500"
+		else if (charType === "persona")
+			typeClass = "preset-filled-secondary-500"
+		else typeClass = "preset-filled-warning-500"
 		return [
 			"span",
 			mergeAttributes(HTMLAttributes, {
 				class: `badge ${typeClass} character-tag`,
 				"data-id": node.attrs.id,
 				contenteditable: "false",
-				"title": charType === 'character' ? `Character: ${this.options.getLabel(raw)}` : charType === 'persona' ?  `Persona: ${this.options.getLabel(raw)}` : `Unbound character`
+				title:
+					charType === "character"
+						? `Character: ${this.options.getLabel(raw)}`
+						: charType === "persona"
+							? `Persona: ${this.options.getLabel(raw)}`
+							: `Unbound character`
 			}),
 			this.options.getLabel(raw)
 		]
@@ -172,10 +178,10 @@ const LorebookBindingTag = Node.create<LorebookBindingTagOptions>({
 				types: [this.name],
 				attributes: {},
 				renderText({ node }: { node: any }) {
-					return `{char:${node.attrs.id}}`;
+					return `{char:${node.attrs.id}}`
 				}
 			}
-		];
+		]
 	},
 
 	addProseMirrorPlugins() {

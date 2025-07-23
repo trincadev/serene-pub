@@ -13,10 +13,10 @@
   <a href="https://buymeacoffee.com/serenepub">Buy Me a Coffee</a></b>
 </p>
 
-
 ---
 
 ## Table of Contents
+
 - [Why Serene Pub?](#-why-serene-pub)
 - [Screenshots](#-screenshots)
 - [Features](#-features)
@@ -54,36 +54,36 @@ Serene Pub is a brand new, open source chat application for immersive AI rolepla
 
 ### Desktop Experience
 
-| Chat & Editing | Connections & Characters | Contexts & Lorebooks |
-| -------------- | ------------------------ | -------------------- |
+| Chat & Editing                                | Connections & Characters                                   | Contexts & Lorebooks                                   |
+| --------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------ |
 | ![](static/screenshots/desktop-chat-edit.png) | ![](static/screenshots/desktop-connections-characters.png) | ![](static/screenshots/desktop-contexts-lorebooks.png) |
 
-| Prompt Details | Prompts & Chats | Sampling & Personas |
-| -------------- | --------------- | ------------------- |
+| Prompt Details                                     | Prompts & Chats                                   | Sampling & Personas                                   |
+| -------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------- |
 | ![](static/screenshots/desktop-prompt-details.png) | ![](static/screenshots/desktop-prompts-chats.png) | ![](static/screenshots/desktop-sampling-personas.png) |
 
-| Theme Example 1 | Theme Example 2 | Theme Example 3 |
-| --------------- | --------------- | --------------- |
+| Theme Example 1                                     | Theme Example 2                                     | Theme Example 3                                     |
+| --------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------- |
 | ![](static/screenshots/desktop-theme-example-1.png) | ![](static/screenshots/desktop-theme-example-2.png) | ![](static/screenshots/desktop-theme-example-3.png) |
 
-| Theme Example 4 | Theme Example 5 |
-| --------------- | --------------- |
+| Theme Example 4                                     | Theme Example 5                                     |
+| --------------------------------------------------- | --------------------------------------------------- |
 | ![](static/screenshots/desktop-theme-example-4.png) | ![](static/screenshots/desktop-theme-example-5.png) |
 
 ### Lorebooks+ & Worldbuilding
 
-| Character Bindings | Character Lore | Lorebook History | World Lore |
-| ------------------ | -------------- | ---------------- | ---------- |
+| Character Bindings                                       | Character Lore                                       | Lorebook History                              | World Lore                                       |
+| -------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------- | ------------------------------------------------ |
 | ![](static/screenshots/lorebooks-character-bindings.png) | ![](static/screenshots/lorebooks-character-lore.png) | ![](static/screenshots/lorebooks-history.png) | ![](static/screenshots/lorebooks-world-lore.png) |
 
 ### Mobile Experience
 
-| Chat | Connections | Edit Character |
-| ---- | ----------- | -------------- |
+| Chat                                    | Connections                                    | Edit Character                                    |
+| --------------------------------------- | ---------------------------------------------- | ------------------------------------------------- |
 | ![](static/screenshots/mobile-chat.png) | ![](static/screenshots/mobile-connections.png) | ![](static/screenshots/mobile-edit-character.png) |
 
-| Home | Navigation |
-| ---- | ---------- |
+| Home                                    | Navigation                                    |
+| --------------------------------------- | --------------------------------------------- |
 | ![](static/screenshots/mobile-home.png) | ![](static/screenshots/mobile-navigation.png) |
 
 ---
@@ -95,12 +95,12 @@ Serene Pub is a brand new, open source chat application for immersive AI rolepla
 - **Lorebooks+:** Organize world lore, character lore, and history for deep roleplay
 - **Group Chats:** Multi-character chats for immersive group roleplay and dynamic storylines
 - **Chat & Context Tools:**
-  - Auto character response
-  - Edit/delete messages
-  - Streaming & regenerate
-  - Manual & hidden responses
-  - Swipe left/right on messages
-  - Live token and history stats
+    - Auto character response
+    - Edit/delete messages
+    - Streaming & regenerate
+    - Manual & hidden responses
+    - Swipe left/right on messages
+    - Live token and history stats
 - **Prompt Statistics:** View compiled prompts before sending
 - **Context Templates:** Handlebar-based, customizable prompt formats
 - **Mobile-First Design:** Fully responsive, works great on phones and tablets
@@ -138,7 +138,6 @@ Linux, MacOS and Windows are supported!
 3. `npm run dev` to start the dev server, or `npm run dev:host`
 4. Visit [http://localhost:5173](http://localhost:5173)
 
-
 ---
 
 ## 📚 Documentation & Help
@@ -149,46 +148,55 @@ Serene Pub uses Handlebars-style templates to build highly customizable prompts.
 
 ````hbs
 {{#systemBlock}}
-Instructions:
-"""
-{{#if currentDate}} 
-The current date in the story is {{{currentDate}}}.
+	Instructions: """
+	{{#if currentDate}}
+		The current date in the story is {{{currentDate}}}.
+	{{/if}}
+
+	{{{instructions}}}
+	""" Assistant Characters (AI-controlled): ```json
+	{{{characters}}}
+	``` User Characters (player-controlled): ```json
+	{{{personas}}}
+	``` Scenario: """ {{{scenario}}} """
+
+	{{#if worldLore}}
+		World lore: ```json
+		{{{worldLore}}}
+		```
+	{{/if}}
+
+	{{#if history}}
+		Story history: ```json
+		{{{history}}}
+		```
+	{{/if}}
+
+	{{#if exampleDialogue}}
+		{{{exampleDialogue}}}
+	{{/if}}
+{{/systemBlock}}
+
+{{#each chatMessages}}
+	{{#if (eq role "assistant")}}
+		{{#assistantBlock}}
+			{{{name}}}: {{{message}}}
+		{{/assistantBlock}}
+	{{/if}}
+
+	{{#if (eq role "user")}}
+		{{#userBlock}}
+			{{{name}}}: {{{message}}}
+		{{/userBlock}}
+	{{/if}}
+{{/each}}
+
+{{#if postHistoryInstructions}}
+	{{#systemBlock}}
+		{{{postHistoryInstructions}}}
+	{{/systemBlock}}
 {{/if}}
-
-{{{instructions}}}
-"""
-
-Assistant Characters (AI-controlled):
-```json
-{{{characters}}}
-```
-
-User Characters (player-controlled):
-```json
-{{{personas}}}
-```
-
-Scenario: """ {{{scenario}}} """
-
-{{#if worldLore}} World lore:
-```json
-{{{worldLore}}}
-```
-{{/if}}
-
-{{#if history}} Story history:
-```json
-{{{history}}}
-```
-{{/if}}
-
-{{#if exampleDialogue}} {{{exampleDialogue}}} {{/if}} {{/systemBlock}}
-
-{{#each chatMessages}} {{#if (eq role "assistant")}} {{#assistantBlock}} {{{name}}}: {{{message}}} {{/assistantBlock}} {{/if}} {{#if (eq role "user")}} {{#userBlock}} {{{name}}}: {{{message}}} {{/userBlock}} {{/if}} {{/each}}
-
-{{#if postHistoryInstructions}} {{#systemBlock}} {{{postHistoryInstructions}}} {{/systemBlock}} {{/if}}
 ````
-
 
 ### 📝 Prompt Configuration
 
@@ -196,9 +204,9 @@ Prompt Configurations define the tone and behavior of the AI's responses. These 
 
 Example:
 
-````text
+```text
 Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions. Keep the story immersive and engaging.
-````
+```
 
 ### 👤 Personas
 
@@ -217,9 +225,9 @@ Lorebooks+ are advanced worldbuilding and context management tools that let you 
 
 - **Character Bindings:** Hotswappable characters linked in the lorebook. Dynamically update character and persona names in lorebook entries, so the right information is injected into the prompt for the current cast of your chat.
 - **World Lore:** Store and organize facts, rules, and background information about your world, setting, or universe. World lore can be automatically included in relevant chats.
-  - *Imported lorebooks/world books are inserted into "world lore" for easy access and editing.*
+    - _Imported lorebooks/world books are inserted into "world lore" for easy access and editing._
 - **Character Lore:** Linked to character bindings and extends the character profiles. Maintain detailed backstories, traits, and secrets for each character, ensuring the AI stays consistent and in-character.
-- **History:** Track and inject important story events, chat history, or evolving facts as the narrative progresses. *History entries are experimental and may change in future releases.* This helps maintain continuity and depth in long-running stories.
+- **History:** Track and inject important story events, chat history, or evolving facts as the narrative progresses. _History entries are experimental and may change in future releases._ This helps maintain continuity and depth in long-running stories.
 
 To use a lorebook, select it when creating or editing a chat. Lorebook entries are triggered by keywords, but may also be pinned to ensure they are always present in the prompt. Vectorization will be added in the future as a replacement for keyword engineering, making context injection smarter and more flexible.
 
@@ -228,11 +236,13 @@ Lorebooks+ make it easy to manage complex worlds, keep characters consistent, an
 ### 💬 Chats
 
 Create a chat by adding one or more characters and at least one persona. You can:
+
 - Optionally add a scenario to tell the AI what the current objective is. In non-group chats, this overrides character scenarios.
 - Enable or disable characters from responding automatically in group chats for more control over the conversation flow.
 - Optionally select a lorebook to inject world, character, or historical lore into your chat for richer context and storytelling.
 
 ### 🏷️ Tags (Coming in 0.4.0)
+
 Tags are a planned feature for the 0.4.0 release. Tags will help you organize and filter your content, making it easier to manage complex stories and worlds.
 
 ### 📂 Data Location
@@ -251,6 +261,7 @@ Your data is saved locally in your OS-specific app directory:
 
 * Save your configuration to apply changes.
 * Default templates marked with `*` cannot be edited directly; clone to customize.
+
 - Ensure you are editing a cloned configuration, not the defaults.
 
 ### 🔌 Connections
@@ -264,6 +275,7 @@ Serene Pub supports a variety of AI model connections, both local and cloud-base
 ---
 
 ## 🗺️ Planned Features
+
 - 🏷️ Tags (coming in 0.4.0)
 - 🧠 Vectorization
 - 🔌 More API connection types
@@ -271,6 +283,7 @@ Serene Pub supports a variety of AI model connections, both local and cloud-base
 - 🦙 Ollama Manager UI: Manage, download, and update Ollama models directly from the app
 
 ## 💡 Considered Features
+
 - 👥 Multi-user logins & multi-user group chats
 - 📝 Chat summarizing
 - 🖼️ User/chat backgrounds
@@ -285,9 +298,11 @@ Serene Pub supports a variety of AI model connections, both local and cloud-base
 ## 🔄 How to Update
 
 **Updating from 0.2.x, 0.3.x:**
+
 - Download the latest version and extract to your desired location and run. Your data will automatically be copied from the old database to the new, more powerful database.
 
 **Updating to future versions:**
+
 - Download the latest version and extract to your desired location and run (it doesn't matter where). Run the application. Any database migrations will be performed automatically.
 
 ---

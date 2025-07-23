@@ -43,7 +43,7 @@
 }
 
 .rendered-chat-message-content p {
-	word-wrap:break-word;
+	word-wrap: break-word;
 }
 
 .rendered-chat-message-content p + p {
@@ -64,13 +64,13 @@
 
 .tiptap.ProseMirror {
 	/* padding: 0.33em; */
-	@apply rounded-lg py-2 px-2 min-h-[6em];
+	@apply min-h-[6em] rounded-lg px-2 py-2;
 }
 
 .tiptap p.is-editor-empty:first-child::before {
-  color: #adb5bd;
-  content: attr(data-placeholder);
-  float: left;
-  height: 0;
-  pointer-events: none;
+	color: #adb5bd;
+	content: attr(data-placeholder);
+	float: left;
+	height: 0;
+	pointer-events: none;
 }

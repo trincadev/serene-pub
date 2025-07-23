@@ -220,23 +220,34 @@
 			"samplingConfigsList",
 			(message: Sockets.SamplingConfigList.Response) => {
 				samplingConfigsList = message.samplingConfigsList
-				if (!userCtx.user.activeSamplingConfigId &&
-					samplingConfigsList.length > 0) {
+				if (
+					!userCtx.user.activeSamplingConfigId &&
+					samplingConfigsList.length > 0
+				) {
 					socket.emit("setUserActiveSamplingConfig", {
 						id: samplingConfigsList[0].id
 					})
 				}
 			}
 		)
-		socket.on("deleteSamplingConfig", (message: Sockets.DeleteSamplingConfig.Response) => {
-			toaster.success({title: "Sampling Config Deleted"})
-		})
-		socket.on("updateSamplingConfig", (message: Sockets.UpdateSamplingConfig.Response) => {
-			toaster.success({title: "Sampling Config Updated"})
-		})
-		socket.on("createSamplingConfig", (message: Sockets.CreateSamplingConfig.Response) => {
-			toaster.success({title: "Sampling Config Created"})
-		})
+		socket.on(
+			"deleteSamplingConfig",
+			(message: Sockets.DeleteSamplingConfig.Response) => {
+				toaster.success({ title: "Sampling Config Deleted" })
+			}
+		)
+		socket.on(
+			"updateSamplingConfig",
+			(message: Sockets.UpdateSamplingConfig.Response) => {
+				toaster.success({ title: "Sampling Config Updated" })
+			}
+		)
+		socket.on(
+			"createSamplingConfig",
+			(message: Sockets.CreateSamplingConfig.Response) => {
+				toaster.success({ title: "Sampling Config Created" })
+			}
+		)
 
 		socket.emit("sampling", { id: userCtx.user.activeSamplingConfigId })
 		socket.emit("samplingConfigsList", {})
@@ -251,11 +262,11 @@
 	})
 </script>
 
-<div class="text-foreground p-4 min-h-100">
+<div class="text-foreground min-h-100 p-4">
 	{#if showSelectSamplingConfig}
 		<!-- ENABLE / DISABLE WEIGHTS -->
 		<div
-			class="animate-fade-in rounded-lg border p-2 shadow-lg border-surface-500/25 min-h-full"
+			class="animate-fade-in border-surface-500/25 min-h-full rounded-lg border p-2 shadow-lg"
 		>
 			<button
 				type="button"
@@ -320,7 +331,7 @@
 				class="select select-sm bg-background border-muted rounded border"
 				onchange={handleSelectChange}
 				bind:value={userCtx.user.activeSamplingConfigId}
-                disabled={unsavedChanges}
+				disabled={unsavedChanges}
 			>
 				{#each samplingConfigsList.filter((w) => w.isImmutable) as w}
 					<option value={w.id}>
@@ -340,7 +351,7 @@
 				class="btn btn-sm preset-tonal-primary w-full"
 				onclick={handleSelectSamplingConfig}
 			>
-            <Icons.CheckSquare size={16} />
+				<Icons.CheckSquare size={16} />
 				Select Samplers
 			</button>
 			<button
@@ -399,7 +410,7 @@
 											step={meta.step}
 											bind:value={sampling![key]}
 											id={key + "-manual"}
-											class="border-primary input w-16 rounded border "
+											class="border-primary input w-16 rounded border"
 											onblur={() => (editingField = null)}
 											onkeydown={(e) => {
 												if (

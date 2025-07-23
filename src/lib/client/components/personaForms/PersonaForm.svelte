@@ -2,6 +2,7 @@
 	import * as Icons from "@lucide/svelte"
 	import * as skio from "sveltekit-io"
 	import { onDestroy, onMount } from "svelte"
+	import { z } from "zod"
 	import PersonaUnsavedChangesModal from "../modals/PersonaUnsavedChangesModal.svelte"
 	import Avatar from "../Avatar.svelte"
 
@@ -14,7 +15,20 @@
 		position?: number
 		connections?: string
 		_avatarFile?: File | undefined
+		_avatar?: string
 	}
+
+	// Zod validation schema
+	const personaSchema = z.object({
+		name: z.string().min(1, "Name is required").trim(),
+		description: z.string().min(1, "Description is required").trim(),
+		avatar: z.string().optional(),
+		isDefault: z.boolean().optional(),
+		position: z.number().optional(),
+		connections: z.string().optional()
+	})
+
+	type ValidationErrors = Record<string, string>
 
 	export interface Props {
 		personaId?: number
@@ -25,12 +39,13 @@
 
 	let {
 		personaId,
-		isSafeToClose = $bindable(),
+		isSafeToClose: hasChanges = $bindable(),
 		closeForm = $bindable(),
 		onCancel = $bindable()
 	}: Props = $props()
 
 	const socket = skio.get()
+
 	let editPersonaData: EditPersonaData = $state({
 		id: undefined,
 		name: "",
@@ -39,22 +54,54 @@
 		isDefault: false,
 		position: 0,
 		connections: "",
-		_avatarFile: undefined
+		_avatarFile: undefined,
+		_avatar: ""
 	})
-	let originalPersonaData: EditPersonaData = $state({ ...editPersonaData })
-	let showUnsavedChangesModal = $state(false)
-	let confirmCloseFormResolve: ((v: boolean) => void) | null = null
+	let originalPersonaData: EditPersonaData = $state({
+		id: undefined,
+		name: "",
+		avatar: "",
+		description: "",
+		isDefault: false,
+		position: 0,
+		connections: "",
+		_avatarFile: undefined,
+		_avatar: ""
+	})
+	let showCancelModal = $state(false)
+	let validationErrors: ValidationErrors = $state({})
+	let formContainer: HTMLDivElement
+	let validationTimeout: NodeJS.Timeout
 
 	let mode: "create" | "edit" = $derived.by(() =>
 		!!editPersonaData.id ? "edit" : "create"
 	)
-	let isDataValid = $derived(!!editPersonaData?.name?.trim())
 
-	$effect(() => {
-		isSafeToClose =
-			JSON.stringify(editPersonaData) ===
-			JSON.stringify(originalPersonaData)
-	})
+	// Events: avatarChange, save, cancel
+	function validateFormDebounced() {
+		clearTimeout(validationTimeout)
+		validationTimeout = setTimeout(() => {
+			validateForm()
+		}, 300) // 300ms debounce
+	}
+
+	function validateForm(): boolean {
+		const result = personaSchema.safeParse(editPersonaData)
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
+	}
 
 	function handleAvatarChange(e: Event) {
 		const input = e.target as HTMLInputElement | null
@@ -72,6 +119,12 @@
 	}
 
 	function onSave() {
+		// Validate the form first
+		if (!validateForm()) {
+			// Validation failed, errors are already set in validationErrors
+			return
+		}
+
 		if (mode === "create") {
 			handleCreate()
 		} else if (mode === "edit" && editPersonaData.id) {
@@ -83,6 +136,7 @@
 		const newPersona = { ...editPersonaData }
 		const avatarFile = newPersona._avatarFile
 		delete newPersona._avatarFile
+		delete newPersona._avatar
 		socket.emit("createPersona", {
 			persona: newPersona,
 			avatarFile
@@ -93,107 +147,171 @@
 		const updatedPersona = { ...editPersonaData }
 		const avatarFile = updatedPersona._avatarFile
 		delete updatedPersona._avatarFile
+		delete updatedPersona._avatar
 		socket.emit("updatePersona", {
 			persona: updatedPersona,
 			avatarFile
 		})
 	}
 
-	async function closeFormWithCheck() {
-		if (!isSafeToClose) {
-			showUnsavedChangesModal = true
-			return new Promise<boolean>((resolve) => {
-				confirmCloseFormResolve = resolve
-			})
-		} else {
-			closeForm()
-			return true
-		}
-	}
-
-	function handleUnsavedChangesOnOpenChange(e: { open: boolean }) {
+	function handleCancelModalOnOpenChange(e: { open: boolean }) {
 		if (!e.open) {
-			showUnsavedChangesModal = false
-			if (confirmCloseFormResolve) confirmCloseFormResolve(false)
+			showCancelModal = false
 		}
-	}
-
-	function handleCloseModalDiscard() {
-		showUnsavedChangesModal = false
-		isSafeToClose = true
-		if (confirmCloseFormResolve) confirmCloseFormResolve(true)
-		closeForm()
-	}
-
-	function handleCloseModalCancel() {
-		showUnsavedChangesModal = false
-		if (confirmCloseFormResolve) confirmCloseFormResolve(false)
 	}
 
 	function handleCancel() {
-		closeFormWithCheck()
+		if (hasChanges) {
+			showCancelModal = true
+		} else {
+			closeForm()
+		}
 	}
+
+	function handleCancelModalDiscard() {
+		showCancelModal = false
+		closeForm()
+	}
+
+	function handleCancelModalCancel() {
+		showCancelModal = false
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		// Only handle shortcuts if this form is focused or contains the active element
+		if (!formContainer?.contains(document.activeElement)) return
+
+		// Ctrl+S / Cmd+S to save
+		if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+			e.preventDefault()
+			onSave()
+		}
+		// Escape to cancel
+		else if (e.key === "Escape") {
+			e.preventDefault()
+			handleCancel()
+		}
+	}
+
+	// Add debounced validation effect
+	$effect(() => {
+		// Only validate if we have some data and it's not the initial empty state
+		if (
+			editPersonaData.name ||
+			editPersonaData.description ||
+			Object.keys(validationErrors).length > 0
+		) {
+			validateFormDebounced()
+		}
+	})
+
+	$effect(() => {
+		hasChanges =
+			JSON.stringify(editPersonaData) !==
+			JSON.stringify(originalPersonaData)
+	})
 
 	onMount(() => {
 		onCancel = handleCancel
+
+		// Add keyboard event listener
+		document.addEventListener("keydown", handleKeydown)
+
 		socket.on("createPersona", (res: Sockets.CreatePersona.Response) => {
-			isSafeToClose = true
-			closeForm()
+			if (!res.error) {
+				validationErrors = {} // Clear any validation errors on success
+				closeForm()
+			}
 		})
 
 		socket.on("updatePersona", (res: Sockets.UpdatePersona.Response) => {
-			isSafeToClose = true
-			closeForm()
+			if (!res.error) {
+				validationErrors = {} // Clear any validation errors on success
+				closeForm()
+			}
 		})
+
 		if (personaId) {
 			socket.once("persona", (message: Sockets.Persona.Response) => {
 				if (message.persona) {
-					Object.assign(editPersonaData, message.persona)
-					Object.assign(originalPersonaData, message.persona)
+					const personaData = { ...message.persona }
+					editPersonaData = {
+						...editPersonaData,
+						...personaData,
+						avatar: personaData.avatar ?? "",
+						description: personaData.description ?? "",
+						_avatar: ""
+					}
+					originalPersonaData = { ...editPersonaData }
 				}
 			})
 			socket.emit("persona", { id: personaId })
 		}
 	})
+
+	onDestroy(() => {
+		socket.off("createPersona")
+		socket.off("updatePersona")
+		socket.off("persona")
+
+		// Remove keyboard event listener and clear timeout
+		document.removeEventListener("keydown", handleKeydown)
+		clearTimeout(validationTimeout)
+	})
 </script>
 
 <div
 	class="h-full rounded-lg"
+	bind:this={formContainer}
+	role="dialog"
+	aria-labelledby="form-title"
+	aria-modal="false"
 >
-	<h2 class="mb-4 text-lg font-bold">
-		{mode === "edit" ? `Edit: ${editPersonaData.name}` : "Create Persona"}
-	</h2>
-	<div class="mt-4 mb-4 flex gap-2">
+	<h1 class="mb-4 text-lg font-bold" id="form-title">
+		{mode === "edit"
+			? `Edit: ${editPersonaData.name || "Persona"}`
+			: "Create Persona"}
+	</h1>
+	<div class="mt-4 mb-4 flex gap-2" role="group" aria-label="Form actions">
 		<button
 			type="button"
 			class="btn btn-sm preset-filled-surface-500 w-full"
 			onclick={handleCancel}
+			aria-describedby="form-title"
 		>
 			Cancel
 		</button>
 		<button
 			type="button"
 			class="btn btn-sm preset-filled-success-500 w-full"
+			class:preset-filled-success-500={hasChanges}
+			class:preset-tonal-success={!hasChanges}
 			onclick={onSave}
-			disabled={!isDataValid || isSafeToClose}
+			aria-describedby="form-title"
+			aria-label={`${mode === "edit" ? "Update" : "Create"} persona${hasChanges ? " (has unsaved changes)" : ""}`}
 		>
-			<Icons.Save size={16} />
+			<Icons.Save size={16} aria-hidden="true" />
 			{mode === "edit" ? "Update" : "Create"}
 		</button>
 	</div>
-	<div class="flex flex-col gap-4">
-		<div class="flex items-center gap-4">
-			<span>
+	<div class="flex flex-col gap-4" role="form" aria-labelledby="form-title">
+		<fieldset
+			class="flex items-center gap-4"
+			aria-labelledby="avatar-section"
+		>
+			<legend id="avatar-section" class="sr-only">Avatar Settings</legend>
+			<div aria-label="Current avatar preview">
 				<Avatar
 					src={editPersonaData._avatar || editPersonaData.avatar}
 					char={editPersonaData}
 				/>
-			</span>
+			</div>
 			<div class="flex w-full flex-col gap-2">
 				<div class="flex w-full items-center justify-center">
 					<label
 						for="dropzone-file"
-						class="flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-800"
+						class="flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-800"
+						aria-describedby="avatar-help"
 					>
 						<div
 							class="flex w-full flex-col items-center justify-center"
@@ -220,7 +338,12 @@
 							class="hidden"
 							accept="image/*"
 							onchange={handleAvatarChange}
+							aria-describedby="avatar-help"
 						/>
+						<div id="avatar-help" class="sr-only">
+							Upload an image file for the persona avatar.
+							Supported formats: JPG, PNG, GIF
+						</div>
 					</label>
 				</div>
 				<button
@@ -231,20 +354,23 @@
 						editPersonaData._avatar = ""
 					}}
 					disabled={!editPersonaData._avatarFile}
+					aria-label="Clear selected avatar image"
 				>
 					Clear Selection
 				</button>
 			</div>
-		</div>
-		<div class="flex flex-col gap-1">
+		</fieldset>
+		<fieldset class="flex flex-col gap-1">
 			<label class="flex gap-1 font-semibold" for="personaName">
 				Name* <span
 					class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
 					title="This field will be visible in prompts"
+					aria-label="This field will be visible in prompts"
 				>
 					<Icons.ScanEye
 						size={16}
 						class="relative top-[1px] inline"
+						aria-hidden="true"
 					/>
 				</span>
 			</label>
@@ -252,35 +378,98 @@
 				id="personaName"
 				type="text"
 				bind:value={editPersonaData.name}
-				class="input"
+				class="input {validationErrors.name
+					? 'border-red-500 focus:border-red-500'
+					: ''}"
+				oninput={() => {
+					// Clear validation error when user starts typing
+					if (validationErrors.name) {
+						const { name, ...rest } = validationErrors
+						validationErrors = rest
+					}
+				}}
+				aria-required="true"
+				aria-invalid={validationErrors.name ? "true" : "false"}
+				aria-describedby={validationErrors.name
+					? "name-error"
+					: undefined}
 			/>
-		</div>
-		<div class="flex flex-col gap-2">
+			{#if validationErrors.name}
+				<p
+					class="mt-1 text-sm text-red-500"
+					id="name-error"
+					role="alert"
+				>
+					{validationErrors.name}
+				</p>
+			{/if}
+		</fieldset>
+		<fieldset class="flex flex-col gap-2">
 			<label class="flex gap-1 font-semibold" for="personaDescription">
-				Description <span
+				Description* <span
 					class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
 					title="This field will be visible in prompts"
+					aria-label="This field will be visible in prompts"
 				>
 					<Icons.ScanEye
 						size={16}
 						class="relative top-[1px] inline"
+						aria-hidden="true"
 					/>
 				</span>
 			</label>
 			<textarea
 				id="personaDescription"
-				rows="3"
+				rows="8"
 				bind:value={editPersonaData.description}
-				class="input"
+				class="input {validationErrors.description
+					? 'border-red-500 focus:border-red-500'
+					: ''}"
 				placeholder="Description..."
+				aria-label="Persona description"
+				aria-required="true"
+				aria-invalid={validationErrors.description ? "true" : "false"}
+				aria-describedby={validationErrors.description
+					? "description-error"
+					: undefined}
+				oninput={() => {
+					// Clear validation error when user starts typing
+					if (validationErrors.description) {
+						const { description, ...rest } = validationErrors
+						validationErrors = rest
+					}
+				}}
 			></textarea>
-		</div>
+			{#if validationErrors.description}
+				<p
+					class="mt-1 text-sm text-red-500"
+					id="description-error"
+					role="alert"
+				>
+					{validationErrors.description}
+				</p>
+			{/if}
+		</fieldset>
 	</div>
 </div>
 
 <PersonaUnsavedChangesModal
-	open={showUnsavedChangesModal}
-	onOpenChange={handleUnsavedChangesOnOpenChange}
-	onConfirm={handleCloseModalDiscard}
-	onCancel={handleCloseModalCancel}
+	open={showCancelModal}
+	onOpenChange={handleCancelModalOnOpenChange}
+	onConfirm={handleCancelModalDiscard}
+	onCancel={handleCancelModalCancel}
 />
+
+<style>
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+</style>

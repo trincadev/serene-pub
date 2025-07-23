@@ -195,7 +195,7 @@
 		class="bg-surface-100-900 relative h-full max-h-[100dvh] w-full justify-between"
 	>
 		<div
-			class="relative flex h-svh min-w-full max-w-full flex-1 flex-col lg:flex-row lg:gap-2 overflow-hidden"
+			class="relative flex h-svh max-w-full min-w-full flex-1 flex-col overflow-hidden lg:flex-row lg:gap-2"
 		>
 			<!-- Left Sidebar -->
 			<aside class="desktop-sidebar">
@@ -248,7 +248,7 @@
 				{/if}
 			</aside>
 			<!-- Main Content -->
-			<main class="flex flex-col h-full overflow-hidden">
+			<main class="flex h-full flex-col overflow-hidden">
 				<Header />
 				<div class="flex-1 overflow-auto">
 					{@render children?.()}
@@ -428,6 +428,6 @@
 	/* w-[25%] max-w-[25%] */
 
 	.desktop-sidebar {
-		@apply hidden min-h-full max-h-full basis-1/4 overflow-x-hidden lg:block py-1;
+		@apply hidden max-h-full min-h-full basis-1/4 overflow-x-hidden py-1 lg:block;
 	}
 </style>

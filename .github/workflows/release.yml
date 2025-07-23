@@ -1,99 +1,98 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
-      - 'v*.*.*-alpha'
+    push:
+        tags:
+            - "v*.*.*"
+            - "v*.*.*-alpha"
 
 jobs:
-  build-and-release:
-    strategy:
-      matrix:
-        include:
-          - target: linux-x64
-            os: ubuntu-latest
-          - target: linux-arm64
-            os: ubuntu-latest
-          - target: linux-arm
-            os: ubuntu-latest
-          - target: linux-ppc64
-            os: ubuntu-latest
-          # - target: macos-x64
-          #   os: macos-latest
-          - target: macos-arm64
-            os: macos-latest
-          - target: windows-x64
-            os: windows-latest
-          - target: windows-arm64
-            os: windows-latest
-    runs-on: ${{ matrix.os }}
-    env:
-      NODE_OPTIONS: '--max-old-space-size=4096'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: |
-          node -e "const fs = require('fs'); try { fs.unlinkSync('package-lock.json'); } catch (e) { /* ignore */ }"
-          npm install
-
-      - name: Prepare SvelteKit
-        run: npx @sveltejs/kit sync
-
-      - name: Build app
-        run: npm run build
-
-      - name: Prepare production dependencies
-        shell: bash
-        run: |
-          # Install production dependencies
-          npm install --production
-          npm rebuild
-          
-          # Clean node_modules with modclean, preserving license files
-          npx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"
-
-      - name: Bundle for ${{ matrix.target }}
-        run: node scripts/bundle-dist.js ${{ matrix.target }}
-
-      - name: Zip dist directory (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          cd dist
-          $distDir = Get-ChildItem -Directory -Name "serene-pub-*-${{ matrix.target }}" | Select-Object -First 1
-          if (-not $distDir) {
-            Write-Error "No directory found matching serene-pub-*-${{ matrix.target }}"
-            Get-ChildItem
-            exit 1
-          }
-          Compress-Archive -Path $distDir -DestinationPath "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip"
-
-      - name: Zip dist directory (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          cd dist
-          DIST_DIR=$(ls -d serene-pub-*-${{ matrix.target }} 2>/dev/null | head -1)
-          if [ -z "$DIST_DIR" ]; then
-            echo "Error: No directory found matching serene-pub-*-${{ matrix.target }}"
-            ls -la
-            exit 1
-          fi
-          zip -r "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip" "$DIST_DIR"
-
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          files: serene-pub-*.zip
-          prerelease: ${{ contains(github.ref, 'alpha') }}
+    build-and-release:
+        strategy:
+            matrix:
+                include:
+                    - target: linux-x64
+                      os: ubuntu-latest
+                    - target: linux-arm64
+                      os: ubuntu-latest
+                    - target: linux-arm
+                      os: ubuntu-latest
+                    - target: linux-ppc64
+                      os: ubuntu-latest
+                    # - target: macos-x64
+                    #   os: macos-latest
+                    - target: macos-arm64
+                      os: macos-latest
+                    - target: windows-x64
+                      os: windows-latest
+                    - target: windows-arm64
+                      os: windows-latest
+        runs-on: ${{ matrix.os }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            NODE_OPTIONS: "--max-old-space-size=4096"
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+
+            - name: Install dependencies
+              run: |
+                  node -e "const fs = require('fs'); try { fs.unlinkSync('package-lock.json'); } catch (e) { /* ignore */ }"
+                  npm install
+
+            - name: Prepare SvelteKit
+              run: npx @sveltejs/kit sync
+
+            - name: Build app
+              run: npm run build
+
+            - name: Prepare production dependencies
+              shell: bash
+              run: |
+                  # Install production dependencies
+                  npm install --production
+                  npm rebuild
+
+                  # Clean node_modules with modclean, preserving license files
+                  npx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"
+
+            - name: Bundle for ${{ matrix.target }}
+              run: node scripts/bundle-dist.js ${{ matrix.target }}
+
+            - name: Zip dist directory (Windows)
+              if: runner.os == 'Windows'
+              shell: pwsh
+              run: |
+                  cd dist
+                  $distDir = Get-ChildItem -Directory -Name "serene-pub-*-${{ matrix.target }}" | Select-Object -First 1
+                  if (-not $distDir) {
+                    Write-Error "No directory found matching serene-pub-*-${{ matrix.target }}"
+                    Get-ChildItem
+                    exit 1
+                  }
+                  Compress-Archive -Path $distDir -DestinationPath "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip"
+
+            - name: Zip dist directory (Unix)
+              if: runner.os != 'Windows'
+              shell: bash
+              run: |
+                  cd dist
+                  DIST_DIR=$(ls -d serene-pub-*-${{ matrix.target }} 2>/dev/null | head -1)
+                  if [ -z "$DIST_DIR" ]; then
+                    echo "Error: No directory found matching serene-pub-*-${{ matrix.target }}"
+                    ls -la
+                    exit 1
+                  fi
+                  zip -r "../serene-pub-${{ github.ref_name }}-${{ matrix.target }}.zip" "$DIST_DIR"
+
+            - name: Upload release assets
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: serene-pub-*.zip
+                  prerelease: ${{ contains(github.ref, 'alpha') }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

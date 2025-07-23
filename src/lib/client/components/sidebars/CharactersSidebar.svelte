@@ -269,7 +269,9 @@
 		</div>
 		<div class="flex flex-col gap-2">
 			{#if filteredCharacters.length === 0}
-				<div class="text-muted-foreground py-8 text-center w-100 relative">
+				<div
+					class="text-muted-foreground relative w-100 py-8 text-center"
+				>
 					No characters found.
 				</div>
 			{:else}
@@ -279,26 +281,29 @@
 						id={c.id}
 						onclick={() => handleCharacterClick(c)}
 						contentTitle="Go to character chats"
-						classes={c.isFavorite ? "border border-primary-500" : ""}
+						classes={c.isFavorite
+							? "border border-primary-500"
+							: ""}
 					>
 						{#snippet content()}
-						<Avatar
-									src={c.avatar || ""}
-									size="w-[4em] h-[4em] min-w-[4em] min-h-[4em]"
-									imageClasses="object-cover"
-									name={c.nickname || c.name!}
-								>
-									<Icons.User size={36} />
-								</Avatar>
-							<div class="flex gap-2 relative flex-1 min-w-0">
-								
-								<div class="flex-1 relative min-w-0">
-									<div class="truncate font-semibold text-left">
+							<Avatar
+								src={c.avatar || ""}
+								size="w-[4em] h-[4em] min-w-[4em] min-h-[4em]"
+								imageClasses="object-cover"
+								name={c.nickname || c.name!}
+							>
+								<Icons.User size={36} />
+							</Avatar>
+							<div class="relative flex min-w-0 flex-1 gap-2">
+								<div class="relative min-w-0 flex-1">
+									<div
+										class="truncate text-left font-semibold"
+									>
 										{c.nickname || c.name}
 									</div>
 									{#if c.description}
 										<div
-											class="text-muted-foreground line-clamp-2 text-xs text-left"
+											class="text-muted-foreground line-clamp-2 text-left text-xs"
 										>
 											{c.description}
 										</div>

@@ -12,9 +12,12 @@
 
 	const socket = skio.get()
 	let availableLMStudioModels: { model: string; name: string }[] = $state([])
-	let testResult: { ok: boolean; error?: string | null; models?: any[] } | null =
-		$state(null)
-	
+	let testResult: {
+		ok: boolean
+		error?: string | null
+		models?: any[]
+	} | null = $state(null)
+
 	// Initialize extraFields from connection.extraJson, but don't make it reactive to connection changes
 	let extraFields = $state({
 		stream: connection.extraJson?.stream ?? true,
@@ -202,7 +205,9 @@
 				/>
 			</div>
 			<div class="mt-2 flex flex-col gap-1">
-				<label class="font-semibold" for="ttl">Keep Alive (seconds)</label>
+				<label class="font-semibold" for="ttl">
+					Keep Alive (seconds)
+				</label>
 				<input
 					id="ttl"
 					type="number"

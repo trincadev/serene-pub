@@ -43,6 +43,6 @@ export class Theme {
 		[Theme.TERMINUS, "Terminus"],
 		[Theme.VINTAGE, "Vintage"],
 		[Theme.VOX, "Vox"],
-		[Theme.WINTRY, "Wintry"],
+		[Theme.WINTRY, "Wintry"]
 	]
 }

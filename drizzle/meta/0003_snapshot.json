@@ -1,6 +1,6 @@
 {
-	"id": "d28cf6bd-dbb5-443b-bfe2-c5318cb95e87",
-	"prevId": "00000000-0000-0000-0000-000000000000",
+	"id": "a539d268-d2fc-48be-bd9a-cd06f1cd196d",
+	"prevId": "022d59d5-e880-4947-9567-562fb6b092cb",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -271,9 +271,10 @@
 				},
 				"example_dialogues": {
 					"name": "example_dialogues",
-					"type": "text",
+					"type": "json",
 					"primaryKey": false,
-					"notNull": false
+					"notNull": true,
+					"default": "'[]'::json"
 				},
 				"metadata": {
 					"name": "metadata",
@@ -415,7 +416,8 @@
 					"name": "is_active",
 					"type": "boolean",
 					"primaryKey": false,
-					"notNull": true
+					"notNull": true,
+					"default": true
 				}
 			},
 			"indexes": {
@@ -1727,6 +1729,20 @@
 					"type": "integer",
 					"primaryKey": false,
 					"notNull": false
+				},
+				"theme": {
+					"name": "theme",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "'hamlindigo'"
+				},
+				"dark_mode": {
+					"name": "dark_mode",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": true
 				}
 			},
 			"indexes": {},

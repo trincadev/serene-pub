@@ -2,7 +2,10 @@
 	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import { getContext, onMount } from "svelte"
 	import { Theme } from "$lib/client/consts/Theme"
-	import { appVersion, appVersionDisplay } from "$lib/shared/constants/version"
+	import {
+		appVersion,
+		appVersionDisplay
+	} from "$lib/shared/constants/version"
 	import * as Icons from "@lucide/svelte"
 	import { page } from "$app/state"
 
@@ -43,12 +46,11 @@
 
 <div class="p-4">
 	<div class="flex flex-col gap-4">
-
 		{#if page.data?.isNewerReleaseAvailable}
-			<div class="w-full flex flex-col items-center justify-between gap-4 p-3 mb-2 rounded bg-surface-200-800 text-center">
-				<p>
-					A newer version of Serene Pub is available!
-				</p>
+			<div
+				class="bg-surface-200-800 mb-2 flex w-full flex-col items-center justify-between gap-4 rounded p-3 text-center"
+			>
+				<p>A newer version of Serene Pub is available!</p>
 				<div class="mt-2">
 					<a
 						href="https://github.com/doolijb/serene-pub/releases"
@@ -87,24 +89,27 @@
 		</div>
 	</div>
 
-	<div class="about-section mt-6 rounded-lg bg-surface-500/25 p-4 shadow-md flex flex-col gap-2 items-start">
-
-		<div class="flex items-center gap-2 mb-1">
+	<div
+		class="about-section bg-surface-500/25 mt-6 flex flex-col items-start gap-2 rounded-lg p-4 shadow-md"
+	>
+		<div class="mb-1 flex items-center gap-2">
 			<Icons.Info size={20} class="text-primary-500" />
 			<span class="text-lg font-bold tracking-wide">Serene Pub</span>
-			<span class="ml-2 px-2 py-0.5 rounded bg-primary-200-800 text-primary-700 dark:text-primary-200 text-xs font-mono">
+			<span
+				class="bg-primary-200-800 text-primary-700 dark:text-primary-200 ml-2 rounded px-2 py-0.5 font-mono text-xs"
+			>
 				{appVersionDisplay}
 			</span>
 		</div>
-		<div class="text-xs text-surface-500 mb-2">
+		<div class="text-surface-500 mb-2 text-xs">
 			Build: <span class="font-mono">{appVersion}</span>
 		</div>
-		<div class="flex flex-wrap gap-3 items-center">
+		<div class="flex flex-wrap items-center gap-3">
 			<a
 				href="https://github.com/doolijb/serene-pub"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="btn gap-1 preset-filled-primary-500"
+				class="btn preset-filled-primary-500 gap-1"
 			>
 				<Icons.GitBranch size={16} />
 				<span>Repository</span>
@@ -128,10 +133,19 @@
 				<span>Discussions</span>
 			</a>
 		</div>
-		<div class="text-xs text-muted-foreground mt-2">
-			&copy; {new Date().getFullYear()} Serene Pub (<a href="https://github.com/doolijb" target="_blank" rel="noopener noreferrer" class="hover:underline text-primary-500">Jody Doolittle</a>).
+		<div class="text-muted-foreground mt-2 text-xs">
+			&copy; {new Date().getFullYear()} Serene Pub (
+			<a
+				href="https://github.com/doolijb"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="text-primary-500 hover:underline"
+			>
+				Jody Doolittle
+			</a>
+			).
 		</div>
-		<div class="text-xs text-muted-foreground mt-2">
+		<div class="text-muted-foreground mt-2 text-xs">
 			Distributed under the AGPL-3.0 License.
 		</div>
 	</div>

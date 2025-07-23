@@ -15,9 +15,18 @@ import { PromptFormats } from "$lib/shared/constants/PromptFormats"
 // Import modular components
 import { InterpolationEngine } from "./InterpolationEngine"
 import { ContentInfillEngine } from "./ContentInfillEngine"
-import type { LoreMatchingStrategy, MatchingStrategyConfig } from "./LoreMatchingStrategies"
-import { MatchingStrategyFactory, KeywordMatchingStrategy } from "./LoreMatchingStrategies"
-import type { ContentInclusionConfig, ContentInclusionStrategy } from "./ContentInclusionStrategy"
+import type {
+	LoreMatchingStrategy,
+	MatchingStrategyConfig
+} from "./LoreMatchingStrategies"
+import {
+	MatchingStrategyFactory,
+	KeywordMatchingStrategy
+} from "./LoreMatchingStrategies"
+import type {
+	ContentInclusionConfig,
+	ContentInclusionStrategy
+} from "./ContentInclusionStrategy"
 import { defaultContentInclusionConfig } from "./ContentInclusionStrategy"
 import type { CompiledPrompt, CompileOptions, TemplateContext } from "./types"
 import { parseSplitChatPrompt, isHistoryEntry } from "./utils"
@@ -32,7 +41,7 @@ export class PromptBuilder {
 	tokenCounter: TokenCounters
 	tokenLimit: number
 	contextThresholdPercent: number
-	
+
 	// Legacy properties (gradually being moved to modules)
 	assistantCharacters: any[] = []
 	userCharacters: any[] = []
@@ -288,7 +297,8 @@ export class PromptBuilder {
 		)
 		this.instructions = this.contextBuildSystemPrompt()
 		this.exampleDialogue = this.contextBuildCharacterExampleDialogue()
-		this.postHistoryInstructions = this.contextBuildCharacterPostHistoryInst()
+		this.postHistoryInstructions =
+			this.contextBuildCharacterPostHistoryInst()
 	}
 
 	// --- Modularized section: scenario interpolation and source ---
@@ -301,10 +311,13 @@ export class PromptBuilder {
 	} {
 		let scenarioInterpolated = ""
 		let scenarioSource: null | "character" | "chat" = null
-		
+
 		if (this.chat && (this.chat as any).scenario) {
 			scenarioInterpolated =
-				this.interpolationEngine.interpolateString((this.chat as any).scenario, interpolationContext) || ""
+				this.interpolationEngine.interpolateString(
+					(this.chat as any).scenario,
+					interpolationContext
+				) || ""
 			scenarioSource = "chat"
 		} else if (this.chat && (this.chat as any).isGroup) {
 			scenarioInterpolated = ""
@@ -312,7 +325,11 @@ export class PromptBuilder {
 		} else {
 			const charScenario =
 				this.contextBuildCharacterScenario(currentCharacter) || ""
-			scenarioInterpolated = this.interpolationEngine.interpolateString(charScenario, interpolationContext) || ""
+			scenarioInterpolated =
+				this.interpolationEngine.interpolateString(
+					charScenario,
+					interpolationContext
+				) || ""
 			scenarioSource = charScenario ? "character" : null
 		}
 		return { scenarioInterpolated, scenarioSource }
@@ -320,13 +337,21 @@ export class PromptBuilder {
 
 	// --- Modularized section: interpolate characters/personas ---
 	private getInterpolatedCharacters(interpolationContext: any) {
-		return this.assistantCharacters.map((c: any) => 
-			this.interpolationEngine.interpolateObject(c, interpolationContext, ['name', 'nickname', 'description', 'personality'])
+		return this.assistantCharacters.map((c: any) =>
+			this.interpolationEngine.interpolateObject(
+				c,
+				interpolationContext,
+				["name", "nickname", "description", "personality"]
+			)
 		)
 	}
 	private getInterpolatedPersonas(interpolationContext: any) {
-		return this.userCharacters.map((p: any) => 
-			this.interpolationEngine.interpolateObject(p, interpolationContext, ['name', 'description'])
+		return this.userCharacters.map((p: any) =>
+			this.interpolationEngine.interpolateObject(
+				p,
+				interpolationContext,
+				["name", "description"]
+			)
 		)
 	}
 
@@ -356,7 +381,6 @@ export class PromptBuilder {
 			__promptBuilderInstance: this
 		}
 	}
-
 
 	/**
 	 * Enhanced modular version of infillContent using ContentInfillEngine
@@ -441,7 +465,9 @@ export class PromptBuilder {
 		}
 	}
 
-	async setMatchingStrategyFromConfig(config: MatchingStrategyConfig): Promise<void> {
+	async setMatchingStrategyFromConfig(
+		config: MatchingStrategyConfig
+	): Promise<void> {
 		const strategy = await MatchingStrategyFactory.createStrategy(config)
 		await this.setMatchingStrategy(strategy)
 	}
@@ -464,7 +490,9 @@ export class PromptBuilder {
 					nickname: c.nickname,
 					description: Boolean(c.description),
 					personality: Boolean(c.personality),
-					exampleDialogue: Boolean(this.contextBuildCharacterExampleDialogue()),
+					exampleDialogue: Boolean(
+						this.contextBuildCharacterExampleDialogue()
+					),
 					postHistoryInstructions: Boolean(c.postHistoryInstructions)
 				}
 			}),
@@ -525,14 +553,25 @@ export class PromptBuilder {
 			(this.chat.chatPersonas &&
 				this.chat.chatPersonas[0]?.persona?.name) ||
 			"user"
-		const interpolationContext = this.interpolationEngine.createInterpolationContext({
-			currentCharacterName: charName,
-			currentPersonaName: personaName
-		})
+		const interpolationContext =
+			this.interpolationEngine.createInterpolationContext({
+				currentCharacterName: charName,
+				currentPersonaName: personaName
+			})
 
-		const instructions = this.interpolationEngine.interpolateString(this.instructions, interpolationContext)
-		const exampleDialogue = this.interpolationEngine.interpolateString(this.exampleDialogue, interpolationContext)
-		const postHistoryInstructions = this.interpolationEngine.interpolateString(this.postHistoryInstructions, interpolationContext)
+		const instructions = this.interpolationEngine.interpolateString(
+			this.instructions,
+			interpolationContext
+		)
+		const exampleDialogue = this.interpolationEngine.interpolateString(
+			this.exampleDialogue,
+			interpolationContext
+		)
+		const postHistoryInstructions =
+			this.interpolationEngine.interpolateString(
+				this.postHistoryInstructions,
+				interpolationContext
+			)
 
 		const { scenarioInterpolated, scenarioSource } =
 			this.getScenarioInterpolated(currentCharacter, interpolationContext)
@@ -689,20 +728,24 @@ export class PromptBuilder {
 // Re-export types for backward compatibility
 export type {
 	TemplateContextCharacter,
-	TemplateContextPersona, 
+	TemplateContextPersona,
 	TemplateContext,
 	CompiledPrompt,
 	CompileOptions
 } from "./types"
 
 // Re-export InterpolationEngine and its utilities for external use
-export { 
+export {
 	InterpolationEngine,
 	createInterpolationEngine,
 	interpolateTemplate,
 	createBasicContext
 } from "./InterpolationEngine"
-export type { InterpolationContext, CharacterData, PersonaData } from "./InterpolationEngine"
+export type {
+	InterpolationContext,
+	CharacterData,
+	PersonaData
+} from "./InterpolationEngine"
 
 // Helper type guard for extended lorebook
 function hasLorebookEntries(lorebook: any): lorebook is SelectLorebook & {

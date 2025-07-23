@@ -397,9 +397,9 @@ export async function createWorldLoreEntry(
 			with: {
 				worldLoreEntries: {
 					columns: {
-				id: true,
-				position: true
-			},
+						id: true,
+						position: true
+					},
 					orderBy: (e, { asc }) => asc(e.position)
 				}
 			}
@@ -747,7 +747,8 @@ export async function createCharacterLoreEntry(
 
 		// Get next available position for the lore entry
 		const existingBook = await db.query.lorebooks.findFirst({
-			where: (l, { and, eq }) => and(eq(l.id, data.lorebookId), eq(l.userId, userId)),
+			where: (l, { and, eq }) =>
+				and(eq(l.id, data.lorebookId), eq(l.userId, userId)),
 			columns: {
 				id: true,
 				userId: true
@@ -755,10 +756,10 @@ export async function createCharacterLoreEntry(
 			with: {
 				characterLoreEntries: {
 					columns: {
-				id: true,
-				position: true
-			},
-			orderBy: (e, { asc }) => asc(e.position)
+						id: true,
+						position: true
+					},
+					orderBy: (e, { asc }) => asc(e.position)
 				}
 			}
 		})
@@ -828,7 +829,8 @@ export async function updateCharacterLoreEntry(
 			},
 			with: {
 				characterLoreEntries: {
-					where: (we, { eq }) => eq(we.id, message.characterLoreEntry.id),
+					where: (we, { eq }) =>
+						eq(we.id, message.characterLoreEntry.id),
 					columns: {
 						id: true,
 						lorebookId: true
@@ -1035,7 +1037,10 @@ export async function createHistoryEntry(
 
 		const existingBook = await db.query.lorebooks.findFirst({
 			where: (l, { and, eq }) =>
-				and(eq(l.id, message.historyEntry.lorebookId), eq(l.userId, userId)),
+				and(
+					eq(l.id, message.historyEntry.lorebookId),
+					eq(l.userId, userId)
+				),
 			columns: {
 				id: true,
 				userId: true
@@ -1221,13 +1226,17 @@ export async function iterateNextHistoryEntry(
 				and(eq(e.id, message.lorebookId), eq(e.userId, userId)),
 			with: {
 				historyEntries: {
-					orderBy: (e, { asc }) => [asc(e.year), asc(e.month), asc(e.day)],
+					orderBy: (e, { asc }) => [
+						asc(e.year),
+						asc(e.month),
+						asc(e.day)
+					],
 					columns: {
 						id: true,
 						lorebookId: true,
 						year: true,
 						month: true,
-						day: true,
+						day: true
 					}
 				}
 			}

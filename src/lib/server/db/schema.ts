@@ -7,7 +7,7 @@ import {
 	boolean,
 	uniqueIndex,
 	json,
-	date,
+	date
 } from "drizzle-orm/pg-core"
 import { GroupReplyStrategies } from "../../shared/constants/GroupReplyStrategies"
 
@@ -39,7 +39,7 @@ export const users = pgTable("users", {
 		}
 	),
 	theme: text("theme").notNull().default("hamlindigo"),
-	darkMode: boolean("dark_mode").notNull().default(true),
+	darkMode: boolean("dark_mode").notNull().default(true)
 })
 
 export const userRelations = relations(users, ({ many, one }) => ({
@@ -82,21 +82,35 @@ export const samplingConfigs = pgTable("sampling_configs", {
 	topKEnabled: boolean("top_k_enabled").notNull().default(false),
 
 	repetitionPenalty: real("repetition_penalty").default(1.15), // Slightly encourages less repetition but not too harsh
-	repetitionPenaltyEnabled: boolean("repetition_penalty_enabled").notNull().default(false),
+	repetitionPenaltyEnabled: boolean("repetition_penalty_enabled")
+		.notNull()
+		.default(false),
 
 	frequencyPenalty: real("frequency_penalty").default(0.2), // Mild penalty for repetitive phrases
-	frequencyPenaltyEnabled: boolean("frequency_penalty_enabled").notNull().default(false),
+	frequencyPenaltyEnabled: boolean("frequency_penalty_enabled")
+		.notNull()
+		.default(false),
 
 	presencePenalty: real("presence_penalty").default(0.6), // Encourage new topics and freshness
-	presencePenaltyEnabled: boolean("presence_penalty_enabled").notNull().default(false),
+	presencePenaltyEnabled: boolean("presence_penalty_enabled")
+		.notNull()
+		.default(false),
 
 	responseTokens: integer("response_tokens").default(512), // Allow longer, richer replies
-	responseTokensEnabled: boolean("response_tokens_enabled").notNull().default(true),
-	responseTokensUnlocked: boolean("response_tokens_unlocked").notNull().default(false), // Dynamic length allowed
+	responseTokensEnabled: boolean("response_tokens_enabled")
+		.notNull()
+		.default(true),
+	responseTokensUnlocked: boolean("response_tokens_unlocked")
+		.notNull()
+		.default(false), // Dynamic length allowed
 
 	contextTokens: integer("context_tokens").default(4096), // Keep more conversation in memory/context
-	contextTokensEnabled: boolean("context_tokens_enabled").notNull().default(true),
-	contextTokensUnlocked: boolean("context_tokens_unlocked").notNull().default(false), // Allow for context window expansion
+	contextTokensEnabled: boolean("context_tokens_enabled")
+		.notNull()
+		.default(true),
+	contextTokensUnlocked: boolean("context_tokens_unlocked")
+		.notNull()
+		.default(false), // Allow for context window expansion
 
 	seed: integer("seed").default(-1), // -1 for random, can be used for deterministic sampling
 	seedEnabled: boolean("seed_enabled").notNull().default(false)
@@ -111,7 +125,10 @@ export const connections = pgTable("connections", {
 	baseUrl: text("base_url"), // Base URL or endpoint for API
 	model: text("model"), // Model name or identifier
 	// Ollama-specific options
-	extraJson: json("extra_json").notNull().default({}).$type<Record<string, any>>(), // Additional JSON options for the connections, api keys, etc.
+	extraJson: json("extra_json")
+		.notNull()
+		.default({})
+		.$type<Record<string, any>>(), // Additional JSON options for the connections, api keys, etc.
 	tokenCounter: text("token_counter").notNull().default("estimate"),
 	promptFormat: text("prompt_format").default("vicuna")
 })
@@ -122,7 +139,7 @@ export const contextConfigs = pgTable("context_configs", {
 	id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
 	isImmutable: boolean("is_immutable").notNull().default(false),
 	name: text("name").notNull(),
-	template: text("template"), // Sillytavern storyString
+	template: text("template") // Sillytavern storyString
 })
 
 export const contextConfigsRelations = relations(contextConfigs, () => ({}))
@@ -136,19 +153,29 @@ export const promptConfigs = pgTable("prompt_configs", {
 
 export const promptConfigsRelations = relations(promptConfigs, () => ({}))
 
-export const lorebooks = pgTable("lorebooks", {
-	id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-	name: text("name").notNull(),
-	description: text("description").notNull().default(""),
-	extraJson: json("extra_json").notNull().default({}).$type<Record<string, any>>() ,
-	userId: integer("user_id")
-		.notNull()
-		.references(() => users.id, { onDelete: "cascade" }), // FK to users.id
-	createdAt: date("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
-	updatedAt: date("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
-}, table => ({
-
-}))
+export const lorebooks = pgTable(
+	"lorebooks",
+	{
+		id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+		name: text("name").notNull(),
+		description: text("description").notNull().default(""),
+		extraJson: json("extra_json")
+			.notNull()
+			.default({})
+			.$type<Record<string, any>>(),
+		userId: integer("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }), // FK to users.id
+		createdAt: date("created_at")
+			.notNull()
+			.default(sql`(CURRENT_TIMESTAMP)`),
+		updatedAt: date("updated_at")
+			.notNull()
+			.default(sql`(CURRENT_TIMESTAMP)`)
+			.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
+	},
+	(table) => ({})
+)
 
 export const lorebooksRelations = relations(lorebooks, ({ many, one }) => ({
 	worldLoreEntries: many(worldLoreEntries),
@@ -176,7 +203,7 @@ export const lorebookBindings = pgTable(
 		}),
 		binding: text("binding").notNull() // e.g. "{char:1}"
 	},
-	table => ({
+	(table) => ({
 		uniqueBinding: uniqueIndex("lorebook_bindings_unique").on(
 			table.lorebookId,
 			table.characterId,
@@ -218,9 +245,17 @@ export const worldLoreEntries = pgTable("world_lore_entries", {
 	priority: integer("priority").notNull().default(1),
 	constant: boolean("constant").notNull().default(false),
 	enabled: boolean("enabled").notNull().default(true),
-	extraJson: json("extra_json").notNull().default({}).$type<Record<string, any>>() ,
-	createdAt: date("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
-	updatedAt: date("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+	extraJson: json("extra_json")
+		.notNull()
+		.default({})
+		.$type<Record<string, any>>(),
+	createdAt: date("created_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`),
+	updatedAt: date("updated_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`)
+		.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
 	position: integer("position").notNull().default(0)
 })
 
@@ -251,9 +286,17 @@ export const characterLoreEntries = pgTable("character_lore_entries", {
 	priority: integer("priority").notNull().default(1),
 	constant: boolean("constant").notNull().default(false),
 	enabled: boolean("enabled").notNull().default(true),
-	extraJson: json("extra_json").notNull().default({}).$type<Record<string, any>>() ,
-	createdAt: date("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
-	updatedAt: date("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+	extraJson: json("extra_json")
+		.notNull()
+		.default({})
+		.$type<Record<string, any>>(),
+	createdAt: date("created_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`),
+	updatedAt: date("updated_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`)
+		.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
 	position: integer("position").notNull().default(0)
 })
 
@@ -285,9 +328,17 @@ export const historyEntries = pgTable("history_entries", {
 	content: text("content").notNull().default(""),
 	constant: boolean("constant").notNull().default(false),
 	enabled: boolean("enabled").notNull().default(true),
-	extraJson: json("extra_json").notNull().default({}).$type<Record<string, any>>(),
-	createdAt: date("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
-	updatedAt: date("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+	extraJson: json("extra_json")
+		.notNull()
+		.default({})
+		.$type<Record<string, any>>(),
+	createdAt: date("created_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`),
+	updatedAt: date("updated_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`)
+		.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
 	position: integer("position").notNull().default(0)
 })
 
@@ -301,7 +352,8 @@ export const historyEntriesRelations = relations(historyEntries, ({ one }) => ({
 export const tags = pgTable("tags", {
 	id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
 	name: text("name").notNull(), // Tag name (unique)
-	description: text("description")
+	description: text("description"),
+	colorPreset: text("color_preset").notNull().default("preset-filled-primary-500"), // Color preset for the tag
 })
 
 export const tagsRelations = relations(tags, ({ many }) => ({
@@ -340,28 +392,48 @@ export const characters = pgTable("characters", {
 	personality: text("personality"), // Persona field
 	scenario: text("scenario"),
 	firstMessage: text("first_message"),
-	alternateGreetings: json("alternate_greetings").notNull().default([]).$type<string[]>(), // JSON array of alternate greetings
-	exampleDialogues: text("example_dialogues"), // JSON/text
-	metadata: json("metadata").notNull().default({}).$type<Record<string, any>>(), // JSON/text for extra fields
+	alternateGreetings: json("alternate_greetings")
+		.notNull()
+		.default([])
+		.$type<string[]>(), // JSON array of alternate greetings
+	exampleDialogues: json("example_dialogues")
+		.notNull()
+		.default([])
+		.$type<string[]>(), // JSON/text
+	metadata: json("metadata")
+		.notNull()
+		.default({})
+		.$type<Record<string, any>>(), // JSON/text for extra fields
 	avatar: text("avatar"), // Path or URL to avatar image
 	creatorNotes: text("creator_notes"), // Notes from the character creator
-	creatorNotesMultilingual: json("creator_notes_multilingual").$type<Record<string, string>>() ,
+	creatorNotesMultilingual: json("creator_notes_multilingual").$type<
+		Record<string, string>
+	>(),
 	groupOnlyGreetings: json("group_only_greetings").$type<string[]>(), // JSON array of greetings for group chats
 	postHistoryInstructions: text("post_history_instructions"), // Instructions for post-history processing
 	source: json("source").notNull().default([]).$type<string[]>(), // JSON array of sources (e.g., URLs, books)
-	assets: json("assets").notNull().default([]).$type<Array<{
+	assets: json("assets").notNull().default([]).$type<
+		Array<{
 			type: string
 			uri: string
 			name: string
 			ext: string
 		}>
 	>(), // JSON array of asset paths or URLs
-	createdAt: date("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
-	updatedAt: date("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+	createdAt: date("created_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`),
+	updatedAt: date("updated_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`)
+		.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
 	lorebookId: integer("lorebook_id").references(() => lorebooks.id, {
 		onDelete: "set null"
 	}), // Optional FK to lorebooks.id
-	extensions: json("extensions").notNull().default({}).$type<Record<string, any>>() ,
+	extensions: json("extensions")
+		.notNull()
+		.default({})
+		.$type<Record<string, any>>(),
 	isFavorite: boolean("is_favorite").notNull().default(false) // 1 if favorite, 0 otherwise
 })
 
@@ -389,8 +461,12 @@ export const personas = pgTable("personas", {
 	name: text("name").notNull(), // e.g. 'Warren', 'Master Desir'
 	description: text("description").notNull(), // Persona description (long text)
 	position: integer("position").default(0),
-	createdAt: date("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`), // Created at timestamp
-	updatedAt: date("updated_at").default(sql`(CURRENT_TIMESTAMP)`).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`), // Updated at timestamp
+	createdAt: date("created_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`), // Created at timestamp
+	updatedAt: date("updated_at")
+		.default(sql`(CURRENT_TIMESTAMP)`)
+		.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`), // Updated at timestamp
 	lorebookId: integer("lorebook_id").references(() => lorebooks.id, {
 		onDelete: "set null"
 	}) // Optional lorebook for this persona
@@ -415,8 +491,13 @@ export const chats = pgTable("chats", {
 	userId: integer("user_id")
 		.notNull()
 		.references(() => users.id, { onDelete: "cascade" }),
-	createdAt: date("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
-	updatedAt: date("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+	createdAt: date("created_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`),
+	updatedAt: date("updated_at")
+		.notNull()
+		.default(sql`(CURRENT_TIMESTAMP)`)
+		.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
 	scenario: text("scenario"),
 	metadata: text("metadata"), // JSON for extra settings
 	groupReplyStrategy: text("group_reply_strategy").default(
@@ -442,32 +523,45 @@ export const chatsRelations = relations(chats, ({ one, many }) => ({
 }))
 
 // Chat messages
-export const chatMessages = pgTable("chat_messages", {
-	id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-	chatId: integer("chat_id")
-		.notNull()
-		.references(() => chats.id, { onDelete: "cascade" }),
-	userId: integer("user_id")
-		.notNull()
-		.references(() => users.id, { onDelete: "cascade" }), // nullable for system/character messages
-	characterId: integer("character_id").references(() => characters.id, {
-		onDelete: "set null"
-	}), // nullable
-	personaId: integer("persona_id").references(() => personas.id, {
-		onDelete: "set null"
-	}), // nullable
-	role: text("role"), // 'user', 'character', 'system', etc
-	content: text("content").notNull(),
-	createdAt: date("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
-	updatedAt: date("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
-	isEdited: boolean("is_edited").notNull().default(false), // 1 if edited, 0 otherwise
-	metadata: json("metadata").notNull().default({}).$type<{isGreeting?: boolean, swipes?:{currentIdx: number | null, history: []}}>(), // JSON for extra info
-	isGenerating: boolean("is_generating").notNull().default(false), // 1 if processing, 0 otherwise
-	adapterId: text("adapter_id"), // UUID for in-flight adapter instance, nullable
-	isHidden: boolean("is_hidden").notNull().default(false) // Whether this message is processed or not
-}, table => ({
-
-}))
+export const chatMessages = pgTable(
+	"chat_messages",
+	{
+		id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+		chatId: integer("chat_id")
+			.notNull()
+			.references(() => chats.id, { onDelete: "cascade" }),
+		userId: integer("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }), // nullable for system/character messages
+		characterId: integer("character_id").references(() => characters.id, {
+			onDelete: "set null"
+		}), // nullable
+		personaId: integer("persona_id").references(() => personas.id, {
+			onDelete: "set null"
+		}), // nullable
+		role: text("role"), // 'user', 'character', 'system', etc
+		content: text("content").notNull(),
+		createdAt: date("created_at")
+			.notNull()
+			.default(sql`(CURRENT_TIMESTAMP)`),
+		updatedAt: date("updated_at")
+			.notNull()
+			.default(sql`(CURRENT_TIMESTAMP)`)
+			.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
+		isEdited: boolean("is_edited").notNull().default(false), // 1 if edited, 0 otherwise
+		metadata: json("metadata")
+			.notNull()
+			.default({})
+			.$type<{
+				isGreeting?: boolean
+				swipes?: { currentIdx: number | null; history: [] }
+			}>(), // JSON for extra info
+		isGenerating: boolean("is_generating").notNull().default(false), // 1 if processing, 0 otherwise
+		adapterId: text("adapter_id"), // UUID for in-flight adapter instance, nullable
+		isHidden: boolean("is_hidden").notNull().default(false) // Whether this message is processed or not
+	},
+	(table) => ({})
+)
 
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
 	chat: one(chats, {
@@ -489,17 +583,21 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
 }))
 
 // Many-to-many: chats <-> personas
-export const chatPersonas = pgTable("chat_personas", {
-	chatId: integer("chat_id")
-		.notNull()
-		.references(() => chats.id, { onDelete: "cascade" }),
-	personaId: integer("persona_id").references(() => personas.id, {
-		onDelete: "set null"
-	}),
-	position: integer("position").default(0) // Position in the chat
-}, table => ({
-	pk: uniqueIndex("chat_personas_pk").on(table.chatId, table.personaId)
-}))
+export const chatPersonas = pgTable(
+	"chat_personas",
+	{
+		chatId: integer("chat_id")
+			.notNull()
+			.references(() => chats.id, { onDelete: "cascade" }),
+		personaId: integer("persona_id").references(() => personas.id, {
+			onDelete: "set null"
+		}),
+		position: integer("position").default(0) // Position in the chat
+	},
+	(table) => ({
+		pk: uniqueIndex("chat_personas_pk").on(table.chatId, table.personaId)
+	})
+)
 
 export const chatPersonasRelations = relations(chatPersonas, ({ one }) => ({
 	chat: one(chats, {
@@ -513,18 +611,25 @@ export const chatPersonasRelations = relations(chatPersonas, ({ one }) => ({
 }))
 
 // Many-to-many: chats <-> characters
-export const chatCharacters = pgTable("chat_characters", {
-	chatId: integer("chat_id")
-		.notNull()
-		.references(() => chats.id, { onDelete: "cascade" }),
-	characterId: integer("character_id").references(() => characters.id, {
-		onDelete: "set null"
-	}),
-	position: integer("position").default(0), // Position in the chat
-	isActive: boolean("is_active").notNull().default(true) // 1 if active in chat, 0 if not
-}, table => ({
-	pk: uniqueIndex("chat_characters_pk").on(table.chatId, table.characterId)
-}))
+export const chatCharacters = pgTable(
+	"chat_characters",
+	{
+		chatId: integer("chat_id")
+			.notNull()
+			.references(() => chats.id, { onDelete: "cascade" }),
+		characterId: integer("character_id").references(() => characters.id, {
+			onDelete: "set null"
+		}),
+		position: integer("position").default(0), // Position in the chat
+		isActive: boolean("is_active").notNull().default(true) // 1 if active in chat, 0 if not
+	},
+	(table) => ({
+		pk: uniqueIndex("chat_characters_pk").on(
+			table.chatId,
+			table.characterId
+		)
+	})
+)
 
 export const chatCharactersRelations = relations(chatCharacters, ({ one }) => ({
 	chat: one(chats, {
@@ -549,8 +654,7 @@ export const chatLorebooks = pgTable(
 			.references(() => lorebooks.id, { onDelete: "cascade" }),
 		position: integer("position").default(0) // Optional: position/order in the chat
 	},
-	table => ({
-	})
+	(table) => ({})
 )
 
 export const chatLorebooksRelations = relations(chatLorebooks, ({ one }) => ({

@@ -92,13 +92,13 @@ class OllamaAdapter extends BaseConnectionAdapter {
 		})
 	}
 
-	async generate(): Promise<
-		{
-			completionResult: string | ((cb: (chunk: string) => void) => Promise<void>),
-			compiledPrompt: CompiledPrompt,
-			isAborted: boolean
-		}
-	> {
+	async generate(): Promise<{
+		completionResult:
+			| string
+			| ((cb: (chunk: string) => void) => Promise<void>)
+		compiledPrompt: CompiledPrompt
+		isAborted: boolean
+	}> {
 		const model = this.connection.model ?? connectionDefaults.baseUrl
 		const stream = this.connection!.extraJson?.stream || false
 		const think = this.connection!.extraJson?.think || false
@@ -274,7 +274,11 @@ class OllamaAdapter extends BaseConnectionAdapter {
 					return "FAILURE: " + (e.message || String(e))
 				}
 			})()
-			return {completionResult: content ?? "", compiledPrompt, isAborted: this.isAborting}
+			return {
+				completionResult: content ?? "",
+				compiledPrompt,
+				isAborted: this.isAborting
+			}
 		}
 	}
 	// --- Abort in-flight Ollama request ---

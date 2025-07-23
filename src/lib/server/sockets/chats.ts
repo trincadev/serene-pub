@@ -92,8 +92,9 @@ export async function createChat(
 			orderBy: (cc, { asc }) => asc(cc.position ?? 0)
 		})
 		const chatPersona = await db.query.chatPersonas.findFirst({
-			where: (cp, { eq, and, isNotNull }) => and(eq(cp.chatId, newChat.id), isNotNull(cp.personaId)),
-			with: { persona: true },
+			where: (cp, { eq, and, isNotNull }) =>
+				and(eq(cp.chatId, newChat.id), isNotNull(cp.personaId)),
+			with: { persona: true }
 		})
 		for (const cc of chatCharacters) {
 			if (!cc.character) continue
@@ -500,7 +501,9 @@ export async function promptTokenCount(
 		const userId = 1 // Replace with actual user id
 		const chat = await getPromptChatFromDb(message.chatId, userId)
 		if (!chat) {
-			emitToUser("error", { error: "Error Generating Prompt Token Count: Chat not found." })
+			emitToUser("error", {
+				error: "Error Generating Prompt Token Count: Chat not found."
+			})
 			return
 		}
 		const user = await db.query.users.findFirst({
@@ -611,7 +614,7 @@ export async function abortChatMessage(
 		return
 	}
 
-	[chatMsg] = await db
+	;[chatMsg] = await db
 		.update(schema.chatMessages)
 		.set({ isGenerating: false, adapterId: null })
 		.where(eq(schema.chatMessages.id, message.id))
@@ -929,7 +932,11 @@ export async function updateChat(
 				orderBy: (cc, { asc }) => asc(cc.position ?? 0)
 			})
 			const chatPersona = await db.query.chatPersonas.findFirst({
-				where: (cp, { eq, and, isNotNull }) => and(eq(cp.chatId, message.chat.id), isNotNull(cp.personaId)),
+				where: (cp, { eq, and, isNotNull }) =>
+					and(
+						eq(cp.chatId, message.chat.id),
+						isNotNull(cp.personaId)
+					),
 				with: { persona: true },
 				orderBy: (cp, { asc }) => asc(cp.position ?? 0)
 			})
@@ -1074,8 +1081,8 @@ export async function chatMessageSwipeRight(
 			""
 	} else {
 		if (data.metadata!.swipes!.currentIdx === null) {
-			;(data.metadata!.swipes!.currentIdx = 0),
-				data.metadata!.swipes!.history.push(data.content)
+			;((data.metadata!.swipes!.currentIdx = 0),
+				data.metadata!.swipes!.history.push(data.content))
 		}
 		// Now increment the current index and content
 		data.metadata!.swipes!.currentIdx += 1
@@ -1283,18 +1290,31 @@ function buildCharacterFirstChatMessage({
 	const engine = new InterpolationEngine()
 	const context = engine.createInterpolationContext({
 		currentCharacterName: character.nickname || character.name,
-		currentPersonaName: persona?.name || "User",
+		currentPersonaName: persona?.name || "User"
 	})
 	if (!isGroup || !character.groupOnlyGreetings?.length) {
 		if (character.firstMessage) {
-			history.push(engine.interpolateString(character.firstMessage.trim(), context)!)
+			history.push(
+				engine.interpolateString(
+					character.firstMessage.trim(),
+					context
+				)!
+			)
 		}
 		if (character.alternateGreetings) {
-			history.push(...character.alternateGreetings.map((g) => engine.interpolateString(g.trim(), context)!))
+			history.push(
+				...character.alternateGreetings.map(
+					(g) => engine.interpolateString(g.trim(), context)!
+				)
+			)
 		}
 	} else if (character.groupOnlyGreetings?.length) {
 		// If this is a group chat, use only group greetings
-		history.push(...character.groupOnlyGreetings.map((g) => engine.interpolateString(g.trim(), context)!))
+		history.push(
+			...character.groupOnlyGreetings.map(
+				(g) => engine.interpolateString(g.trim(), context)!
+			)
+		)
 	} else {
 		// Fallback firstMessage if no greetings are available
 		history.push(

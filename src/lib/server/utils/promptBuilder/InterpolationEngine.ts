@@ -60,7 +60,7 @@ export class InterpolationEngine {
 		additionalContext?: Record<string, any>
 	}): InterpolationContext {
 		const personaName = currentPersonaName || "user"
-		
+
 		return {
 			char: currentCharacterName,
 			character: currentCharacterName,
@@ -78,7 +78,7 @@ export class InterpolationEngine {
 		context: InterpolationContext
 	): string | undefined {
 		if (!template) return template
-		
+
 		try {
 			return this.handlebars.compile(template)(context)
 		} catch (error) {
@@ -95,11 +95,11 @@ export class InterpolationEngine {
 		context: InterpolationContext
 	): Record<string, string | undefined> {
 		const result: Record<string, string | undefined> = {}
-		
+
 		for (const [key, template] of Object.entries(templates)) {
 			result[key] = this.interpolateString(template, context)
 		}
-		
+
 		return result
 	}
 
@@ -112,9 +112,13 @@ export class InterpolationEngine {
 	): CharacterData {
 		return {
 			...character,
-			name: this.interpolateString(character.name, context) || character.name,
+			name:
+				this.interpolateString(character.name, context) ||
+				character.name,
 			nickname: this.interpolateString(character.nickname, context),
-			description: this.interpolateString(character.description, context) || character.description,
+			description:
+				this.interpolateString(character.description, context) ||
+				character.description,
 			personality: this.interpolateString(character.personality, context)
 		}
 	}
@@ -126,7 +130,9 @@ export class InterpolationEngine {
 		characters: CharacterData[],
 		context: InterpolationContext
 	): CharacterData[] {
-		return characters.map(char => this.interpolateCharacterData(char, context))
+		return characters.map((char) =>
+			this.interpolateCharacterData(char, context)
+		)
 	}
 
 	/**
@@ -139,7 +145,9 @@ export class InterpolationEngine {
 		return {
 			...persona,
 			name: this.interpolateString(persona.name, context) || persona.name,
-			description: this.interpolateString(persona.description, context) || persona.description
+			description:
+				this.interpolateString(persona.description, context) ||
+				persona.description
 		}
 	}
 
@@ -150,7 +158,9 @@ export class InterpolationEngine {
 		personas: PersonaData[],
 		context: InterpolationContext
 	): PersonaData[] {
-		return personas.map(persona => this.interpolatePersonaData(persona, context))
+		return personas.map((persona) =>
+			this.interpolatePersonaData(persona, context)
+		)
 	}
 
 	/**
@@ -162,25 +172,29 @@ export class InterpolationEngine {
 		stringFields?: (keyof T)[]
 	): T {
 		const result: Record<string, any> = { ...obj }
-		
+
 		// If specific string fields are provided, only interpolate those
 		if (stringFields) {
 			for (const field of stringFields) {
-				if (typeof result[field as string] === 'string') {
-					const interpolated = this.interpolateString(result[field as string] as string, context)
-					result[field as string] = interpolated || result[field as string]
+				if (typeof result[field as string] === "string") {
+					const interpolated = this.interpolateString(
+						result[field as string] as string,
+						context
+					)
+					result[field as string] =
+						interpolated || result[field as string]
 				}
 			}
 		} else {
 			// Otherwise, interpolate all string values
 			for (const [key, value] of Object.entries(result)) {
-				if (typeof value === 'string') {
+				if (typeof value === "string") {
 					const interpolated = this.interpolateString(value, context)
 					result[key] = interpolated || value
 				}
 			}
 		}
-		
+
 		return result as T
 	}
 
@@ -202,7 +216,9 @@ export class InterpolationEngine {
 /**
  * Creates a new InterpolationEngine instance
  */
-export function createInterpolationEngine(handlebarsInstance?: typeof Handlebars): InterpolationEngine {
+export function createInterpolationEngine(
+	handlebarsInstance?: typeof Handlebars
+): InterpolationEngine {
 	return new InterpolationEngine(handlebarsInstance)
 }
 

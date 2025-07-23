@@ -1,5 +1,5 @@
-import type { InterpolationContext } from './InterpolationEngine'
-import type { LoreMatchingStrategy } from './LoreMatchingStrategies'
+import type { InterpolationContext } from "./InterpolationEngine"
+import type { LoreMatchingStrategy } from "./LoreMatchingStrategies"
 
 // Define processed chat message format
 export interface ProcessedChatMessage {
@@ -17,7 +17,7 @@ export interface ContentProcessor<TInput, TOutput = TInput> {
 	 * Process an individual content item
 	 */
 	processItem(
-		item: TInput, 
+		item: TInput,
 		context: {
 			interpolationContext: InterpolationContext
 			charName: string
@@ -25,7 +25,7 @@ export interface ContentProcessor<TInput, TOutput = TInput> {
 			priority: number
 		}
 	): TOutput | null
-	
+
 	/**
 	 * Check if an item should be included based on priority and other criteria
 	 */
@@ -35,12 +35,14 @@ export interface ContentProcessor<TInput, TOutput = TInput> {
 /**
  * Processes chat messages with interpolation and role/name assignment
  */
-export class ChatMessageProcessor implements ContentProcessor<SelectChatMessage, ProcessedChatMessage> {
+export class ChatMessageProcessor
+	implements ContentProcessor<SelectChatMessage, ProcessedChatMessage>
+{
 	constructor(
 		private chat: any, // BasePromptChat type
 		private interpolationEngine: any // InterpolationEngine type
 	) {}
-	
+
 	processItem(
 		message: SelectChatMessage,
 		context: {
@@ -51,12 +53,12 @@ export class ChatMessageProcessor implements ContentProcessor<SelectChatMessage,
 		}
 	): ProcessedChatMessage | null {
 		const { interpolationContext, charName, personaName } = context
-		
+
 		// Create message-specific interpolation context
 		let msgInterpolationContext = { ...interpolationContext }
 		let assistantName = charName
 		let userName = personaName
-		
+
 		// Handle character-specific context
 		if (message.characterId && this.chat.chatCharacters) {
 			const foundChar = this.chat.chatCharacters.find(
@@ -75,7 +77,7 @@ export class ChatMessageProcessor implements ContentProcessor<SelectChatMessage,
 				character: foundName || charName
 			}
 		}
-		
+
 		// Handle persona-specific context
 		if (message.personaId && this.chat.chatPersonas) {
 			const foundPersona = this.chat.chatPersonas.find(
@@ -90,15 +92,21 @@ export class ChatMessageProcessor implements ContentProcessor<SelectChatMessage,
 				}
 			}
 		}
-		
+
 		return {
 			id: message.id,
-			role: message.role === "user" || message.role === "assistant" ? message.role : "assistant",
+			role:
+				message.role === "user" || message.role === "assistant"
+					? message.role
+					: "assistant",
 			name: message.role === "assistant" ? assistantName : userName,
-			message: this.interpolationEngine.interpolateString(message.content, msgInterpolationContext)
+			message: this.interpolationEngine.interpolateString(
+				message.content,
+				msgInterpolationContext
+			)
 		}
 	}
-	
+
 	shouldInclude(message: SelectChatMessage, priority: number): boolean {
 		// Messages can be included at any priority
 		return true
@@ -108,12 +116,17 @@ export class ChatMessageProcessor implements ContentProcessor<SelectChatMessage,
 /**
  * Processes world lore entries with lorebook binding population
  */
-export class WorldLoreProcessor implements ContentProcessor<SelectWorldLoreEntry> {
+export class WorldLoreProcessor
+	implements ContentProcessor<SelectWorldLoreEntry>
+{
 	constructor(
 		private chat: any, // BasePromptChat type
-		private populateLorebookEntryBindings: (entry: SelectWorldLoreEntry, chat: any) => SelectWorldLoreEntry
+		private populateLorebookEntryBindings: (
+			entry: SelectWorldLoreEntry,
+			chat: any
+		) => SelectWorldLoreEntry
 	) {}
-	
+
 	processItem(
 		entry: SelectWorldLoreEntry,
 		context: {
@@ -125,11 +138,11 @@ export class WorldLoreProcessor implements ContentProcessor<SelectWorldLoreEntry
 	): SelectWorldLoreEntry | null {
 		return this.populateLorebookEntryBindings(entry, this.chat)
 	}
-	
+
 	shouldInclude(entry: SelectWorldLoreEntry, priority: number): boolean {
 		// High priority entries are always included
 		if (priority === 4) return true
-		
+
 		// Lower priority entries need to pass additional checks
 		return true // Can be extended with more sophisticated logic
 	}
@@ -138,12 +151,17 @@ export class WorldLoreProcessor implements ContentProcessor<SelectWorldLoreEntry
 /**
  * Processes character lore entries with lorebook binding population
  */
-export class CharacterLoreProcessor implements ContentProcessor<SelectCharacterLoreEntry> {
+export class CharacterLoreProcessor
+	implements ContentProcessor<SelectCharacterLoreEntry>
+{
 	constructor(
 		private chat: any, // BasePromptChat type
-		private populateLorebookEntryBindings: (entry: SelectCharacterLoreEntry, chat: any) => SelectCharacterLoreEntry
+		private populateLorebookEntryBindings: (
+			entry: SelectCharacterLoreEntry,
+			chat: any
+		) => SelectCharacterLoreEntry
 	) {}
-	
+
 	processItem(
 		entry: SelectCharacterLoreEntry,
 		context: {
@@ -155,11 +173,11 @@ export class CharacterLoreProcessor implements ContentProcessor<SelectCharacterL
 	): SelectCharacterLoreEntry | null {
 		return this.populateLorebookEntryBindings(entry, this.chat)
 	}
-	
+
 	shouldInclude(entry: SelectCharacterLoreEntry, priority: number): boolean {
 		// High priority entries are always included
 		if (priority === 4) return true
-		
+
 		// Lower priority entries need to pass additional checks
 		return true // Can be extended with more sophisticated logic
 	}
@@ -168,13 +186,18 @@ export class CharacterLoreProcessor implements ContentProcessor<SelectCharacterL
 /**
  * Processes history entries with lorebook binding population and date validation
  */
-export class HistoryEntryProcessor implements ContentProcessor<SelectHistoryEntry> {
+export class HistoryEntryProcessor
+	implements ContentProcessor<SelectHistoryEntry>
+{
 	constructor(
 		private chat: any, // BasePromptChat type
-		private populateLorebookEntryBindings: (entry: SelectHistoryEntry, chat: any) => SelectHistoryEntry,
+		private populateLorebookEntryBindings: (
+			entry: SelectHistoryEntry,
+			chat: any
+		) => SelectHistoryEntry,
 		private isHistoryEntry: (entry: any) => entry is SelectHistoryEntry
 	) {}
-	
+
 	processItem(
 		entry: SelectHistoryEntry,
 		context: {
@@ -187,21 +210,21 @@ export class HistoryEntryProcessor implements ContentProcessor<SelectHistoryEntr
 		if (!this.isHistoryEntry(entry)) {
 			return null
 		}
-		
+
 		const populated = this.populateLorebookEntryBindings(entry, this.chat)
-		
+
 		// Validate that it's still a history entry after population
 		if ("date" in populated) {
 			return populated as SelectHistoryEntry
 		}
-		
+
 		return null
 	}
-	
+
 	shouldInclude(entry: SelectHistoryEntry, priority: number): boolean {
 		// High priority entries are always included
 		if (priority === 4) return true
-		
+
 		// Check if entry has valid date information
 		return entry.year !== undefined && entry.year !== null
 	}
@@ -232,7 +255,10 @@ export class LoreMatchingEngine {
 	 * Check if a lore entry matches a chat message using the current strategy
 	 */
 	async matchesMessage(
-		entry: SelectWorldLoreEntry | SelectCharacterLoreEntry | SelectHistoryEntry,
+		entry:
+			| SelectWorldLoreEntry
+			| SelectCharacterLoreEntry
+			| SelectHistoryEntry,
 		message: { id: number; message: string | undefined },
 		context?: {
 			interpolationContext: InterpolationContext
@@ -242,7 +268,7 @@ export class LoreMatchingEngine {
 	): Promise<boolean> {
 		return await this.strategy.matchesMessage(entry, message, context)
 	}
-	
+
 	/**
 	 * Process all matching for a set of messages against considered entries
 	 */
@@ -263,19 +289,23 @@ export class LoreMatchingEngine {
 	}> {
 		const matched: TOutput[] = []
 		const remaining: TInput[] = []
-		
+
 		// Create enhanced context for strategy
 		const strategyContext = {
 			interpolationContext: context.interpolationContext,
 			chatMessages,
 			failedMatches
 		}
-		
+
 		for (const entry of consideredEntries) {
 			let wasMatched = false
-			
+
 			for (const message of chatMessages) {
-				const isMatch = await this.matchesMessage(entry as any, message, strategyContext)
+				const isMatch = await this.matchesMessage(
+					entry as any,
+					message,
+					strategyContext
+				)
 				if (isMatch) {
 					const processedEntry = processor.processItem(entry, context)
 					if (processedEntry) {
@@ -285,12 +315,12 @@ export class LoreMatchingEngine {
 					}
 				}
 			}
-			
+
 			if (!wasMatched) {
 				remaining.push(entry)
 			}
 		}
-		
+
 		return { matched, remaining }
 	}
 }

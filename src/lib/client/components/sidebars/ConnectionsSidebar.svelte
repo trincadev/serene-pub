@@ -24,12 +24,15 @@
 	let userCtx: UserCtx = getContext("userCtx")
 	const socket = skio.get()
 
-	const OAIChatPresets: {name:string, value: number, connectionDefaults: {
-			baseUrl: string,
-			promptFormat?: string,
-			tokenCounter?: string,
+	const OAIChatPresets: {
+		name: string
+		value: number
+		connectionDefaults: {
+			baseUrl: string
+			promptFormat?: string
+			tokenCounter?: string
 			extraJson: {
-				stream: boolean,
+				stream: boolean
 				prerenderPrompt: boolean
 				apiKey: string
 			}
@@ -59,7 +62,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "ollama",
+					apiKey: "ollama"
 				}
 			}
 		},
@@ -87,7 +90,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -101,7 +104,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -115,7 +118,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -129,7 +132,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -143,7 +146,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -157,7 +160,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -171,7 +174,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -185,7 +188,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -199,7 +202,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -213,7 +216,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		}
@@ -272,7 +275,7 @@
 			...(newConnectionType === CONNECTION_TYPE.OPENAI_CHAT
 				? OAIChatPresets.find(
 						(p) => p.value === newConnectionOAIChatPreset
-				  )?.connectionDefaults
+					)?.connectionDefaults
 				: {})
 		}
 		socket.emit("createConnection", { connection: newConn })
@@ -344,14 +347,20 @@
 				toaster.success({ title: "Connection Updated" })
 			}
 		)
-		socket.on("deleteConnection", (msg: Sockets.DeleteConnection.Response) => {
-			toaster.success({ title: "Connection Deleted" })
-			connection = undefined
-			originalConnection = undefined
-		})
-		socket.on("createConnection", (msg: Sockets.CreateConnection.Response) => {
-			toaster.success({ title: "Connection Created" })
-		})
+		socket.on(
+			"deleteConnection",
+			(msg: Sockets.DeleteConnection.Response) => {
+				toaster.success({ title: "Connection Deleted" })
+				connection = undefined
+				originalConnection = undefined
+			}
+		)
+		socket.on(
+			"createConnection",
+			(msg: Sockets.CreateConnection.Response) => {
+				toaster.success({ title: "Connection Created" })
+			}
+		)
 		socket.emit("connectionsList", {})
 		if (userCtx.user?.activeConnectionId) {
 			socket.emit("connection", { id: userCtx.user.activeConnectionId })
@@ -571,7 +580,9 @@
 				{@const connectionType = CONNECTION_TYPES.find(
 					(t) => t.value === newConnectionType
 				)}
-				<div class="bg-surface-500/25 flex flex-col gap-2 rounded p-4 mt-4">
+				<div
+					class="bg-surface-500/25 mt-4 flex flex-col gap-2 rounded p-4"
+				>
 					<span class="preset-filled-primary-500 p-2">
 						Difficulty: {connectionType?.difficulty}
 					</span>
@@ -608,7 +619,8 @@
 		</header>
 		<article>
 			<p class="opacity-60">
-				Are you sure you want to delete this connection? This cannot be undone.
+				Are you sure you want to delete this connection? This cannot be
+				undone.
 			</p>
 		</article>
 		<footer class="flex justify-end gap-4">
