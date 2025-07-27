@@ -10,6 +10,16 @@
 	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import { GroupReplyStrategies } from "$lib/shared/constants/GroupReplyStrategies"
+	import { z } from "zod"
+
+	// Zod validation schema
+	const chatSchema = z.object({
+		name: z.string().min(1, "Chat name is required").trim(),
+		scenario: z.string().optional(),
+		groupReplyStrategy: z.string().optional()
+	})
+
+	type ValidationErrors = Record<string, string>
 
 	interface Props {
 		editChatId?: number | null // If provided, edit mode; else create mode
@@ -91,6 +101,7 @@
 	let removeType: "character" | "persona" = $state("character")
 	let removeName = $state("")
 	let removeId: number | null = $state(null)
+	let validationErrors: ValidationErrors = $state({})
 
 	$effect(() => {
 		const _name = name.trim()
@@ -147,6 +158,7 @@
 	}
 
 	function handleSave() {
+		if (!validateForm()) return
 		if (
 			!data?.chat.name.trim() ||
 			selectedCharacters.length === 0 ||
@@ -168,7 +180,6 @@
 			socket.emit("createChat", createChat)
 		}
 		isCreating = false
-		showEditChatForm = false
 	}
 
 	function confirmRemoveCharacter(id: number, name: string) {
@@ -197,6 +208,28 @@
 		showRemoveModal = false
 		removeId = null
 		removeName = ""
+	}
+
+	function validateForm(): boolean {
+		const result = chatSchema.safeParse({
+			name: name,
+			scenario: scenario,
+			groupReplyStrategy: groupReplyStrategy
+		})
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
 	}
 
 	function handleCloseForm() {
@@ -237,6 +270,20 @@
 				}
 			}
 		)
+		socket.on("createChat", (res: any) => {
+			toaster.success({
+				title: "Chat Created",
+				description: `Chat "${res.chat.name || "Unnamed Chat"}" created successfully.`
+			})
+			showEditChatForm = false
+		})
+		socket.on("updateChat", (res: any) => {
+			toaster.success({
+				title: "Chat Updated",
+				description: `Chat "${res.chat.name || "Unnamed Chat"}" updated successfully.`
+			})
+			showEditChatForm = false
+		})
 		socket.emit("characterList", {})
 		socket.emit("personaList", {})
 		socket.emit("lorebookList", {})
@@ -248,6 +295,8 @@
 		socket.off("personaList")
 		socket.off("lorebookList")
 		socket.off("toggleChatCharacterActive")
+		socket.off("createChat")
+		socket.off("updateChat")
 	})
 
 	function toggleCharacterActive(
@@ -283,12 +332,25 @@
 			<label class="font-semibold" for="chatName">Chat Name*</label>
 			<input
 				id="chatName"
-				class="input input-lg w-full"
+				class="input input-lg w-full {validationErrors.name
+					? 'border-red-500'
+					: ''}"
 				type="text"
 				placeholder="Enter chat name"
 				bind:value={name}
 				required
+				oninput={() => {
+					if (validationErrors.name) {
+						const { name, ...rest } = validationErrors
+						validationErrors = rest
+					}
+				}}
 			/>
+			{#if validationErrors.name}
+				<p class="mt-1 text-sm text-red-500" role="alert">
+					{validationErrors.name}
+				</p>
+			{/if}
 		</div>
 		<div>
 			<span class="mb-2 font-semibold">Characters*</span>

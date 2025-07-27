@@ -3,6 +3,18 @@
 	import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
 	import { onMount, onDestroy } from "svelte"
 	import * as skio from "sveltekit-io"
+	import { z } from "zod"
+
+	// Zod validation schema
+	const lmStudioConnectionSchema = z.object({
+		model: z.string().min(1, "Model is required"),
+		baseUrl: z
+			.string()
+			.url("Invalid URL format")
+			.min(1, "Base URL is required")
+	})
+
+	type ValidationErrors = Record<string, string>
 
 	interface Props {
 		connection: SelectConnection
@@ -17,6 +29,7 @@
 		error?: string | null
 		models?: any[]
 	} | null = $state(null)
+	let validationErrors: ValidationErrors = $state({})
 
 	// Initialize extraFields from connection.extraJson, but don't make it reactive to connection changes
 	let extraFields = $state({
@@ -34,10 +47,34 @@
 	}
 
 	function handleTestConnection() {
+		if (!validateConnection()) return
 		testResult = null
 		socket.emit("testConnection", {
 			connection
 		} as Sockets.TestConnection.Call)
+	}
+
+	function validateConnection(): boolean {
+		const data = {
+			model: connection.model || "",
+			baseUrl: connection.baseUrl || ""
+		}
+
+		const result = lmStudioConnectionSchema.safeParse(data)
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
 	}
 
 	socket.on("refreshModels", (msg: Sockets.RefreshModels.Response) => {
@@ -69,13 +106,30 @@
 		<select
 			id="model"
 			bind:value={connection.model}
-			class="select bg-background border-muted w-full rounded border"
+			class="select bg-background border-muted w-full rounded border {validationErrors.model
+				? 'border-red-500'
+				: ''}"
+			aria-invalid={validationErrors.model ? "true" : "false"}
+			aria-describedby={validationErrors.model
+				? "model-error"
+				: undefined}
+			oninput={() => {
+				if (validationErrors.model) {
+					const { model, ...rest } = validationErrors
+					validationErrors = rest
+				}
+			}}
 		>
 			<option value="">-- Select Model --</option>
 			{#each availableLMStudioModels as m}
 				<option value={m.model}>{m.name}</option>
 			{/each}
 		</select>
+		{#if validationErrors.model}
+			<p id="model-error" class="mt-1 text-sm text-red-500" role="alert">
+				{validationErrors.model}
+			</p>
+		{/if}
 		<div class="mt-4 flex gap-2">
 			<button
 				type="button"
@@ -88,6 +142,7 @@
 				type="button"
 				class="btn preset-tonal-success btn-sm w-full"
 				onclick={handleTestConnection}
+				disabled={Object.keys(validationErrors).length > 0}
 			>
 				{#if testResult?.ok === true}
 					Test: Okay!
@@ -172,8 +227,29 @@
 					bind:value={connection.baseUrl}
 					placeholder="ws://localhost:1234"
 					required
-					class="input"
+					class="input {validationErrors.baseUrl
+						? 'border-red-500'
+						: ''}"
+					aria-invalid={validationErrors.baseUrl ? "true" : "false"}
+					aria-describedby={validationErrors.baseUrl
+						? "baseUrl-error"
+						: undefined}
+					oninput={() => {
+						if (validationErrors.baseUrl) {
+							const { baseUrl, ...rest } = validationErrors
+							validationErrors = rest
+						}
+					}}
 				/>
+				{#if validationErrors.baseUrl}
+					<p
+						id="baseUrl-error"
+						class="mt-1 text-sm text-red-500"
+						role="alert"
+					>
+						{validationErrors.baseUrl}
+					</p>
+				{/if}
 			</div>
 			<!-- Use Chat toggle -->
 			<div class="mt-2 flex items-center gap-2">

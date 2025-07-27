@@ -52,24 +52,24 @@
 						</h3>
 						<p class="text-primary-700-300 mb-3 text-sm">
 							To download <strong>{modelName}</strong>
-							, you'll need to select a specific version from the
-							Ollama library.
+							, you'll need to select a specific version from the Ollama
+							library.
 						</p>
 
 						<div class="space-y-2 text-sm">
 							<p class="text-primary-700-300">
 								<strong>Step 1:</strong>
-								 Click the button below to open the model's page
-								on Ollama.com
+								Click the button below to open the model's page on
+								Ollama.com
 							</p>
 							<p class="text-primary-700-300">
 								<strong>Step 2:</strong>
-								 Browse the available versions and copy the full
-								name of the one you want
+								Browse the available versions and copy the full name
+								of the one you want
 							</p>
 							<p class="text-primary-700-300">
 								<strong>Step 3:</strong>
-								 Come back here and paste the name in the next screen
+								Come back here and paste the name in the next screen
 							</p>
 							<p class="text-primary-700-300">
 								<em>

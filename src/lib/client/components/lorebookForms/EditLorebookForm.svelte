@@ -4,6 +4,15 @@
 
 	import * as skio from "sveltekit-io"
 	import { toaster } from "$lib/client/utils/toaster"
+	import { z } from "zod"
+
+	// Zod validation schema
+	const lorebookSchema = z.object({
+		name: z.string().min(1, "Name is required").trim(),
+		description: z.string().optional()
+	})
+
+	type ValidationErrors = Record<string, string>
 
 	interface Props {
 		lorebookId: number // ID of the lorebook to edit
@@ -18,6 +27,7 @@
 		$state()
 	let originalLorebook: Sockets.Lorebook.Response["lorebook"] | undefined =
 		$state()
+	let validationErrors: ValidationErrors = $state({})
 
 	$effect(() => {
 		hasUnsavedChanges =
@@ -25,10 +35,34 @@
 	})
 
 	function handleSave() {
+		if (!validateForm()) return
 		const updateReq: Sockets.UpdateLorebook.Call = {
 			lorebook: editLorebook!
 		}
 		socket.emit("updateLorebook", updateReq)
+	}
+
+	function validateForm(): boolean {
+		if (!editLorebook) return false
+
+		const result = lorebookSchema.safeParse({
+			name: editLorebook.name,
+			description: editLorebook.description
+		})
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
 	}
 	function handleCancel() {
 		editLorebook = { ...originalLorebook! }
@@ -78,12 +112,25 @@
 			<label class="font-semibold" for="lorebookName">Name*</label>
 			<input
 				id="lorebookName"
-				class="input input-lg w-full"
+				class="input input-lg w-full {validationErrors.name
+					? 'border-red-500'
+					: ''}"
 				type="text"
 				placeholder="Enter lorebook name"
 				bind:value={editLorebook.name}
 				required
+				oninput={() => {
+					if (validationErrors.name) {
+						const { name, ...rest } = validationErrors
+						validationErrors = rest
+					}
+				}}
 			/>
+			{#if validationErrors.name}
+				<p class="mt-1 text-sm text-red-500" role="alert">
+					{validationErrors.name}
+				</p>
+			{/if}
 		</div>
 		<div>
 			<label class="font-semibold" for="lorebookDescription">

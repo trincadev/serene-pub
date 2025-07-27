@@ -6,6 +6,7 @@
 	import PromptConfigUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
+	import { z } from "zod"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -33,7 +34,36 @@
 	let showUnsavedChangesModal = $state(false)
 	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 
+	// Zod validation schema
+	const promptConfigSchema = z.object({
+		name: z.string().min(1, "Name is required").trim()
+	})
+
+	type ValidationErrors = Record<string, string>
+	let validationErrors: ValidationErrors = $state({})
+
+	function validateForm(): boolean {
+		const result = promptConfigSchema.safeParse({
+			name: promptConfig.name
+		})
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
+	}
+
 	function handleSave() {
+		if (!validateForm()) return
 		socket.emit("updatePromptConfig", {
 			promptConfig: { ...promptConfig, id: promptConfig.id }
 		})
@@ -213,9 +243,22 @@
 					id="promptName"
 					type="text"
 					bind:value={promptConfig.name}
-					class="input w-full"
+					class="input w-full {validationErrors.name
+						? 'border-red-500'
+						: ''}"
 					disabled={promptConfig.isImmutable}
+					oninput={() => {
+						if (validationErrors.name) {
+							const { name, ...rest } = validationErrors
+							validationErrors = rest
+						}
+					}}
 				/>
+				{#if validationErrors.name}
+					<p class="mt-1 text-sm text-red-500" role="alert">
+						{validationErrors.name}
+					</p>
+				{/if}
 			</div>
 			<div class="flex flex-col gap-1">
 				<label class="font-semibold" for="systemPrompt">

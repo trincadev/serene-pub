@@ -34,38 +34,156 @@
 	let relatedPersonas: SelectPersona[] = $state([])
 	let relatedChats: SelectChat[] = $state([])
 
+	// Zod validation schema
+	const tagSchema = z.object({
+		name: z.string().min(1, "Tag name is required").trim()
+	})
+
+	type ValidationErrors = Record<string, string>
+	let validationErrors: ValidationErrors = $state({})
+	let editValidationErrors: ValidationErrors = $state({})
+
 	// Filtered tags for display
 	let filteredTags: SelectTag[] = $derived.by(() => {
 		if (!search) return tagsList
-		return tagsList.filter(tag => 
-			tag.name.toLowerCase().includes(search.toLowerCase()) ||
-			(tag.description && tag.description.toLowerCase().includes(search.toLowerCase()))
+		return tagsList.filter(
+			(tag) =>
+				tag.name.toLowerCase().includes(search.toLowerCase()) ||
+				(tag.description &&
+					tag.description
+						.toLowerCase()
+						.includes(search.toLowerCase()))
 		)
 	})
 
 	// Color preset options
 	const colorPresetOptions = [
-		{ value: "preset-filled-primary-500", label: "Primary Filled", type: "filled", color: "primary" },
-		{ value: "preset-tonal-primary", label: "Primary Tonal", type: "tonal", color: "primary" },
-		{ value: "preset-outlined-primary-500", label: "Primary Outlined", type: "outlined", color: "primary" },
-		{ value: "preset-filled-secondary-500", label: "Secondary Filled", type: "filled", color: "secondary" },
-		{ value: "preset-tonal-secondary", label: "Secondary Tonal", type: "tonal", color: "secondary" },
-		{ value: "preset-outlined-secondary-500", label: "Secondary Outlined", type: "outlined", color: "secondary" },
-		{ value: "preset-filled-tertiary-500", label: "Tertiary Filled", type: "filled", color: "tertiary" },
-		{ value: "preset-tonal-tertiary", label: "Tertiary Tonal", type: "tonal", color: "tertiary" },
-		{ value: "preset-outlined-tertiary-500", label: "Tertiary Outlined", type: "outlined", color: "tertiary" },
-		{ value: "preset-filled-success-500", label: "Success Filled", type: "filled", color: "success" },
-		{ value: "preset-tonal-success", label: "Success Tonal", type: "tonal", color: "success" },
-		{ value: "preset-outlined-success-500", label: "Success Outlined", type: "outlined", color: "success" },
-		{ value: "preset-filled-warning-500", label: "Warning Filled", type: "filled", color: "warning" },
-		{ value: "preset-tonal-warning", label: "Warning Tonal", type: "tonal", color: "warning" },
-		{ value: "preset-outlined-warning-500", label: "Warning Outlined", type: "outlined", color: "warning" },
-		{ value: "preset-filled-error-500", label: "Error Filled", type: "filled", color: "error" },
-		{ value: "preset-tonal-error", label: "Error Tonal", type: "tonal", color: "error" },
-		{ value: "preset-outlined-error-500", label: "Error Outlined", type: "outlined", color: "error" },
-		{ value: "preset-filled-surface-500", label: "Surface Filled", type: "filled", color: "surface" },
-		{ value: "preset-tonal-surface", label: "Surface Tonal", type: "tonal", color: "surface" },
-		{ value: "preset-outlined-surface-500", label: "Surface Outlined", type: "outlined", color: "surface" }
+		{
+			value: "preset-filled-primary-500",
+			label: "Primary Filled",
+			type: "filled",
+			color: "primary"
+		},
+		{
+			value: "preset-tonal-primary",
+			label: "Primary Tonal",
+			type: "tonal",
+			color: "primary"
+		},
+		{
+			value: "preset-outlined-primary-500",
+			label: "Primary Outlined",
+			type: "outlined",
+			color: "primary"
+		},
+		{
+			value: "preset-filled-secondary-500",
+			label: "Secondary Filled",
+			type: "filled",
+			color: "secondary"
+		},
+		{
+			value: "preset-tonal-secondary",
+			label: "Secondary Tonal",
+			type: "tonal",
+			color: "secondary"
+		},
+		{
+			value: "preset-outlined-secondary-500",
+			label: "Secondary Outlined",
+			type: "outlined",
+			color: "secondary"
+		},
+		{
+			value: "preset-filled-tertiary-500",
+			label: "Tertiary Filled",
+			type: "filled",
+			color: "tertiary"
+		},
+		{
+			value: "preset-tonal-tertiary",
+			label: "Tertiary Tonal",
+			type: "tonal",
+			color: "tertiary"
+		},
+		{
+			value: "preset-outlined-tertiary-500",
+			label: "Tertiary Outlined",
+			type: "outlined",
+			color: "tertiary"
+		},
+		{
+			value: "preset-filled-success-500",
+			label: "Success Filled",
+			type: "filled",
+			color: "success"
+		},
+		{
+			value: "preset-tonal-success",
+			label: "Success Tonal",
+			type: "tonal",
+			color: "success"
+		},
+		{
+			value: "preset-outlined-success-500",
+			label: "Success Outlined",
+			type: "outlined",
+			color: "success"
+		},
+		{
+			value: "preset-filled-warning-500",
+			label: "Warning Filled",
+			type: "filled",
+			color: "warning"
+		},
+		{
+			value: "preset-tonal-warning",
+			label: "Warning Tonal",
+			type: "tonal",
+			color: "warning"
+		},
+		{
+			value: "preset-outlined-warning-500",
+			label: "Warning Outlined",
+			type: "outlined",
+			color: "warning"
+		},
+		{
+			value: "preset-filled-error-500",
+			label: "Error Filled",
+			type: "filled",
+			color: "error"
+		},
+		{
+			value: "preset-tonal-error",
+			label: "Error Tonal",
+			type: "tonal",
+			color: "error"
+		},
+		{
+			value: "preset-outlined-error-500",
+			label: "Error Outlined",
+			type: "outlined",
+			color: "error"
+		},
+		{
+			value: "preset-filled-surface-500",
+			label: "Surface Filled",
+			type: "filled",
+			color: "surface"
+		},
+		{
+			value: "preset-tonal-surface",
+			label: "Surface Tonal",
+			type: "tonal",
+			color: "surface"
+		},
+		{
+			value: "preset-outlined-surface-500",
+			label: "Surface Outlined",
+			type: "outlined",
+			color: "surface"
+		}
 	]
 
 	function handleCreateClick() {
@@ -80,7 +198,8 @@
 		isEditing = true
 		editTagName = selectedTag.name
 		editTagDescription = selectedTag.description || ""
-		editTagColorPreset = selectedTag.colorPreset || "preset-filled-primary-500"
+		editTagColorPreset =
+			selectedTag.colorPreset || "preset-filled-primary-500"
 	}
 
 	function handleDeleteClick() {
@@ -95,29 +214,69 @@
 		socket.emit("tagRelatedData", { tagId: tag.id })
 	}
 
+	function validateNewTag(): boolean {
+		const result = tagSchema.safeParse({
+			name: newTagName
+		})
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
+	}
+
+	function validateEditTag(): boolean {
+		const result = tagSchema.safeParse({
+			name: editTagName
+		})
+
+		if (result.success) {
+			editValidationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			editValidationErrors = errors
+			return false
+		}
+	}
+
 	function createTag() {
-		if (!newTagName.trim()) return
-		
+		if (!validateNewTag()) return
+
 		const tag: InsertTag = {
 			name: newTagName.trim(),
 			description: newTagDescription.trim() || null,
 			colorPreset: newTagColorPreset
 		}
-		
+
 		socket.emit("createTag", { tag })
 		isCreating = false
 	}
 
 	function updateTag() {
-		if (!selectedTag || !editTagName.trim()) return
-		
+		if (!selectedTag || !validateEditTag()) return
+
 		const tag: SelectTag = {
 			...selectedTag,
 			name: editTagName.trim(),
 			description: editTagDescription.trim() || null,
 			colorPreset: editTagColorPreset
 		}
-		
+
 		socket.emit("updateTag", { tag })
 		isEditing = false
 	}
@@ -201,7 +360,7 @@
 		})
 
 		socket.emit("tagsList", {})
-		
+
 		onclose = async () => {
 			return true
 		}
@@ -209,7 +368,7 @@
 
 	onDestroy(() => {
 		socket.off("tagsList")
-		socket.off("createTag") 
+		socket.off("createTag")
 		socket.off("updateTag")
 		socket.off("deleteTag")
 		socket.off("tagRelatedData")
@@ -223,15 +382,21 @@
 		<div class="mb-4">
 			<button
 				class="btn btn-sm preset-filled-surface-500 mb-3"
-				onclick={() => { selectedTag = null }}
+				onclick={() => {
+					selectedTag = null
+				}}
 			>
 				<Icons.ArrowLeft size={16} />
 				Back to Tags
 			</button>
 
-			<div class="border border-primary-500 rounded-lg p-4 mb-4 bg-surface-50-950">
-				<div class="flex items-center justify-between mb-2">
-					<h2 class="text-xl font-bold text-primary-500">{selectedTag.name}</h2>
+			<div
+				class="border-primary-500 bg-surface-50-950 mb-4 rounded-lg border p-4"
+			>
+				<div class="mb-2 flex items-center justify-between">
+					<h2 class="text-primary-500 text-xl font-bold">
+						{selectedTag.name}
+					</h2>
 					<div class="flex gap-2">
 						<button
 							class="btn btn-sm text-primary-500 p-2"
@@ -250,26 +415,34 @@
 					</div>
 				</div>
 				{#if selectedTag.description}
-					<p class="text-muted-foreground text-sm">{selectedTag.description}</p>
+					<p class="text-muted-foreground text-sm">
+						{selectedTag.description}
+					</p>
 				{/if}
 			</div>
 
 			<!-- Related sections -->
 			{#if relatedCharacters.length > 0}
 				<div class="mb-6">
-					<h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+					<h3
+						class="mb-3 flex items-center gap-2 text-lg font-semibold"
+					>
 						<Icons.User size={18} />
 						Characters ({relatedCharacters.length})
 					</h3>
 					<div class="grid gap-2">
 						{#each relatedCharacters as character}
 							<button
-								class="p-3 rounded-lg bg-surface-100-900 hover:bg-surface-200-800 transition-colors text-left"
+								class="bg-surface-100-900 hover:bg-surface-200-800 rounded-lg p-3 text-left transition-colors"
 								onclick={() => handleCharacterClick(character)}
 							>
-								<div class="font-medium">{character.nickname || character.name}</div>
+								<div class="font-medium">
+									{character.nickname || character.name}
+								</div>
 								{#if character.description}
-									<div class="text-sm text-muted-foreground line-clamp-2 mt-1">
+									<div
+										class="text-muted-foreground mt-1 line-clamp-2 text-sm"
+									>
 										{character.description}
 									</div>
 								{/if}
@@ -281,19 +454,23 @@
 
 			{#if relatedPersonas.length > 0}
 				<div class="mb-6">
-					<h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+					<h3
+						class="mb-3 flex items-center gap-2 text-lg font-semibold"
+					>
 						<Icons.UserCog size={18} />
 						Personas ({relatedPersonas.length})
 					</h3>
 					<div class="grid gap-2">
 						{#each relatedPersonas as persona}
 							<button
-								class="p-3 rounded-lg bg-surface-100-900 hover:bg-surface-200-800 transition-colors text-left"
+								class="bg-surface-100-900 hover:bg-surface-200-800 rounded-lg p-3 text-left transition-colors"
 								onclick={() => handlePersonaClick(persona)}
 							>
 								<div class="font-medium">{persona.name}</div>
 								{#if persona.description}
-									<div class="text-sm text-muted-foreground line-clamp-2 mt-1">
+									<div
+										class="text-muted-foreground mt-1 line-clamp-2 text-sm"
+									>
 										{persona.description}
 									</div>
 								{/if}
@@ -305,19 +482,25 @@
 
 			{#if relatedChats.length > 0}
 				<div class="mb-6">
-					<h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+					<h3
+						class="mb-3 flex items-center gap-2 text-lg font-semibold"
+					>
 						<Icons.MessageSquare size={18} />
 						Chats ({relatedChats.length})
 					</h3>
 					<div class="grid gap-2">
 						{#each relatedChats as chat}
 							<button
-								class="p-3 rounded-lg bg-surface-100-900 hover:bg-surface-200-800 transition-colors text-left"
+								class="bg-surface-100-900 hover:bg-surface-200-800 rounded-lg p-3 text-left transition-colors"
 								onclick={() => handleChatClick(chat)}
 							>
-								<div class="font-medium">{chat.name || 'Unnamed Chat'}</div>
+								<div class="font-medium">
+									{chat.name || "Unnamed Chat"}
+								</div>
 								{#if chat.scenario}
-									<div class="text-sm text-muted-foreground line-clamp-2 mt-1">
+									<div
+										class="text-muted-foreground mt-1 line-clamp-2 text-sm"
+									>
 										{chat.scenario}
 									</div>
 								{/if}
@@ -327,12 +510,15 @@
 				</div>
 			{/if}
 		</div>
-
 	{:else if isCreating}
 		<!-- Create tag form -->
 		<div>
 			<h1 class="mb-4 text-lg font-bold">Create New Tag</h1>
-			<div class="mt-4 mb-4 flex gap-2" role="group" aria-label="Form actions">
+			<div
+				class="mt-4 mb-4 flex gap-2"
+				role="group"
+				aria-label="Form actions"
+			>
 				<button
 					class="btn btn-sm preset-filled-surface-500 w-full"
 					onclick={cancelCreate}
@@ -342,24 +528,54 @@
 				<button
 					class="btn btn-sm preset-filled-primary-500 w-full"
 					onclick={createTag}
-					disabled={!newTagName.trim()}
+					disabled={Object.keys(validationErrors).length > 0 ||
+						!newTagName.trim()}
 				>
 					Create Tag
 				</button>
 			</div>
 			<div class="space-y-4">
 				<div>
-					<label class="block font-semibold mb-1" for="tagName">Name</label>
+					<label class="mb-1 block font-semibold" for="tagName">
+						Name
+					</label>
 					<input
+						id="tagName"
 						name="tagName"
 						type="text"
-						class="input w-full"
+						class="input w-full {validationErrors.name
+							? 'border-red-500'
+							: ''}"
 						bind:value={newTagName}
 						placeholder="Enter tag name"
+						aria-invalid={validationErrors.name ? "true" : "false"}
+						aria-describedby={validationErrors.name
+							? "name-error"
+							: undefined}
+						oninput={() => {
+							if (validationErrors.name) {
+								const { name, ...rest } = validationErrors
+								validationErrors = rest
+							}
+						}}
 					/>
+					{#if validationErrors.name}
+						<p
+							id="name-error"
+							class="mt-1 text-sm text-red-500"
+							role="alert"
+						>
+							{validationErrors.name}
+						</p>
+					{/if}
 				</div>
 				<div>
-					<label class="block font-semibold mb-1" for="tagDescription">Description (Optional)</label>
+					<label
+						class="mb-1 block font-semibold"
+						for="tagDescription"
+					>
+						Description (Optional)
+					</label>
 					<textarea
 						name="tagDescription"
 						class="input w-full"
@@ -369,7 +585,9 @@
 					></textarea>
 				</div>
 				<div>
-					<label class="block font-semibold mb-1" for="colorPreset">Color Preset</label>
+					<label class="mb-1 block font-semibold" for="colorPreset">
+						Color Preset
+					</label>
 					<select
 						name="colorPreset"
 						class="input w-full"
@@ -380,20 +598,28 @@
 						{/each}
 					</select>
 					<div class="mt-2">
-						<span class="text-sm text-muted-foreground">Preview:</span>
-						<button type="button" class="chip {newTagColorPreset} ml-2">
-							{newTagName.trim() || 'Tag Preview'}
+						<span class="text-muted-foreground text-sm">
+							Preview:
+						</span>
+						<button
+							type="button"
+							class="chip {newTagColorPreset} ml-2"
+						>
+							{newTagName.trim() || "Tag Preview"}
 						</button>
 					</div>
 				</div>
 			</div>
 		</div>
-
 	{:else if isEditing}
 		<!-- Edit tag form -->
 		<div>
 			<h1 class="mb-4 text-lg font-bold">Edit Tag</h1>
-			<div class="mt-4 mb-4 flex gap-2" role="group" aria-label="Form actions">
+			<div
+				class="mt-4 mb-4 flex gap-2"
+				role="group"
+				aria-label="Form actions"
+			>
 				<button
 					class="btn btn-sm preset-filled-surface-500 w-full"
 					onclick={cancelEdit}
@@ -403,24 +629,56 @@
 				<button
 					class="btn btn-sm preset-filled-primary-500 w-full"
 					onclick={updateTag}
-					disabled={!editTagName.trim()}
+					disabled={Object.keys(editValidationErrors).length > 0 ||
+						!editTagName.trim()}
 				>
 					Update Tag
 				</button>
 			</div>
 			<div class="space-y-4">
 				<div>
-					<label class="block font-semibold mb-1" for="editTagName">Name</label>
+					<label class="mb-1 block font-semibold" for="editTagName">
+						Name
+					</label>
 					<input
+						id="editTagName"
 						name="editTagName"
 						type="text"
-						class="input w-full"
+						class="input w-full {editValidationErrors.name
+							? 'border-red-500'
+							: ''}"
 						bind:value={editTagName}
 						placeholder="Enter tag name"
+						aria-invalid={editValidationErrors.name
+							? "true"
+							: "false"}
+						aria-describedby={editValidationErrors.name
+							? "edit-name-error"
+							: undefined}
+						oninput={() => {
+							if (editValidationErrors.name) {
+								const { name, ...rest } = editValidationErrors
+								editValidationErrors = rest
+							}
+						}}
 					/>
+					{#if editValidationErrors.name}
+						<p
+							id="edit-name-error"
+							class="mt-1 text-sm text-red-500"
+							role="alert"
+						>
+							{editValidationErrors.name}
+						</p>
+					{/if}
 				</div>
 				<div>
-					<label class="block font-semibold mb-1" for="editTagDescription">Description (Optional)</label>
+					<label
+						class="mb-1 block font-semibold"
+						for="editTagDescription"
+					>
+						Description (Optional)
+					</label>
 					<textarea
 						name="editTagDescription"
 						class="input w-full"
@@ -430,7 +688,12 @@
 					></textarea>
 				</div>
 				<div>
-					<label class="block font-semibold mb-1" for="editColorPreset">Color Preset</label>
+					<label
+						class="mb-1 block font-semibold"
+						for="editColorPreset"
+					>
+						Color Preset
+					</label>
 					<select
 						name="editColorPreset"
 						class="input w-full"
@@ -441,15 +704,19 @@
 						{/each}
 					</select>
 					<div class="mt-2">
-						<span class="text-sm text-muted-foreground">Preview:</span>
-						<button type="button" class="chip {editTagColorPreset} ml-2">
-							{editTagName.trim() || 'Tag Preview'}
+						<span class="text-muted-foreground text-sm">
+							Preview:
+						</span>
+						<button
+							type="button"
+							class="chip {editTagColorPreset} ml-2"
+						>
+							{editTagName.trim() || "Tag Preview"}
 						</button>
 					</div>
 				</div>
 			</div>
 		</div>
-
 	{:else}
 		<!-- Main tags list view -->
 		<div class="mb-2 flex gap-2">
@@ -472,7 +739,7 @@
 		</div>
 
 		{#if filteredTags.length === 0}
-			<div class="text-muted-foreground py-8 text-center w-100 relative">
+			<div class="text-muted-foreground relative w-100 py-8 text-center">
 				No tags found.
 			</div>
 		{:else}
@@ -481,7 +748,8 @@
 				{#each filteredTags as tag}
 					<button
 						type="button"
-						class="chip {tag.colorPreset || 'preset-filled-primary-500'} transition-all duration-200"
+						class="chip {tag.colorPreset ||
+							'preset-filled-primary-500'} transition-all duration-200"
 						onclick={() => handleTagClick(tag)}
 						title={tag.description || tag.name}
 					>
@@ -505,8 +773,9 @@
 			<div class="p-6">
 				<h2 class="mb-2 text-lg font-bold">Delete Tag?</h2>
 				<p class="mb-4">
-					Are you sure you want to delete the tag "{tagToDelete?.name}"? This action
-					cannot be undone and will remove the tag from all associated items.
+					Are you sure you want to delete the tag "{tagToDelete?.name}"?
+					This action cannot be undone and will remove the tag from
+					all associated items.
 				</p>
 				<div class="flex justify-end gap-2">
 					<button

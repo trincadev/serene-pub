@@ -6,6 +6,7 @@
 	import { z } from "zod"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import Avatar from "../Avatar.svelte"
+	import { toaster } from "$lib/client/utils/toaster"
 
 	interface EditCharacterData {
 		id?: number
@@ -292,15 +293,23 @@
 		document.addEventListener("keydown", handleKeydown)
 
 		socket.on("createCharacter", (res: any) => {
-			if (!res.error) {
+			if (res.character) {
 				validationErrors = {} // Clear any validation errors on success
+				toaster.success({
+					title: "Character Created",
+					description: `Character "${res.character.name}" created successfully.`
+				})
 				closeForm()
 			}
 		})
 
 		socket.on("updateCharacter", (res: any) => {
-			if (!res.error) {
+			if (res.character) {
 				validationErrors = {} // Clear any validation errors on success
+				toaster.success({
+					title: "Character Updated",
+					description: `Character "${res.character.name}" updated successfully.`
+				})
 				closeForm()
 			}
 		})

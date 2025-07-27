@@ -1,41 +1,41 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1751273223316,
-      "tag": "0000_stiff_puma",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1751364094857,
-      "tag": "0001_unique_stone_men",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1751366812681,
-      "tag": "0002_awesome_thena",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1752304229013,
-      "tag": "0003_gigantic_nova",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1753248760264,
-      "tag": "0004_absurd_human_robot",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "postgresql",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "7",
+			"when": 1751273223316,
+			"tag": "0000_stiff_puma",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1751364094857,
+			"tag": "0001_unique_stone_men",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1751366812681,
+			"tag": "0002_awesome_thena",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1752304229013,
+			"tag": "0003_gigantic_nova",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1753248760264,
+			"tag": "0004_absurd_human_robot",
+			"breakpoints": true
+		}
+	]
 }

@@ -353,7 +353,9 @@ export const tags = pgTable("tags", {
 	id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
 	name: text("name").notNull(), // Tag name (unique)
 	description: text("description"),
-	colorPreset: text("color_preset").notNull().default("preset-filled-primary-500"), // Color preset for the tag
+	colorPreset: text("color_preset")
+		.notNull()
+		.default("preset-filled-primary-500") // Color preset for the tag
 })
 
 export const tagsRelations = relations(tags, ({ many }) => ({
@@ -549,13 +551,10 @@ export const chatMessages = pgTable(
 			.default(sql`(CURRENT_TIMESTAMP)`)
 			.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
 		isEdited: boolean("is_edited").notNull().default(false), // 1 if edited, 0 otherwise
-		metadata: json("metadata")
-			.notNull()
-			.default({})
-			.$type<{
-				isGreeting?: boolean
-				swipes?: { currentIdx: number | null; history: [] }
-			}>(), // JSON for extra info
+		metadata: json("metadata").notNull().default({}).$type<{
+			isGreeting?: boolean
+			swipes?: { currentIdx: number | null; history: [] }
+		}>(), // JSON for extra info
 		isGenerating: boolean("is_generating").notNull().default(false), // 1 if processing, 0 otherwise
 		adapterId: text("adapter_id"), // UUID for in-flight adapter instance, nullable
 		isHidden: boolean("is_hidden").notNull().default(false) // Whether this message is processed or not

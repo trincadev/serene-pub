@@ -2,9 +2,11 @@
 	import * as skio from "sveltekit-io"
 	import { getContext, onDestroy, onMount, tick } from "svelte"
 	import * as Icons from "@lucide/svelte"
+	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import SamplingConfigUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
+	import { z } from "zod"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -28,8 +30,17 @@
 	let showSelectSamplingConfig = $state(false)
 	let showUnsavedChangesModal = $state(false)
 	let showNewNameModal = $state(false)
+	let showDeleteModal = $state(false)
 	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 	let editingField: string | null = $state(null)
+
+	// Zod validation schema
+	const samplingConfigSchema = z.object({
+		name: z.string().min(1, "Name is required").trim()
+	})
+
+	type ValidationErrors = Record<string, string>
+	let validationErrors: ValidationErrors = $state({})
 
 	type FieldType = "number" | "boolean" | "string"
 
@@ -148,11 +159,37 @@
 		showNewNameModal = false
 	}
 
+	function validateForm(): boolean {
+		if (!sampling) return false
+
+		const result = samplingConfigSchema.safeParse({
+			name: sampling.name
+		})
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
+	}
+
 	function handleUpdate() {
 		if (sampling!.isImmutable) {
-			alert("Cannot save immutable sampling.")
+			toaster.error({
+				title: "Cannot Save",
+				description: "Cannot save immutable sampling configuration."
+			})
 			return
 		}
+		if (!validateForm()) return
 		socket.emit("updateSamplingConfig", { sampling })
 	}
 
@@ -162,18 +199,24 @@
 
 	function handleDelete() {
 		if (sampling!.isImmutable) {
-			alert("Cannot delete immutable sampling.")
+			toaster.error({
+				title: "Cannot Delete",
+				description: "Cannot delete immutable sampling configuration."
+			})
 			return
 		}
-		if (
-			confirm(
-				"Are you sure you want to delete these sampling? This cannot be undone."
-			)
-		) {
-			socket.emit("deleteSamplingConfig", {
-				id: userCtx.user.activeSamplingConfigId
-			})
-		}
+		showDeleteModal = true
+	}
+
+	function confirmDelete() {
+		socket.emit("deleteSamplingConfig", {
+			id: userCtx.user.activeSamplingConfigId
+		})
+		showDeleteModal = false
+	}
+
+	function cancelDelete() {
+		showDeleteModal = false
 	}
 
 	function handleSelectSamplingConfig() {
@@ -372,9 +415,22 @@
 					id="samplingName"
 					type="text"
 					bind:value={sampling.name}
-					class="input"
+					class="input {validationErrors.name
+						? 'border-red-500'
+						: ''}"
 					disabled={!!sampling && sampling.isImmutable}
+					oninput={() => {
+						if (validationErrors.name) {
+							const { name, ...rest } = validationErrors
+							validationErrors = rest
+						}
+					}}
 				/>
+				{#if validationErrors.name}
+					<p class="mt-1 text-sm text-red-500" role="alert">
+						{validationErrors.name}
+					</p>
+				{/if}
 			</div>
 			{#each Object.entries(fieldMeta) as [key, meta]}
 				{#if isFieldVisible(key)}
@@ -514,3 +570,33 @@
 	title="New Sampling Config"
 	description="Your current settings will be copied."
 />
+
+<Modal
+	open={showDeleteModal}
+	onOpenChange={(e) => (showDeleteModal = e.open)}
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	backdropClasses="backdrop-blur-sm"
+>
+	{#snippet content()}
+		<header class="flex justify-between">
+			<h2 class="h2">Delete Sampling Configuration</h2>
+		</header>
+		<article>
+			<p class="opacity-60">
+				Are you sure you want to delete the sampling configuration "{sampling?.name}"?
+				This action cannot be undone.
+			</p>
+		</article>
+		<footer class="flex justify-end gap-4">
+			<button
+				class="btn preset-filled-surface-500"
+				onclick={cancelDelete}
+			>
+				Cancel
+			</button>
+			<button class="btn preset-filled-error-500" onclick={confirmDelete}>
+				Delete
+			</button>
+		</footer>
+	{/snippet}
+</Modal>

@@ -5,6 +5,7 @@
 	import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
+	import { z } from "zod"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -33,7 +34,36 @@
 	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 	let showAdvanced = $state(false)
 
+	// Zod validation schema
+	const contextConfigSchema = z.object({
+		name: z.string().min(1, "Name is required").trim()
+	})
+
+	type ValidationErrors = Record<string, string>
+	let validationErrors: ValidationErrors = $state({})
+
+	function validateForm(): boolean {
+		const result = contextConfigSchema.safeParse({
+			name: contextConfig.name
+		})
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
+	}
+
 	function handleSave() {
+		if (!validateForm()) return
 		socket.emit("updateContextConfig", {
 			contextConfig
 		})
@@ -221,9 +251,22 @@
 					id="contextName"
 					type="text"
 					bind:value={contextConfig.name}
-					class="input w-full"
+					class="input w-full {validationErrors.name
+						? 'border-red-500'
+						: ''}"
 					disabled={contextConfig.isImmutable}
+					oninput={() => {
+						if (validationErrors.name) {
+							const { name, ...rest } = validationErrors
+							validationErrors = rest
+						}
+					}}
 				/>
+				{#if validationErrors.name}
+					<p class="mt-1 text-sm text-red-500" role="alert">
+						{validationErrors.name}
+					</p>
+				{/if}
 			</div>
 			<button
 				type="button"

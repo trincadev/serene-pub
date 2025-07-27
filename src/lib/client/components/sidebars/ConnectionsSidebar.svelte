@@ -3,6 +3,7 @@
 	import { getContext, onDestroy, onMount } from "svelte"
 	import * as Icons from "@lucide/svelte"
 	import { Modal } from "@skeletonlabs/skeleton-svelte"
+	import { z } from "zod"
 	import OllamaForm from "$lib/client/connectionForms/OllamaForm.svelte"
 	// import ChatGPTForm from "$lib/client/connectionForms/ChatGPTForm.svelte"
 	import OpenAIForm from "$lib/client/connectionForms/OpenAIForm.svelte"
@@ -222,6 +223,18 @@
 		}
 	]
 
+	// Zod validation schemas
+	const connectionSchema = z.object({
+		name: z.string().min(1, "Connection name is required").trim()
+	})
+
+	const newConnectionSchema = z.object({
+		name: z.string().min(1, "Connection name is required").trim(),
+		type: z.string().min(1, "Connection type is required")
+	})
+
+	type ValidationErrors = Record<string, string>
+
 	// --- State ---
 	let connectionsList: SelectConnection[] = $state([])
 	let connection: Sockets.Connection.Response["connection"] | undefined =
@@ -243,6 +256,8 @@
 	let newConnectionType = $state(CONNECTION_TYPES[0].value)
 	let newConnectionOAIChatPreset: number | undefined = $state()
 	let showDeleteModal = $state(false)
+	let validationErrors: ValidationErrors = $state({})
+	let newConnectionValidationErrors: ValidationErrors = $state({})
 
 	function handleSelectChange(e: Event) {
 		socket.emit("setUserActiveConnection", {
@@ -255,10 +270,7 @@
 		showNewConnectionModal = true
 	}
 	function handleNewConnectionConfirm() {
-		if (!newConnectionName.trim()) {
-			toaster.error({ title: "Connection name is required" })
-			return
-		}
+		if (!validateNewConnection()) return
 		if (newConnectionType === CONNECTION_TYPE.OPENAI_CHAT) {
 			const preset = OAIChatPresets.find(
 				(p) => p.value === newConnectionOAIChatPreset
@@ -284,7 +296,51 @@
 	function handleNewConnectionCancel() {
 		showNewConnectionModal = false
 	}
+	function validateConnection(): boolean {
+		if (!connection) return false
+
+		const result = connectionSchema.safeParse({
+			name: connection.name
+		})
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
+	}
+
+	function validateNewConnection(): boolean {
+		const result = newConnectionSchema.safeParse({
+			name: newConnectionName,
+			type: newConnectionType
+		})
+
+		if (result.success) {
+			newConnectionValidationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			newConnectionValidationErrors = errors
+			return false
+		}
+	}
+
 	function handleUpdate() {
+		if (!validateConnection()) return
 		socket.emit("updateConnection", { connection })
 	}
 	function handleReset() {
@@ -448,8 +504,21 @@
 					id="name"
 					type="text"
 					bind:value={connection.name}
-					class="input"
+					class="input {validationErrors.name
+						? 'border-red-500'
+						: ''}"
+					oninput={() => {
+						if (validationErrors.name) {
+							const { name, ...rest } = validationErrors
+							validationErrors = rest
+						}
+					}}
 				/>
+				{#if validationErrors.name}
+					<p class="mt-1 text-sm text-red-500" role="alert">
+						{validationErrors.name}
+					</p>
+				{/if}
 			</div>
 			{#if connection.type === CONNECTION_TYPE.OLLAMA}
 				<OllamaForm bind:connection />
@@ -536,7 +605,9 @@
 				<input
 					id="newConnName"
 					type="text"
-					class="input w-full"
+					class="input w-full {newConnectionValidationErrors.name
+						? 'border-red-500'
+						: ''}"
 					bind:value={newConnectionName}
 					placeholder="Enter a name..."
 					onkeydown={(e) => {
@@ -544,7 +615,19 @@
 							handleNewConnectionConfirm()
 						}
 					}}
+					oninput={() => {
+						if (newConnectionValidationErrors.name) {
+							const { name, ...rest } =
+								newConnectionValidationErrors
+							newConnectionValidationErrors = rest
+						}
+					}}
 				/>
+				{#if newConnectionValidationErrors.name}
+					<p class="mt-1 text-sm text-red-500" role="alert">
+						{newConnectionValidationErrors.name}
+					</p>
+				{/if}
 			</div>
 			<div>
 				<label class="font-semibold" for="newConnType">Type</label>

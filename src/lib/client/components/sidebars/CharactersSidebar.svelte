@@ -4,6 +4,7 @@
 	import { Avatar, FileUpload, Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import CharacterForm from "../characterForms/CharacterForm.svelte"
+	import CharacterCreator from "../modals/CharacterCreator.svelte"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import type { SpecV3 } from "@lenml/char-card-reader"
@@ -23,7 +24,8 @@
 	)
 	let search = $state("")
 	let characterId: number | undefined = $state()
-	let isCreating = $state(false)
+	// let isCreating = $state(false)
+	let showCharacterCreator = $state(false)
 	let isSafeToCloseCharacterForm = $state(true)
 	let showDeleteModal = $state(false)
 	let characterToDelete: number | undefined = $state(undefined)
@@ -36,7 +38,7 @@
 	let showLorebookImportConfirmationModal = $state(false)
 
 	let unsavedChanges = $derived.by(() => {
-		return !isCreating && !characterId ? false : !isSafeToCloseCharacterForm
+		return !characterId ? false : !isSafeToCloseCharacterForm
 	})
 
 	$effect(() => {
@@ -77,7 +79,7 @@
 		})
 
 	function handleCreateClick() {
-		isCreating = true
+		showCharacterCreator = true
 	}
 
 	function handleEditClick(id: number) {
@@ -85,7 +87,7 @@
 	}
 
 	function closeCharacterForm() {
-		isCreating = false
+		// isCreating = false
 		characterId = undefined
 	}
 
@@ -221,12 +223,15 @@
 </script>
 
 <div class="text-foreground h-full p-4">
+	<!-- Commented out old character creation form - keeping for potential future use
 	{#if isCreating}
 		<CharacterForm
 			bind:isSafeToClose={isSafeToCloseCharacterForm}
 			closeForm={closeCharacterForm}
 		/>
 	{:else if characterId}
+	-->
+	{#if characterId}
 		{#key characterId}
 			<CharacterForm
 				bind:isSafeToClose={isSafeToCloseCharacterForm}
@@ -463,3 +468,9 @@
 		onCancel={handleCloseModalCancel}
 	/>
 {/if}
+
+<!-- Character Creator Modal -->
+<CharacterCreator
+	bind:open={showCharacterCreator}
+	onOpenChange={(e) => (showCharacterCreator = e.open)}
+/>

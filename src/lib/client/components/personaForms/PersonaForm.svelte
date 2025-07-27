@@ -5,6 +5,7 @@
 	import { z } from "zod"
 	import PersonaUnsavedChangesModal from "../modals/PersonaUnsavedChangesModal.svelte"
 	import Avatar from "../Avatar.svelte"
+	import { toaster } from "$lib/client/utils/toaster"
 
 	interface EditPersonaData {
 		id?: number
@@ -218,15 +219,23 @@
 		document.addEventListener("keydown", handleKeydown)
 
 		socket.on("createPersona", (res: Sockets.CreatePersona.Response) => {
-			if (!res.error) {
+			if (res.persona) {
 				validationErrors = {} // Clear any validation errors on success
+				toaster.success({
+					title: "Persona Created",
+					description: `Persona "${res.persona.name}" created successfully.`
+				})
 				closeForm()
 			}
 		})
 
 		socket.on("updatePersona", (res: Sockets.UpdatePersona.Response) => {
-			if (!res.error) {
+			if (res.persona) {
 				validationErrors = {} // Clear any validation errors on success
+				toaster.success({
+					title: "Persona Updated",
+					description: `Persona "${res.persona.name}" updated successfully.`
+				})
 				closeForm()
 			}
 		})

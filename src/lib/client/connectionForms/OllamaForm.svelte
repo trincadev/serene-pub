@@ -4,6 +4,7 @@
 	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import { onMount, onDestroy } from "svelte"
 	import * as skio from "sveltekit-io"
+	import { z } from "zod"
 
 	interface ExtraFieldData {
 		stream: boolean
@@ -21,6 +22,17 @@
 		keepAlive?: string
 		useChat?: boolean
 	}
+
+	// Zod validation schema
+	const ollamaConnectionSchema = z.object({
+		model: z.string().min(1, "Model is required"),
+		baseUrl: z
+			.string()
+			.url("Invalid URL format")
+			.min(1, "Base URL is required")
+	})
+
+	type ValidationErrors = Record<string, string>
 
 	interface Props {
 		connection: SelectConnection
@@ -40,6 +52,7 @@
 	let availableOllamaModels: Sockets.RefreshModels.Response["models"] =
 		$state([])
 	let ollamaFields: ExtraFieldData | undefined = $state()
+	let validationErrors: ValidationErrors = $state({})
 
 	socket.on("refreshModels", (msg: Sockets.RefreshModels.Response) => {
 		if (msg.models) availableOllamaModels = msg.models
@@ -59,10 +72,34 @@
 		$state(null)
 
 	function handleTestConnection() {
+		if (!validateConnection()) return
 		testResult = null
 		socket.emit("testConnection", {
 			connection
 		} as Sockets.TestConnection.Call)
+	}
+
+	function validateConnection(): boolean {
+		const data = {
+			model: connection.model || "",
+			baseUrl: connection.baseUrl || ""
+		}
+
+		const result = ollamaConnectionSchema.safeParse(data)
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
 	}
 
 	// let isValid = $derived.by(() => {

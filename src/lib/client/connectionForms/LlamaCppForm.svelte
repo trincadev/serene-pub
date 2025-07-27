@@ -3,6 +3,7 @@
 	import { TokenCounterOptions } from "$lib/shared/constants/TokenCounters"
 	import { onMount, onDestroy } from "svelte"
 	import * as skio from "sveltekit-io"
+	import { z } from "zod"
 
 	interface ExtraFieldData {
 		stream: boolean
@@ -11,6 +12,16 @@
 	interface ExtraJson {
 		stream?: boolean
 	}
+
+	// Zod validation schema
+	const llamaCppConnectionSchema = z.object({
+		baseUrl: z
+			.string()
+			.url("Invalid URL format")
+			.min(1, "Base URL is required")
+	})
+
+	type ValidationErrors = Record<string, string>
 
 	interface Props {
 		connection: SelectConnection
@@ -24,6 +35,7 @@
 	}
 
 	let llamaCppFields: ExtraFieldData | undefined = $state()
+	let validationErrors: ValidationErrors = $state({})
 
 	socket.on("testConnection", (msg: Sockets.TestConnection.Response) => {
 		testResult = msg
@@ -33,10 +45,33 @@
 		$state(null)
 
 	function handleTestConnection() {
+		if (!validateConnection()) return
 		testResult = null
 		socket.emit("testConnection", {
 			connection
 		} as Sockets.TestConnection.Call)
+	}
+
+	function validateConnection(): boolean {
+		const data = {
+			baseUrl: connection.baseUrl || ""
+		}
+
+		const result = llamaCppConnectionSchema.safeParse(data)
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
 	}
 
 	let isValid = $derived.by(() => {
@@ -87,6 +122,7 @@
 			type="button"
 			class="btn preset-tonal-success btn-sm w-full"
 			onclick={handleTestConnection}
+			disabled={Object.keys(validationErrors).length > 0}
 		>
 			{#if testResult?.ok === true}
 				Test: Okay!
@@ -133,8 +169,27 @@
 				bind:value={connection.baseUrl}
 				placeholder="http://localhost:8080/"
 				required
-				class="input"
+				class="input {validationErrors.baseUrl ? 'border-red-500' : ''}"
+				aria-invalid={validationErrors.baseUrl ? "true" : "false"}
+				aria-describedby={validationErrors.baseUrl
+					? "baseUrl-error"
+					: undefined}
+				oninput={() => {
+					if (validationErrors.baseUrl) {
+						const { baseUrl, ...rest } = validationErrors
+						validationErrors = rest
+					}
+				}}
 			/>
+			{#if validationErrors.baseUrl}
+				<p
+					id="baseUrl-error"
+					class="mt-1 text-sm text-red-500"
+					role="alert"
+				>
+					{validationErrors.baseUrl}
+				</p>
+			{/if}
 		</div>
 		{#if llamaCppFields}
 			<div class="mt-2 flex flex-col gap-1">
