@@ -6,6 +6,7 @@
 	import { onMount, setContext, onDestroy } from "svelte"
 	import SamplingSidebar from "./sidebars/SamplingSidebar.svelte"
 	import ConnectionsSidebar from "./sidebars/ConnectionsSidebar.svelte"
+	import OllamaSidebar from "./sidebars/OllamaSidebar.svelte"
 	import ContextSidebar from "./sidebars/ContextSidebar.svelte"
 	import LorebooksSidebar from "./sidebars/LorebooksSidebar.svelte"
 	import PersonasSidebar from "./sidebars/PersonasSidebar.svelte"
@@ -18,6 +19,7 @@
 	import SettingsSidebar from "$lib/client/components/sidebars/SettingsSidebar.svelte"
 	import type { Snippet } from "svelte"
 	import { Theme } from "$lib/client/consts/Theme"
+	import OllamaIcon from "./icons/OllamaIcon.svelte"
 
 	interface Props {
 		children?: Snippet
@@ -38,16 +40,7 @@
 		onLeftPanelClose: undefined,
 		onRightPanelClose: undefined,
 		onMobilePanelClose: undefined,
-		leftNav: {
-			sampling: {
-				icon: Icons.SlidersHorizontal,
-				title: "Sampling"
-			},
-			connections: { icon: Icons.Cable, title: "Connections" },
-			contexts: { icon: Icons.BookOpenText, title: "Contexts" },
-			prompts: { icon: Icons.MessageCircle, title: "Prompts" },
-			settings: { icon: Icons.Settings, title: "Settings" }
-		},
+		leftNav: {},
 		rightNav: {
 			personas: { icon: Icons.UserCog, title: "Personas" },
 			characters: { icon: Icons.Users, title: "Characters" },
@@ -57,10 +50,41 @@
 		},
 		digest: {}
 	})
-	// TODO use setTheme socket call
 	let themeCtx: ThemeCtx = $state({
 		mode: (localStorage.getItem("mode") as "light" | "dark") || "dark",
 		theme: localStorage.getItem("theme") || Theme.HAMLINDIGO
+	})
+	let systemSettingsCtx: SystemSettingsCtx = $state({
+		settings: {
+			ollamaManagerEnabled: false,
+			ollamaManagerBaseUrl: ""
+		}
+	})
+
+	$effect(() => {
+		console.log(
+			"Layout systemSettingsCtx",
+			$state.snapshot(systemSettingsCtx)
+		)
+	})
+
+	// Update leftNav based on Ollama Manager setting
+	$effect(() => {
+		const baseLeftNav = {
+			sampling: {
+				icon: Icons.SlidersHorizontal,
+				title: "Sampling"
+			},
+			connections: { icon: Icons.Cable, title: "Connections" },
+			...(systemSettingsCtx.settings.ollamaManagerEnabled && {
+				ollama: { icon: OllamaIcon, title: "Ollama Manager" }
+			}),
+			contexts: { icon: Icons.BookOpenText, title: "Contexts" },
+			prompts: { icon: Icons.MessageCircle, title: "Prompts" },
+			settings: { icon: Icons.Settings, title: "Settings" }
+		}
+
+		panelsCtx.leftNav = baseLeftNav
 	})
 
 	function openPanel({
@@ -137,18 +161,18 @@
 	}: {
 		panel: "left" | "right" | "mobile"
 	}) {
-		let res: boolean
+		let res: boolean = true // Default to allowing close
 		if (panel === "mobile") {
-			res = await panelsCtx.onMobilePanelClose!()
+			res = panelsCtx.onMobilePanelClose ? await panelsCtx.onMobilePanelClose() : true
 			panelsCtx.mobilePanel = res ? null : panelsCtx.mobilePanel
 		} else if (panel === "left") {
-			res = await panelsCtx.onLeftPanelClose!()
+			res = panelsCtx.onLeftPanelClose ? await panelsCtx.onLeftPanelClose() : true
 			panelsCtx.leftPanel = res ? null : panelsCtx.leftPanel
 		} else if (panel === "right") {
-			res = await panelsCtx.onRightPanelClose!()
+			res = panelsCtx.onRightPanelClose ? await panelsCtx.onRightPanelClose() : true
 			panelsCtx.rightPanel = res ? null : panelsCtx.rightPanel
 		}
-		return res!
+		return res
 	}
 
 	function handleMobilePanelClick(key: string) {
@@ -168,25 +192,45 @@
 		document.documentElement.setAttribute("data-theme", theme)
 	})
 
-	setContext("panelsCtx", panelsCtx as PanelsCtx)
-	setContext("userCtx", userCtx)
-	setContext("themeCtx", themeCtx)
-
 	onMount(() => {
-		socket.on("user", (message) => {
+		setContext("panelsCtx", panelsCtx as PanelsCtx)
+		setContext("userCtx", userCtx)
+		setContext("themeCtx", themeCtx)
+		setContext("systemSettingsCtx", systemSettingsCtx)
+
+		socket.on("user", (message: Sockets.User.Response) => {
 			userCtx.user = message.user
 		})
+		socket.on(
+			"systemSettings",
+			(message: Sockets.SystemSettings.Response) => {
+				systemSettingsCtx.settings = message.systemSettings
+			}
+		)
 
 		socket.on("error", (message: Sockets.Error.Response) => {
-			toaster.error({ title: "Error", description: message.error })
+			toaster.error({
+				title: message.error,
+				description: message.description
+			})
+		})
+
+		socket.on("success", (message: Sockets.Success.Response) => {
+			toaster.success({
+				title: message.title,
+				description: message.description
+			})
 		})
 
 		socket.emit("user", {})
+		socket.emit("systemSettings", {})
 	})
 
 	onDestroy(() => {
 		socket.off("user")
+		socket.off("systemSettings")
 		socket.off("error")
+		socket.off("success")
 	})
 </script>
 
@@ -228,6 +272,10 @@
 								/>
 							{:else if panelsCtx.leftPanel === "connections"}
 								<ConnectionsSidebar
+									bind:onclose={panelsCtx.onLeftPanelClose}
+								/>
+							{:else if panelsCtx.leftPanel === "ollama"}
+								<OllamaSidebar
 									bind:onclose={panelsCtx.onLeftPanelClose}
 								/>
 							{:else if panelsCtx.leftPanel === "contexts"}
@@ -335,6 +383,10 @@
 						/>
 					{:else if panelsCtx.mobilePanel === "connections"}
 						<ConnectionsSidebar
+							bind:onclose={panelsCtx.onMobilePanelClose}
+						/>
+					{:else if panelsCtx.mobilePanel === "ollama"}
+						<OllamaSidebar
 							bind:onclose={panelsCtx.onMobilePanelClose}
 						/>
 					{:else if panelsCtx.mobilePanel === "contexts"}

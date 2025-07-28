@@ -351,7 +351,7 @@
 	<Modal
 		open={showDeleteModal}
 		onOpenChange={(e) => (showDeleteModal = e.open)}
-		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
 		backdropClasses="backdrop-blur-sm"
 	>
 		{#snippet content()}
@@ -422,7 +422,7 @@
 			importingLorebook = null
 			importingLorebookCharacter = null
 		}}
-		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
 		backdropClasses="backdrop-blur-sm"
 	>
 		{#snippet content()}

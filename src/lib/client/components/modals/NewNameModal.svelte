@@ -57,10 +57,17 @@
 </script>
 
 <Modal
+<<<<<<< HEAD
 	{open}
 	{onOpenChange}
 	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
 	backdropClasses="backdrop-blur-sm"
+=======
+    {open}
+    {onOpenChange}
+    contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
+    backdropClasses="backdrop-blur-sm"
+>>>>>>> feature/ollama-manager
 >
 	{#snippet content()}
 		<header class="flex justify-between">

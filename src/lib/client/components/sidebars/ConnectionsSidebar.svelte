@@ -5,7 +5,6 @@
 	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import { z } from "zod"
 	import OllamaForm from "$lib/client/connectionForms/OllamaForm.svelte"
-	// import ChatGPTForm from "$lib/client/connectionForms/ChatGPTForm.svelte"
 	import OpenAIForm from "$lib/client/connectionForms/OpenAIForm.svelte"
 	import LmStudioForm from "$lib/client/connectionForms/LMStudioForm.svelte"
 	import {
@@ -23,6 +22,8 @@
 
 	let { onclose = $bindable() }: Props = $props()
 	let userCtx: UserCtx = getContext("userCtx")
+	let systemSettingsCtx: SystemSettingsCtx = getContext("systemSettingsCtx")
+
 	const socket = skio.get()
 
 	const OAIChatPresets: {
@@ -422,7 +423,7 @@
 			socket.emit("connection", { id: userCtx.user.activeConnectionId })
 		}
 		onclose = handleOnClose
-		// If ollama, fetch models
+
 		if (connection?.type === "ollama" && connection.baseUrl) {
 			handleRefreshModels()
 		}
@@ -441,63 +442,37 @@
 </script>
 
 <div class="text-foreground p-4">
-	<div class="mt-2 mb-2 flex gap-2 sm:mt-0">
-		<button
-			type="button"
-			class="btn btn-sm preset-filled-primary-500"
-			onclick={handleNew}
-		>
-			<Icons.Plus size={16} />
-		</button>
-		<button
-			type="button"
-			class="btn btn-sm preset-filled-secondary-500"
-			onclick={handleReset}
-			disabled={!unsavedChanges}
-		>
-			<Icons.RefreshCcw size={16} />
-		</button>
-		<button
-			type="button"
-			class="btn btn-sm preset-filled-error-500"
-			onclick={handleDelete}
-			disabled={!connection}
-		>
-			<Icons.X size={16} />
-		</button>
-	</div>
-	<div
-		class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center"
-		class:hidden={!connectionsList.length}
-	>
-		<select
-			class="select bg-background border-muted rounded border"
-			onchange={handleSelectChange}
-			bind:value={userCtx!.user!.activeConnectionId}
-			disabled={unsavedChanges}
-		>
-			{#each connectionsList as c}
-				<option value={c.id}>
-					{c.name} ({CONNECTION_TYPE.options.find(
-						(t) => t.value === c.type
-					)!.label})
-				</option>
-			{/each}
-		</select>
-	</div>
-	{#if !!connection}
-		{#key connection.id}
-			<div class="my-4 flex">
+		<div class="mt-2 mb-2 flex justify-between gap-2 sm:mt-0">
+			<div class="gap-2">
 				<button
 					type="button"
-					class="btn btn-sm preset-filled-success-500 w-full"
-					onclick={handleUpdate}
-					disabled={!unsavedChanges}
+					class="btn btn-sm preset-filled-primary-500"
+					onclick={handleNew}
+					title="Create New Connection"
+					aria-label="Create New Connection"
 				>
-					<Icons.Save size={16} />
-					Save
+					<Icons.Plus size={16} />
+				</button>
+				<button
+					type="button"
+					class="btn btn-sm preset-filled-secondary-500"
+					onclick={handleReset}
+					disabled={!unsavedChanges}
+					title="Reset Changes"
+					aria-label="Reset Changes"
+				>
+					<Icons.RefreshCcw size={16} />
+				</button>
+				<button
+					type="button"
+					class="btn btn-sm preset-filled-error-500"
+					onclick={handleDelete}
+					disabled={!connection}
+				>
+					<Icons.X size={16} />
 				</button>
 			</div>
+<<<<<<< HEAD
 			<div class="flex flex-col gap-1">
 				<label class="font-semibold" for="name">Name</label>
 				<input
@@ -553,14 +528,72 @@
 	{#if !connectionsList.length}
 		<div class="text-muted-foreground py-8 text-center">
 			No connections found. Create a new connection to get started.
+=======
+>>>>>>> feature/ollama-manager
 		</div>
-	{/if}
-</div>
+		<div
+			class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center"
+			class:hidden={!connectionsList.length}
+		>
+			<select
+				class="select bg-background border-muted rounded border"
+				onchange={handleSelectChange}
+				bind:value={userCtx!.user!.activeConnectionId}
+				disabled={unsavedChanges}
+			>
+				{#each connectionsList as c}
+					<option value={c.id}>
+						{c.name} ({CONNECTION_TYPE.options.find(
+							(t) => t.value === c.type
+						)!.label})
+					</option>
+				{/each}
+			</select>
+		</div>
+		{#if !!connection}
+			{#key connection.id}
+				<div class="my-4 flex">
+					<button
+						type="button"
+						class="btn btn-sm preset-filled-success-500 w-full"
+						onclick={handleUpdate}
+						disabled={!unsavedChanges}
+					>
+						<Icons.Save size={16} />
+						Save
+					</button>
+				</div>
+				<div class="flex flex-col gap-1">
+					<label class="font-semibold" for="name">Name</label>
+					<input
+						id="name"
+						type="text"
+						bind:value={connection.name}
+						class="input"
+					/>
+				</div>
+				{#if connection.type === CONNECTION_TYPE.OLLAMA}
+					<OllamaForm bind:connection />
+				{:else if connection.type === CONNECTION_TYPE.OPENAI_CHAT}
+					<OpenAIForm bind:connection />
+				{:else if connection.type === CONNECTION_TYPE.LM_STUDIO}
+					<LmStudioForm bind:connection />
+				{:else if connection.type === CONNECTION_TYPE.LLAMACPP_COMPLETION}
+					<LlamaCppForm bind:connection />
+				{/if}
+			{/key}
+		{/if}
+		{#if !connectionsList.length}
+			<div class="text-muted-foreground py-8 text-center">
+				No connections found. Create a new connection to get started.
+			</div>
+		{/if}
+	</div>
 
 <Modal
 	open={showConfirmModal}
 	onOpenChange={(e) => (showConfirmModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -592,7 +625,7 @@
 <Modal
 	open={showNewConnectionModal}
 	onOpenChange={(e) => (showNewConnectionModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -693,7 +726,7 @@
 <Modal
 	open={showDeleteModal}
 	onOpenChange={(e) => (showDeleteModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
