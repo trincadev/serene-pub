@@ -7,6 +7,128 @@ import { dev } from "$app/environment"
 import { drizzle } from "drizzle-orm/pglite"
 import { sync } from "./defaults"
 
+// Database lock interface
+interface DbLock {
+	timestamp: number
+	lockLength: number // in milliseconds
+}
+
+interface MetaFile {
+	version: string
+	lock?: DbLock
+}
+
+// Move meta.json handling to the beginning
+const metaPath = dbConfig.dataDir + "/meta.json"
+
+// Ensure meta.json exists
+if (!fs.existsSync(metaPath)) {
+	fs.writeFileSync(
+		metaPath,
+		JSON.stringify({ version: "0.0.0" }, null, 2)
+	)
+}
+
+// Read meta.json
+let meta: MetaFile = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+
+// Database lock functions
+const DEFAULT_LOCK_LENGTH = 5000 // 5 seconds in milliseconds
+
+async function checkDatabaseLock(): Promise<void> {
+	// Refresh meta from file
+	meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+	
+	if (!meta.lock) {
+		// No lock exists, continue
+		return
+	}
+
+	const currentTime = Date.now()
+	const lockExpiry = meta.lock.timestamp + meta.lock.lockLength
+	
+	if (currentTime < lockExpiry) {
+		// Lock is still active, wait for it to expire
+		const waitTime = lockExpiry - currentTime
+		console.log(`Database locked, waiting ${waitTime}ms for lock to expire...`)
+		
+		await new Promise(resolve => setTimeout(resolve, waitTime))
+		
+		// Check again after waiting
+		meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+		
+		if (meta.lock && Date.now() < meta.lock.timestamp + meta.lock.lockLength) {
+			// Still locked after waiting, exit application
+			console.error("Database remains locked after waiting. Exiting application.")
+			process.exit(1)
+		}
+	}
+	
+	// Lock is stale or doesn't exist, continue
+}
+
+function updateDatabaseLock(): void {
+	try {
+		// Refresh meta from file
+		meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+		
+		meta.lock = {
+			timestamp: Date.now(),
+			lockLength: DEFAULT_LOCK_LENGTH
+		}
+		
+		fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2))
+	} catch (error) {
+		console.error("Failed to update database lock:", error)
+	}
+}
+
+// Background lock update function
+let lockUpdateInterval: NodeJS.Timeout | null = null
+
+function startLockUpdates(): void {
+	// Update lock immediately
+	updateDatabaseLock()
+	
+	// Set up interval to update lock every few seconds
+	lockUpdateInterval = setInterval(() => {
+		updateDatabaseLock()
+	}, DEFAULT_LOCK_LENGTH - 1000) // Update 1 second before lock expires
+}
+
+function stopLockUpdates(): void {
+	if (lockUpdateInterval) {
+		clearInterval(lockUpdateInterval)
+		lockUpdateInterval = null
+	}
+	
+	// Clear the lock when stopping
+	try {
+		meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+		delete meta.lock
+		fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2))
+	} catch (error) {
+		console.error("Failed to clear database lock:", error)
+	}
+}
+
+// Clean up lock on process exit
+process.on('exit', stopLockUpdates)
+process.on('SIGINT', () => {
+	stopLockUpdates()
+	process.exit(0)
+})
+process.on('SIGTERM', () => {
+	stopLockUpdates()
+	process.exit(0)
+})
+
+// Check database lock before proceeding
+await checkDatabaseLock()
+
+// Start lock updates
+startLockUpdates()
+
 // const { firstInit, pglite } = await startPg()
 
 export let db = drizzle(dbConfig.dbPath, { schema })
@@ -48,19 +170,6 @@ try {
 
 // Run migrations if in production environment
 if (!dev || !hasTables) {
-	// If it doesn't exist, create a meta.json file in the data directory
-	const metaPath = dbConfig.dataDir + "/meta.json"
-	// Check if the file exists
-	if (!fs.existsSync(metaPath)) {
-		// Create the file with default content
-		fs.writeFileSync(
-			metaPath,
-			JSON.stringify({ version: "0.0.0" }, null, 2)
-		)
-	}
-
-	// Check meta.json for version
-	const meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
 	// @ts-ignore
 	const appVersion = __APP_VERSION__
 	if (!appVersion) {
