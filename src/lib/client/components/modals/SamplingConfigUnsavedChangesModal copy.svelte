@@ -17,17 +17,10 @@
 </script>
 
 <Modal
-<<<<<<< HEAD
 	{open}
 	{onOpenChange}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-xl max-w-md"
 	backdropClasses="backdrop-blur-sm"
-=======
-    {open}
-    {onOpenChange}
-    contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
-    backdropClasses="backdrop-blur-sm"
->>>>>>> feature/ollama-manager
 >
 	{#snippet content()}
 		<header class="flex justify-between">
@@ -35,7 +28,7 @@
 		</header>
 		<article>
 			<p class="opacity-60">
-				Your sampling have unsaved changes. Are you sure you want to
+				Your sampling configuration has unsaved changes. Are you sure you want to
 				discard them?
 			</p>
 		</article>

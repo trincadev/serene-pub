@@ -61,11 +61,11 @@
 			onclose()
 		}
 	}}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl w-[30em] max-w-dvw-lg border border-surface-300-700"
+	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-xl w-[30em] max-w-dvw-lg border border-surface-300-700"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
-		<div class="mb-6">
+		<div class="space-y-2">
 			<div class="mb-2 flex items-center gap-3">
 				<div class="bg-primary-500/10 rounded-full p-2">
 					<Icons.Download size={20} class="text-primary-500" />
@@ -77,7 +77,7 @@
 			</p>
 		</div>
 
-		<div class="mb-6 space-y-3">
+		<div class="space-y-3">
 			<div>
 				<label
 					class="text-foreground mb-1 block text-sm font-medium"
@@ -108,7 +108,7 @@
 			{/if}
 		</div>
 
-		<div class="flex gap-3">
+		<div class="flex gap-4">
 			<button
 				class="btn btn-secondary flex-1"
 				onclick={onclose}

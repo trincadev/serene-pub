@@ -91,7 +91,6 @@ import {
 	iterateNextHistoryEntry,
 	lorebookImport
 } from "./lorebooks"
-<<<<<<< HEAD
 import {
 	tagsList,
 	createTag,
@@ -101,8 +100,7 @@ import {
 	addTagToCharacter,
 	removeTagFromCharacter
 } from "./tags"
-=======
-import { updateOllamaManagerEnabled, systemSettings } from "./systemSettings"
+import { updateOllamaManagerEnabled, updateShowAllCharacterFields, updateEasyCharacterCreation, updateEasyPersonaCreation, systemSettings } from "./systemSettings"
 import {
 	ollamaConnectModel,
 	ollamaSearchAvailableModels,
@@ -117,7 +115,6 @@ import {
 	ollamaGetDownloadProgress,
 	ollamaClearDownloadHistory
 } from "./ollama"
->>>>>>> feature/ollama-manager
 
 const userId = 1 // Replace with actual user id
 
@@ -173,6 +170,9 @@ export function connectSockets(io: {
 		// App Settings
 		register(socket, systemSettings, emitToUser)
 		register(socket, updateOllamaManagerEnabled, emitToUser)
+		register(socket, updateShowAllCharacterFields, emitToUser)
+		register(socket, updateEasyCharacterCreation, emitToUser)
+		register(socket, updateEasyPersonaCreation, emitToUser)
 
 		// Characters
 		register(socket, characterList, emitToUser)
@@ -247,7 +247,6 @@ export function connectSockets(io: {
 		register(socket, deleteHistoryEntry, emitToUser)
 		register(socket, iterateNextHistoryEntry, emitToUser)
 		register(socket, lorebookImport, emitToUser)
-<<<<<<< HEAD
 		// Tags
 		register(socket, tagsList, emitToUser)
 		register(socket, createTag, emitToUser)
@@ -256,8 +255,6 @@ export function connectSockets(io: {
 		register(socket, tagRelatedData, emitToUser)
 		register(socket, addTagToCharacter, emitToUser)
 		register(socket, removeTagFromCharacter, emitToUser)
-=======
->>>>>>> feature/ollama-manager
 		console.log(`Socket connected: ${socket.id} for user ${userId}`)
 	})
 }

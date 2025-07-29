@@ -18,13 +18,14 @@
 
 	const socket = skio.get()
 	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
+	const systemSettingsCtx: SystemSettingsCtx = $state(getContext("systemSettingsCtx"))
 
 	let characterList: Sockets.CharacterList.Response["characterList"] = $state(
 		[]
 	)
 	let search = $state("")
 	let characterId: number | undefined = $state()
-	// let isCreating = $state(false)
+	let isCreating = $state(false)
 	let showCharacterCreator = $state(false)
 	let isSafeToCloseCharacterForm = $state(true)
 	let showDeleteModal = $state(false)
@@ -38,7 +39,7 @@
 	let showLorebookImportConfirmationModal = $state(false)
 
 	let unsavedChanges = $derived.by(() => {
-		return !characterId ? false : !isSafeToCloseCharacterForm
+		return (!characterId && !isCreating) ? false : !isSafeToCloseCharacterForm
 	})
 
 	$effect(() => {
@@ -79,7 +80,19 @@
 		})
 
 	function handleCreateClick() {
-		showCharacterCreator = true
+		// Clear tutorial flag when user interacts with the highlighted button
+		if (panelsCtx.digest.tutorial) {
+			panelsCtx.digest.tutorial = false
+		}
+		
+		// Check if easy character creation is enabled
+		if (systemSettingsCtx.settings.enableEasyCharacterCreation) {
+			showCharacterCreator = true
+		} else {
+			// Use regular edit form for creation
+			isCreating = true
+			characterId = undefined
+		}
 	}
 
 	function handleEditClick(id: number) {
@@ -87,7 +100,7 @@
 	}
 
 	function closeCharacterForm() {
-		// isCreating = false
+		isCreating = false
 		characterId = undefined
 	}
 
@@ -223,15 +236,13 @@
 </script>
 
 <div class="text-foreground h-full p-4">
-	<!-- Commented out old character creation form - keeping for potential future use
 	{#if isCreating}
 		<CharacterForm
 			bind:isSafeToClose={isSafeToCloseCharacterForm}
 			closeForm={closeCharacterForm}
+			bind:onCancel={onEditFormCancel}
 		/>
 	{:else if characterId}
-	-->
-	{#if characterId}
 		{#key characterId}
 			<CharacterForm
 				bind:isSafeToClose={isSafeToCloseCharacterForm}
@@ -243,7 +254,7 @@
 	{:else}
 		<div class="mb-2 flex gap-2">
 			<button
-				class="btn btn-sm preset-filled-primary-500"
+				class="btn btn-sm preset-filled-primary-500 {panelsCtx.digest.tutorial ? 'ring-4 ring-primary-500/50 animate-pulse' : ''}"
 				onclick={handleCreateClick}
 				title="Create New Character"
 			>

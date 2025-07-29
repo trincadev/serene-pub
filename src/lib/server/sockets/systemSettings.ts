@@ -57,3 +57,78 @@ export async function updateOllamaManagerEnabled(
 		emitToUser("error", res)
 	}
 }
+
+export async function updateShowAllCharacterFields(
+	socket: any,
+	message: Sockets.UpdateShowAllCharacterFields.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		await db.update(schema.systemSettings).set({
+			showAllCharacterFields: message.enabled
+		}).where(eq(schema.systemSettings.id, 1))
+		
+		const res: Sockets.UpdateShowAllCharacterFields.Response = {
+			success: true,
+			enabled: message.enabled
+		}
+		emitToUser("updateShowAllCharacterFields", res)
+		await systemSettings(socket, {}, emitToUser) // Refresh system settings after update
+	} catch (error: any) {
+		console.error("Update show all character fields error:", error)
+		const res = {
+			error: "Failed to update show all character fields setting"
+		}
+		emitToUser("error", res)
+	}
+}
+
+export async function updateEasyCharacterCreation(
+	socket: any,
+	message: Sockets.UpdateEasyCharacterCreation.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		await db.update(schema.systemSettings).set({
+			enableEasyCharacterCreation: message.enabled
+		}).where(eq(schema.systemSettings.id, 1))
+		
+		const res: Sockets.UpdateEasyCharacterCreation.Response = {
+			success: true,
+			enabled: message.enabled
+		}
+		emitToUser("updateEasyCharacterCreation", res)
+		await systemSettings(socket, {}, emitToUser) // Refresh system settings after update
+	} catch (error: any) {
+		console.error("Update easy character creation error:", error)
+		const res = {
+			error: "Failed to update easy character creation setting"
+		}
+		emitToUser("error", res)
+	}
+}
+
+export async function updateEasyPersonaCreation(
+	socket: any,
+	message: Sockets.UpdateEasyPersonaCreation.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		await db.update(schema.systemSettings).set({
+			enableEasyPersonaCreation: message.enabled
+		}).where(eq(schema.systemSettings.id, 1))
+		
+		const res: Sockets.UpdateEasyPersonaCreation.Response = {
+			success: true,
+			enabled: message.enabled
+		}
+		emitToUser("updateEasyPersonaCreation", res)
+		await systemSettings(socket, {}, emitToUser) // Refresh system settings after update
+	} catch (error: any) {
+		console.error("Update easy persona creation error:", error)
+		const res = {
+			error: "Failed to update easy persona creation setting"
+		}
+		emitToUser("error", res)
+	}
+}

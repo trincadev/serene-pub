@@ -674,4 +674,7 @@ export const systemSettings = pgTable("system_settings", {
 	id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
 	ollamaManagerEnabled: boolean("ollama_manager_enabled").notNull().default(false),
 	ollamaManagerBaseUrl: text("ollama_base_url").notNull().default("http://localhost:11434/"),
+	showAllCharacterFields:  boolean("show_all_character_fields").notNull().default(false),
+	enableEasyCharacterCreation: boolean("enable_easy_character_creation").notNull().default(true),
+	enableEasyPersonaCreation: boolean("enable_easy_persona_creation").notNull().default(true)
 })

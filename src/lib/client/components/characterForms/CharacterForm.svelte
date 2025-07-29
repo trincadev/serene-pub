@@ -2,7 +2,7 @@
 	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import * as skio from "sveltekit-io"
-	import { onMount, onDestroy } from "svelte"
+	import { onMount, onDestroy, getContext } from "svelte"
 	import { z } from "zod"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import Avatar from "../Avatar.svelte"
@@ -66,6 +66,7 @@
 	}: Props = $props()
 
 	const socket = skio.get()
+	let systemSettingsCtx: SystemSettingsCtx = $state(getContext("systemSettingsCtx"))
 
 	let editCharacterData: EditCharacterData = $state({
 		id: undefined,
@@ -232,6 +233,13 @@
 
 	function handleCancelModalCancel() {
 		showCancelModal = false
+	}
+
+	async function onShowAllCharacterFieldsClick(event: { checked: boolean }) {
+		const res: Sockets.UpdateShowAllCharacterFields.Call = {
+			enabled: event.checked
+		}
+		socket.emit("updateShowAllCharacterFields", res)
 	}
 
 	// Helper for editing arrays
@@ -650,41 +658,43 @@
 				</div>
 			{/if}
 		</fieldset>
-		<div class="flex flex-col gap-2">
-			<button
-				type="button"
-				class="flex items-center gap-2 text-sm font-semibold"
-				onclick={() => (expanded.scenario = !expanded.scenario)}
-			>
-				<span class="flex gap-1">
-					Scenario <span
-						class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
-						title="This field will be visible in prompts (excluded from group chats)"
-					>
-						<Icons.ScanEye
-							size={16}
-							class="relative top-[1px] inline"
-						/>
+		{#if systemSettingsCtx.settings.showAllCharacterFields}
+			<div class="flex flex-col gap-2">
+				<button
+					type="button"
+					class="flex items-center gap-2 text-sm font-semibold"
+					onclick={() => (expanded.scenario = !expanded.scenario)}
+				>
+					<span class="flex gap-1">
+						Scenario <span
+							class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+							title="This field will be visible in prompts (excluded from group chats)"
+						>
+							<Icons.ScanEye
+								size={16}
+								class="relative top-[1px] inline"
+							/>
+						</span>
 					</span>
-				</span>
-				<span class="ml-1">{expanded.scenario ? "▼" : "►"}</span>
-			</button>
-			{#if expanded.scenario}
-				<textarea
-					rows="8"
-					bind:value={editCharacterData.scenario}
-					class="input"
-					placeholder="Scenario..."
-				></textarea>
-			{/if}
-		</div>
+					<span class="ml-1">{expanded.scenario ? "▼" : "►"}</span>
+				</button>
+				{#if expanded.scenario}
+					<textarea
+						rows="8"
+						bind:value={editCharacterData.scenario}
+						class="input"
+						placeholder="Scenario..."
+					></textarea>
+				{/if}
+			</div>
+		{/if}
 		<div class="flex flex-col gap-2">
 			<button
 				type="button"
 				class="flex items-center gap-2 text-sm font-semibold"
 				onclick={() => (expanded.firstMessage = !expanded.firstMessage)}
 			>
-				<span>First Message</span>
+				<span>Greeting (First Message)</span>
 				<span class="ml-1">{expanded.firstMessage ? "▼" : "►"}</span>
 			</button>
 			{#if expanded.firstMessage}
@@ -696,60 +706,34 @@
 				></textarea>
 			{/if}
 		</div>
-		<fieldset class="flex flex-col gap-2">
-			<button
-				type="button"
-				class="flex items-center gap-2 text-sm font-semibold"
-				onclick={() =>
-					(expanded.exampleDialogues = !expanded.exampleDialogues)}
-				aria-expanded={expanded.exampleDialogues}
-				aria-controls="example-dialogues-content"
-				id="example-dialogues-toggle"
-			>
-				<span class="flex gap-1">
-					Example Dialogues <span
-						class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
-						title="This field will be visible in prompts"
-						aria-label="This field will be visible in prompts"
-					>
-						<Icons.ScanEye
-							size={16}
-							class="relative top-[1px] inline"
-							aria-hidden="true"
-						/>
-					</span>
-				</span>
-				<span class="ml-1" aria-hidden="true">
-					{expanded.exampleDialogues ? "▼" : "►"}
-				</span>
-			</button>
-			{#if expanded.exampleDialogues}
-				<div
-					id="example-dialogues-content"
-					role="region"
-					aria-labelledby="example-dialogues-toggle"
+		{#if systemSettingsCtx.settings.showAllCharacterFields}
+			<div class="flex flex-col gap-2">
+				<button
+					type="button"
+					class="flex items-center gap-2 text-sm font-semibold"
+					onclick={() =>
+						(expanded.alternateGreetings =
+							!expanded.alternateGreetings)}
 				>
-					<div
-						class="flex flex-col gap-1"
-						role="list"
-						aria-label="Example dialogues"
-					>
-						{#each editCharacterData.exampleDialogues as dialogue, idx (idx)}
-							<div
-								class="flex flex-col items-center gap-2"
-								role="listitem"
-							>
+					<span>Alternate Greetings</span>
+					<span class="ml-1">
+						{expanded.alternateGreetings ? "▼" : "►"}
+					</span>
+				</button>
+				{#if expanded.alternateGreetings}
+					<div class="flex flex-col gap-1">
+						{#each editCharacterData.alternateGreetings as greeting, idx (idx)}
+							<div class="flex flex-col items-center gap-2">
 								<div class="w-full">
 									<textarea
-										rows="4"
+										rows="2"
 										bind:value={
-											editCharacterData.exampleDialogues[
+											editCharacterData.alternateGreetings[
 												idx
 											]
 										}
-										class="input resize-y"
-										placeholder="Example dialogue..."
-										aria-label={`Example dialogue ${idx + 1}`}
+										class="input input-xs bg-background border-muted w-full resize-y rounded border"
+										placeholder="Greeting..."
 									></textarea>
 								</div>
 								<button
@@ -757,15 +741,11 @@
 									type="button"
 									onclick={() =>
 										removeFromArray(
-											editCharacterData.exampleDialogues,
+											editCharacterData.alternateGreetings,
 											idx
 										)}
-									aria-label={`Delete example dialogue ${idx + 1}`}
 								>
-									<Icons.Minus
-										class="h-4 w-4"
-										aria-hidden="true"
-									/> Delete
+									<Icons.Minus class="h-4 w-4" /> Delete
 								</button>
 							</div>
 						{/each}
@@ -773,266 +753,308 @@
 							class="btn btn-sm preset-filled-primary-500 mt-1"
 							type="button"
 							onclick={() =>
-								addToArray(editCharacterData.exampleDialogues)}
-							aria-label="Add new example dialogue"
+								addToArray(editCharacterData.alternateGreetings)}
 						>
-							<Icons.Plus class="h-4 w-4" aria-hidden="true" />
-							Add Example Dialogue
+							<Icons.Plus class="h-4 w-4" />
+							Add Greeting
 						</button>
 					</div>
-				</div>
-			{/if}
-		</fieldset>
-		<div class="flex flex-col gap-2">
-			<button
-				type="button"
-				class="flex items-center gap-2 text-sm font-semibold"
-				onclick={() =>
-					(expanded.alternateGreetings =
-						!expanded.alternateGreetings)}
-			>
-				<span>Alternate Greetings</span>
-				<span class="ml-1">
-					{expanded.alternateGreetings ? "▼" : "►"}
-				</span>
-			</button>
-			{#if expanded.alternateGreetings}
-				<div class="flex flex-col gap-1">
-					{#each editCharacterData.alternateGreetings as greeting, idx (idx)}
-						<div class="flex flex-col items-center gap-2">
-							<div class="w-full">
-								<textarea
-									rows="2"
-									bind:value={
-										editCharacterData.alternateGreetings[
-											idx
-										]
-									}
-									class="input input-xs bg-background border-muted w-full resize-y rounded border"
-									placeholder="Greeting..."
-								></textarea>
-							</div>
+				{/if}
+			</div>
+			<fieldset class="flex flex-col gap-2">
+				<button
+					type="button"
+					class="flex items-center gap-2 text-sm font-semibold"
+					onclick={() =>
+						(expanded.exampleDialogues = !expanded.exampleDialogues)}
+					aria-expanded={expanded.exampleDialogues}
+					aria-controls="example-dialogues-content"
+					id="example-dialogues-toggle"
+				>
+					<span class="flex gap-1">
+						Example Dialogues <span
+							class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+							title="This field will be visible in prompts"
+							aria-label="This field will be visible in prompts"
+						>
+							<Icons.ScanEye
+								size={16}
+								class="relative top-[1px] inline"
+								aria-hidden="true"
+							/>
+						</span>
+					</span>
+					<span class="ml-1" aria-hidden="true">
+						{expanded.exampleDialogues ? "▼" : "►"}
+					</span>
+				</button>
+				{#if expanded.exampleDialogues}
+					<div
+						id="example-dialogues-content"
+						role="region"
+						aria-labelledby="example-dialogues-toggle"
+					>
+						<div
+							class="flex flex-col gap-1"
+							role="list"
+							aria-label="Example dialogues"
+						>
+							{#each editCharacterData.exampleDialogues as dialogue, idx (idx)}
+								<div
+									class="flex flex-col items-center gap-2"
+									role="listitem"
+								>
+									<div class="w-full">
+										<textarea
+											rows="4"
+											bind:value={
+												editCharacterData.exampleDialogues[
+													idx
+												]
+											}
+											class="input resize-y"
+											placeholder="Example dialogue..."
+											aria-label={`Example dialogue ${idx + 1}`}
+										></textarea>
+									</div>
+									<button
+										class="btn btn-sm preset-tonal-error w-full"
+										type="button"
+										onclick={() =>
+											removeFromArray(
+												editCharacterData.exampleDialogues,
+												idx
+											)}
+										aria-label={`Delete example dialogue ${idx + 1}`}
+									>
+										<Icons.Minus
+											class="h-4 w-4"
+											aria-hidden="true"
+										/> Delete
+									</button>
+								</div>
+							{/each}
 							<button
-								class="btn btn-sm preset-tonal-error w-full"
+								class="btn btn-sm preset-filled-primary-500 mt-1"
 								type="button"
 								onclick={() =>
-									removeFromArray(
-										editCharacterData.alternateGreetings,
-										idx
-									)}
+									addToArray(editCharacterData.exampleDialogues)}
+								aria-label="Add new example dialogue"
 							>
-								<Icons.Minus class="h-4 w-4" /> Delete
+								<Icons.Plus class="h-4 w-4" aria-hidden="true" />
+								Add Example Dialogue
 							</button>
 						</div>
-					{/each}
-					<button
-						class="btn btn-sm preset-filled-primary-500 mt-1"
-						type="button"
-						onclick={() =>
-							addToArray(editCharacterData.alternateGreetings)}
-					>
-						<Icons.Plus class="h-4 w-4" />
-						Add Greeting
-					</button>
-				</div>
-			{/if}
-		</div>
-		<div class="flex flex-col gap-2">
-			<button
-				type="button"
-				class="flex items-center gap-2 text-sm font-semibold"
-				onclick={() => (expanded.creatorNotes = !expanded.creatorNotes)}
-			>
-				<span>Creator Notes</span>
-				<span class="ml-1">{expanded.creatorNotes ? "▼" : "►"}</span>
-			</button>
-			{#if expanded.creatorNotes}
-				<textarea
-					rows="4"
-					bind:value={editCharacterData.creatorNotes}
-					class="input"
-					placeholder="Notes from the character creator..."
-				></textarea>
-			{/if}
-		</div>
-		<div class="flex flex-col gap-2">
-			<button
-				type="button"
-				class="flex items-center gap-2 text-sm font-semibold"
-				onclick={() =>
-					(expanded.creatorNotesMultilingual =
-						!expanded.creatorNotesMultilingual)}
-			>
-				<span>Creator Notes (Multilingual)</span>
-				<span class="ml-1">
-					{expanded.creatorNotesMultilingual ? "▼" : "►"}
-				</span>
-			</button>
-			{#if expanded.creatorNotesMultilingual}
-				<div class="flex flex-col gap-1">
-					{#each Object.entries(editCharacterData.creatorNotesMultilingual) as [lang, note], idx (lang)}
-						<div class="flex items-center gap-2">
+					</div>
+				{/if}
+			</fieldset>
+		{/if}
+		{#if systemSettingsCtx.settings.showAllCharacterFields}
+			<div class="flex flex-col gap-2">
+				<button
+					type="button"
+					class="flex items-center gap-2 text-sm font-semibold"
+					onclick={() => (expanded.creatorNotes = !expanded.creatorNotes)}
+				>
+					<span>Creator Notes</span>
+					<span class="ml-1">{expanded.creatorNotes ? "▼" : "►"}</span>
+				</button>
+				{#if expanded.creatorNotes}
+					<textarea
+						rows="4"
+						bind:value={editCharacterData.creatorNotes}
+						class="input"
+						placeholder="Notes from the character creator..."
+					></textarea>
+				{/if}
+			</div>
+		{/if}
+		{#if systemSettingsCtx.settings.showAllCharacterFields}
+			<div class="flex flex-col gap-2">
+				<button
+					type="button"
+					class="flex items-center gap-2 text-sm font-semibold"
+					onclick={() =>
+						(expanded.creatorNotesMultilingual =
+							!expanded.creatorNotesMultilingual)}
+				>
+					<span>Creator Notes (Multilingual)</span>
+					<span class="ml-1">
+						{expanded.creatorNotesMultilingual ? "▼" : "►"}
+					</span>
+				</button>
+				{#if expanded.creatorNotesMultilingual}
+					<div class="flex flex-col gap-1">
+						{#each Object.entries(editCharacterData.creatorNotesMultilingual) as [lang, note], idx (lang)}
+							<div class="flex items-center gap-2">
+								<input
+									type="text"
+									value={lang}
+									class="input input-xs bg-background border-muted w-16 rounded border"
+									readonly
+								/>
+								<input
+									type="text"
+									bind:value={
+										editCharacterData.creatorNotesMultilingual[
+											lang
+										]
+									}
+									class="input input-xs bg-background border-muted flex-1 rounded border"
+									placeholder="Note..."
+								/>
+								<button
+									class="btn btn-sm preset-filled-success-500"
+									type="button"
+									onclick={() =>
+										removeObjectKey(
+											editCharacterData.creatorNotesMultilingual,
+											lang
+										)}
+								>
+									-
+								</button>
+							</div>
+						{/each}
+						<div class="mt-1 flex gap-2">
 							<input
 								type="text"
-								value={lang}
 								class="input input-xs bg-background border-muted w-16 rounded border"
-								readonly
+								bind:value={newLangKey}
+								placeholder="Lang"
 							/>
 							<input
 								type="text"
-								bind:value={
-									editCharacterData.creatorNotesMultilingual[
-										lang
-									]
-								}
 								class="input input-xs bg-background border-muted flex-1 rounded border"
+								bind:value={newLangNote}
 								placeholder="Note..."
 							/>
 							<button
 								class="btn btn-sm preset-filled-success-500"
 								type="button"
-								onclick={() =>
-									removeObjectKey(
-										editCharacterData.creatorNotesMultilingual,
-										lang
-									)}
+								onclick={() => {
+									if (newLangKey) {
+										setObjectKey(
+											editCharacterData.creatorNotesMultilingual,
+											newLangKey,
+											newLangNote
+										)
+										newLangKey = ""
+										newLangNote = ""
+									}
+								}}
 							>
-								-
+								<Icons.Plus class="h-4 w-4" />
 							</button>
 						</div>
-					{/each}
-					<div class="mt-1 flex gap-2">
-						<input
-							type="text"
-							class="input input-xs bg-background border-muted w-16 rounded border"
-							bind:value={newLangKey}
-							placeholder="Lang"
-						/>
-						<input
-							type="text"
-							class="input input-xs bg-background border-muted flex-1 rounded border"
-							bind:value={newLangNote}
-							placeholder="Note..."
-						/>
+					</div>
+				{/if}
+			</div>
+		{/if}
+		{#if systemSettingsCtx.settings.showAllCharacterFields}
+			<div class="flex flex-col gap-2">
+				<button
+					type="button"
+					class="flex items-center gap-2 text-sm font-semibold"
+					onclick={() =>
+						(expanded.groupOnlyGreetings =
+							!expanded.groupOnlyGreetings)}
+				>
+					<span>Group-Only Greetings</span>
+					<span class="ml-1">
+						{expanded.groupOnlyGreetings ? "▼" : "►"}
+					</span>
+				</button>
+				{#if expanded.groupOnlyGreetings}
+					<div class="flex flex-col gap-1">
+						{#each editCharacterData.groupOnlyGreetings as greeting, idx (idx)}
+							<div class="flex flex-col items-center gap-2">
+								<div class="w-full">
+									<textarea
+										rows="2"
+										bind:value={
+											editCharacterData.groupOnlyGreetings[
+												idx
+											]
+										}
+										class="textarea w-full resize-y rounded border"
+										placeholder="Group greeting..."
+									></textarea>
+								</div>
+								<button
+									class="btn btn-sm preset-tonal-error w-full"
+									type="button"
+									onclick={() =>
+										removeFromArray(
+											editCharacterData.groupOnlyGreetings,
+											idx
+										)}
+								>
+									<Icons.Minus class="h-4 w-4" /> Delete
+								</button>
+							</div>
+						{/each}
 						<button
-							class="btn btn-sm preset-filled-success-500"
+							class="btn btn-sm preset-filled-primary-500 mt-1"
 							type="button"
-							onclick={() => {
-								if (newLangKey) {
-									setObjectKey(
-										editCharacterData.creatorNotesMultilingual,
-										newLangKey,
-										newLangNote
-									)
-									newLangKey = ""
-									newLangNote = ""
-								}
-							}}
+							onclick={() =>
+								addToArray(editCharacterData.groupOnlyGreetings)}
 						>
 							<Icons.Plus class="h-4 w-4" />
+							Add Group Greeting
 						</button>
 					</div>
-				</div>
-			{/if}
-		</div>
-		<div class="flex flex-col gap-2">
-			<button
-				type="button"
-				class="flex items-center gap-2 text-sm font-semibold"
-				onclick={() =>
-					(expanded.groupOnlyGreetings =
-						!expanded.groupOnlyGreetings)}
-			>
-				<span>Group-Only Greetings</span>
-				<span class="ml-1">
-					{expanded.groupOnlyGreetings ? "▼" : "►"}
-				</span>
-			</button>
-			{#if expanded.groupOnlyGreetings}
-				<div class="flex flex-col gap-1">
-					{#each editCharacterData.groupOnlyGreetings as greeting, idx (idx)}
-						<div class="flex flex-col items-center gap-2">
-							<div class="w-full">
-								<textarea
-									rows="2"
-									bind:value={
-										editCharacterData.groupOnlyGreetings[
-											idx
-										]
-									}
-									class="textarea w-full resize-y rounded border"
-									placeholder="Group greeting..."
-								></textarea>
-							</div>
-							<button
-								class="btn btn-sm preset-tonal-error w-full"
-								type="button"
-								onclick={() =>
-									removeFromArray(
-										editCharacterData.groupOnlyGreetings,
-										idx
-									)}
-							>
-								<Icons.Minus class="h-4 w-4" /> Delete
-							</button>
-						</div>
-					{/each}
-					<button
-						class="btn btn-sm preset-filled-primary-500 mt-1"
-						type="button"
-						onclick={() =>
-							addToArray(editCharacterData.groupOnlyGreetings)}
-					>
-						<Icons.Plus class="h-4 w-4" />
-						Add Group Greeting
-					</button>
-				</div>
-			{/if}
-		</div>
-		<div class="flex flex-col gap-2">
-			<button
-				type="button"
-				class="flex items-center gap-2 text-sm font-semibold"
-				onclick={() =>
-					(expanded.postHistoryInstructions =
-						!expanded.postHistoryInstructions)}
-			>
-				<span class="flex gap-1">
-					Post-History Instructions <span
-						class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
-						title="This field will be visible in prompts"
-					>
-						<Icons.ScanEye
-							size={16}
-							class="relative top-[1px] inline"
-						/>
+				{/if}
+			</div>
+		{/if}
+		{#if systemSettingsCtx.settings.showAllCharacterFields}
+			<div class="flex flex-col gap-2">
+				<button
+					type="button"
+					class="flex items-center gap-2 text-sm font-semibold"
+					onclick={() =>
+						(expanded.postHistoryInstructions =
+							!expanded.postHistoryInstructions)}
+				>
+					<span class="flex gap-1">
+						Post-History Instructions <span
+							class="flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100"
+							title="This field will be visible in prompts"
+						>
+							<Icons.ScanEye
+								size={16}
+								class="relative top-[1px] inline"
+							/>
+						</span>
 					</span>
-				</span>
-				<span class="ml-1">
-					{expanded.postHistoryInstructions ? "▼" : "►"}
-				</span>
-			</button>
-			{#if expanded.postHistoryInstructions}
-				<textarea
-					rows="4"
-					bind:value={editCharacterData.postHistoryInstructions}
+					<span class="ml-1">
+						{expanded.postHistoryInstructions ? "▼" : "►"}
+					</span>
+				</button>
+				{#if expanded.postHistoryInstructions}
+					<textarea
+						rows="4"
+						bind:value={editCharacterData.postHistoryInstructions}
+						class="input"
+						placeholder="Instructions for post-history processing..."
+					></textarea>
+				{/if}
+			</div>
+		{/if}
+		{#if systemSettingsCtx.settings.showAllCharacterFields}
+			<div class="flex flex-col gap-1">
+				<label class="font-semibold" for="charVersion">
+					Character Version
+				</label>
+				<input
+					id="charVersion"
+					type="text"
+					bind:value={editCharacterData.characterVersion}
 					class="input"
-					placeholder="Instructions for post-history processing..."
-				></textarea>
-			{/if}
-		</div>
-		<div class="flex flex-col gap-1">
-			<label class="font-semibold" for="charVersion">
-				Character Version
-			</label>
-			<input
-				id="charVersion"
-				type="text"
-				bind:value={editCharacterData.characterVersion}
-				class="input"
-				placeholder="1.0"
-			/>
-		</div>
+					placeholder="1.0"
+				/>
+			</div>
+		{/if}
 		<!-- <div class="flex flex-col gap-2">
 			<label class="font-semibold" for="lorebookSelect">Lorebook</label>
 			<select
@@ -1057,6 +1079,18 @@
 			<label for="favorite" class="font-semibold">Favorite</label>
 			<span id="favorite-description" class="sr-only">
 				Mark this character as a favorite for easier access
+			</span>
+		</fieldset>
+		<fieldset class="mt-2 flex items-center gap-2">
+			<Switch
+				name="show-all-character-fields"
+				checked={systemSettingsCtx.settings.showAllCharacterFields}
+				onCheckedChange={onShowAllCharacterFieldsClick}
+				aria-describedby="show-all-fields-description"
+			/>
+			<label for="show-all-character-fields" class="font-semibold">Show All Fields</label>
+			<span id="show-all-fields-description" class="sr-only">
+				Show all character fields including advanced options
 			</span>
 		</fieldset>
 	</div>

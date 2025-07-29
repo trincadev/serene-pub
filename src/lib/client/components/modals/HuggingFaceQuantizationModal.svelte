@@ -42,7 +42,7 @@
 <Modal
 	{open}
 	onOpenChange={(e) => (open = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl w-[50em] max-w-dvw-lg border border-surface-300-700"
+	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-xl w-[50em] max-w-dvw-lg border border-surface-300-700"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}

@@ -4,6 +4,7 @@
 	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import PersonaForm from "../personaForms/PersonaForm.svelte"
+	import PersonaCreator from "../modals/PersonaCreator.svelte"
 	import PersonaUnsavedChangesModal from "../modals/PersonaUnsavedChangesModal.svelte"
 	import Avatar from "../Avatar.svelte"
 	import SidebarListItem from "../SidebarListItem.svelte"
@@ -16,11 +17,13 @@
 
 	const socket = skio.get()
 	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
+	const systemSettingsCtx: SystemSettingsCtx = $state(getContext("systemSettingsCtx"))
 
 	let personaList: Sockets.PersonaList.Response["personaList"] = $state([])
 	let search = $state("")
 	let personaId: number | undefined = $state()
 	let isCreating = $state(false)
+	let showPersonaCreator = $state(false)
 	let isSafeToClosePersonasForm = $state(true)
 	let showDeleteModal = $state(false)
 	let personaToDelete: number | undefined = $state(undefined)
@@ -64,7 +67,19 @@
 	})
 
 	function handleCreateClick() {
-		isCreating = true
+		// Clear tutorial flag when user interacts with the highlighted button
+		if (panelsCtx.digest.tutorial) {
+			panelsCtx.digest.tutorial = false
+		}
+		
+		// Check if easy persona creation is enabled
+		if (systemSettingsCtx.settings.enableEasyPersonaCreation) {
+			showPersonaCreator = true
+		} else {
+			// Use regular edit form for creation
+			isCreating = true
+			personaId = undefined
+		}
 	}
 
 	function handleEditClick(id: number) {
@@ -148,7 +163,7 @@
 	{:else}
 		<div class="mb-2 flex gap-2">
 			<button
-				class="btn btn-sm preset-filled-primary-500"
+				class="btn btn-sm preset-filled-primary-500 {panelsCtx.digest.tutorial ? 'ring-4 ring-primary-500/50 animate-pulse' : ''}"
 				onclick={handleCreateClick}
 				title="Create New Persona"
 			>
@@ -267,4 +282,8 @@
 	onOpenChange={handleUnsavedChangesOnOpenChange}
 	onConfirm={handleCloseModalDiscard}
 	onCancel={handleCloseModalCancel}
+/>
+
+<PersonaCreator
+	bind:open={showPersonaCreator}
 />

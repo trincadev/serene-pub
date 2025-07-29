@@ -57,25 +57,18 @@
 </script>
 
 <Modal
-<<<<<<< HEAD
 	{open}
 	{onOpenChange}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-xl max-w-md"
 	backdropClasses="backdrop-blur-sm"
-=======
-    {open}
-    {onOpenChange}
-    contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
-    backdropClasses="backdrop-blur-sm"
->>>>>>> feature/ollama-manager
 >
 	{#snippet content()}
 		<header class="flex justify-between">
 			<h2 class="h2">{title ? title : "Create new"}</h2>
 		</header>
-		<article>
+		<article class="space-y-4">
 			{#if description}
-				<p class="text-muted-foreground mb-2">{description}</p>
+				<p class="text-muted-foreground">{description}</p>
 			{/if}
 			<input
 				bind:this={inputRef}

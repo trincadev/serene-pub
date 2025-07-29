@@ -201,6 +201,7 @@
 			onclick={() => {
 				showOllamaManualPullModal = true
 			}}
+			aria-label="Open manual download modal"
 		>
 				<Icons.Download size={16} />
 				Manual Download
@@ -226,7 +227,7 @@
 				type="text"
 				placeholder="Search available models..."
 				class="input w-full pl-10"
-				aria-label="Model search"
+				aria-label="Search available models by name or description"
 				bind:value={searchString}
 			/>
 		</div>
@@ -264,10 +265,13 @@
 						{#if model.popular}
 							<span
 								class="badge preset-filled-tertiary-500 rounded-full px-2 py-1 text-x"
+								role="img"
+								aria-label="Popular model"
 							>
 								<Icons.TrendingUp
 									size={12}
 									class="mr-1 inline"
+									aria-hidden="true"
 								/>
 								Popular
 							</span>
@@ -275,8 +279,10 @@
 						{#if model.trendingScore && model.trendingScore > 0.7}
 							<span
 								class="badge rounded-full preset-filled-secondary-500 px-2 py-1 text-xs"
+								role="img"
+								aria-label="Trending model"
 							>
-								<Icons.Flame size={12} class="mr-1 inline" />
+								<Icons.Flame size={12} class="mr-1 inline" aria-hidden="true" />
 								Trending
 							</span>
 						{/if}
@@ -358,12 +364,15 @@
 									openOllamaManualPullModal(model.name)
 								}
 							}}
+							aria-label={isModelInstalled(model.name) 
+								? `Model ${model.name} is already installed` 
+								: `Install model ${model.name}`}
 						>
 							{#if isModelInstalled(model.name)}
-								<Icons.Check size={14} />
+								<Icons.Check size={14} aria-hidden="true" />
 								Installed
 							{:else}
-								<Icons.Download size={14} />
+								<Icons.Download size={14} aria-hidden="true" />
 								Install
 							{/if}
 						</button>
@@ -373,8 +382,9 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								class="btn btn-sm preset-filled-secondary-500 text-center"
+								aria-label={`View ${model.name} model page in new tab`}
 							>
-								<Icons.ExternalLink size={14} />
+								<Icons.ExternalLink size={14} aria-hidden="true" />
 								View
 							</a>
 						{/if}

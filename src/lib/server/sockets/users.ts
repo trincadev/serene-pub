@@ -2,7 +2,6 @@ import { db } from "$lib/server/db"
 import { eq } from "drizzle-orm"
 import * as schema from "$lib/server/db/schema"
 
-<<<<<<< HEAD
 export async function user(
 	socket: any,
 	message: {},
@@ -19,20 +18,6 @@ export async function user(
 		}
 	})
 	socket.server.to("user_" + userId).emit("user", { user })
-=======
-export async function user(socket: any, message: Sockets.User.Call, emitToUser: (event: string, data: any) => void) {
-    const userId = 1 // Replace with actual user id
-    const user = await db.query.users.findFirst({
-        where: (u, { eq }) => eq(u.id, userId),
-        with: {
-            activeConnection: true,
-            activeSamplingConfig: true,
-            activeContextConfig: true,
-            activePromptConfig: true
-        }
-    })
-    socket.server.to("user_" + userId).emit("user", { user })
->>>>>>> feature/ollama-manager
 }
 
 const getUser = user

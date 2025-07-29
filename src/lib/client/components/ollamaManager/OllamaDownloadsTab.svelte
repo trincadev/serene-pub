@@ -171,8 +171,9 @@
 								class="btn btn-sm preset-filled-surface-500"
 								onclick={clearDownloadHistory}
 								title="Clear completed downloads"
+								aria-label="Clear completed download history"
 							>
-								<Icons.Trash2 size={14} />
+								<Icons.Trash2 size={14} aria-hidden="true" />
 								Clear History
 							</button>
 						{/if}
@@ -229,8 +230,9 @@
 									onclick={() =>
 										cancelDownload?.(progress.modelName)}
 									title="Cancel download"
+									aria-label={`Cancel download of ${progress.modelName}`}
 								>
-									<Icons.X size={14} />
+									<Icons.X size={14} aria-hidden="true" />
 									Cancel
 								</button>
 							{/if}
@@ -263,6 +265,7 @@
 										<Progress
 											value={fileProgress.completed}
 											max={fileProgress.total}
+											aria-label={`Download progress for ${fileName}: ${fileProgress.total > 0 ? `${((fileProgress.completed / fileProgress.total) * 100).toFixed(1)}%` : "0%"} complete`}
 										/>
 									</div>
 									{#if fileProgress.total > 0}

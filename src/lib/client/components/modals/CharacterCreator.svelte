@@ -52,7 +52,7 @@
 		_avatar: ""
 	})
 	let validationErrors: ValidationErrors = $state({})
-	let showUnsavedChangesModal = $state(false)
+	let showCancelConfirmation = $state(false)
 
 	// Step definitions
 	const steps = [
@@ -198,25 +198,19 @@
 
 	function handleCancel() {
 		if (hasUnsavedData) {
-			showUnsavedChangesModal = true
+			showCancelConfirmation = true
 		} else {
 			resetForm()
 		}
 	}
 
-	function handleUnsavedChangesConfirm() {
-		showUnsavedChangesModal = false
+	function handleCancelConfirm() {
+		showCancelConfirmation = false
 		resetForm()
 	}
 
-	function handleUnsavedChangesCancel() {
-		showUnsavedChangesModal = false
-	}
-
-	function handleUnsavedChangesOnOpenChange(e: { open: boolean }) {
-		if (!e.open) {
-			showUnsavedChangesModal = false
-		}
+	function handleCancelCancel() {
+		showCancelConfirmation = false
 	}
 
 	function clearValidationError(field: string) {
@@ -267,9 +261,9 @@
 <Modal
 	{open}
 	onOpenChange={(e) => {
-		if (!e.open && hasUnsavedData) {
+		if (!e.open && hasUnsavedData && !showCancelConfirmation) {
 			// If trying to close and has unsaved data, show confirmation
-			showUnsavedChangesModal = true
+			showCancelConfirmation = true
 			return
 		}
 		// Otherwise allow normal close behavior
@@ -279,23 +273,66 @@
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
-		<header class="flex items-center justify-between">
-			<div>
-				<h2 class="h2">Create Character</h2>
-				<p class="text-sm opacity-60">
-					Step {currentStep + 1} of {steps.length}: {steps[
-						currentStep
-					].title}
-				</p>
-			</div>
-			<button
-				class="btn btn-sm preset-tonal-surface"
-				onclick={handleCancel}
-				aria-label="Close character creator"
-			>
-				<Icons.X size={16} />
-			</button>
-		</header>
+		{#if showCancelConfirmation}
+			<!-- Cancel Confirmation View -->
+			<header class="flex items-center justify-between">
+				<h2 class="h2">Confirm Action</h2>
+				<button
+					class="btn btn-sm preset-tonal-surface"
+					onclick={handleCancelCancel}
+					aria-label="Go back to editing"
+				>
+					<Icons.X size={16} />
+				</button>
+			</header>
+
+			<article class="min-h-[200px] flex items-center justify-center">
+				<div class="text-center space-y-4">
+					<div class="text-warning-500 mb-4">
+						<Icons.AlertTriangle size={48} class="mx-auto" />
+					</div>
+					<h3 class="h3">Discard Character?</h3>
+					<p class="text-sm opacity-75 max-w-md">
+						You have unsaved changes to your character. Are you sure you want to discard them and close the creator?
+					</p>
+				</div>
+			</article>
+
+			<footer class="flex justify-end gap-4">
+				<button
+					class="btn preset-filled-surface-500"
+					onclick={handleCancelCancel}
+				>
+					<Icons.ArrowLeft size={16} />
+					Keep Editing
+				</button>
+				<button
+					class="btn preset-filled-error-500"
+					onclick={handleCancelConfirm}
+				>
+					<Icons.Trash2 size={16} />
+					Discard Changes
+				</button>
+			</footer>
+		{:else}
+			<!-- Normal Form View -->
+			<header class="flex items-center justify-between">
+				<div>
+					<h2 class="h2">Create Character</h2>
+					<p class="text-sm opacity-60">
+						Step {currentStep + 1} of {steps.length}: {steps[
+							currentStep
+						].title}
+					</p>
+				</div>
+				<button
+					class="btn btn-sm preset-tonal-surface"
+					onclick={handleCancel}
+					aria-label="Close character creator"
+				>
+					<Icons.X size={16} />
+				</button>
+			</header>
 
 		<!-- Progress indicator -->
 		<div class="flex gap-2">
@@ -315,11 +352,6 @@
 				<div class="space-y-6">
 					<div class="space-y-2 text-center">
 						<h3 class="h3">Let's start with the basics</h3>
-						<p class="text-sm opacity-75">
-							Give your character a name and optionally a
-							nickname. The name is required and will be used
-							throughout the application.
-						</p>
 					</div>
 
 					<div class="space-y-4">
@@ -368,10 +400,6 @@
 									{validationErrors.name}
 								</p>
 							{/if}
-							<p class="text-xs opacity-60">
-								The character's full or primary name (e.g.,
-								"Elizabeth Bennet", "Sherlock Holmes")
-							</p>
 						</div>
 
 						<!-- Nickname Field -->
@@ -401,35 +429,39 @@
 								placeholder="Enter nickname (optional)..."
 								aria-label="Character nickname"
 							/>
-							<p class="text-xs opacity-60">
-								A shorter, informal name or title (e.g.,
-								"Lizzy", "Detective Holmes"). If provided, the
-								nickname will be used in conversations and
-								prompts instead of the full name.
-							</p>
 						</div>
 					</div>
 
 					<!-- Example -->
 					<div class="bg-primary-500/10 rounded-lg p-4">
 						<h4
-							class="mb-2 flex items-center gap-2 text-sm font-semibold"
+							class="mb-3 flex items-center gap-2 text-sm font-semibold"
 						>
 							<Icons.Sparkles
 								size={16}
 								class="text-primary-500"
 							/>
-							Example
+							Example & Guidelines
 						</h4>
-						<div class="space-y-1 text-sm opacity-75">
-							<p>
-								<strong>Name:</strong>
-								"Dr. John Watson"
-							</p>
-							<p>
-								<strong>Nickname:</strong>
-								"Watson"
-							</p>
+						<div class="space-y-3">
+							<div class="space-y-1 text-sm opacity-75">
+								<p>
+									<strong>Name:</strong>
+									"Dr. John Watson"
+								</p>
+								<p>
+									<strong>Nickname:</strong>
+									"Watson"
+								</p>
+							</div>
+							<div class="space-y-2 text-xs opacity-60 border-t border-primary-500/20 pt-3">
+								<p>
+									<strong>Name:</strong> The character's full or primary name (e.g., "Elizabeth Bennet", "Sherlock Holmes")
+								</p>
+								<p>
+									<strong>Nickname:</strong> A shorter, informal name or title (e.g., "Lizzy", "Detective Holmes"). If provided, the nickname will be used in conversations and prompts instead of the full name.
+								</p>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -669,9 +701,8 @@
 								emotional tendencies
 							</p>
 							<p>
-								<strong>Examples:</strong>
-								"Optimistic and curious", "Sarcastic but caring",
-								"Methodical and analytical"
+								Is your character "optimistic and curious", "sarcastic but caring",
+								or "methodical and analytical"?
 							</p>
 							<p>
 								This helps the AI understand how your character
@@ -707,28 +738,23 @@
 					<div class="space-y-2 text-center">
 						<h3 class="h3">Set the opening scene</h3>
 						<p class="text-sm opacity-75">
-							Write how your character introduces themselves or
-							starts a conversation. This is optional but gives a
-							great first impression.
+							This is technically optional, but <strong>highly recommended</strong>. 
+							The first message teaches the AI how your character acts, speaks, and responds.
 						</p>
 					</div>
 
-					<div class="bg-surface-500/10 rounded-lg p-4">
+					<div class="bg-warning-500/10 border border-warning-500/20 rounded-lg p-4">
 						<div class="flex items-start gap-3">
-							<Icons.MessageCircle
+							<Icons.Lightbulb
 								size={20}
-								class="text-info-500 mt-0.5 flex-shrink-0"
+								class="text-warning-500 mt-0.5 flex-shrink-0"
 							/>
 							<div class="space-y-2 text-sm">
-								<p>
-									<strong>Tips:</strong>
-									Write in character, set a scene or mood, include
-									an action or dialogue
+								<p class="font-semibold text-warning-700 dark:text-warning-300">
+									Why this matters:
 								</p>
 								<p>
-									<strong>Consider:</strong>
-									Where are they? What are they doing? How do they
-									greet someone?
+									The first message is like a <strong>writing sample</strong> that shows the AI your character's voice, tone, and behavior patterns. It significantly improves response quality.
 								</p>
 							</div>
 						</div>
@@ -736,7 +762,7 @@
 
 					<div class="space-y-2">
 						<label class="font-semibold" for="stepFirstMessage">
-							First Message (Optional)
+							First Message (Optional but Recommended)
 						</label>
 						<textarea
 							id="stepFirstMessage"
@@ -747,8 +773,7 @@
 							aria-label="Character first message"
 						></textarea>
 						<p class="text-xs opacity-60">
-							This will be the first thing users see when they
-							start a conversation with your character.
+							This serves as a <strong>training example</strong> that helps the AI understand your character's communication style and behavior patterns.
 						</p>
 					</div>
 
@@ -761,15 +786,27 @@
 								size={16}
 								class="text-primary-500"
 							/>
-							Example
+							Example with Key Elements
 						</h4>
-						<p class="text-sm opacity-75">
-							"*Dr. Watson looks up from his medical journal,
-							adjusting his reading glasses with a warm smile* Ah,
-							good to see you! I was just reviewing some
-							fascinating case notes. Please, have a seat and tell
-							me - what brings you to Baker Street today?"
-						</p>
+						<div class="space-y-3">
+							<p class="text-sm opacity-75 italic">
+								"*Dr. Watson looks up from his medical journal,
+								adjusting his reading glasses with a warm smile* Ah,
+								good to see you! I was just reviewing some
+								fascinating case notes. Please, have a seat and tell
+								me - what brings you to Baker Street today?"
+							</p>
+							<div class="text-xs opacity-60 border-t border-primary-500/20 pt-3">
+								<p class="mb-1"><strong>Notice how this example:</strong></p>
+								<ul class="list-disc list-inside space-y-1">
+									<li>Uses *asterisks* for actions and descriptions</li>
+									<li>Shows personality through warm, welcoming tone</li>
+									<li>Establishes setting (Baker Street, medical context)</li>
+									<li>Demonstrates speaking patterns and vocabulary</li>
+									<li>Ends with an engaging question to continue conversation</li>
+								</ul>
+							</div>
+						</div>
 					</div>
 				</div>
 			{/if}
@@ -817,39 +854,7 @@
 				{/if}
 			</div>
 		</footer>
+		{/if}
 	{/snippet}
 </Modal>
 
-<!-- Unsaved Changes Confirmation Modal -->
-<Modal
-	open={showUnsavedChangesModal}
-	onOpenChange={handleUnsavedChangesOnOpenChange}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
-	backdropClasses="backdrop-blur-sm"
->
-	{#snippet content()}
-		<header class="flex justify-between">
-			<h2 class="h2">Confirm</h2>
-		</header>
-		<article>
-			<p class="opacity-60">
-				You have unsaved changes to your character. Are you sure you
-				want to discard them?
-			</p>
-		</article>
-		<footer class="flex justify-end gap-4">
-			<button
-				class="btn preset-filled-surface-500"
-				onclick={handleUnsavedChangesCancel}
-			>
-				Cancel
-			</button>
-			<button
-				class="btn preset-filled-error-500"
-				onclick={handleUnsavedChangesConfirm}
-			>
-				Discard
-			</button>
-		</footer>
-	{/snippet}
-</Modal>

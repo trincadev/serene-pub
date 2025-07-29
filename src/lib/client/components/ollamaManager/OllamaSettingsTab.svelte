@@ -201,8 +201,9 @@
 					class="btn preset-filled-primary-500"
 					onclick={handleSaveBaseUrl}
 					disabled={isSavingBaseUrl}
+					aria-label="Save Ollama base URL"
 				>
-					<Icons.Save size={14} />
+					<Icons.Save size={14} aria-hidden="true" />
 					Save
 				</button>
 			</div>
@@ -272,20 +273,22 @@
 				<button
 					class="btn btn-sm preset-filled-surface-500"
 					onclick={checkOllamaVersion}
+					aria-label="Check current Ollama version"
 				>
-					<Icons.RefreshCw size={14} />
+					<Icons.RefreshCw size={14} aria-hidden="true" />
 					Check Version
 				</button>
 				<button
 					class="btn btn-sm preset-filled-surface-500"
 					onclick={checkForUpdates}
 					disabled={isCheckingUpdates}
+					aria-label="Check for Ollama updates"
 				>
 					{#if isCheckingUpdates}
-						<Icons.Loader2 size={14} class="animate-spin" />
+						<Icons.Loader2 size={14} class="animate-spin" aria-hidden="true" />
 						Checking...
 					{:else}
-						<Icons.Search size={14} />
+						<Icons.Search size={14} aria-hidden="true" />
 						Check for Updates
 					{/if}
 				</button>

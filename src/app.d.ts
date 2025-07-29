@@ -53,6 +53,7 @@ declare global {
 			personaId?: number
 			chatPersonaId?: number
 			chatCharacterId?: number
+			tutorial?: boolean
 		}
 	}
 
@@ -76,6 +77,9 @@ declare global {
 		settings: {
 			ollamaManagerEnabled: boolean
 			ollamaManagerBaseUrl: string
+			showAllCharacterFields: boolean
+			enableEasyCharacterCreation: boolean
+			enableEasyPersonaCreation: boolean
 		}
 	}
 
@@ -128,6 +132,9 @@ declare global {
 				systemSettings: {
 					ollamaManagerEnabled: boolean
 					ollamaManagerBaseUrl: string
+					showAllCharacterFields: boolean
+					enableEasyCharacterCreation: boolean
+					enableEasyPersonaCreation: boolean
 				}
 			}
 		}
@@ -482,6 +489,33 @@ declare global {
 		}
 		// --- APP SETTINGS ---
 		namespace UpdateOllamaManagerEnabled {
+			interface Call {
+				enabled: boolean
+			}
+			interface Response {
+				success: boolean
+				enabled?: boolean
+			}
+		}
+		namespace UpdateShowAllCharacterFields {
+			interface Call {
+				enabled: boolean
+			}
+			interface Response {
+				success: boolean
+				enabled?: boolean
+			}
+		}
+		namespace UpdateEasyCharacterCreation {
+			interface Call {
+				enabled: boolean
+			}
+			interface Response {
+				success: boolean
+				enabled?: boolean
+			}
+		}
+		namespace UpdateEasyPersonaCreation {
 			interface Call {
 				enabled: boolean
 			}
@@ -1032,7 +1066,6 @@ declare global {
 			}
 			interface Response {}
 		}
-<<<<<<< HEAD
 		// TAGS
 		namespace TagsList {
 			interface Call {}
@@ -1092,7 +1125,8 @@ declare global {
 			interface Response {
 				characterId: number
 				tagId: number
-=======
+			}
+		}
 		// --- USER ---
 		namespace User {
 			interface Call {}
@@ -1105,7 +1139,6 @@ declare global {
 							activePromptConfig: SelectPromptConfig | null
 					  })
 					| undefined
->>>>>>> feature/ollama-manager
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 {
-  "id": "a2060c02-2faa-4b5a-a55e-347b20ba228a",
-  "prevId": "022d59d5-e880-4947-9567-562fb6b092cb",
+  "id": "aa57ebef-d025-4d6b-9c31-c1fc6cbae8ce",
+  "prevId": "5830db77-9cd0-4e85-bb39-56a6d5569067",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -287,9 +287,10 @@
         },
         "example_dialogues": {
           "name": "example_dialogues",
-          "type": "text",
+          "type": "json",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'[]'::json"
         },
         "metadata": {
           "name": "metadata",
@@ -1770,6 +1771,27 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'http://localhost:11434/'"
+        },
+        "show_all_character_fields": {
+          "name": "show_all_character_fields",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "enable_easy_character_creation": {
+          "name": "enable_easy_character_creation",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "enable_easy_persona_creation": {
+          "name": "enable_easy_persona_creation",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         }
       },
       "indexes": {},
@@ -1812,6 +1834,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "color_preset": {
+          "name": "color_preset",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'preset-filled-primary-500'"
         }
       },
       "indexes": {},

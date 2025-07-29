@@ -243,6 +243,7 @@
 				type="text"
 				placeholder="Search installed models..."
 				class="input w-full pl-10"
+				aria-label="Search installed models by name"
 				bind:value={searchQuery}
 			/>
 		</div>
@@ -250,8 +251,9 @@
 			class="btn preset-filled-surface-500"
 			onclick={refreshModels}
 			title="Refresh models"
+			aria-label="Refresh installed models list"
 		>
-			<Icons.RefreshCw size={16} />
+			<Icons.RefreshCw size={16} aria-hidden="true" />
 		</button>
 	</div>
 </div>
@@ -263,8 +265,12 @@
 		<p class="mb-4 text-sm opacity-75">
 			Make sure Ollama is running and accessible at the configured URL.
 		</p>
-		<button class="btn preset-filled-primary-500" onclick={refreshModels}>
-			<Icons.RefreshCw size={16} />
+		<button 
+			class="btn preset-filled-primary-500" 
+			onclick={refreshModels}
+			aria-label="Try connecting to Ollama again"
+		>
+			<Icons.RefreshCw size={16} aria-hidden="true" />
 			Try Again
 		</button>
 	</div>
@@ -318,6 +324,8 @@
 							<span>Status:</span>
 							<span
 								class="preset-filled-success-500 rounded-xl px-2 py-1"
+								role="status"
+								aria-label="Model is currently running"
 							>
 								Running
 							</span>
@@ -343,16 +351,18 @@
 							class="btn btn-sm preset-filled-surface-500"
 							onclick={() => viewModelWebsite(model)}
 							title="View model website"
+							aria-label={`View ${model.name} model website in new tab`}
 						>
-							<Icons.ExternalLink size={14} /> View
+							<Icons.ExternalLink size={14} aria-hidden="true" /> View
 						</button>
 					</div>
 					<button
 						class="btn btn-sm preset-filled-error-500"
 						onclick={() => handleDeleteClick(model)}
 						title="Delete model"
+						aria-label={`Delete ${model.name} model`}
 					>
-						<Icons.Trash2 size={14} /> Delete
+						<Icons.Trash2 size={14} aria-hidden="true" /> Delete
 					</button>
 				</div>
 			</div>

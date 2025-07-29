@@ -53,6 +53,27 @@
 		socket.emit("updateOllamaManagerEnabled", res)
 	}
 
+	async function onShowAllCharacterFieldsClick(event: { checked: boolean }) {
+		const res: Sockets.UpdateShowAllCharacterFields.Call = {
+			enabled: event.checked
+		}
+		socket.emit("updateShowAllCharacterFields", res)
+	}
+
+	async function onEasyCharacterCreationClick(event: { checked: boolean }) {
+		const res: Sockets.UpdateEasyCharacterCreation.Call = {
+			enabled: event.checked
+		}
+		socket.emit("updateEasyCharacterCreation", res)
+	}
+
+	async function onEasyPersonaCreationClick(event: { checked: boolean }) {
+		const res: Sockets.UpdateEasyPersonaCreation.Call = {
+			enabled: event.checked
+		}
+		socket.emit("updateEasyPersonaCreation", res)
+	}
+
 	onMount(() => {
 		onclose = async () => {
 			return true
@@ -73,8 +94,9 @@
 						target="_blank"
 						rel="noopener"
 						class="btn preset-filled-success-500"
+						aria-label="Download newer version of Serene Pub"
 					>
-						<Icons.Download size={16} />
+						<Icons.Download size={16} aria-hidden="true" />
 						Download here
 					</a>
 				</div>
@@ -84,10 +106,12 @@
 		<div>
 			<label for="theme" class="font-semibold">Theme</label>
 			<select
+				id="theme" 
 				class="select"
 				name="theme"
 				value={selectedTheme}
 				onchange={onThemeChanged}
+				aria-label="Select application theme"
 			>
 				{#each Theme.options as [key, label]}
 					<option value={key}>{label}</option>
@@ -100,16 +124,45 @@
 				name="dark-mode"
 				checked={isDarkMode}
 				onCheckedChange={onDarkModeChanged}
+				aria-label="Toggle dark mode"
 			></Switch>
 			<label for="dark-mode" class="font-semibold">Dark Mode</label>
 		</div>
 		<div class="flex gap-2">
 			<Switch
-				name="dark-mode"
+				name="ollama-manager"
 				checked={systemSettingsCtx.settings.ollamaManagerEnabled}
 				onCheckedChange={onOllamaManagerEnabledClick}
+				aria-label="Toggle Ollama Manager"
 			></Switch>
-			<label for="dark-mode" class="font-semibold">Enable Ollama Manager</label>
+			<label for="ollama-manager" class="font-semibold">Enable Ollama Manager</label>
+		</div>
+		<div class="flex gap-2">
+			<Switch
+				name="show-all-character-fields"
+				checked={systemSettingsCtx.settings.showAllCharacterFields}
+				onCheckedChange={onShowAllCharacterFieldsClick}
+				aria-label="Toggle Show All Character Fields"
+			></Switch>
+			<label for="show-all-character-fields" class="font-semibold">Show All Character Fields</label>
+		</div>
+		<div class="flex gap-2">
+			<Switch
+				name="easy-character-creation"
+				checked={systemSettingsCtx.settings.enableEasyCharacterCreation}
+				onCheckedChange={onEasyCharacterCreationClick}
+				aria-label="Toggle Easy Character Creation"
+			></Switch>
+			<label for="easy-character-creation" class="font-semibold">Easy Character Creation</label>
+		</div>
+		<div class="flex gap-2">
+			<Switch
+				name="easy-persona-creation"
+				checked={systemSettingsCtx.settings.enableEasyPersonaCreation}
+				onCheckedChange={onEasyPersonaCreationClick}
+				aria-label="Toggle Easy Persona Creation"
+			></Switch>
+			<label for="easy-persona-creation" class="font-semibold">Easy Persona Creation</label>
 		</div>
 	</div>
 
@@ -134,8 +187,9 @@
 				target="_blank"
 				rel="noopener noreferrer"
 				class="btn preset-filled-primary-500 gap-1"
+				aria-label="Visit Serene Pub GitHub repository"
 			>
-				<Icons.GitBranch size={16} />
+				<Icons.GitBranch size={16} aria-hidden="true" />
 				<span>Repository</span>
 			</a>
 			<a
@@ -143,8 +197,9 @@
 				target="_blank"
 				rel="noopener noreferrer"
 				class="btn preset-filled-surface-500"
+				aria-label="Visit Serene Pub wiki documentation"
 			>
-				<Icons.BookOpen size={16} />
+				<Icons.BookOpen size={16} aria-hidden="true" />
 				<span>Wiki</span>
 			</a>
 			<a
@@ -152,8 +207,9 @@
 				target="_blank"
 				rel="noopener noreferrer"
 				class="btn preset-filled-tertiary-500"
+				aria-label="Join Serene Pub Discord community"
 			>
-				<Icons.MessageSquare size={16} />
+				<Icons.MessageSquare size={16} aria-hidden="true" />
 				<span>Discord</span>
 			</a>
 			<a
@@ -161,8 +217,9 @@
 				target="_blank"
 				rel="noopener noreferrer"
 				class="btn preset-filled-error-500"
+				aria-label="Report issues on GitHub"
 			>
-				<Icons.AlertCircle size={16} />
+				<Icons.AlertCircle size={16} aria-hidden="true" />
 				<span>Issues</span>
 			</a>
 			<a
@@ -170,8 +227,9 @@
 				target="_blank"
 				rel="noopener noreferrer"
 				class="btn preset-filled-secondary-500"
+				aria-label="Join discussions on GitHub"
 			>
-				<Icons.MessageCircle size={16} />
+				<Icons.MessageCircle size={16} aria-hidden="true" />
 				<span>Discussions</span>
 			</a>
 		</div>
