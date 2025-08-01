@@ -265,8 +265,8 @@
 		<p class="mb-4 text-sm opacity-75">
 			Make sure Ollama is running and accessible at the configured URL.
 		</p>
-		<button 
-			class="btn preset-filled-primary-500" 
+		<button
+			class="btn preset-filled-primary-500"
 			onclick={refreshModels}
 			aria-label="Try connecting to Ollama again"
 		>

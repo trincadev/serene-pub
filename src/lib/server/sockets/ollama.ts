@@ -495,7 +495,7 @@ export async function ollamaSearchAvailableModels(
 				"translation",
 				"token-classification",
 				"conversational",
-				"image-text-to-text",
+				"image-text-to-text"
 			]
 
 			// Filter out private and gated models
@@ -649,5 +649,106 @@ export async function ollamaCancelPull(
 			error: "Failed to cancel model download"
 		}
 		emitToUser("ollamaCancelPull", res)
+	}
+}
+
+export async function ollamaRecommendedModels(
+	socket: any,
+	message: Sockets.OllamaRecommendedModels.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		// Fetch the recommended models YAML from GitHub
+		const response = await fetch(
+			"https://raw.githubusercontent.com/doolijb/serene-pub-gguf-list/main/recommended.yaml"
+		)
+
+		if (!response.ok) {
+			throw new Error(`GitHub API error: ${response.status}`)
+		}
+
+		const yamlText = await response.text()
+
+		// Parse YAML - simple parsing for our specific structure
+		const models: Sockets.OllamaRecommendedModels.Response["models"] = []
+		const lines = yamlText.split("\n")
+		let currentModel: any = null
+		let inDetails = false
+
+		for (const line of lines) {
+			const trimmed = line.trim()
+
+			if (trimmed.startsWith("- name:")) {
+				if (currentModel) {
+					models.push(currentModel)
+				}
+				currentModel = {
+					name: trimmed.replace("- name:", "").trim(),
+					pull: "",
+					size: 0,
+					recommended_vram: 0,
+					details: {
+						parameter_size: "",
+						quantization_level: "",
+						modified_at: "",
+						description: ""
+					}
+				}
+				inDetails = false
+			} else if (currentModel) {
+				if (trimmed.startsWith("pull:")) {
+					currentModel.pull = trimmed.replace("pull:", "").trim()
+				} else if (trimmed.startsWith("size:")) {
+					currentModel.size = parseFloat(
+						trimmed.replace("size:", "").trim()
+					)
+				} else if (trimmed.startsWith("recommended_vram:")) {
+					currentModel.recommended_vram = parseInt(
+						trimmed.replace("recommended_vram:", "").trim()
+					)
+				} else if (trimmed === "details:") {
+					inDetails = true
+				} else if (inDetails) {
+					if (trimmed.startsWith("parameter_size:")) {
+						currentModel.details.parameter_size = trimmed
+							.replace("parameter_size:", "")
+							.trim()
+							.replace(/"/g, "")
+					} else if (trimmed.startsWith("quantization_level:")) {
+						currentModel.details.quantization_level = trimmed
+							.replace("quantization_level:", "")
+							.trim()
+							.replace(/"/g, "")
+					} else if (trimmed.startsWith("modified_at:")) {
+						currentModel.details.modified_at = trimmed
+							.replace("modified_at:", "")
+							.trim()
+							.replace(/"/g, "")
+					} else if (trimmed.startsWith("description:")) {
+						currentModel.details.description = trimmed
+							.replace("description:", "")
+							.trim()
+							.replace(/"/g, "")
+					}
+				}
+			}
+		}
+
+		// Add the last model if exists
+		if (currentModel) {
+			models.push(currentModel)
+		}
+
+		const res: Sockets.OllamaRecommendedModels.Response = {
+			models
+		}
+		emitToUser("ollamaRecommendedModels", res)
+	} catch (error: any) {
+		console.error("Ollama recommended models error:", error)
+		const res: Sockets.OllamaRecommendedModels.Response = {
+			models: [],
+			error: "Failed to fetch recommended models"
+		}
+		emitToUser("ollamaRecommendedModels", res)
 	}
 }

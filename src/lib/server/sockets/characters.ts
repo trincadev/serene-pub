@@ -6,6 +6,55 @@ import { getCharacterDataDir, handleCharacterAvatarUpload } from "../utils"
 import { CharacterCard } from "@lenml/char-card-reader"
 import { fileTypeFromBuffer } from "file-type"
 
+// Helper function to process tags for character creation/update
+async function processCharacterTags(characterId: number, tagNames: string[]) {
+	if (!tagNames || tagNames.length === 0) return
+
+	// First, remove all existing tags for this character
+	await db
+		.delete(schema.characterTags)
+		.where(eq(schema.characterTags.characterId, characterId))
+
+	// Process each tag name
+	const tagIds: number[] = []
+
+	for (const tagName of tagNames) {
+		if (!tagName.trim()) continue
+
+		// Check if tag exists
+		let existingTag = await db.query.tags.findFirst({
+			where: eq(schema.tags.name, tagName.trim())
+		})
+
+		// Create tag if it doesn't exist
+		if (!existingTag) {
+			const [newTag] = await db
+				.insert(schema.tags)
+				.values({
+					name: tagName.trim()
+					// description and colorPreset will use database defaults
+				})
+				.returning()
+			existingTag = newTag
+		}
+
+		tagIds.push(existingTag.id)
+	}
+
+	// Link all tags to the character
+	if (tagIds.length > 0) {
+		const characterTagsData = tagIds.map((tagId) => ({
+			characterId,
+			tagId
+		}))
+
+		await db
+			.insert(schema.characterTags)
+			.values(characterTagsData)
+			.onConflictDoNothing() // In case of race conditions
+	}
+}
+
 export async function characterList(
 	socket: any,
 	message: Sockets.CharacterList.Call,
@@ -34,10 +83,24 @@ export async function character(
 	emitToUser: (event: string, data: any) => void
 ) {
 	const character = await db.query.characters.findFirst({
-		where: (c, { eq }) => eq(c.id, message.id)
+		where: (c, { eq }) => eq(c.id, message.id),
+		with: {
+			characterTags: {
+				with: {
+					tag: true
+				}
+			}
+		}
 	})
 	if (character) {
-		const res: Sockets.Character.Response = { character }
+		// Transform the character data to include tags as string array
+		const characterWithTags = {
+			...character,
+			tags: character.characterTags.map((ct) => ct.tag.name)
+		}
+		delete characterWithTags.characterTags // Remove the junction table data
+
+		const res: Sockets.Character.Response = { character: characterWithTags }
 		emitToUser("character", res)
 	}
 }
@@ -48,12 +111,22 @@ export async function createCharacter(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-		const data = message.character
+		const data = { ...message.character }
+		const tags = data.tags || []
+
+		// Remove fields that shouldn't be in the database insert
 		delete data.avatar // Remove avatar from character data to avoid conflicts
+		delete data.tags // Remove tags - will be handled separately
+
 		const [character] = await db
 			.insert(schema.characters)
-			.values({ ...message.character, userId: 1 })
+			.values({ ...data, userId: 1 })
 			.returning()
+
+		// Process tags after character creation
+		if (tags.length > 0) {
+			await processCharacterTags(character.id, tags)
+		}
 
 		if (message.avatarFile) {
 			await handleCharacterAvatarUpload({
@@ -80,35 +153,49 @@ export async function updateCharacter(
 	message: Sockets.UpdateCharacter.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	const data = message.character
-	const id = data.id
-	const userId = 1 // Replace with actual userId
+	try {
+		const data = { ...message.character }
+		const id = data.id
+		const userId = 1 // Replace with actual userId
+		const tags = data.tags || []
 
-	// Remove userId and id if present and optional
-	if ("userId" in data) (data as any).userId = undefined
-	if ("id" in data) (data as any).id = undefined
-	delete data.avatar // Remove avatar from character data to avoid conflicts
-	const [updated] = await db
-		.update(schema.characters)
-		.set(data)
-		.where(
-			and(
-				eq(schema.characters.id, id),
-				eq(schema.characters.userId, userId)
+		// Remove fields that shouldn't be in the database update
+		if ("userId" in data) (data as any).userId = undefined
+		if ("id" in data) (data as any).id = undefined
+		delete data.avatar // Remove avatar from character data to avoid conflicts
+		delete data.tags // Remove tags - will be handled separately
+
+		const [updated] = await db
+			.update(schema.characters)
+			.set(data)
+			.where(
+				and(
+					eq(schema.characters.id, id),
+					eq(schema.characters.userId, userId)
+				)
 			)
-		)
-		.returning()
+			.returning()
 
-	if (message.avatarFile) {
-		await handleCharacterAvatarUpload({
-			character: updated,
-			avatarFile: message.avatarFile
+		// Process tags after character update
+		await processCharacterTags(id, tags)
+
+		if (message.avatarFile) {
+			await handleCharacterAvatarUpload({
+				character: updated,
+				avatarFile: message.avatarFile
+			})
+		}
+
+		const res: Sockets.UpdateCharacter.Response = { character: updated }
+		await characterList(socket, {}, emitToUser)
+		emitToUser("updateCharacter", res)
+	} catch (e: any) {
+		console.error("Error updating character:", e)
+		emitToUser("error", {
+			error: e.message || "Failed to update character."
 		})
+		return
 	}
-
-	const res: Sockets.UpdateCharacter.Response = { character: updated }
-	await characterList(socket, {}, emitToUser)
-	emitToUser("updateCharacter", res)
 }
 
 export async function deleteCharacter(
@@ -117,6 +204,13 @@ export async function deleteCharacter(
 	emitToUser: (event: string, data: any) => void
 ) {
 	const userId = 1 // Replace with actual userId
+
+	// Delete character tags first (cascade should handle this, but being explicit)
+	await db
+		.delete(schema.characterTags)
+		.where(eq(schema.characterTags.characterId, message.characterId))
+
+	// Delete the character
 	await db
 		.delete(schema.characters)
 		.where(
@@ -238,7 +332,14 @@ export async function characterCardImport(
 			})
 		}
 
-		// TODO: Import tags
+		// Import tags if available in the character card
+		if (
+			v3Data.tags &&
+			Array.isArray(v3Data.tags) &&
+			v3Data.tags.length > 0
+		) {
+			await processCharacterTags(character.id, v3Data.tags)
+		}
 
 		const res: Sockets.CharacterCardImport.Response = {
 			character,

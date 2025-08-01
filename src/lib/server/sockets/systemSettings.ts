@@ -11,7 +11,7 @@ export async function systemSettings(
 		const settings = await db.query.systemSettings.findFirst({
 			where: eq(schema.systemSettings.id, 1),
 			columns: {
-				id: false, // We don't need the ID in the response
+				id: false // We don't need the ID in the response
 			}
 		})
 
@@ -24,7 +24,6 @@ export async function systemSettings(
 		}
 
 		emitToUser("systemSettings", res)
-
 	} catch (error: any) {
 		console.error("Error fetching system settings:", error)
 		emitToUser("error", {
@@ -39,10 +38,13 @@ export async function updateOllamaManagerEnabled(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-		await db.update(schema.systemSettings).set({
-			ollamaManagerEnabled: message.enabled
-		}).where(eq(schema.systemSettings.id, 1))
-		
+		await db
+			.update(schema.systemSettings)
+			.set({
+				ollamaManagerEnabled: message.enabled
+			})
+			.where(eq(schema.systemSettings.id, 1))
+
 		const res: Sockets.UpdateOllamaManagerEnabled.Response = {
 			success: true,
 			enabled: message.enabled
@@ -64,10 +66,13 @@ export async function updateShowAllCharacterFields(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-		await db.update(schema.systemSettings).set({
-			showAllCharacterFields: message.enabled
-		}).where(eq(schema.systemSettings.id, 1))
-		
+		await db
+			.update(schema.systemSettings)
+			.set({
+				showAllCharacterFields: message.enabled
+			})
+			.where(eq(schema.systemSettings.id, 1))
+
 		const res: Sockets.UpdateShowAllCharacterFields.Response = {
 			success: true,
 			enabled: message.enabled
@@ -89,10 +94,13 @@ export async function updateEasyCharacterCreation(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-		await db.update(schema.systemSettings).set({
-			enableEasyCharacterCreation: message.enabled
-		}).where(eq(schema.systemSettings.id, 1))
-		
+		await db
+			.update(schema.systemSettings)
+			.set({
+				enableEasyCharacterCreation: message.enabled
+			})
+			.where(eq(schema.systemSettings.id, 1))
+
 		const res: Sockets.UpdateEasyCharacterCreation.Response = {
 			success: true,
 			enabled: message.enabled
@@ -114,10 +122,13 @@ export async function updateEasyPersonaCreation(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-		await db.update(schema.systemSettings).set({
-			enableEasyPersonaCreation: message.enabled
-		}).where(eq(schema.systemSettings.id, 1))
-		
+		await db
+			.update(schema.systemSettings)
+			.set({
+				enableEasyPersonaCreation: message.enabled
+			})
+			.where(eq(schema.systemSettings.id, 1))
+
 		const res: Sockets.UpdateEasyPersonaCreation.Response = {
 			success: true,
 			enabled: message.enabled

@@ -100,7 +100,13 @@ import {
 	addTagToCharacter,
 	removeTagFromCharacter
 } from "./tags"
-import { updateOllamaManagerEnabled, updateShowAllCharacterFields, updateEasyCharacterCreation, updateEasyPersonaCreation, systemSettings } from "./systemSettings"
+import {
+	updateOllamaManagerEnabled,
+	updateShowAllCharacterFields,
+	updateEasyCharacterCreation,
+	updateEasyPersonaCreation,
+	systemSettings
+} from "./systemSettings"
 import {
 	ollamaConnectModel,
 	ollamaSearchAvailableModels,
@@ -113,7 +119,8 @@ import {
 	ollamaIsUpdateAvailable,
 	ollamaCancelPull,
 	ollamaGetDownloadProgress,
-	ollamaClearDownloadHistory
+	ollamaClearDownloadHistory,
+	ollamaRecommendedModels
 } from "./ollama"
 
 const userId = 1 // Replace with actual user id
@@ -166,6 +173,7 @@ export function connectSockets(io: {
 		register(socket, ollamaIsUpdateAvailable, emitToUser)
 		register(socket, ollamaGetDownloadProgress, emitToUser)
 		register(socket, ollamaClearDownloadHistory, emitToUser)
+		register(socket, ollamaRecommendedModels, emitToUser)
 
 		// App Settings
 		register(socket, systemSettings, emitToUser)

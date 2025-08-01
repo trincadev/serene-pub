@@ -32,6 +32,7 @@
 	// Related data for selected tag
 	let relatedCharacters: SelectCharacter[] = $state([])
 	let relatedPersonas: SelectPersona[] = $state([])
+	let relatedLorebooks: SelectLorebook[] = $state([])
 	let relatedChats: SelectChat[] = $state([])
 
 	// Zod validation schema
@@ -320,6 +321,11 @@
 		panelsCtx.openPanel({ key: "personas", toggle: false })
 	}
 
+	function handleLorebookClick(lorebook: SelectLorebook) {
+		panelsCtx.digest.lorebookId = lorebook.id
+		panelsCtx.openPanel({ key: "lorebooks", toggle: false })
+	}
+
 	function handleChatClick(chat: SelectChat) {
 		panelsCtx.openPanel({ key: "chats", toggle: false })
 		// Navigate to specific chat
@@ -356,6 +362,7 @@
 		socket.on("tagRelatedData", (msg: any) => {
 			relatedCharacters = msg.characters || []
 			relatedPersonas = msg.personas || []
+			relatedLorebooks = msg.lorebooks || []
 			relatedChats = msg.chats || []
 		})
 
@@ -472,6 +479,34 @@
 										class="text-muted-foreground mt-1 line-clamp-2 text-sm"
 									>
 										{persona.description}
+									</div>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			{#if relatedLorebooks.length > 0}
+				<div class="mb-6">
+					<h3
+						class="mb-3 flex items-center gap-2 text-lg font-semibold"
+					>
+						<Icons.Book size={18} />
+						Lorebooks ({relatedLorebooks.length})
+					</h3>
+					<div class="grid gap-2">
+						{#each relatedLorebooks as lorebook}
+							<button
+								class="bg-surface-100-900 hover:bg-surface-200-800 rounded-lg p-3 text-left transition-colors"
+								onclick={() => handleLorebookClick(lorebook)}
+							>
+								<div class="font-medium">{lorebook.name}</div>
+								{#if lorebook.description}
+									<div
+										class="text-muted-foreground mt-1 line-clamp-2 text-sm"
+									>
+										{lorebook.description}
 									</div>
 								{/if}
 							</button>
@@ -749,7 +784,7 @@
 					<button
 						type="button"
 						class="chip {tag.colorPreset ||
-							'preset-filled-primary-500'} transition-all duration-200"
+							'preset-filled-primary-500'} text-sm transition-all duration-200"
 						onclick={() => handleTagClick(tag)}
 						title={tag.description || tag.name}
 					>

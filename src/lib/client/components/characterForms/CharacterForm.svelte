@@ -28,6 +28,7 @@
 		_avatar: string
 		lorebookId: number | null
 		characterVersion?: string
+		tags: string[]
 	}
 
 	// Zod validation schema
@@ -46,7 +47,8 @@
 		postHistoryInstructions: z.string().optional(),
 		characterVersion: z.string().optional(),
 		isFavorite: z.boolean().optional(),
-		lorebookId: z.number().nullable().optional()
+		lorebookId: z.number().nullable().optional(),
+		tags: z.array(z.string()).optional()
 	})
 
 	type ValidationErrors = Record<string, string>
@@ -66,7 +68,9 @@
 	}: Props = $props()
 
 	const socket = skio.get()
-	let systemSettingsCtx: SystemSettingsCtx = $state(getContext("systemSettingsCtx"))
+	let systemSettingsCtx: SystemSettingsCtx = $state(
+		getContext("systemSettingsCtx")
+	)
 
 	let editCharacterData: EditCharacterData = $state({
 		id: undefined,
@@ -87,7 +91,8 @@
 		characterVersion: "",
 		_avatarFile: undefined,
 		_avatar: "",
-		lorebookId: null
+		lorebookId: null,
+		tags: []
 	})
 	let originalCharacterData: EditCharacterData = $state({
 		id: undefined,
@@ -108,7 +113,8 @@
 		characterVersion: "",
 		_avatarFile: undefined,
 		_avatar: "",
-		lorebookId: null
+		lorebookId: null,
+		tags: []
 	})
 	let expanded = $state({
 		description: true,
@@ -134,6 +140,75 @@
 	let lorebookList: Sockets.LorebookList.Response["lorebookList"] = $state([])
 	let formContainer: HTMLDivElement
 	let validationTimeout: NodeJS.Timeout
+
+	// Tags state
+	let availableTags: Array<{
+		id: number
+		name: string
+		colorPreset: string
+	}> = $state([])
+	let tagSearchQuery = $state("")
+	let showTagDropdown = $state(false)
+	let tagInputRef: HTMLInputElement
+
+	// Filtered tags based on search query
+	let filteredTags = $derived.by(() => {
+		if (!tagSearchQuery.trim()) return availableTags.filter(
+			(tag) => !editCharacterData.tags.some(
+				selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+			)
+		)
+		return availableTags.filter((tag) =>
+			tag.name.toLowerCase().includes(tagSearchQuery.toLowerCase()) &&
+			!editCharacterData.tags.some(
+				selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+			)
+		)
+	})
+
+	// Helper function to get tag color preset
+	function getTagColorPreset(tagName: string): string {
+		const existingTag = availableTags.find((tag) => tag.name === tagName)
+		return (
+			existingTag?.colorPreset ||
+			"bg-primary-500/20 text-primary-600 dark:text-primary-400"
+		)
+	}
+
+	// Add tag function
+	function addTag(tagName: string) {
+		tagName = tagName.trim()
+		if (!tagName) return
+		
+		// Check for case-insensitive duplicates
+		const isDuplicate = editCharacterData.tags.some(
+			existingTag => existingTag.toLowerCase() === tagName.toLowerCase()
+		)
+		if (isDuplicate) return
+
+		editCharacterData.tags = [...editCharacterData.tags, tagName]
+		tagSearchQuery = ""
+		showTagDropdown = false
+	}
+
+	// Remove tag function
+	function removeTag(tagName: string) {
+		editCharacterData.tags = editCharacterData.tags.filter(
+			(tag) => tag !== tagName
+		)
+	}
+
+	// Handle tag input keydown
+	function handleTagInputKeydown(event: KeyboardEvent) {
+		if (event.key === "Enter") {
+			event.preventDefault()
+			if (tagSearchQuery.trim()) {
+				addTag(tagSearchQuery)
+			}
+		} else if (event.key === "Escape") {
+			showTagDropdown = false
+		}
+	}
 
 	// Events: avatarChange, save, cancel
 	function validateFormDebounced() {
@@ -327,6 +402,10 @@
 					a.id < b.id ? -1 : a.id > b.id ? 1 : 0
 				) || []
 		})
+
+		socket.on("tagsList", (message: any) => {
+			availableTags = message.tagsList || []
+		})
 		if (characterId) {
 			socket.once("character", (message: Sockets.Character.Response) => {
 				character = message.character
@@ -363,19 +442,22 @@
 					postHistoryInstructions:
 						characterData.postHistoryInstructions ?? "",
 					characterVersion:
-						characterData.characterVersion ?? undefined
+						characterData.characterVersion ?? undefined,
+					tags: characterData.tags ?? []
 				}
 				originalCharacterData = { ...editCharacterData }
 			})
 			socket.emit("character", { id: characterId })
 		}
 		socket.emit("lorebookList", {})
+		socket.emit("tagsList", {})
 	})
 
 	onDestroy(() => {
 		socket.off("createCharacter")
 		socket.off("updateCharacter")
 		socket.off("character")
+		socket.off("tagsList")
 
 		// Remove keyboard event listener and clear timeout
 		document.removeEventListener("keydown", handleKeydown)
@@ -728,9 +810,8 @@
 									<textarea
 										rows="2"
 										bind:value={
-											editCharacterData.alternateGreetings[
-												idx
-											]
+											editCharacterData
+												.alternateGreetings[idx]
 										}
 										class="input input-xs bg-background border-muted w-full resize-y rounded border"
 										placeholder="Greeting..."
@@ -753,7 +834,9 @@
 							class="btn btn-sm preset-filled-primary-500 mt-1"
 							type="button"
 							onclick={() =>
-								addToArray(editCharacterData.alternateGreetings)}
+								addToArray(
+									editCharacterData.alternateGreetings
+								)}
 						>
 							<Icons.Plus class="h-4 w-4" />
 							Add Greeting
@@ -766,7 +849,8 @@
 					type="button"
 					class="flex items-center gap-2 text-sm font-semibold"
 					onclick={() =>
-						(expanded.exampleDialogues = !expanded.exampleDialogues)}
+						(expanded.exampleDialogues =
+							!expanded.exampleDialogues)}
 					aria-expanded={expanded.exampleDialogues}
 					aria-controls="example-dialogues-content"
 					id="example-dialogues-toggle"
@@ -808,9 +892,8 @@
 										<textarea
 											rows="4"
 											bind:value={
-												editCharacterData.exampleDialogues[
-													idx
-												]
+												editCharacterData
+													.exampleDialogues[idx]
 											}
 											class="input resize-y"
 											placeholder="Example dialogue..."
@@ -838,10 +921,15 @@
 								class="btn btn-sm preset-filled-primary-500 mt-1"
 								type="button"
 								onclick={() =>
-									addToArray(editCharacterData.exampleDialogues)}
+									addToArray(
+										editCharacterData.exampleDialogues
+									)}
 								aria-label="Add new example dialogue"
 							>
-								<Icons.Plus class="h-4 w-4" aria-hidden="true" />
+								<Icons.Plus
+									class="h-4 w-4"
+									aria-hidden="true"
+								/>
 								Add Example Dialogue
 							</button>
 						</div>
@@ -854,10 +942,13 @@
 				<button
 					type="button"
 					class="flex items-center gap-2 text-sm font-semibold"
-					onclick={() => (expanded.creatorNotes = !expanded.creatorNotes)}
+					onclick={() =>
+						(expanded.creatorNotes = !expanded.creatorNotes)}
 				>
 					<span>Creator Notes</span>
-					<span class="ml-1">{expanded.creatorNotes ? "▼" : "►"}</span>
+					<span class="ml-1">
+						{expanded.creatorNotes ? "▼" : "►"}
+					</span>
 				</button>
 				{#if expanded.creatorNotes}
 					<textarea
@@ -896,9 +987,8 @@
 								<input
 									type="text"
 									bind:value={
-										editCharacterData.creatorNotesMultilingual[
-											lang
-										]
+										editCharacterData
+											.creatorNotesMultilingual[lang]
 									}
 									class="input input-xs bg-background border-muted flex-1 rounded border"
 									placeholder="Note..."
@@ -973,9 +1063,8 @@
 									<textarea
 										rows="2"
 										bind:value={
-											editCharacterData.groupOnlyGreetings[
-												idx
-											]
+											editCharacterData
+												.groupOnlyGreetings[idx]
 										}
 										class="textarea w-full resize-y rounded border"
 										placeholder="Group greeting..."
@@ -998,7 +1087,9 @@
 							class="btn btn-sm preset-filled-primary-500 mt-1"
 							type="button"
 							onclick={() =>
-								addToArray(editCharacterData.groupOnlyGreetings)}
+								addToArray(
+									editCharacterData.groupOnlyGreetings
+								)}
 						>
 							<Icons.Plus class="h-4 w-4" />
 							Add Group Greeting
@@ -1068,6 +1159,80 @@
 				{/each}
 			</select>
 		</div> -->
+		<fieldset class="mb-4 flex flex-col gap-1">
+			<label class="font-semibold" for="charTags">Tags</label>
+			<div class="relative">
+				<input
+					id="charTags"
+					type="text"
+					bind:value={tagSearchQuery}
+					bind:this={tagInputRef}
+					class="input"
+					placeholder="Search or add tags..."
+					onfocus={() => (showTagDropdown = true)}
+					onblur={(e) => {
+						// Delay hiding dropdown to allow clicking on dropdown items
+						setTimeout(() => {
+							if (!e.relatedTarget?.closest(".tag-dropdown")) {
+								showTagDropdown = false
+							}
+						}, 150)
+					}}
+					onkeydown={handleTagInputKeydown}
+				/>
+
+				{#if showTagDropdown && (filteredTags.length > 0 || tagSearchQuery.trim())}
+					<div
+						class="tag-dropdown bg-surface-100-900 border-surface-300-700 absolute top-full right-0 left-0 z-10 max-h-48 overflow-y-auto rounded-lg border shadow-lg"
+					>
+						{#if tagSearchQuery.trim() && !filteredTags.some((tag) => tag.name.toLowerCase() === tagSearchQuery.toLowerCase())}
+							<button
+								type="button"
+								class="hover:bg-surface-200-800 border-surface-300-700 w-full border-b px-3 py-2 text-left"
+								onclick={() => addTag(tagSearchQuery)}
+							>
+								<Icons.Plus size={16} class="mr-2 inline" />
+								Create "{tagSearchQuery}"
+							</button>
+						{/if}
+						{#each filteredTags as tag}
+							{#if !editCharacterData.tags.includes(tag.name)}
+								<button
+									type="button"
+									class="hover:bg-surface-200-800 w-full px-3 py-2 text-left"
+									onclick={() => addTag(tag.name)}
+								>
+									{tag.name}
+								</button>
+							{/if}
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Selected tags display -->
+			{#if editCharacterData.tags.length > 0}
+				<div class="mt-2 flex flex-wrap gap-1">
+					{#each editCharacterData.tags as tag}
+						<span
+							class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs {getTagColorPreset(
+								tag
+							)}"
+						>
+							{tag}
+							<button
+								type="button"
+								class="rounded-full p-0.5 hover:opacity-70"
+								onclick={() => removeTag(tag)}
+								aria-label="Remove tag {tag}"
+							>
+								<Icons.X size={12} />
+							</button>
+						</span>
+					{/each}
+				</div>
+			{/if}
+		</fieldset>
 		<fieldset class="mt-2 flex items-center gap-2">
 			<Switch
 				name="favorite"
@@ -1088,7 +1253,9 @@
 				onCheckedChange={onShowAllCharacterFieldsClick}
 				aria-describedby="show-all-fields-description"
 			/>
-			<label for="show-all-character-fields" class="font-semibold">Show All Fields</label>
+			<label for="show-all-character-fields" class="font-semibold">
+				Show All Fields
+			</label>
 			<span id="show-all-fields-description" class="sr-only">
 				Show all character fields including advanced options
 			</span>

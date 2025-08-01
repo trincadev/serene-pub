@@ -4,7 +4,7 @@
 	import { Avatar, FileUpload, Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import CharacterForm from "../characterForms/CharacterForm.svelte"
-	import CharacterCreator from "../modals/CharacterCreator.svelte"
+	import CharacterCreator from "../modals/CharacterCreatorModal.svelte"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import type { SpecV3 } from "@lenml/char-card-reader"
@@ -18,7 +18,9 @@
 
 	const socket = skio.get()
 	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
-	const systemSettingsCtx: SystemSettingsCtx = $state(getContext("systemSettingsCtx"))
+	const systemSettingsCtx: SystemSettingsCtx = $state(
+		getContext("systemSettingsCtx")
+	)
 
 	let characterList: Sockets.CharacterList.Response["characterList"] = $state(
 		[]
@@ -39,7 +41,7 @@
 	let showLorebookImportConfirmationModal = $state(false)
 
 	let unsavedChanges = $derived.by(() => {
-		return (!characterId && !isCreating) ? false : !isSafeToCloseCharacterForm
+		return !characterId && !isCreating ? false : !isSafeToCloseCharacterForm
 	})
 
 	$effect(() => {
@@ -84,7 +86,7 @@
 		if (panelsCtx.digest.tutorial) {
 			panelsCtx.digest.tutorial = false
 		}
-		
+
 		// Check if easy character creation is enabled
 		if (systemSettingsCtx.settings.enableEasyCharacterCreation) {
 			showCharacterCreator = true
@@ -254,7 +256,10 @@
 	{:else}
 		<div class="mb-2 flex gap-2">
 			<button
-				class="btn btn-sm preset-filled-primary-500 {panelsCtx.digest.tutorial ? 'ring-4 ring-primary-500/50 animate-pulse' : ''}"
+				class="btn btn-sm preset-filled-primary-500 {panelsCtx.digest
+					.tutorial
+					? 'ring-primary-500/50 animate-pulse ring-4'
+					: ''}"
 				onclick={handleCreateClick}
 				title="Create New Character"
 			>

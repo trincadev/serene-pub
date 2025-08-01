@@ -157,16 +157,16 @@
 
 <div class="space-y-6 p-4">
 	<!-- Version Information -->
-	 <div class="text-center mt-8">
+	<div class="mt-8 text-center">
 		<OllamaIcon class="text-muted-foreground mx-auto mb-4 h-16 w-16" />
 		<span class="h5">Ollama</span>
 		<!-- Links to documentation and GitHub -->
-		<div class="flex items-center justify-center gap-4 mb-6">
+		<div class="mb-6 flex items-center justify-center gap-4">
 			<a
 				href="https://ollama.ai/docs"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="text-muted-foreground hover:text-primary-500 transition-colors text-xs flex items-center gap-1"
+				class="text-muted-foreground hover:text-primary-500 flex items-center gap-1 text-xs transition-colors"
 			>
 				<Icons.BookOpen class="h-3 w-3" />
 				Documentation
@@ -176,13 +176,13 @@
 				href="https://github.com/ollama/ollama"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="text-muted-foreground hover:text-primary-500 transition-colors text-xs flex items-center gap-1"
+				class="text-muted-foreground hover:text-primary-500 flex items-center gap-1 text-xs transition-colors"
 			>
 				<Icons.Github class="h-3 w-3" />
 				GitHub
 			</a>
 		</div>
-	 </div>
+	</div>
 	<div class="card bg-surface-100-800 flex flex-col gap-4 p-4">
 		<div>
 			<label class="block text-sm font-medium" for="baseUrl">
@@ -285,7 +285,11 @@
 					aria-label="Check for Ollama updates"
 				>
 					{#if isCheckingUpdates}
-						<Icons.Loader2 size={14} class="animate-spin" aria-hidden="true" />
+						<Icons.Loader2
+							size={14}
+							class="animate-spin"
+							aria-hidden="true"
+						/>
 						Checking...
 					{:else}
 						<Icons.Search size={14} aria-hidden="true" />

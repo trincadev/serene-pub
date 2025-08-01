@@ -301,7 +301,9 @@ Story history:
 	}
 
 	try {
-		const res = await db.query.systemSettings.findFirst({where: (s, {eq}) => eq(s.id, 1)})
+		const res = await db.query.systemSettings.findFirst({
+			where: (s, { eq }) => eq(s.id, 1)
+		})
 		if (!res) {
 			await db.insert(schema.systemSettings).values({
 				id: 1,

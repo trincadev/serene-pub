@@ -185,7 +185,8 @@ export const lorebooksRelations = relations(lorebooks, ({ many, one }) => ({
 		fields: [lorebooks.userId],
 		references: [users.id]
 	}),
-	lorebookBindings: many(lorebookBindings)
+	lorebookBindings: many(lorebookBindings),
+	lorebookTags: many(lorebookTags)
 }))
 
 export const lorebookBindings = pgTable(
@@ -359,7 +360,10 @@ export const tags = pgTable("tags", {
 })
 
 export const tagsRelations = relations(tags, ({ many }) => ({
-	characterTags: many(characterTags)
+	characterTags: many(characterTags),
+	personaTags: many(personaTags),
+	lorebookTags: many(lorebookTags),
+	chatTags: many(chatTags)
 }))
 
 export const characterTags = pgTable("character_tags", {
@@ -378,6 +382,66 @@ export const characterTagsRelations = relations(characterTags, ({ one }) => ({
 	}),
 	tag: one(tags, {
 		fields: [characterTags.tagId],
+		references: [tags.id]
+	})
+}))
+
+export const personaTags = pgTable("persona_tags", {
+	personaId: integer("persona_id")
+		.notNull()
+		.references(() => personas.id, { onDelete: "cascade" }), // FK to personas.id
+	tagId: integer("tag_id")
+		.notNull()
+		.references(() => tags.id, { onDelete: "cascade" }) // FK to tags.id
+})
+
+export const personaTagsRelations = relations(personaTags, ({ one }) => ({
+	persona: one(personas, {
+		fields: [personaTags.personaId],
+		references: [personas.id]
+	}),
+	tag: one(tags, {
+		fields: [personaTags.tagId],
+		references: [tags.id]
+	})
+}))
+
+export const lorebookTags = pgTable("lorebook_tags", {
+	lorebookId: integer("lorebook_id")
+		.notNull()
+		.references(() => lorebooks.id, { onDelete: "cascade" }), // FK to lorebooks.id
+	tagId: integer("tag_id")
+		.notNull()
+		.references(() => tags.id, { onDelete: "cascade" }) // FK to tags.id
+})
+
+export const lorebookTagsRelations = relations(lorebookTags, ({ one }) => ({
+	lorebook: one(lorebooks, {
+		fields: [lorebookTags.lorebookId],
+		references: [lorebooks.id]
+	}),
+	tag: one(tags, {
+		fields: [lorebookTags.tagId],
+		references: [tags.id]
+	})
+}))
+
+export const chatTags = pgTable("chat_tags", {
+	chatId: integer("chat_id")
+		.notNull()
+		.references(() => chats.id, { onDelete: "cascade" }), // FK to chats.id
+	tagId: integer("tag_id")
+		.notNull()
+		.references(() => tags.id, { onDelete: "cascade" }) // FK to tags.id
+})
+
+export const chatTagsRelations = relations(chatTags, ({ one }) => ({
+	chat: one(chats, {
+		fields: [chatTags.chatId],
+		references: [chats.id]
+	}),
+	tag: one(tags, {
+		fields: [chatTags.tagId],
 		references: [tags.id]
 	})
 }))
@@ -482,7 +546,8 @@ export const personasRelations = relations(personas, ({ one, many }) => ({
 	lorebook: one(lorebooks, {
 		fields: [personas.lorebookId],
 		references: [lorebooks.id]
-	})
+	}),
+	personaTags: many(personaTags)
 }))
 
 // Chats (group or 1:1)
@@ -521,7 +586,8 @@ export const chatsRelations = relations(chats, ({ one, many }) => ({
 	lorebook: one(lorebooks, {
 		fields: [chats.lorebookId],
 		references: [lorebooks.id]
-	})
+	}),
+	chatTags: many(chatTags)
 }))
 
 // Chat messages
@@ -672,9 +738,19 @@ export const chatLorebooksRelations = relations(chatLorebooks, ({ one }) => ({
  */
 export const systemSettings = pgTable("system_settings", {
 	id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-	ollamaManagerEnabled: boolean("ollama_manager_enabled").notNull().default(false),
-	ollamaManagerBaseUrl: text("ollama_base_url").notNull().default("http://localhost:11434/"),
-	showAllCharacterFields:  boolean("show_all_character_fields").notNull().default(false),
-	enableEasyCharacterCreation: boolean("enable_easy_character_creation").notNull().default(true),
-	enableEasyPersonaCreation: boolean("enable_easy_persona_creation").notNull().default(true)
+	ollamaManagerEnabled: boolean("ollama_manager_enabled")
+		.notNull()
+		.default(false),
+	ollamaManagerBaseUrl: text("ollama_base_url")
+		.notNull()
+		.default("http://localhost:11434/"),
+	showAllCharacterFields: boolean("show_all_character_fields")
+		.notNull()
+		.default(false),
+	enableEasyCharacterCreation: boolean("enable_easy_character_creation")
+		.notNull()
+		.default(true),
+	enableEasyPersonaCreation: boolean("enable_easy_persona_creation")
+		.notNull()
+		.default(true)
 })

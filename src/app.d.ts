@@ -140,14 +140,14 @@ declare global {
 		}
 		namespace Error {
 			interface Response {
-				error: string,
-				description?: string,
+				error: string
+				description?: string
 			}
 		}
 		namespace Success {
 			interface Response {
-				title: string,
-				description?: string,
+				title: string
+				description?: string
 			}
 		}
 		namespace SamplingConfig {
@@ -412,7 +412,9 @@ declare global {
 						modelName: string
 						status: string
 						isDone: boolean
-						files: { [key: string]: { total: number; completed: number } }
+						files: {
+							[key: string]: { total: number; completed: number }
+						}
 					}
 				}
 			}
@@ -468,7 +470,26 @@ declare global {
 					createdAt?: Date
 					likes?: number
 					trendingScore?: number
-					pullOptions?: { label: string; pull: string}[]
+					pullOptions?: { label: string; pull: string }[]
+				}>
+				error?: string
+			}
+		}
+
+		namespace OllamaRecommendedModels {
+			interface Call {}
+			interface Response {
+				models: Array<{
+					name: string
+					pull: string
+					size: number
+					recommended_vram: number
+					details: {
+						parameter_size: string
+						quantization_level: string
+						modified_at: string
+						description: string
+					}
 				}>
 				error?: string
 			}

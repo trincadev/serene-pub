@@ -25,24 +25,42 @@
 		onClose?: () => void
 	}
 
-	let { open = $bindable(), downloadingQuants, onCancel, onClose }: Props = $props()
+	let {
+		open = $bindable(),
+		downloadingQuants,
+		onCancel,
+		onClose
+	}: Props = $props()
 
 	// Check if model download is complete
 	function isComplete(progress: DownloadProgress) {
 		const files = Object.values(progress.files)
-		return files.length > 0 && files.every(file => file.total > 0 && file.completed >= file.total)
+		return (
+			files.length > 0 &&
+			files.every(
+				(file) => file.total > 0 && file.completed >= file.total
+			)
+		)
 	}
 
 	// Check if download is done (complete, canceled, or error)
 	function isDone(progress: DownloadProgress) {
 		const status = progress.status.toLowerCase()
-		return status === "canceled" || status === "success" || status === "error" || isComplete(progress)
+		return (
+			status === "canceled" ||
+			status === "success" ||
+			status === "error" ||
+			isComplete(progress)
+		)
 	}
 
 	// Check if all downloads are done
 	function areAllDownloadsDone() {
 		const downloads = Object.values(downloadingQuants)
-		return downloads.length > 0 && downloads.every(download => isDone(download))
+		return (
+			downloads.length > 0 &&
+			downloads.every((download) => isDone(download))
+		)
 	}
 
 	// Handle modal close
@@ -56,7 +74,9 @@
 	// Get file count and completion status
 	function getFileStats(progress: DownloadProgress) {
 		const files = Object.values(progress.files)
-		const completedFiles = files.filter(file => file.total > 0 && file.completed >= file.total).length
+		const completedFiles = files.filter(
+			(file) => file.total > 0 && file.completed >= file.total
+		).length
 		const totalFiles = files.length
 		return { completed: completedFiles, total: totalFiles }
 	}
@@ -136,11 +156,14 @@
 									>
 										{progress.modelName}
 									</h4>
-									<div class="flex items-center gap-2 ml-2">
+									<div class="ml-2 flex items-center gap-2">
 										{#if onCancel && !isDone(progress)}
 											<button
 												class="btn btn-sm preset-filled-error-500"
-												onclick={() => onCancel?.(progress.modelName)}
+												onclick={() =>
+													onCancel?.(
+														progress.modelName
+													)}
 												title="Cancel download"
 											>
 												<Icons.X size={14} />
@@ -155,15 +178,21 @@
 									<div class="space-y-3">
 										{#each Object.entries(progress.files) as [fileName, fileProgress]}
 											<div class="space-y-1">
-												<div class="flex items-center justify-between text-xs">
-													<span class="text-surface-500 truncate font-mono max-w-[60%]" title={fileName}>
+												<div
+													class="flex items-center justify-between text-xs"
+												>
+													<span
+														class="text-surface-500 max-w-[60%] truncate font-mono"
+														title={fileName}
+													>
 														{fileName}
 													</span>
-													<span class="text-surface-400 font-mono">
-														{fileProgress.total > 0 ? 
-															`${((fileProgress.completed / fileProgress.total) * 100).toFixed(1)}%` : 
-															'0%'
-														}
+													<span
+														class="text-surface-400 font-mono"
+													>
+														{fileProgress.total > 0
+															? `${((fileProgress.completed / fileProgress.total) * 100).toFixed(1)}%`
+															: "0%"}
 													</span>
 												</div>
 												<div class="w-full">
@@ -173,9 +202,17 @@
 													/>
 												</div>
 												{#if fileProgress.total > 0}
-													<div class="flex justify-end text-[10px] text-surface-400 font-mono">
-														{(fileProgress.completed / (1024 * 1024)).toFixed(1)}MB / 
-														{(fileProgress.total / (1024 * 1024)).toFixed(1)}MB
+													<div
+														class="text-surface-400 flex justify-end font-mono text-[10px]"
+													>
+														{(
+															fileProgress.completed /
+															(1024 * 1024)
+														).toFixed(1)}MB /
+														{(
+															fileProgress.total /
+															(1024 * 1024)
+														).toFixed(1)}MB
 													</div>
 												{/if}
 											</div>
@@ -183,16 +220,27 @@
 									</div>
 
 									<div
-										class="flex items-center justify-between text-xs pt-2 border-t border-surface-300-700"
+										class="border-surface-300-700 flex items-center justify-between border-t pt-2 text-xs"
 									>
 										<div class="flex items-center gap-2">
 											<div
-												class="h-2 w-2 rounded-full {isDone(progress) ? '' : 'animate-pulse'} {
-													progress.status.toLowerCase() === 'canceled' ? 'bg-orange-500' :
-													progress.status.toLowerCase() === 'error' ? 'bg-red-500' :
-													progress.status.toLowerCase() === 'success' || isComplete(progress) ? 'bg-green-500' :
-													'bg-blue-500'
-												}"
+												class="h-2 w-2 rounded-full {isDone(
+													progress
+												)
+													? ''
+													: 'animate-pulse'} {progress.status.toLowerCase() ===
+												'canceled'
+													? 'bg-orange-500'
+													: progress.status.toLowerCase() ===
+														  'error'
+														? 'bg-red-500'
+														: progress.status.toLowerCase() ===
+																	'success' ||
+															  isComplete(
+																	progress
+															  )
+															? 'bg-green-500'
+															: 'bg-blue-500'}"
 											></div>
 											<span
 												class="text-surface-600-400 font-medium"

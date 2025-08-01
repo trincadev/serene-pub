@@ -15,6 +15,7 @@
 		isDefault?: boolean
 		position?: number
 		connections?: string
+		tags: string[]
 		_avatarFile?: File | undefined
 		_avatar?: string
 	}
@@ -47,6 +48,11 @@
 
 	const socket = skio.get()
 
+	// Tag-related state
+	let tagsList: SelectTag[] = $state([])
+	let tagSearchInput = $state("")
+	let showTagSuggestions = $state(false)
+
 	let editPersonaData: EditPersonaData = $state({
 		id: undefined,
 		name: "",
@@ -55,6 +61,7 @@
 		isDefault: false,
 		position: 0,
 		connections: "",
+		tags: [],
 		_avatarFile: undefined,
 		_avatar: ""
 	})
@@ -66,6 +73,7 @@
 		isDefault: false,
 		position: 0,
 		connections: "",
+		tags: [],
 		_avatarFile: undefined,
 		_avatar: ""
 	})
@@ -77,6 +85,53 @@
 	let mode: "create" | "edit" = $derived.by(() =>
 		!!editPersonaData.id ? "edit" : "create"
 	)
+
+	// Filtered tags for suggestions
+	let filteredTags = $derived.by(() => {
+		if (!tagSearchInput) return tagsList.filter(
+			(tag) => !editPersonaData.tags.some(
+				selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+			)
+		)
+		return tagsList.filter(
+			(tag) =>
+				tag.name.toLowerCase().includes(tagSearchInput.toLowerCase()) &&
+				!editPersonaData.tags.some(
+					selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+				)
+		)
+	})
+
+	// Tag helper functions
+	function addTag(tagName: string) {
+		const trimmedName = tagName.trim()
+		if (!trimmedName) return
+		
+		// Check for case-insensitive duplicates
+		const isDuplicate = editPersonaData.tags.some(
+			existingTag => existingTag.toLowerCase() === trimmedName.toLowerCase()
+		)
+		if (isDuplicate) return
+
+		editPersonaData.tags = [...editPersonaData.tags, trimmedName]
+		tagSearchInput = ""
+		showTagSuggestions = false
+	}
+
+	function removeTag(tagName: string) {
+		editPersonaData.tags = editPersonaData.tags.filter(
+			(tag) => tag !== tagName
+		)
+	}
+
+	function handleTagInputKeydown(e: KeyboardEvent) {
+		if (e.key === "Enter" && tagSearchInput.trim()) {
+			e.preventDefault()
+			addTag(tagSearchInput)
+		} else if (e.key === "Escape") {
+			showTagSuggestions = false
+		}
+	}
 
 	// Events: avatarChange, save, cancel
 	function validateFormDebounced() {
@@ -240,6 +295,13 @@
 			}
 		})
 
+		socket.on("tagsList", (msg: any) => {
+			tagsList = msg.tagsList || []
+		})
+
+		// Load tags list
+		socket.emit("tagsList", {})
+
 		if (personaId) {
 			socket.once("persona", (message: Sockets.Persona.Response) => {
 				if (message.persona) {
@@ -249,6 +311,7 @@
 						...personaData,
 						avatar: personaData.avatar ?? "",
 						description: personaData.description ?? "",
+						tags: personaData.tags || [],
 						_avatar: ""
 					}
 					originalPersonaData = { ...editPersonaData }
@@ -262,6 +325,7 @@
 		socket.off("createPersona")
 		socket.off("updatePersona")
 		socket.off("persona")
+		socket.off("tagsList")
 
 		// Remove keyboard event listener and clear timeout
 		document.removeEventListener("keydown", handleKeydown)
@@ -457,6 +521,72 @@
 				>
 					{validationErrors.description}
 				</p>
+			{/if}
+		</fieldset>
+
+		<!-- Tags Section -->
+		<fieldset class="flex flex-col gap-2">
+			<label class="font-semibold" for="tagInput">Tags</label>
+			<div class="relative">
+				<input
+					id="tagInput"
+					type="text"
+					bind:value={tagSearchInput}
+					class="input w-full"
+					placeholder="Add a tag..."
+					onfocus={() => (showTagSuggestions = true)}
+					onblur={() => setTimeout(() => (showTagSuggestions = false), 200)}
+					onkeydown={handleTagInputKeydown}
+				/>
+
+				<!-- Tag suggestions dropdown -->
+				{#if showTagSuggestions && filteredTags.length > 0}
+					<div
+						class="bg-surface-100-900 absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border shadow-lg"
+					>
+						{#each filteredTags as tag}
+							<button
+								type="button"
+								class="hover:bg-surface-200-800 w-full px-3 py-2 text-left transition-colors"
+								onclick={() => addTag(tag.name)}
+							>
+								<span
+									class="chip mr-2 {tag.colorPreset ||
+										'preset-filled-primary-500'}"
+								>
+									{tag.name}
+								</span>
+								{#if tag.description}
+									<span class="text-muted-foreground text-sm">
+										- {tag.description}
+									</span>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Selected tags display -->
+			{#if editPersonaData.tags.length > 0}
+				<div class="flex flex-wrap gap-2">
+					{#each editPersonaData.tags as tagName}
+						{@const tag = tagsList.find((t) => t.name === tagName)}
+						<button
+							type="button"
+							class="chip {tag?.colorPreset ||
+								'preset-filled-primary-500'} group relative"
+							onclick={() => removeTag(tagName)}
+							title="Click to remove tag"
+						>
+							{tagName}
+							<Icons.X
+								size={14}
+								class="group-hover:opacity-100 ml-1 opacity-60"
+							/>
+						</button>
+					{/each}
+				</div>
 			{/if}
 		</fieldset>
 	</div>

@@ -120,7 +120,7 @@
 		{/if}
 		{#if downloadingCount}
 			<!-- Downloads header -->
-			<div class="flex flex-col gap-2 mb-6">
+			<div class="mb-6 flex flex-col gap-2">
 				<div>
 					<div class="mb-2 flex items-center justify-between">
 						<div class="flex items-center gap-3">
@@ -296,7 +296,9 @@
 										: 'animate-pulse'} {progress.status.toLowerCase() ===
 									'canceled'
 										? 'bg-orange-500'
-										: ["error", "cancelled"].includes(progress.status.toLowerCase())
+										: ['error', 'cancelled'].includes(
+													progress.status.toLowerCase()
+											  )
 											? 'bg-red-500'
 											: progress.status.toLowerCase() ===
 														'success' ||

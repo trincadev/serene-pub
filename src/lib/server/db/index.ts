@@ -23,10 +23,7 @@ const metaPath = dbConfig.dataDir + "/meta.json"
 
 // Ensure meta.json exists
 if (!fs.existsSync(metaPath)) {
-	fs.writeFileSync(
-		metaPath,
-		JSON.stringify({ version: "0.0.0" }, null, 2)
-	)
+	fs.writeFileSync(metaPath, JSON.stringify({ version: "0.0.0" }, null, 2))
 }
 
 // Read meta.json
@@ -38,7 +35,7 @@ const DEFAULT_LOCK_LENGTH = 5000 // 5 seconds in milliseconds
 async function checkDatabaseLock(): Promise<void> {
 	// Refresh meta from file
 	meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
-	
+
 	if (!meta.lock) {
 		// No lock exists, continue
 		return
@@ -46,24 +43,31 @@ async function checkDatabaseLock(): Promise<void> {
 
 	const currentTime = Date.now()
 	const lockExpiry = meta.lock.timestamp + meta.lock.lockLength
-	
+
 	if (currentTime < lockExpiry) {
 		// Lock is still active, wait for it to expire
 		const waitTime = lockExpiry - currentTime
-		console.log(`Database locked, waiting ${waitTime}ms for lock to expire...`)
-		
-		await new Promise(resolve => setTimeout(resolve, waitTime))
-		
+		console.log(
+			`Database locked, waiting ${waitTime}ms for lock to expire...`
+		)
+
+		await new Promise((resolve) => setTimeout(resolve, waitTime))
+
 		// Check again after waiting
 		meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
-		
-		if (meta.lock && Date.now() < meta.lock.timestamp + meta.lock.lockLength) {
+
+		if (
+			meta.lock &&
+			Date.now() < meta.lock.timestamp + meta.lock.lockLength
+		) {
 			// Still locked after waiting, exit application
-			console.error("Database remains locked after waiting. Exiting application.")
+			console.error(
+				"Database remains locked after waiting. Exiting application."
+			)
 			process.exit(1)
 		}
 	}
-	
+
 	// Lock is stale or doesn't exist, continue
 }
 
@@ -71,12 +75,12 @@ function updateDatabaseLock(): void {
 	try {
 		// Refresh meta from file
 		meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
-		
+
 		meta.lock = {
 			timestamp: Date.now(),
 			lockLength: DEFAULT_LOCK_LENGTH
 		}
-		
+
 		fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2))
 	} catch (error) {
 		console.error("Failed to update database lock:", error)
@@ -89,7 +93,7 @@ let lockUpdateInterval: NodeJS.Timeout | null = null
 function startLockUpdates(): void {
 	// Update lock immediately
 	updateDatabaseLock()
-	
+
 	// Set up interval to update lock every few seconds
 	lockUpdateInterval = setInterval(() => {
 		updateDatabaseLock()
@@ -101,7 +105,7 @@ function stopLockUpdates(): void {
 		clearInterval(lockUpdateInterval)
 		lockUpdateInterval = null
 	}
-	
+
 	// Clear the lock when stopping
 	try {
 		meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
@@ -113,12 +117,12 @@ function stopLockUpdates(): void {
 }
 
 // Clean up lock on process exit
-process.on('exit', stopLockUpdates)
-process.on('SIGINT', () => {
+process.on("exit", stopLockUpdates)
+process.on("SIGINT", () => {
 	stopLockUpdates()
 	process.exit(0)
 })
-process.on('SIGTERM', () => {
+process.on("SIGTERM", () => {
 	stopLockUpdates()
 	process.exit(0)
 })

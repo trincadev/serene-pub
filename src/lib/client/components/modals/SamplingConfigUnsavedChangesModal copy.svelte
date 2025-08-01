@@ -28,8 +28,8 @@
 		</header>
 		<article>
 			<p class="opacity-60">
-				Your sampling configuration has unsaved changes. Are you sure you want to
-				discard them?
+				Your sampling configuration has unsaved changes. Are you sure
+				you want to discard them?
 			</p>
 		</article>
 		<footer class="flex justify-end gap-4">

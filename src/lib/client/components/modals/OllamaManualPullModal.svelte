@@ -10,13 +10,14 @@
 		onconfirm: (modelName: string) => void
 	}
 
-	let { 
-		open = $bindable(), 
-		modelName, 
+	let {
+		open = $bindable(),
+		modelName,
 		exampleModelName = "llama3.1",
 
-		onclose, 
-		onconfirm }: Props = $props()
+		onclose,
+		onconfirm
+	}: Props = $props()
 
 	let inputValue = $state(modelName)
 	let isLoading = $state(false)
@@ -24,17 +25,17 @@
 	// Function to clean the model name
 	function cleanModelName(input: string): string {
 		let cleaned = input.trim()
-		
+
 		// Remove "ollama pull " prefix if present
 		if (cleaned.toLowerCase().startsWith("ollama pull ")) {
 			cleaned = cleaned.substring(12).trim()
 		}
-		
+
 		// Remove "ollama run " prefix if present
 		if (cleaned.toLowerCase().startsWith("ollama run ")) {
 			cleaned = cleaned.substring(11).trim()
 		}
-		
+
 		return cleaned
 	}
 
@@ -77,10 +78,14 @@
 				<h3 class="text-foreground text-lg font-bold">Install Model</h3>
 			</div>
 			<p class="text-muted-foreground text-sm">
-				Enter the model name to download. You can use formats like: 
-				<br/> <code class="code">ollama pull {exampleModelName}</code>
-				<br/> <code class="code">ollama run {exampleModelName}</code>
-				<br/> or <code class="code">{exampleModelName}</code>
+				Enter the model name to download. You can use formats like:
+				<br />
+				<code class="code">ollama pull {exampleModelName}</code>
+				<br />
+				<code class="code">ollama run {exampleModelName}</code>
+				<br />
+				or
+				<code class="code">{exampleModelName}</code>
 			</p>
 		</div>
 
@@ -102,10 +107,10 @@
 					disabled={isLoading}
 				/>
 			</div>
-			
+
 			{#if inputValue.trim()}
 				<div class="bg-surface-100-900 rounded border p-3">
-					<div class="text-muted-foreground text-xs font-medium mb-1">
+					<div class="text-muted-foreground mb-1 text-xs font-medium">
 						Will install:
 					</div>
 					<div class="text-foreground font-mono text-sm">

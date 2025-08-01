@@ -4,7 +4,6 @@ import * as schema from "$lib/server/db/schema"
 import { user as loadUser, user } from "./users"
 import { getConnectionAdapter } from "../utils/getConnectionAdapter"
 
-
 // --- CONNECTIONS SOCKET HANDLERS ---
 
 export async function connectionsList(
@@ -231,5 +230,3 @@ export async function refreshModels(
 		emitToUser("refreshModels", res)
 	}
 }
-
-

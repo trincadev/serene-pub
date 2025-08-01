@@ -20,11 +20,16 @@
 	let isDarkMode = $state(false)
 	let selectedTheme: string = $state("")
 	let themeCtx: ThemeCtx = $state(getContext("themeCtx"))
-	let systemSettingsCtx: SystemSettingsCtx = $state(getContext("systemSettingsCtx"))
+	let systemSettingsCtx: SystemSettingsCtx = $state(
+		getContext("systemSettingsCtx")
+	)
 
 	$effect(() => {
-		const _s = {...$state.snapshot(systemSettingsCtx)}
-		console.log("SettingsSidebar systemSettingsCtx", $state.snapshot(systemSettingsCtx))
+		const _s = { ...$state.snapshot(systemSettingsCtx) }
+		console.log(
+			"SettingsSidebar systemSettingsCtx",
+			$state.snapshot(systemSettingsCtx)
+		)
 	})
 
 	$effect(() => {
@@ -106,7 +111,7 @@
 		<div>
 			<label for="theme" class="font-semibold">Theme</label>
 			<select
-				id="theme" 
+				id="theme"
 				class="select"
 				name="theme"
 				value={selectedTheme}
@@ -135,7 +140,9 @@
 				onCheckedChange={onOllamaManagerEnabledClick}
 				aria-label="Toggle Ollama Manager"
 			></Switch>
-			<label for="ollama-manager" class="font-semibold">Enable Ollama Manager</label>
+			<label for="ollama-manager" class="font-semibold">
+				Enable Ollama Manager
+			</label>
 		</div>
 		<div class="flex gap-2">
 			<Switch
@@ -144,7 +151,9 @@
 				onCheckedChange={onShowAllCharacterFieldsClick}
 				aria-label="Toggle Show All Character Fields"
 			></Switch>
-			<label for="show-all-character-fields" class="font-semibold">Show All Character Fields</label>
+			<label for="show-all-character-fields" class="font-semibold">
+				Show All Character Fields
+			</label>
 		</div>
 		<div class="flex gap-2">
 			<Switch
@@ -153,7 +162,9 @@
 				onCheckedChange={onEasyCharacterCreationClick}
 				aria-label="Toggle Easy Character Creation"
 			></Switch>
-			<label for="easy-character-creation" class="font-semibold">Easy Character Creation</label>
+			<label for="easy-character-creation" class="font-semibold">
+				Easy Character Creation
+			</label>
 		</div>
 		<div class="flex gap-2">
 			<Switch
@@ -162,7 +173,9 @@
 				onCheckedChange={onEasyPersonaCreationClick}
 				aria-label="Toggle Easy Persona Creation"
 			></Switch>
-			<label for="easy-persona-creation" class="font-semibold">Easy Persona Creation</label>
+			<label for="easy-persona-creation" class="font-semibold">
+				Easy Persona Creation
+			</label>
 		</div>
 	</div>
 

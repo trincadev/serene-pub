@@ -116,11 +116,58 @@ export async function tagRelatedData(
 			}
 		})
 
-		// Get related chats through characters
+		// Get personas with this tag
+		const personas = await db.query.personaTags.findMany({
+			where: eq(schema.personaTags.tagId, message.tagId),
+			with: {
+				persona: {
+					columns: {
+						id: true,
+						name: true,
+						description: true,
+						avatar: true,
+						isDefault: true
+					}
+				}
+			}
+		})
+
+		// Get lorebooks with this tag
+		const lorebooks = await db.query.lorebookTags.findMany({
+			where: eq(schema.lorebookTags.tagId, message.tagId),
+			with: {
+				lorebook: {
+					columns: {
+						id: true,
+						name: true,
+						description: true,
+						createdAt: true
+					}
+				}
+			}
+		})
+
+		// Get chats with this tag directly
+		const directChats = await db.query.chatTags.findMany({
+			where: eq(schema.chatTags.tagId, message.tagId),
+			with: {
+				chat: {
+					columns: {
+						id: true,
+						name: true,
+						scenario: true,
+						createdAt: true,
+						isGroup: true
+					}
+				}
+			}
+		})
+
+		// Get related chats through characters (existing functionality)
 		const characterIds = characters
 			.map((ct) => ct.character?.id)
 			.filter(Boolean)
-		const chats =
+		const characterChats =
 			characterIds.length > 0
 				? await db.query.chatCharacters.findMany({
 						where: (cc, { inArray }) =>
@@ -131,20 +178,28 @@ export async function tagRelatedData(
 									id: true,
 									name: true,
 									scenario: true,
-									createdAt: true
+									createdAt: true,
+									isGroup: true
 								}
 							}
 						}
 					})
 				: []
 
-		// For now, personas don't have direct tag relationships, but we could add them later
-		const personas: SelectPersona[] = []
+		// Combine direct chats and character-related chats, removing duplicates
+		const allChats = [
+			...directChats.map((ct) => ct.chat).filter(Boolean),
+			...characterChats.map((cc) => cc.chat).filter(Boolean)
+		]
+		const uniqueChats = allChats.filter((chat, index, self) => 
+			index === self.findIndex(c => c.id === chat.id)
+		)
 
 		const res = {
 			characters: characters.map((ct) => ct.character).filter(Boolean),
-			personas: personas,
-			chats: chats.map((cc) => cc.chat).filter(Boolean)
+			personas: personas.map((pt) => pt.persona).filter(Boolean),
+			lorebooks: lorebooks.map((lt) => lt.lorebook).filter(Boolean),
+			chats: uniqueChats
 		}
 
 		emitToUser("tagRelatedData", res)

@@ -5,9 +5,14 @@
 	interface Props {
 		open: boolean
 		selectedModelForDownload: string | null
-		selectedModel: Sockets.OllamaSearchAvailableModels.Response["models"][0] | null
+		selectedModel:
+			| Sockets.OllamaSearchAvailableModels.Response["models"][0]
+			| null
 		onClose: () => void
-		onDownload: (modelId: string, pullOption: { label: string; pull: string }) => void
+		onDownload: (
+			modelId: string,
+			pullOption: { label: string; pull: string }
+		) => void
 	}
 
 	let {
@@ -29,7 +34,7 @@
 
 	// Sort pullOptions by quantization level (highest to lowest)
 	let sortedPullOptions = $derived(
-		// selectedModel?.pullOptions ? 
+		// selectedModel?.pullOptions ?
 		// [...selectedModel.pullOptions].sort((a, b) => {
 		// 	const aValue = getQuantizationSortValue(a.label)
 		// 	const bValue = getQuantizationSortValue(b.label)
@@ -96,8 +101,7 @@
 								<div class="flex-1">
 									<div class="mb-2 flex items-center gap-2">
 										<h5 class="font-semibold">
-											{pullOption.label ||
-												"Unknown file"}
+											{pullOption.label || "Unknown file"}
 										</h5>
 
 										<!-- Add special labels -->
@@ -167,9 +171,7 @@
 			{/if}
 		</article>
 		<footer class="flex justify-end gap-4">
-			<button class="btn preset-tonal" onclick={onClose}>
-				Cancel
-			</button>
+			<button class="btn preset-tonal" onclick={onClose}>Cancel</button>
 		</footer>
 	{/snippet}
 </Modal>

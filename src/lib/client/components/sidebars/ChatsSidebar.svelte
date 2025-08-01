@@ -46,6 +46,11 @@
 	function handleCreateClick(
 		event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }
 	) {
+		// Clear tutorial flag when user interacts with the highlighted button
+		if (panelsCtx.digest.tutorial) {
+			panelsCtx.digest.tutorial = false
+		}
+
 		showEditChatForm = true
 	}
 
@@ -189,7 +194,10 @@
 	{:else}
 		<div class="mb-2 flex gap-2">
 			<button
-				class="btn btn-sm preset-filled-primary-500"
+				class="btn btn-sm preset-filled-primary-500 {panelsCtx.digest
+					.tutorial
+					? 'ring-primary-500/50 animate-pulse ring-4'
+					: ''}"
 				onclick={handleCreateClick}
 				title="Create New Chat"
 			>

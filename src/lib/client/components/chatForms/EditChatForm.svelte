@@ -35,6 +35,12 @@
 
 	// STATE VARIABLES
 
+	// Tag-related state
+	let tagsList: SelectTag[] = $state([])
+	let tagSearchInput = $state("")
+	let showTagSuggestions = $state(false)
+	let selectedTags: string[] = $state([])
+
 	let chat: Sockets.Chat.Response["chat"] | undefined = $state()
 	let isCreating = $state(!chat)
 	let characters: Sockets.CharacterList.Response["characterList"] = $state([])
@@ -50,6 +56,7 @@
 					scenario: string
 					groupReplyStrategy: string
 					lorebookId?: number | null
+					tags: string[]
 				}
 				characterIds: number[]
 				personaIds: number[]
@@ -65,6 +72,7 @@
 					scenario: string
 					groupReplyStrategy: string
 					lorebookId?: number | null
+					tags: string[]
 				}
 				characterIds: number[]
 				personaIds: number[]
@@ -103,6 +111,51 @@
 	let removeId: number | null = $state(null)
 	let validationErrors: ValidationErrors = $state({})
 
+	// Filtered tags for suggestions
+	let filteredTags = $derived.by(() => {
+		if (!tagSearchInput) return tagsList.filter(
+			(tag) => !selectedTags.some(
+				selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+			)
+		)
+		return tagsList.filter(
+			(tag) =>
+				tag.name.toLowerCase().includes(tagSearchInput.toLowerCase()) &&
+				!selectedTags.some(
+					selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+				)
+		)
+	})
+
+	// Tag helper functions
+	function addTag(tagName: string) {
+		const trimmedName = tagName.trim()
+		if (!trimmedName) return
+		
+		// Check for case-insensitive duplicates
+		const isDuplicate = selectedTags.some(
+			existingTag => existingTag.toLowerCase() === trimmedName.toLowerCase()
+		)
+		if (isDuplicate) return
+
+		selectedTags = [...selectedTags, trimmedName]
+		tagSearchInput = ""
+		showTagSuggestions = false
+	}
+
+	function removeTag(tagName: string) {
+		selectedTags = selectedTags.filter((tag) => tag !== tagName)
+	}
+
+	function handleTagInputKeydown(e: KeyboardEvent) {
+		if (e.key === "Enter" && tagSearchInput.trim()) {
+			e.preventDefault()
+			addTag(tagSearchInput)
+		} else if (e.key === "Escape") {
+			showTagSuggestions = false
+		}
+	}
+
 	$effect(() => {
 		const _name = name.trim()
 		const _scenario = scenario.trim()
@@ -110,13 +163,15 @@
 		const _selectedCharacters = selectedCharacters
 		const _selectedPersonas = selectedPersonas
 		const _lorebookId = lorebookId || null
+		const _tags = selectedTags
 		data = {
 			chat: {
 				id: chat?.id,
 				name: _name,
 				scenario: _scenario,
 				groupReplyStrategy: _groupReplyStrategy || "ordered",
-				lorebookId: _lorebookId
+				lorebookId: _lorebookId,
+				tags: _tags
 			},
 			characterIds: _selectedCharacters.map((cc) => cc.id),
 			personaIds: _selectedPersonas.map((cp) => cp.id),
@@ -249,6 +304,7 @@
 				selectedPersonas =
 					chat.chatPersonas?.map((cp) => cp.persona) || []
 				lorebookId = chat.lorebookId || null
+				selectedTags = chat.tags || []
 			}
 		})
 		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
@@ -259,6 +315,9 @@
 		})
 		socket.on("lorebookList", (msg: Sockets.LorebookList.Response) => {
 			lorebookList = msg.lorebookList || []
+		})
+		socket.on("tagsList", (msg: any) => {
+			tagsList = msg.tagsList || []
 		})
 		socket.on(
 			"toggleChatCharacterActive",
@@ -287,6 +346,7 @@
 		socket.emit("characterList", {})
 		socket.emit("personaList", {})
 		socket.emit("lorebookList", {})
+		socket.emit("tagsList", {})
 	})
 
 	onDestroy(() => {
@@ -294,6 +354,7 @@
 		socket.off("characterList")
 		socket.off("personaList")
 		socket.off("lorebookList")
+		socket.off("tagsList")
 		socket.off("toggleChatCharacterActive")
 		socket.off("createChat")
 		socket.off("updateChat")
@@ -569,6 +630,72 @@
 					<option value={lorebook.id}>{lorebook.name}</option>
 				{/each}
 			</select>
+		</div>
+
+		<!-- Tags Section -->
+		<div>
+			<label class="font-semibold" for="tagInput">Tags</label>
+			<div class="relative">
+				<input
+					id="tagInput"
+					type="text"
+					bind:value={tagSearchInput}
+					class="input input-lg w-full"
+					placeholder="Add a tag..."
+					onfocus={() => (showTagSuggestions = true)}
+					onblur={() => setTimeout(() => (showTagSuggestions = false), 200)}
+					onkeydown={handleTagInputKeydown}
+				/>
+
+				<!-- Tag suggestions dropdown -->
+				{#if showTagSuggestions && filteredTags.length > 0}
+					<div
+						class="bg-surface-100-900 absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border shadow-lg"
+					>
+						{#each filteredTags as tag}
+							<button
+								type="button"
+								class="hover:bg-surface-200-800 w-full px-3 py-2 text-left transition-colors"
+								onclick={() => addTag(tag.name)}
+							>
+								<span
+									class="chip mr-2 {tag.colorPreset ||
+										'preset-filled-primary-500'}"
+								>
+									{tag.name}
+								</span>
+								{#if tag.description}
+									<span class="text-muted-foreground text-sm">
+										- {tag.description}
+									</span>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Selected tags display -->
+			{#if selectedTags.length > 0}
+				<div class="mt-2 flex flex-wrap gap-2">
+					{#each selectedTags as tagName}
+						{@const tag = tagsList.find((t) => t.name === tagName)}
+						<button
+							type="button"
+							class="chip {tag?.colorPreset ||
+								'preset-filled-primary-500'} group relative"
+							onclick={() => removeTag(tagName)}
+							title="Click to remove tag"
+						>
+							{tagName}
+							<Icons.X
+								size={14}
+								class="group-hover:opacity-100 ml-1 opacity-60"
+							/>
+						</button>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	</div>
 	<CharacterSelectModal

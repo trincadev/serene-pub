@@ -129,28 +129,38 @@
 		</div>
 	{:else if !isConnected}
 		<!-- Connection setup -->
-		<div class="flex items-center justify-center p-4 mt-10">
+		<div class="mt-10 flex items-center justify-center p-4">
 			<div class="w-full max-w-md space-y-6">
 				<div class="text-center">
-                    <OllamaIcon class="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+					<OllamaIcon
+						class="text-muted-foreground mx-auto mb-4 h-12 w-12"
+					/>
 					<h3 class="text-foreground mb-2 text-lg font-semibold">
 						Connect to Ollama
 					</h3>
 					<p class="text-muted-foreground mb-4 text-sm">
-						Connect to your Ollama server to manage AI models locally.
+						Connect to your Ollama server to manage AI models
+						locally.
 					</p>
 				</div>
 
 				<!-- Don't have Ollama installed? -->
-				<div class="bg-surface-200 dark:bg-surface-800 rounded-lg border p-4">
+				<div
+					class="bg-surface-200 dark:bg-surface-800 rounded-lg border p-4"
+				>
 					<div class="flex items-start gap-3">
-						<Icons.Download class="text-primary-500 mt-0.5 h-5 w-5 flex-shrink-0" />
+						<Icons.Download
+							class="text-primary-500 mt-0.5 h-5 w-5 flex-shrink-0"
+						/>
 						<div class="flex-1">
-							<h4 class="text-foreground mb-1 text-sm font-medium">
+							<h4
+								class="text-foreground mb-1 text-sm font-medium"
+							>
 								Don't have Ollama installed?
 							</h4>
 							<p class="text-muted-foreground mb-3 text-xs">
-								Download and install Ollama to run AI models locally on your machine. It's easy!
+								Download and install Ollama to run AI models
+								locally on your machine. It's easy!
 							</p>
 							<a
 								href="https://ollama.ai/download"
@@ -247,7 +257,9 @@
 					</Tabs.Panel>
 					<Tabs.Panel value="available">
 						{#if activeTab === "available"}
-							<OllamaAvailableTab onDownloadStart={handleDownloadStart} />
+							<OllamaAvailableTab
+								onDownloadStart={handleDownloadStart}
+							/>
 						{/if}
 					</Tabs.Panel>
 					<Tabs.Panel value="downloads">

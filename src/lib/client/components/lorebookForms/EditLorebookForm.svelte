@@ -23,6 +23,11 @@
 
 	const socket = skio.get()
 
+	// Tag-related state
+	let tagsList: SelectTag[] = $state([])
+	let tagSearchInput = $state("")
+	let showTagSuggestions = $state(false)
+
 	let editLorebook: Sockets.Lorebook.Response["lorebook"] | undefined =
 		$state()
 	let originalLorebook: Sockets.Lorebook.Response["lorebook"] | undefined =
@@ -33,6 +38,55 @@
 		hasUnsavedChanges =
 			JSON.stringify(editLorebook) !== JSON.stringify(originalLorebook)
 	})
+
+	// Filtered tags for suggestions
+	let filteredTags = $derived.by(() => {
+		if (!tagSearchInput) return tagsList.filter(
+			(tag) => !(editLorebook?.tags || []).some(
+				selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+			)
+		)
+		return tagsList.filter(
+			(tag) =>
+				tag.name.toLowerCase().includes(tagSearchInput.toLowerCase()) &&
+				!(editLorebook?.tags || []).some(
+					selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+				)
+		)
+	})
+
+	// Tag helper functions
+	function addTag(tagName: string) {
+		const trimmedName = tagName.trim()
+		if (!trimmedName || !editLorebook) return
+		
+		// Check for case-insensitive duplicates
+		const isDuplicate = (editLorebook.tags || []).some(
+			existingTag => existingTag.toLowerCase() === trimmedName.toLowerCase()
+		)
+		if (isDuplicate) return
+
+		editLorebook.tags = [...(editLorebook.tags || []), trimmedName]
+		tagSearchInput = ""
+		showTagSuggestions = false
+	}
+
+	function removeTag(tagName: string) {
+		if (editLorebook) {
+			editLorebook.tags = (editLorebook.tags || []).filter(
+				(tag) => tag !== tagName
+			)
+		}
+	}
+
+	function handleTagInputKeydown(e: KeyboardEvent) {
+		if (e.key === "Enter" && tagSearchInput.trim()) {
+			e.preventDefault()
+			addTag(tagSearchInput)
+		} else if (e.key === "Escape") {
+			showTagSuggestions = false
+		}
+	}
 
 	function handleSave() {
 		if (!validateForm()) return
@@ -77,8 +131,24 @@
 			await tick() // Force state to update
 		})
 		socket.on("updateLorebook", async (msg: Sockets.Lorebook.Response) => {
-			toaster.success({ title: "Lorebook updated successfully" })
+			if (msg.lorebook && msg.lorebook.id === lorebookId) {
+				// Update both editLorebook and originalLorebook to reflect the save
+				editLorebook = { ...msg.lorebook }
+				originalLorebook = { ...msg.lorebook }
+				
+				toaster.success({
+					title: "Lorebook Updated",
+					description: `Lorebook "${msg.lorebook.name}" updated successfully.`
+				})
+			}
 		})
+		socket.on("tagsList", (msg: any) => {
+			tagsList = msg.tagsList || []
+		})
+
+		// Load tags list
+		socket.emit("tagsList", {})
+		
 		const lorebookReq: Sockets.Lorebook.Call = { id: lorebookId }
 		socket.emit("lorebook", lorebookReq)
 	})
@@ -86,6 +156,7 @@
 	onDestroy(() => {
 		socket.off("lorebook")
 		socket.off("updateLorebook")
+		socket.off("tagsList")
 	})
 </script>
 
@@ -143,6 +214,72 @@
 				bind:value={editLorebook.description}
 				rows={2}
 			></textarea>
+		</div>
+
+		<!-- Tags Section -->
+		<div>
+			<label class="font-semibold" for="tagInput">Tags</label>
+			<div class="relative">
+				<input
+					id="tagInput"
+					type="text"
+					bind:value={tagSearchInput}
+					class="input w-full"
+					placeholder="Add a tag..."
+					onfocus={() => (showTagSuggestions = true)}
+					onblur={() => setTimeout(() => (showTagSuggestions = false), 200)}
+					onkeydown={handleTagInputKeydown}
+				/>
+
+				<!-- Tag suggestions dropdown -->
+				{#if showTagSuggestions && filteredTags.length > 0}
+					<div
+						class="bg-surface-100-900 absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border shadow-lg"
+					>
+						{#each filteredTags as tag}
+							<button
+								type="button"
+								class="hover:bg-surface-200-800 w-full px-3 py-2 text-left transition-colors"
+								onclick={() => addTag(tag.name)}
+							>
+								<span
+									class="chip mr-2 {tag.colorPreset ||
+										'preset-filled-primary-500'}"
+								>
+									{tag.name}
+								</span>
+								{#if tag.description}
+									<span class="text-muted-foreground text-sm">
+										- {tag.description}
+									</span>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Selected tags display -->
+			{#if editLorebook.tags && editLorebook.tags.length > 0}
+				<div class="mt-2 flex flex-wrap gap-2">
+					{#each editLorebook.tags as tagName}
+						{@const tag = tagsList.find((t) => t.name === tagName)}
+						<button
+							type="button"
+							class="chip {tag?.colorPreset ||
+								'preset-filled-primary-500'} group relative"
+							onclick={() => removeTag(tagName)}
+							title="Click to remove tag"
+						>
+							{tagName}
+							<Icons.X
+								size={14}
+								class="group-hover:opacity-100 ml-1 opacity-60"
+							/>
+						</button>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	</div>
 {/if}

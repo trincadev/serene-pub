@@ -2,7 +2,7 @@
 	// SOURCE: https://github.com/ollama/ollama/issues/7988
 
 	interface Props {
-		class?: string;
+		class?: string
 	}
 
 	let { class: classes = "" }: Props = $props()
@@ -10,7 +10,7 @@
 
 <svg
 	viewBox="0 0 646 854"
-	class="fill-current h-4 w-4 flex-no-shrink {classes}"
+	class="flex-no-shrink h-4 w-4 fill-current {classes}"
 	xmlns="http://www.w3.org/2000/svg"
 >
 	<path

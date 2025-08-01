@@ -42,10 +42,10 @@
 		onMobilePanelClose: undefined,
 		leftNav: {},
 		rightNav: {
+			tags: { icon: Icons.Tag, title: "Tags" },
 			personas: { icon: Icons.UserCog, title: "Personas" },
 			characters: { icon: Icons.Users, title: "Characters" },
 			lorebooks: { icon: Icons.BookMarked, title: "Lorebooks+" },
-			tags: { icon: Icons.Tag, title: "Tags" },
 			chats: { icon: Icons.MessageSquare, title: "Chats" }
 		},
 		digest: {}
@@ -163,13 +163,19 @@
 	}) {
 		let res: boolean = true // Default to allowing close
 		if (panel === "mobile") {
-			res = panelsCtx.onMobilePanelClose ? await panelsCtx.onMobilePanelClose() : true
+			res = panelsCtx.onMobilePanelClose
+				? await panelsCtx.onMobilePanelClose()
+				: true
 			panelsCtx.mobilePanel = res ? null : panelsCtx.mobilePanel
 		} else if (panel === "left") {
-			res = panelsCtx.onLeftPanelClose ? await panelsCtx.onLeftPanelClose() : true
+			res = panelsCtx.onLeftPanelClose
+				? await panelsCtx.onLeftPanelClose()
+				: true
 			panelsCtx.leftPanel = res ? null : panelsCtx.leftPanel
 		} else if (panel === "right") {
-			res = panelsCtx.onRightPanelClose ? await panelsCtx.onRightPanelClose() : true
+			res = panelsCtx.onRightPanelClose
+				? await panelsCtx.onRightPanelClose()
+				: true
 			panelsCtx.rightPanel = res ? null : panelsCtx.rightPanel
 		}
 		return res

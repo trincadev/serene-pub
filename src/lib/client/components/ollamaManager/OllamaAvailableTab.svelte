@@ -32,32 +32,49 @@
 	let installedModels: Sockets.OllamaModelsList.Response["models"] = $state(
 		[]
 	)
-	let selectedSource = $state(OllamaModelSearchSource.HUGGING_FACE)
+	let selectedSource = $state(OllamaModelSearchSource.RECOMMENDED)
 	let availableModels: Sockets.OllamaSearchAvailableModels.Response["models"] =
 		$state([])
+	let recommendedModels: Sockets.OllamaRecommendedModels.Response["models"] = $state([])
 	let isSearching = $state(false)
 	let showHuggingFaceModal = $state(false)
 	let showOllamaInstructionModal = $state(false)
 	let showOllamaManualPullModal = $state(false)
 	let selectedModelForDownload: string | null = $state(null)
-	let selectedModel: Sockets.OllamaSearchAvailableModels.Response["models"][0] | null = $state(null)
+	let selectedModel:
+		| Sockets.OllamaSearchAvailableModels.Response["models"][0]
+		| null = $state(null)
 
 	// Track which models are being downloaded locally (for UI state only)
 	let currentlyDownloading = $state(new Set<string>())
 
 	function isModelInstalled(modelName: string): boolean {
+		if (selectedSource === OllamaModelSearchSource.RECOMMENDED) {
+			// For recommended models, check against the pull string
+			const modelNameFromPull = modelName.split('/').pop()?.split(':')[0] || modelName
+			return installedModels.some((model) => 
+				model.name.includes(modelNameFromPull) || 
+				model.name.startsWith(modelName.replace('hf.co/', ''))
+			)
+		}
 		return installedModels.some((model) => model.name.startsWith(modelName))
 	}
 
 	function searchAvailableModels() {
 		isSearching = true
-		socket.emit("ollamaSearchAvailableModels", {
-			search: searchString.trim(),
-			source: selectedSource
-		} as Sockets.OllamaSearchAvailableModels.Call)
+		if (selectedSource === OllamaModelSearchSource.RECOMMENDED) {
+			socket.emit("ollamaRecommendedModels", {})
+		} else {
+			socket.emit("ollamaSearchAvailableModels", {
+				search: searchString.trim(),
+				source: selectedSource
+			} as Sockets.OllamaSearchAvailableModels.Call)
+		}
 	}
 
-	function openHuggingFaceModal(model: Sockets.OllamaSearchAvailableModels.Response["models"][0]) {
+	function openHuggingFaceModal(
+		model: Sockets.OllamaSearchAvailableModels.Response["models"][0]
+	) {
 		selectedModelForDownload = model.name
 		selectedModel = model
 		showHuggingFaceModal = true
@@ -73,7 +90,6 @@
 		modelId: string,
 		pullOption: { label: string; pull: string }
 	) {
-
 		console.log("Downloading Hugging Face quantization:", pullOption.pull)
 
 		// Track this model as currently downloading
@@ -167,6 +183,19 @@
 		)
 
 		socket.on(
+			"ollamaRecommendedModels",
+			(message: Sockets.OllamaRecommendedModels.Response) => {
+				isSearching = false
+				if (message.error) {
+					toaster.error({ title: message.error })
+					recommendedModels = []
+				} else {
+					recommendedModels = message.models || []
+				}
+			}
+		)
+
+		socket.on(
 			"ollamaPullModel",
 			(message: Sockets.OllamaPullModel.Response) => {
 				// Handle model pull completion/error only - no progress handling
@@ -188,13 +217,14 @@
 	onDestroy(() => {
 		socket.off("ollamaModelsList")
 		socket.off("ollamaSearchAvailableModels")
+		socket.off("ollamaRecommendedModels")
 		socket.off("ollamaPullModel")
 		socket.off("ollamaCancelPull")
 	})
 </script>
 
 <!-- Search for available models -->
-<div class="px-4 py-2 flex flex-col gap-2">
+<div class="flex flex-col gap-2 px-4 py-2">
 	<div class="flex gap-2">
 		<button
 			class="btn preset-filled-primary-500 flex-1"
@@ -203,8 +233,8 @@
 			}}
 			aria-label="Open manual download modal"
 		>
-				<Icons.Download size={16} />
-				Manual Download
+			<Icons.Download size={16} />
+			Manual Download
 		</button>
 		<select
 			id="source"
@@ -218,20 +248,22 @@
 			{/each}
 		</select>
 	</div>
-		<div class="relative flex-1">
-			<Icons.Search
-				class="text-surface-500 absolute top-1/2 left-3 -translate-y-1/2 transform"
-				size={16}
-			/>
-			<input
-				type="text"
-				placeholder="Search available models..."
-				class="input w-full pl-10"
-				aria-label="Search available models by name or description"
-				bind:value={searchString}
-			/>
-		</div>
-		
+	<div class="relative flex-1">
+		<Icons.Search
+			class="text-surface-500 absolute top-1/2 left-3 -translate-y-1/2 transform"
+			size={16}
+		/>
+		<input
+			type="text"
+			placeholder={selectedSource === OllamaModelSearchSource.RECOMMENDED 
+				? "Search not available for recommended models" 
+				: "Search available models..."}
+			class="input w-full pl-10"
+			aria-label="Search available models by name or description"
+			bind:value={searchString}
+			disabled={selectedSource === OllamaModelSearchSource.RECOMMENDED}
+		/>
+	</div>
 </div>
 
 <div class="space-y-3 p-4">
@@ -240,16 +272,106 @@
 			<Icons.Loader2 class="mx-auto mb-4 animate-spin" size={32} />
 			<p class="text-sm opacity-75">Searching for models...</p>
 		</div>
-	{:else if availableModels.length === 0}
+	{:else if (selectedSource === OllamaModelSearchSource.RECOMMENDED ? recommendedModels.length === 0 : availableModels.length === 0)}
 		<div class="p-6 text-center">
 			<Icons.Search class="text-surface-500 mx-auto mb-4" size={48} />
 			<h3 class="h4 mb-2">No models found</h3>
 			<p class="mb-4 text-sm opacity-75">
-				No available models match your search for "{searchString}".
+				{selectedSource === OllamaModelSearchSource.RECOMMENDED 
+					? "No recommended models available."
+					: `No available models match your search for "${searchString}".`}
 			</p>
 		</div>
 	{:else}
-		{#each availableModels as model}
+		{#if selectedSource === OllamaModelSearchSource.RECOMMENDED}
+			{#each recommendedModels as model}
+				<div class="card preset-tonal p-4">
+					<div class="flex flex-col gap-3">
+						<!-- Header with name and VRAM tier -->
+						<div class="flex items-start justify-between">
+							<div class="flex-1">
+								<h4 class="text-lg font-semibold text-foreground mb-1">
+									{model.name}
+								</h4>
+								<div class="flex flex-wrap items-center gap-2 mb-2">
+									<span class="badge preset-filled-primary-500 text-xs px-2 py-1 rounded-full">
+										{model.details.parameter_size}
+									</span>
+									<span class="badge preset-filled-secondary-500 text-xs px-2 py-1 rounded-full">
+										{model.details.quantization_level}
+									</span>
+									<span class="badge {model.recommended_vram <= 3 ? 'text-green-500' : model.recommended_vram <= 6 ? 'text-blue-500' : model.recommended_vram <= 10 ? 'text-yellow-500' : model.recommended_vram <= 16 ? 'text-orange-500' : 'text-red-500'} bg-surface-200 dark:bg-surface-800 text-xs px-2 py-1 rounded-full">
+										{model.recommended_vram}GB VRAM • {model.recommended_vram <= 3 ? 'Ultra Budget' : model.recommended_vram <= 6 ? 'Budget' : model.recommended_vram <= 10 ? 'Mainstream' : model.recommended_vram <= 16 ? 'High-End' : 'Enthusiast'}
+									</span>
+								</div>
+							</div>
+						</div>
+
+						<!-- Description -->
+						<p class="text-sm text-muted-foreground leading-relaxed">
+							{model.details.description}
+						</p>
+
+						<!-- Metadata row -->
+						<div class="flex flex-wrap items-center gap-4 text-xs text-surface-500">
+							<div class="flex items-center gap-1">
+								<Icons.HardDrive size={12} />
+								<span>{model.size}GB</span>
+							</div>
+							{#if model.details.modified_at}
+								<div class="flex items-center gap-1">
+									<Icons.Calendar size={12} />
+									<span>Updated {model.details.modified_at}</span>
+								</div>
+							{/if}
+						</div>
+
+						<!-- Actions -->
+						<div class="flex gap-2">
+							<button
+								class="btn btn-sm {isModelInstalled(model.pull)
+									? 'preset-filled-success-500'
+									: 'preset-filled-primary-500'}"
+								onclick={() => {
+									console.log("Downloading recommended model:", model.pull)
+									currentlyDownloading.add(model.pull)
+									socket.emit("ollamaPullModel", {
+										modelName: model.pull
+									} as Sockets.OllamaPullModel.Call)
+									onDownloadStart?.(model.pull)
+								}}
+								disabled={isModelInstalled(model.pull)}
+								aria-label={isModelInstalled(model.pull)
+									? `Model ${model.name} is already installed`
+									: `Install model ${model.name}`}
+							>
+								{#if isModelInstalled(model.pull)}
+									<Icons.Check size={14} aria-hidden="true" />
+									Installed
+								{:else}
+									<Icons.Download size={14} aria-hidden="true" />
+									Install
+								{/if}
+							</button>
+							<a
+								href={`https://hf.co/${model.name}`}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="btn btn-sm preset-filled-secondary-500 text-center"
+								aria-label={`View ${model.name} model page in new tab`}
+							>
+								<Icons.ExternalLink
+									size={14}
+									aria-hidden="true"
+								/>
+								View
+							</a>
+						</div>
+					</div>
+				</div>
+			{/each}
+		{:else}
+			{#each availableModels as model}
 			<div class="card preset-tonal p-4">
 				<div class="flex flex-col gap-2">
 					<!-- Header with name and badges -->
@@ -264,7 +386,7 @@
 					<div>
 						{#if model.popular}
 							<span
-								class="badge preset-filled-tertiary-500 rounded-full px-2 py-1 text-x"
+								class="badge preset-filled-tertiary-500 text-x rounded-full px-2 py-1"
 								role="img"
 								aria-label="Popular model"
 							>
@@ -278,11 +400,15 @@
 						{/if}
 						{#if model.trendingScore && model.trendingScore > 0.7}
 							<span
-								class="badge rounded-full preset-filled-secondary-500 px-2 py-1 text-xs"
+								class="badge preset-filled-secondary-500 rounded-full px-2 py-1 text-xs"
 								role="img"
 								aria-label="Trending model"
 							>
-								<Icons.Flame size={12} class="mr-1 inline" aria-hidden="true" />
+								<Icons.Flame
+									size={12}
+									class="mr-1 inline"
+									aria-hidden="true"
+								/>
 								Trending
 							</span>
 						{/if}
@@ -364,8 +490,8 @@
 									openOllamaManualPullModal(model.name)
 								}
 							}}
-							aria-label={isModelInstalled(model.name) 
-								? `Model ${model.name} is already installed` 
+							aria-label={isModelInstalled(model.name)
+								? `Model ${model.name} is already installed`
 								: `Install model ${model.name}`}
 						>
 							{#if isModelInstalled(model.name)}
@@ -384,7 +510,10 @@
 								class="btn btn-sm preset-filled-secondary-500 text-center"
 								aria-label={`View ${model.name} model page in new tab`}
 							>
-								<Icons.ExternalLink size={14} aria-hidden="true" />
+								<Icons.ExternalLink
+									size={14}
+									aria-hidden="true"
+								/>
 								View
 							</a>
 						{/if}
@@ -392,6 +521,7 @@
 				</div>
 			</div>
 		{/each}
+		{/if}
 	{/if}
 </div>
 
