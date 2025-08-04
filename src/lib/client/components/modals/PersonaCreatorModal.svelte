@@ -405,7 +405,7 @@
 								>
 									<p>
 										<strong>Name:</strong>
-										 Choose something that represents how you
+										Choose something that represents how you
 										want to be addressed in conversations. This
 										can be your real name, a nickname, or a role-based
 										identity.

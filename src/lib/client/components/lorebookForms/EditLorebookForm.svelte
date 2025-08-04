@@ -41,16 +41,20 @@
 
 	// Filtered tags for suggestions
 	let filteredTags = $derived.by(() => {
-		if (!tagSearchInput) return tagsList.filter(
-			(tag) => !(editLorebook?.tags || []).some(
-				selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+		if (!tagSearchInput)
+			return tagsList.filter(
+				(tag) =>
+					!(editLorebook?.tags || []).some(
+						(selectedTag) =>
+							selectedTag.toLowerCase() === tag.name.toLowerCase()
+					)
 			)
-		)
 		return tagsList.filter(
 			(tag) =>
 				tag.name.toLowerCase().includes(tagSearchInput.toLowerCase()) &&
 				!(editLorebook?.tags || []).some(
-					selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+					(selectedTag) =>
+						selectedTag.toLowerCase() === tag.name.toLowerCase()
 				)
 		)
 	})
@@ -59,10 +63,11 @@
 	function addTag(tagName: string) {
 		const trimmedName = tagName.trim()
 		if (!trimmedName || !editLorebook) return
-		
+
 		// Check for case-insensitive duplicates
 		const isDuplicate = (editLorebook.tags || []).some(
-			existingTag => existingTag.toLowerCase() === trimmedName.toLowerCase()
+			(existingTag) =>
+				existingTag.toLowerCase() === trimmedName.toLowerCase()
 		)
 		if (isDuplicate) return
 
@@ -135,7 +140,7 @@
 				// Update both editLorebook and originalLorebook to reflect the save
 				editLorebook = { ...msg.lorebook }
 				originalLorebook = { ...msg.lorebook }
-				
+
 				toaster.success({
 					title: "Lorebook Updated",
 					description: `Lorebook "${msg.lorebook.name}" updated successfully.`
@@ -148,7 +153,7 @@
 
 		// Load tags list
 		socket.emit("tagsList", {})
-		
+
 		const lorebookReq: Sockets.Lorebook.Call = { id: lorebookId }
 		socket.emit("lorebook", lorebookReq)
 	})
@@ -227,7 +232,8 @@
 					class="input w-full"
 					placeholder="Add a tag..."
 					onfocus={() => (showTagSuggestions = true)}
-					onblur={() => setTimeout(() => (showTagSuggestions = false), 200)}
+					onblur={() =>
+						setTimeout(() => (showTagSuggestions = false), 200)}
 					onkeydown={handleTagInputKeydown}
 				/>
 
@@ -274,7 +280,7 @@
 							{tagName}
 							<Icons.X
 								size={14}
-								class="group-hover:opacity-100 ml-1 opacity-60"
+								class="ml-1 opacity-60 group-hover:opacity-100"
 							/>
 						</button>
 					{/each}

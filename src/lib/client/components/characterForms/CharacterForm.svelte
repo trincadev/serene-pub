@@ -153,16 +153,21 @@
 
 	// Filtered tags based on search query
 	let filteredTags = $derived.by(() => {
-		if (!tagSearchQuery.trim()) return availableTags.filter(
-			(tag) => !editCharacterData.tags.some(
-				selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+		if (!tagSearchQuery.trim())
+			return availableTags.filter(
+				(tag) =>
+					!editCharacterData.tags.some(
+						(selectedTag) =>
+							selectedTag.toLowerCase() === tag.name.toLowerCase()
+					)
 			)
-		)
-		return availableTags.filter((tag) =>
-			tag.name.toLowerCase().includes(tagSearchQuery.toLowerCase()) &&
-			!editCharacterData.tags.some(
-				selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
-			)
+		return availableTags.filter(
+			(tag) =>
+				tag.name.toLowerCase().includes(tagSearchQuery.toLowerCase()) &&
+				!editCharacterData.tags.some(
+					(selectedTag) =>
+						selectedTag.toLowerCase() === tag.name.toLowerCase()
+				)
 		)
 	})
 
@@ -179,10 +184,10 @@
 	function addTag(tagName: string) {
 		tagName = tagName.trim()
 		if (!tagName) return
-		
+
 		// Check for case-insensitive duplicates
 		const isDuplicate = editCharacterData.tags.some(
-			existingTag => existingTag.toLowerCase() === tagName.toLowerCase()
+			(existingTag) => existingTag.toLowerCase() === tagName.toLowerCase()
 		)
 		if (isDuplicate) return
 

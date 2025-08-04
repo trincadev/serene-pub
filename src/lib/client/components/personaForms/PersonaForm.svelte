@@ -88,16 +88,20 @@
 
 	// Filtered tags for suggestions
 	let filteredTags = $derived.by(() => {
-		if (!tagSearchInput) return tagsList.filter(
-			(tag) => !editPersonaData.tags.some(
-				selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+		if (!tagSearchInput)
+			return tagsList.filter(
+				(tag) =>
+					!editPersonaData.tags.some(
+						(selectedTag) =>
+							selectedTag.toLowerCase() === tag.name.toLowerCase()
+					)
 			)
-		)
 		return tagsList.filter(
 			(tag) =>
 				tag.name.toLowerCase().includes(tagSearchInput.toLowerCase()) &&
 				!editPersonaData.tags.some(
-					selectedTag => selectedTag.toLowerCase() === tag.name.toLowerCase()
+					(selectedTag) =>
+						selectedTag.toLowerCase() === tag.name.toLowerCase()
 				)
 		)
 	})
@@ -106,10 +110,11 @@
 	function addTag(tagName: string) {
 		const trimmedName = tagName.trim()
 		if (!trimmedName) return
-		
+
 		// Check for case-insensitive duplicates
 		const isDuplicate = editPersonaData.tags.some(
-			existingTag => existingTag.toLowerCase() === trimmedName.toLowerCase()
+			(existingTag) =>
+				existingTag.toLowerCase() === trimmedName.toLowerCase()
 		)
 		if (isDuplicate) return
 
@@ -535,7 +540,8 @@
 					class="input w-full"
 					placeholder="Add a tag..."
 					onfocus={() => (showTagSuggestions = true)}
-					onblur={() => setTimeout(() => (showTagSuggestions = false), 200)}
+					onblur={() =>
+						setTimeout(() => (showTagSuggestions = false), 200)}
 					onkeydown={handleTagInputKeydown}
 				/>
 
@@ -582,7 +588,7 @@
 							{tagName}
 							<Icons.X
 								size={14}
-								class="group-hover:opacity-100 ml-1 opacity-60"
+								class="ml-1 opacity-60 group-hover:opacity-100"
 							/>
 						</button>
 					{/each}

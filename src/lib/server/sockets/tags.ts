@@ -191,8 +191,9 @@ export async function tagRelatedData(
 			...directChats.map((ct) => ct.chat).filter(Boolean),
 			...characterChats.map((cc) => cc.chat).filter(Boolean)
 		]
-		const uniqueChats = allChats.filter((chat, index, self) => 
-			index === self.findIndex(c => c.id === chat.id)
+		const uniqueChats = allChats.filter(
+			(chat, index, self) =>
+				index === self.findIndex((c) => c.id === chat.id)
 		)
 
 		const res = {

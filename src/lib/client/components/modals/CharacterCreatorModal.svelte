@@ -455,12 +455,12 @@
 								>
 									<p>
 										<strong>Name:</strong>
-										 The character's full or primary name (e.g.,
+										The character's full or primary name (e.g.,
 										"Elizabeth Bennet", "Sherlock Holmes")
 									</p>
 									<p>
 										<strong>Nickname:</strong>
-										 A shorter, informal name or title (e.g.,
+										A shorter, informal name or title (e.g.,
 										"Lizzy", "Detective Holmes"). If provided,
 										the nickname will be used in conversations
 										and prompts instead of the full name.
@@ -752,8 +752,8 @@
 								This is technically optional, but <strong>
 									highly recommended
 								</strong>
-								. The first message teaches the AI how your
-								character acts, speaks, and responds.
+								. The first message teaches the AI how your character
+								acts, speaks, and responds.
 							</p>
 						</div>
 
@@ -775,7 +775,7 @@
 										The first message is like a <strong>
 											writing sample
 										</strong>
-										 that shows the AI your character's voice,
+										that shows the AI your character's voice,
 										tone, and behavior patterns. It significantly
 										improves response quality.
 									</p>
@@ -799,7 +799,7 @@
 								This serves as a <strong>
 									training example
 								</strong>
-								 that helps the AI understand your character's communication
+								that helps the AI understand your character's communication
 								style and behavior patterns.
 							</p>
 						</div>

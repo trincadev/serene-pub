@@ -14,15 +14,15 @@ async function processPersonaTags(personaId: number, tagNames: string[]) {
 
 	// Process each tag name
 	const tagIds: number[] = []
-	
+
 	for (const tagName of tagNames) {
 		if (!tagName.trim()) continue
-		
+
 		// Check if tag exists
 		let existingTag = await db.query.tags.findFirst({
 			where: eq(schema.tags.name, tagName.trim())
 		})
-		
+
 		// Create tag if it doesn't exist
 		if (!existingTag) {
 			const [newTag] = await db
@@ -34,17 +34,17 @@ async function processPersonaTags(personaId: number, tagNames: string[]) {
 				.returning()
 			existingTag = newTag
 		}
-		
+
 		tagIds.push(existingTag.id)
 	}
-	
+
 	// Link all tags to the persona
 	if (tagIds.length > 0) {
-		const personaTagsData = tagIds.map(tagId => ({
+		const personaTagsData = tagIds.map((tagId) => ({
 			personaId,
 			tagId
 		}))
-		
+
 		await db
 			.insert(schema.personaTags)
 			.values(personaTagsData)
@@ -91,10 +91,10 @@ export async function persona(
 		// Transform the persona data to include tags as string array
 		const personaWithTags = {
 			...persona,
-			tags: persona.personaTags.map(pt => pt.tag.name)
+			tags: persona.personaTags.map((pt) => pt.tag.name)
 		}
 		delete personaWithTags.personaTags // Remove the junction table data
-		
+
 		const res: Sockets.Persona.Response = { persona: personaWithTags }
 		emitToUser("persona", res)
 	}
@@ -108,11 +108,11 @@ export async function createPersona(
 	try {
 		const data = { ...message.persona }
 		const tags = data.tags || []
-		
+
 		// Remove fields that shouldn't be in the database insert
 		delete data.avatar // Remove avatar from persona data to avoid conflicts
 		delete data.tags // Remove tags - will be handled separately
-		
+
 		const [persona] = await db
 			.insert(schema.personas)
 			.values({ ...data, userId: 1 })
@@ -156,12 +156,15 @@ export async function updatePersona(
 		if ("id" in data) (data as any).id = undefined
 		delete data.avatar // Remove avatar from persona data to avoid conflicts
 		delete data.tags // Remove tags - will be handled separately
-		
+
 		const [updated] = await db
 			.update(schema.personas)
 			.set(data)
 			.where(
-				and(eq(schema.personas.id, id), eq(schema.personas.userId, userId))
+				and(
+					eq(schema.personas.id, id),
+					eq(schema.personas.userId, userId)
+				)
 			)
 			.returning()
 
@@ -194,12 +197,12 @@ export async function deletePersona(
 	emitToUser: (event: string, data: any) => void
 ) {
 	const userId = 1 // Replace with actual userId
-	
+
 	// Delete persona tags first (cascade should handle this, but being explicit)
 	await db
 		.delete(schema.personaTags)
 		.where(eq(schema.personaTags.personaId, message.id))
-	
+
 	// Delete the persona
 	await db
 		.delete(schema.personas)

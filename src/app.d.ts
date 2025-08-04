@@ -621,6 +621,8 @@ declare global {
 		namespace Chat {
 			interface Call {
 				id: number
+				limit?: number
+				offset?: number
 			}
 			interface Response {
 				chat: SelectChat & {
@@ -629,6 +631,10 @@ declare global {
 					chatCharacters: SelectChatCharacter &
 						{ character: SelectCharacter }[]
 					chatMessages: SelectChatMessage[]
+				}
+				pagination?: {
+					total: number
+					hasMore: boolean
 				}
 			}
 		}
