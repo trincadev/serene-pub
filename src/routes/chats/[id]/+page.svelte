@@ -9,6 +9,7 @@
 	import Avatar from "$lib/client/components/Avatar.svelte"
 
 	let chat: Sockets.Chat.Response["chat"] | undefined = $state()
+	let pagination: Sockets.Chat.Response["pagination"] | undefined = $state()
 	let newMessage = $state("")
 	const socket = skio.get()
 	let showDeleteMessageModal = $state(false)
@@ -18,6 +19,8 @@
 	let userCtx: UserCtx = getContext("userCtx")
 	let panelsCtx: PanelsCtx = getContext("panelsCtx")
 	let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
+	let loadingOlderMessages = $state(false)
+	let messagesContainer: HTMLElement | undefined = $state()
 	let contextExceeded = $derived(
 		!!draftCompiledPrompt
 			? draftCompiledPrompt!.meta.tokenCounts.total >
@@ -137,7 +140,12 @@
 		const _chatId = page.params.id
 		if (_chatId) {
 			chatId = Number.parseInt(_chatId)
-			socket.emit("chat", { id: chatId })
+			// Reset state when switching chats
+			isInitialLoad = true
+			lastSeenMessageId = null
+			lastSeenMessageContent = ""
+			loadingOlderMessages = false
+			socket.emit("chat", { id: chatId, limit: 25, offset: 0 })
 		}
 	})
 
@@ -167,22 +175,48 @@
 	})
 
 	let chatMessagesContainer: HTMLDivElement | null = $state(null)
+	let lastSeenMessageId: number | null = $state(null)
+	let lastSeenMessageContent: string = $state("")
+	let isInitialLoad = $state(true)
 
-	// Auto-scroll to bottom when messages change or container is mounted
+	// Auto-scroll to bottom on new messages, initial load, or last message content updates
 	$effect(() => {
 		// React to changes in messages and container
 		const messagesLength = chat?.chatMessages?.length ?? 0
-		if (chatMessagesContainer && messagesLength > 0) {
-			// Use setTimeout to ensure DOM has updated
-			setTimeout(() => {
-				if (chatMessagesContainer) {
-					chatMessagesContainer.scrollTo({
-						top: chatMessagesContainer.scrollHeight,
-						behavior: "smooth"
-					})
-				}
-				// }, 50) // Slightly longer delay to ensure content is rendered
-			}, 30)
+		const lastMessage = chat?.chatMessages?.[messagesLength - 1]
+		const currentLastMessageId = lastMessage?.id
+		const currentLastMessageContent = lastMessage?.content || ""
+		
+		if (chatMessagesContainer && messagesLength > 0 && !loadingOlderMessages) {
+			// Determine if we should autoscroll
+			const isNewMessage = currentLastMessageId && 
+				(!lastSeenMessageId || currentLastMessageId > lastSeenMessageId)
+			const isLastMessageContentUpdated = currentLastMessageId === lastSeenMessageId && 
+				currentLastMessageContent !== lastSeenMessageContent
+			
+			const shouldAutoscroll = isInitialLoad || 
+				isNewMessage || 
+				isLastMessageContentUpdated
+			
+			if (shouldAutoscroll) {
+				// Use setTimeout to ensure DOM has updated
+				setTimeout(() => {
+					if (chatMessagesContainer && !loadingOlderMessages) {
+						chatMessagesContainer.scrollTo({
+							top: chatMessagesContainer.scrollHeight,
+							behavior: "smooth"
+						})
+					}
+				}, 30)
+				
+				isInitialLoad = false
+			}
+			
+			// Update tracking variables
+			if (currentLastMessageId) {
+				lastSeenMessageId = currentLastMessageId
+				lastSeenMessageContent = currentLastMessageContent
+			}
 		}
 	})
 
@@ -283,6 +317,39 @@
 		socket.emit("chatMessageSwipeLeft", req)
 	}
 
+	async function loadOlderMessages() {
+		if (loadingOlderMessages || !pagination?.hasMore || !chat) return
+
+		loadingOlderMessages = true
+		
+		// Store current scroll position to restore it after loading
+		const scrollHeight = chatMessagesContainer?.scrollHeight || 0
+		const currentOffset = chat.chatMessages.length
+
+		socket.emit("chat", {
+			id: chatId,
+			limit: 25,
+			offset: currentOffset
+		})
+
+		// Store scroll height for position restoration
+		if (chatMessagesContainer) {
+			chatMessagesContainer.dataset.previousScrollHeight = scrollHeight.toString()
+		}
+
+		// loadingOlderMessages will be set to false in the socket response handler
+	}
+
+	function handleScroll(event: Event) {
+		const target = event.target as HTMLElement
+		if (!target || loadingOlderMessages || !pagination?.hasMore) return
+
+		// Check if user scrolled to within 200px of the top
+		if (target.scrollTop <= 200) {
+			loadOlderMessages()
+		}
+	}
+
 	function canSwipeRight(
 		msg: SelectChatMessage,
 		isGreeting: boolean
@@ -323,7 +390,42 @@
 	onMount(() => {
 		socket.on("chat", (msg: Sockets.Chat.Response) => {
 			if (msg.chat.id === Number.parseInt(page.params.id)) {
-				chat = msg.chat
+				if (chat && loadingOlderMessages) {
+					// Merge older messages (avoiding duplicates)
+					const existingIds = new Set(
+						chat.chatMessages.map((m) => m.id)
+					)
+					const newMessages = msg.chat.chatMessages.filter(
+						(m) => !existingIds.has(m.id)
+					)
+					// Add older messages at the beginning, then sort all messages by ID (chronological order)
+					const allMessages = [...newMessages, ...chat.chatMessages]
+					chat.chatMessages = allMessages.sort((a, b) => a.id - b.id)
+					
+					// Restore scroll position after loading older messages
+					setTimeout(() => {
+						if (chatMessagesContainer) {
+							const previousScrollHeight = parseInt(
+								chatMessagesContainer.dataset.previousScrollHeight || "0"
+							)
+							const newScrollHeight = chatMessagesContainer.scrollHeight
+							const scrollDiff = newScrollHeight - previousScrollHeight
+							
+							// Maintain the user's relative position by scrolling down by the difference
+							chatMessagesContainer.scrollTop = scrollDiff
+							delete chatMessagesContainer.dataset.previousScrollHeight
+						}
+						loadingOlderMessages = false
+					}, 10)
+				} else {
+					// Initial load or refresh - ensure messages are sorted chronologically
+					chat = {
+						...msg.chat,
+						chatMessages: msg.chat.chatMessages.sort((a, b) => a.id - b.id)
+					}
+					loadingOlderMessages = false
+				}
+				pagination = msg.pagination
 				// Auto-scroll is handled by the $effect
 			}
 		})
@@ -338,9 +440,11 @@
 					updatedMessages[existingIndex] = msg.chatMessage
 					chat = { ...chat, chatMessages: updatedMessages }
 				} else {
+					// Add new message and maintain chronological order
+					const updatedMessages = [...chat.chatMessages, msg.chatMessage]
 					chat = {
 						...chat,
-						chatMessages: [...chat.chatMessages, msg.chatMessage]
+						chatMessages: updatedMessages.sort((a, b) => a.id - b.id)
 					}
 				}
 				// Auto-scroll is handled by the $effect
@@ -392,6 +496,34 @@
 				draftCompiledPrompt = msg
 			}
 		)
+
+		socket.on("deleteChatMessage", (msg: Sockets.DeleteChatMessage.Response) => {
+			if (chat) {
+				// Check if we're deleting the last message
+				const wasLastMessage = lastSeenMessageId === msg.id
+				
+				// Remove the deleted message from the chat messages array
+				const filteredMessages = chat.chatMessages.filter(
+					(m: SelectChatMessage) => m.id !== msg.id
+				)
+				
+				// Ensure messages remain sorted chronologically
+				chat = { 
+					...chat, 
+					chatMessages: filteredMessages.sort((a, b) => a.id - b.id)
+				}
+				
+				// Update tracking state if we deleted the last message
+				if (wasLastMessage && chat.chatMessages.length > 0) {
+					const newLastMessage = chat.chatMessages[chat.chatMessages.length - 1]
+					lastSeenMessageId = newLastMessage.id
+					lastSeenMessageContent = newLastMessage.content || ""
+				} else if (chat.chatMessages.length === 0) {
+					lastSeenMessageId = null
+					lastSeenMessageContent = ""
+				}
+			}
+		})
 	})
 
 	let showAvatarModal = $state(false)
@@ -418,12 +550,26 @@
 		id="chat-history"
 		class="flex flex-1 flex-col gap-3 overflow-auto"
 		bind:this={chatMessagesContainer}
+		onscroll={handleScroll}
 	>
 		<div class="p-2">
 			{#if !chat || chat.chatMessages.length === 0}
 				<div class="text-muted mt-8 text-center">No messages yet.</div>
 			{:else}
-				<ul class="flex flex-1 flex-col gap-3">
+				<!-- Loading indicator for older messages -->
+				{#if loadingOlderMessages}
+					<div class="text-center text-muted py-2">
+						<div class="inline-flex items-center gap-2">
+							<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+							Loading older messages...
+						</div>
+					</div>
+				{/if}
+
+				<ul
+					class="flex flex-1 flex-col gap-3"
+					bind:this={messagesContainer}
+				>
 					{#each chat.chatMessages as msg (msg.id)}
 						{@const character = getMessageCharacter(msg)}
 						{@const isGreeting = !!msg.metadata?.isGreeting}

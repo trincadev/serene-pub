@@ -140,9 +140,25 @@ export async function chat(
 	emitToUser: (event: string, data: any) => void
 ) {
 	const userId = 1 // Replace with actual user id
-	const chat = await getChatFromDB(message.id, userId) // Replace with actual user id
+	const limit = message.limit || 25
+	const offset = message.offset || 0
+
+	const chat = await getChatFromDB(message.id, userId, limit, offset)
 	if (chat) {
-		const res: Sockets.Chat.Response = { chat: chat as any }
+		// Get total message count for pagination
+		const totalMessages = await db.query.chatMessages.findMany({
+			where: (cm, { eq }) => eq(cm.chatId, message.id)
+		})
+
+		const hasMore = offset + limit < totalMessages.length
+
+		const res: Sockets.Chat.Response = {
+			chat: chat as any,
+			pagination: {
+				total: totalMessages.length,
+				hasMore
+			}
+		}
 		emitToUser("chat", res)
 	}
 }
@@ -150,7 +166,12 @@ export async function chat(
 export const getChat = chat
 
 // Helper to get chat with userId
-async function getChatFromDB(chatId: number, userId: number) {
+async function getChatFromDB(
+	chatId: number,
+	userId: number,
+	limit?: number,
+	offset?: number
+) {
 	const res = db.query.chats.findFirst({
 		where: (c, { eq, and }) => and(eq(c.id, chatId), eq(c.userId, userId)),
 		with: {
@@ -160,7 +181,9 @@ async function getChatFromDB(chatId: number, userId: number) {
 			},
 			chatCharacters: { with: { character: true } },
 			chatMessages: {
-				orderBy: (cm, { asc }) => asc(cm.id)
+				orderBy: (cm, { desc }) => desc(cm.id),
+				limit: limit,
+				offset: offset
 			}
 		}
 	})
@@ -179,6 +202,9 @@ async function getChatFromDB(chatId: number, userId: number) {
 				(a, b) => (a.position ?? 0) - (b.position ?? 0)
 			)
 		}
+		// Sort messages by id ascending (oldest first) for correct display order
+		// When paginating, we fetched newest first (DESC) but want to display oldest first
+		chat.chatMessages.sort((a, b) => a.id - b.id)
 	}
 	return chat
 }
@@ -288,6 +314,8 @@ export async function sendPersonaMessage(
 		!chat.isGroup ||
 		chat.groupReplyStrategy !== GroupReplyStrategies.MANUAL
 	) {
+		const abortedCharacters = new Set<number>() // Track characters whose responses were aborted
+
 		while (
 			chat &&
 			chat.chatCharacters.length > 0 &&
@@ -297,6 +325,18 @@ export async function sendPersonaMessage(
 			// Always fetch the latest chat state at the start of each loop
 			chat = await getPromptChatFromDb(chatId, userId)
 			if (!chat) break
+
+			// Check if there are any ongoing generations before starting a new one
+			const hasGeneratingMessages = chat.chatMessages.some(
+				(msg) => msg.isGenerating
+			)
+			if (hasGeneratingMessages) {
+				console.log(
+					"Generation already in progress, stopping auto-response loop"
+				)
+				break
+			}
+
 			const nextCharacterId = getNextCharacterTurn(
 				{
 					chatMessages: chat!.chatMessages,
@@ -312,6 +352,15 @@ export async function sendPersonaMessage(
 			if (!nextCharacterId) {
 				break
 			}
+
+			// Skip this character if their response was aborted in this turn cycle
+			if (abortedCharacters.has(nextCharacterId)) {
+				console.log(
+					`Skipping character ${nextCharacterId} due to previous abort`
+				)
+				break
+			}
+
 			const nextCharacter = chat.chatCharacters.find(
 				(cc) => cc.character && cc.character.id === nextCharacterId
 			)
@@ -330,13 +379,23 @@ export async function sendPersonaMessage(
 				.insert(schema.chatMessages)
 				.values(assistantMessage)
 				.returning()
-			await generateResponse({
+
+			const generationResult = await generateResponse({
 				socket,
 				emitToUser,
 				chatId,
 				userId,
 				generatingMessage: generatingMessage as any
 			})
+
+			// If generation was aborted (returned false), track this character and stop the loop
+			if (!generationResult) {
+				abortedCharacters.add(nextCharacterId)
+				console.log(
+					`Character ${nextCharacterId} response was aborted, stopping auto-response loop`
+				)
+				break
+			}
 		}
 	}
 }
@@ -349,7 +408,9 @@ export async function deleteChatMessage(
 	const chatMsg = await db.query.chatMessages.findFirst({
 		where: (cm, { eq }) => eq(cm.id, message.id),
 		columns: {
-			chatId: true
+			chatId: true,
+			adapterId: true,
+			isGenerating: true
 		}
 	})
 	if (!chatMsg) {
@@ -357,6 +418,26 @@ export async function deleteChatMessage(
 		emitToUser("error", res)
 		return
 	}
+
+	// If the message being deleted is currently generating, abort it first
+	if (chatMsg.isGenerating && chatMsg.adapterId) {
+		const adapter = activeAdapters.get(chatMsg.adapterId)
+		if (adapter) {
+			try {
+				adapter.abort()
+				console.log(
+					`Aborted generating message ${message.id} before deletion`
+				)
+			} catch (e) {
+				console.warn(
+					`Failed to abort adapter for message ${message.id}:`,
+					e
+				)
+			}
+		}
+		activeAdapters.delete(chatMsg.adapterId)
+	}
+
 	const userId = 1 // Replace with actual user id
 	await db
 		.delete(schema.chatMessages)
@@ -366,9 +447,13 @@ export async function deleteChatMessage(
 				eq(schema.chatMessages.userId, userId)
 			)
 		)
-	await getChat(socket, { id: chatMsg.chatId }, emitToUser)
+
+	// Emit the delete response first
 	const res: Sockets.DeleteChatMessage.Response = { id: message.id }
 	emitToUser("deleteChatMessage", res)
+
+	// Then refresh the chat to ensure UI is updated with latest state
+	await getChat(socket, { id: chatMsg.chatId }, emitToUser)
 }
 
 export async function updateChatMessage(
@@ -678,6 +763,15 @@ export async function triggerGenerateMessage(
 			return
 		}
 
+		// Check if there are any ongoing generations before starting a new one
+		const hasGeneratingMessages = chat.chatMessages.some(
+			(msg) => msg.isGenerating
+		)
+		if (hasGeneratingMessages) {
+			console.log("Generation already in progress, stopping trigger loop")
+			break
+		}
+
 		// Find the next character who should reply (using triggered: true)
 		const nextCharacterId =
 			message.characterId ||
@@ -727,6 +821,12 @@ export async function triggerGenerateMessage(
 				userId,
 				generatingMessage: generatingMessage as any
 			})
+
+			// If generation was aborted, stop the loop
+			if (!ok) {
+				console.log("Generation was aborted, stopping trigger loop")
+				break
+			}
 		}
 		if (message.once) {
 			break
