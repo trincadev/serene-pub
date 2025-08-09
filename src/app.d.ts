@@ -51,8 +51,10 @@ declare global {
 		digest: {
 			characterId?: number
 			personaId?: number
+			chatId?: number
 			chatPersonaId?: number
 			chatCharacterId?: number
+			lorebookId?: number
 			tutorial?: boolean
 		}
 	}
@@ -797,7 +799,9 @@ declare global {
 				userId?: number
 			}
 			interface Response {
-				lorebookList: SelectLorebook[]
+				lorebookList: (SelectLorebook & {
+					tags: string[]
+				})[]
 			}
 		}
 
@@ -812,6 +816,7 @@ declare global {
 					characterLoreEntries: SelectCharacterLoreEntry[]
 					historyEntries: SelectHistoryEntry[]
 					lorebookBindings: SelectLorebookBinding[]
+					tags: string[]
 				}
 			}
 		}
@@ -820,6 +825,7 @@ declare global {
 		namespace CreateLorebook {
 			interface Call {
 				name: string
+				tags?: string[]
 			}
 			interface Response {
 				lorebook: SelectLorebook
@@ -918,9 +924,8 @@ declare global {
 		// Update Lorebook
 		namespace UpdateLorebook {
 			interface Call {
-				lorebook: {
-					id: number
-					name: string
+				lorebook: SelectLorebook & {
+					tags?: string[]
 				}
 			}
 			interface Response {

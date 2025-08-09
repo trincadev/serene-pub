@@ -28,6 +28,7 @@ export async function loadSocketsServer() {
 	}
 
 	connectSockets(io)
-	if (process.env.NODE_ENV !== "production")
+	if (process.env.NODE_ENV !== "production") {
 		console.log("Socket server ready at", host)
+	}
 }

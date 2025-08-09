@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount, tick } from "svelte"
+	import { getContext, onDestroy, onMount, tick } from "svelte"
 	import * as skio from "sveltekit-io"
 	import * as Icons from "@lucide/svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
@@ -14,6 +14,7 @@
 	import { toaster } from "$lib/client/utils/toaster"
 	import type { SpecV3 } from "@lenml/char-card-reader"
 	import SidebarListItem from "../SidebarListItem.svelte"
+	import LorebookListItem from "../listItems/LorebookListItem.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -44,6 +45,7 @@
 	let importingBook: SpecV3.Lorebook | undefined = $state(undefined)
 	let deletingLorebookId: number | undefined = $state(undefined)
 	let showDeleteConfirmationModal: boolean = $state(false)
+	let panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 
 	async function handleOnClose() {
 		if (tabHasUnsavedChanges) {
@@ -250,6 +252,14 @@
 		deletingLorebookId = undefined
 	}
 
+	$effect(() => {
+		if (panelsCtx.digest.lorebookId && !!lorebookList.length) {
+			selectedLorebook = lorebookList.find(l => l.id === panelsCtx.digest.lorebookId) || null
+			isEditingLorebook = true
+			delete panelsCtx.digest.lorebookId
+		}
+	})
+
 	onMount(() => {
 		socket.on("lorebookList", (msg: Sockets.LorebookList.Response) => {
 			if (msg.lorebookList) {
@@ -324,19 +334,19 @@
 			{/snippet}
 			{#snippet content()}
 				<Tabs.Panel value="lorebook">
-					{#if editGroup == "lorebook"}
+					{#if editGroup == "lorebook" && selectedLorebook}
 						<EditLorebookForm lorebookId={selectedLorebook.id} />
 					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="bindings">
-					{#if editGroup == "bindings"}
+					{#if editGroup == "bindings" && selectedLorebook}
 						<LorebookBindingsManager
 							lorebookId={selectedLorebook.id}
 						/>
 					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="world">
-					{#if editGroup == "world"}
+					{#if editGroup == "world" && selectedLorebook}
 						<WorldLoreManager
 							lorebookId={selectedLorebook.id}
 							bind:hasUnsavedChanges={tabHasUnsavedChanges}
@@ -344,7 +354,7 @@
 					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="characters">
-					{#if editGroup == "characters"}
+					{#if editGroup == "characters" && selectedLorebook}
 						<CharacterLoreManager
 							lorebookId={selectedLorebook.id}
 							bind:hasUnsavedChanges={tabHasUnsavedChanges}
@@ -352,7 +362,7 @@
 					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="history">
-					{#if editGroup == "history"}
+					{#if editGroup == "history" && selectedLorebook}
 						<HistoryEntryManager
 							lorebookId={selectedLorebook.id}
 							bind:hasUnsavedChanges={tabHasUnsavedChanges}
@@ -401,121 +411,21 @@
 			{:else}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				{#each filteredLorebooks as l}
-					<SidebarListItem
-						id={l.id}
-						onclick={(e) => handleLorebookClick(e, { lorebook: l })}
-						contentTitle="Edit lorebook"
-					>
-						{#snippet content()}
-							<div class="flex min-w-0 flex-col gap-1 text-left">
-								<div class="min-w-0 truncate font-semibold">
-									{l.name}
-								</div>
-								<div
-									class="text-muted-foreground line-clamp-2 h-[3em] min-w-0 text-xs"
-								>
-									{l.description ||
-										"No description provided."}
-								</div>
-							</div>
-						{/snippet}
-						{#snippet extraContent()}
-							<div class="min-w-0 flex-1">
-								<button
-									class="btn btn-sm"
-									class:preset-filled-primary-500={l
-										.lorebookBindings.length > 0}
-									class:preset-filled-primary-300-700={l
-										.lorebookBindings.length === 0}
-									title={l.lorebookBindings?.length
-										? "Lorebook Bindings"
-										: "No Lorebook Bindings"}
-									onclick={(e) =>
-										handleLorebookClick(e, {
-											lorebook: l,
-											tab: "bindings"
-										})}
-								>
-									<Icons.Link size={16} class="inline" />
-									{l.lorebookBindings?.length
-										? l.lorebookBindings.length
-										: ""}
-								</button>
-								<button
-									class="btn btn-sm"
-									class:preset-filled-primary-500={l
-										.worldLoreEntries.length > 0}
-									class:preset-filled-primary-300-700={l
-										.worldLoreEntries.length === 0}
-									title={l.worldLoreEntries?.length
-										? "World Lore Entries"
-										: "No World Lore Entries"}
-									onclick={(e) =>
-										handleLorebookClick(e, {
-											lorebook: l,
-											tab: "world"
-										})}
-								>
-									<Icons.Globe size={16} class="inline" />
-									{l.worldLoreEntries.length
-										? l.worldLoreEntries.length
-										: ""}
-								</button>
-								<button
-									class="btn btn-sm"
-									class:preset-filled-primary-500={l
-										.characterLoreEntries.length > 0}
-									class:preset-filled-primary-300-700={l
-										.characterLoreEntries.length === 0}
-									title={l.characterLoreEntries
-										? "Character Lore Entries"
-										: "No Character Lore Entries"}
-									onclick={(e) =>
-										handleLorebookClick(e, {
-											lorebook: l,
-											tab: "characters"
-										})}
-								>
-									<Icons.User size={16} class="inline" />
-									{l.characterLoreEntries?.length
-										? l.characterLoreEntries.length
-										: ""}
-								</button>
-								<button
-									class="btn btn-sm"
-									class:preset-filled-primary-500={l
-										.historyEntries.length > 0}
-									class:preset-filled-primary-300-700={l
-										.historyEntries.length === 0}
-									title={l.historyEntries.length
-										? "History Entries"
-										: "No History Entries"}
-									onclick={(e) =>
-										handleLorebookClick(e, {
-											lorebook: l,
-											tab: "history"
-										})}
-								>
-									<Icons.Calendar size={16} class="inline" />
-									{l.historyEntries?.length
-										? l.historyEntries.length
-										: ""}
-								</button>
-							</div>
-						{/snippet}
-						{#snippet controls()}
-							<button
-								class="btn btn-sm text-error-500 p-2"
-								onclick={(e) => {
-									e.stopPropagation()
-									onDeleteClick(l.id)
-								}}
-								title="Delete Lorebook"
-							>
-								<Icons.Trash2 size={16} />
-							</button>
-						{/snippet}
-					</SidebarListItem>
+					<LorebookListItem
+						lorebook={l}
+						onclick={(lorebook) => handleLorebookClick(new MouseEvent('click'), { lorebook })}
+						onEdit={(id) => {
+							const lorebook = lorebookList.find(lb => lb.id === id)
+							if (lorebook) {
+								handleLorebookClick(new MouseEvent('click'), { lorebook })
+							}
+						}}
+						onDelete={onDeleteClick}
+						bindingsCount={l.lorebookBindings?.length || 0}
+						worldEntriesCount={l.worldLoreEntries?.length || 0}
+						characterEntriesCount={l.characterLoreEntries?.length || 0}
+						historyEntriesCount={l.historyEntries?.length || 0}
+					/>
 				{/each}
 			{/if}
 		</div>

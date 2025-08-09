@@ -50,6 +50,38 @@ jobs:
             - name: Build app
               run: npm run build
 
+            - name: Create production environment example
+              run: |
+                  mkdir -p build
+                  cat > build/.env.example << 'EOF'
+                  # Serene Pub 0.4.0 - Production Configuration
+                  # Copy this file to .env in the same directory to customize settings
+
+                  # ===========================================
+                  # APPLICATION DATA DIRECTORY
+                  # ===========================================
+                  # Override default data directory location
+                  # Default: OS-appropriate directory (~/.local/share/SerenePub on Linux, %APPDATA%/SerenePub on Windows, ~/Library/Application Support/SerenePub on macOS)
+                  # Example for custom location:
+                  # SERENE_PUB_DATA_DIR=/path/to/custom/data
+
+                  # ===========================================
+                  # SERVER CONFIGURATION
+                  # ===========================================
+                  # WebSocket server port
+                  # Default: 3001
+                  # SOCKETS_PORT=3001
+
+                  # HTTP server port (main application)  
+                  # Default: 3000
+                  # PORT=3000
+
+                  # Disable automatic browser opening
+                  # Default: Opens browser automatically on startup
+                  # Set to 1 to disable auto-open
+                  # SERENE_AUTO_OPEN=1
+                  EOF
+
             - name: Prepare production dependencies
               shell: bash
               run: |

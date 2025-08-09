@@ -70,6 +70,13 @@ export async function characterList(
 			description: true,
 			creatorNotes: true
 		},
+		with: {
+			characterTags: {
+				with: {
+					tag: true
+				}
+			}
+		},
 		where: (c, { eq }) => eq(c.userId, 1), // TODO: Replace with actual user id
 		orderBy: (c, { asc }) => asc(c.id)
 	})
@@ -316,7 +323,6 @@ export async function characterCardImport(
 
 		const mimeType = await detectMimeType(base64)
 
-		// console.log("Extracted mime type:", mimeType)
 		const supportedMimeTypes = [
 			"image/png",
 			"image/apng",

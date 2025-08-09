@@ -2,12 +2,12 @@ import { Node, mergeAttributes, nodeInputRule, InputRule } from "@tiptap/core"
 import { Plugin, PluginKey } from "prosemirror-state"
 import { Fragment, NodeType } from "prosemirror-model"
 
-const LEGACY_TAG_REGEX = /\{(user|char|persona|character)\}/g
+const LEGACY_TAG_REGEX = /\{\{(user|char|persona|character)\}\}/g
 
-// Custom input rule: replace all {user}, {char}, {persona}, {character} in the changed text node
+// Custom input rule: replace all {{user}}, {{char}}, {{persona}}, {{character}} in the changed text node
 function legacyTagInputRule(type: any) {
 	return new InputRule({
-		find: /\{(user|char|persona|character)\}/g,
+		find: /\{\{(user|char|persona|character)\}\}/g,
 		handler: ({ range, match, commands }) => {
 			commands.deleteRange(range)
 			commands.insertContent({
@@ -137,7 +137,7 @@ const LegacyTag = Node.create({
 				"data-tag": node.attrs.tag,
 				"data-original": node.attrs.original || node.attrs.tag,
 				contenteditable: "false",
-				title: `Legacy {user} or {char} tags are not recommended. Use lorebook character bindings instead.`
+				title: `Legacy {{user}} or {{char}} tags are not recommended. Use lorebook character bindings instead.`
 			}),
 			`${node.attrs.tag}`
 		]

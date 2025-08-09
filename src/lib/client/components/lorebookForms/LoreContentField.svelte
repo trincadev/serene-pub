@@ -56,7 +56,8 @@
 		let result = ""
 		doc.descendants((node) => {
 			if (node.type.name === "LorebookBindingTag") {
-				result += `{char:${node.attrs.id}}`
+				// Use the correct {{char:#}} syntax (double braces)
+				result += `{{char:${node.attrs.id}}}`
 			} else if (node.type.name === "legacyTag") {
 				result += node.attrs.original
 			} else if (node.isText) {
@@ -69,12 +70,12 @@
 		return result
 	}
 
-	// Helper: parse {char:N} and legacy tags in plain text to Tiptap doc JSON
+	// Helper: parse {{char:N}} and double-brace legacy tags in plain text to Tiptap doc JSON  
 	function parseCharTagsToTiptapDoc(text: string) {
 		const parts = []
 		let lastIndex = 0
-		// Regex for {char:N} and legacy tags ({user}, {char}, {persona}, {character})
-		const regex = /\{char:(\d+)\}|\{(user|char|persona|character)\}/g
+		// Regex for {{char:N}} and double-brace legacy tags only ({{user}}, {{char}}, {{persona}}, {{character}})
+		const regex = /\{\{char:(\d+)\}\}|\{\{(user|char|persona|character)\}\}/g
 		let match
 		while ((match = regex.exec(text)) !== null) {
 			if (match.index > lastIndex) {
@@ -84,16 +85,16 @@
 				})
 			}
 			if (match[1]) {
-				// {char:N}
+				// {{char:N}} - numbered binding syntax
 				parts.push({
 					type: "LorebookBindingTag",
 					attrs: { id: match[1] }
 				})
 			} else if (match[2]) {
-				// legacy tags: {user}, {char}, {persona}, {character}
+				// {{user}}, {{char}}, etc. - double-brace legacy tag syntax
 				parts.push({
 					type: "legacyTag",
-					attrs: { tag: `{${match[2]}}`, original: `{${match[2]}}` }
+					attrs: { tag: `{{${match[2]}}}`, original: `{{${match[2]}}}` }
 				})
 			}
 			lastIndex = match.index + match[0].length

@@ -11,64 +11,82 @@ const __dirname = path.dirname(__filename)
 // Get the project root directory
 const projectRoot = path.resolve(__dirname, "..")
 
+// Load environment variables from .env file if it exists
+function loadEnvFile() {
+	const envPath = path.join(projectRoot, ".env")
+	if (fs.existsSync(envPath)) {
+		const envContent = fs.readFileSync(envPath, "utf-8")
+		const envLines = envContent.split("\n")
+
+		for (const line of envLines) {
+			const trimmedLine = line.trim()
+			if (trimmedLine && !trimmedLine.startsWith("#")) {
+				const [key, ...valueParts] = trimmedLine.split("=")
+				if (key && valueParts.length > 0) {
+					const value = valueParts
+						.join("=")
+						.replace(/^["']|["']$/g, "")
+					process.env[key.trim()] = value
+				}
+			}
+		}
+	}
+}
+
+// Load .env before doing anything else
+loadEnvFile()
+
 // Lock configuration
 const DEFAULT_LOCK_LENGTH = 5000 // 5 seconds in milliseconds
 let lockUpdateInterval = null
 let metaPath = null
 let lockReleased = false
 
-// Import the drizzle config to get the data directory
-async function importDrizzleConfig() {
+// Get data directory with the same logic as the utility function
+function getDataDirectory() {
+	// Check for custom data directory from environment
+	const envDataDir = process.env.SERENE_PUB_DATA_DIR
+	if (envDataDir) {
+		return path.join(envDataDir, "data")
+	}
+
+	// Check for CI environment
+	const isCI = process.env.CI === "true"
+	if (isCI) {
+		return "~/SerenePubData"
+	}
+
+	// Fallback to envPaths logic - we need to import it dynamically
 	try {
-		const configPath = path.join(
-			projectRoot,
-			"src/lib/server/db/drizzle.config.ts"
-		)
+		// Simple fallback calculation without importing envPaths
+		// This mimics what envPaths would return for most systems
+		const os = process.platform
+		const home =
+			process.env.HOME || process.env.USERPROFILE || process.env.HOMEPATH
 
-		return new Promise((resolve, reject) => {
-			const child = spawn(
-				"npx",
-				[
-					"tsx",
-					"--eval",
-					`
-				import * as config from '${configPath}';
-				console.log(JSON.stringify({ dataDir: config.dataDir }));
-			`
-				],
-				{ stdio: ["pipe", "pipe", "pipe"] }
+		let dataPath
+		if (os === "darwin") {
+			dataPath = path.join(
+				home,
+				"Library",
+				"Application Support",
+				"SerenePub"
 			)
+		} else if (os === "win32") {
+			dataPath = path.join(
+				process.env.APPDATA || path.join(home, "AppData", "Roaming"),
+				"SerenePub"
+			)
+		} else {
+			// Linux and others
+			const xdgDataHome =
+				process.env.XDG_DATA_HOME || path.join(home, ".local", "share")
+			dataPath = path.join(xdgDataHome, "SerenePub")
+		}
 
-			let output = ""
-			child.stdout.on("data", (data) => {
-				output += data.toString()
-			})
-
-			child.on("close", (code) => {
-				if (code === 0) {
-					try {
-						const lines = output.trim().split("\n")
-						const jsonLine = lines[lines.length - 1]
-						const config = JSON.parse(jsonLine)
-						resolve(config)
-					} catch (error) {
-						reject(
-							new Error(
-								`Failed to parse config output: ${error.message}`
-							)
-						)
-					}
-				} else {
-					reject(
-						new Error(
-							`Failed to load drizzle config, exit code: ${code}`
-						)
-					)
-				}
-			})
-		})
+		return path.join(dataPath, "data")
 	} catch (error) {
-		console.error("Failed to import drizzle config:", error.message)
+		console.error("Failed to determine data directory:", error.message)
 		process.exit(1)
 	}
 }
@@ -130,8 +148,8 @@ function stopLockUpdates() {
 
 async function checkDatabaseLock() {
 	try {
-		const config = await importDrizzleConfig()
-		metaPath = path.join(config.dataDir, "meta.json")
+		const dataDir = getDataDirectory()
+		metaPath = path.join(dataDir, "meta.json")
 
 		// Check if meta.json exists
 		if (!fs.existsSync(metaPath)) {

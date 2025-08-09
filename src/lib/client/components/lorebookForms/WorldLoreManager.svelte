@@ -240,7 +240,6 @@
 	}: {
 		entries: Sockets.WorldLoreEntryList.Response["worldLoreEntryList"]
 	}) {
-		console.log("Reordering entries:", $state.snapshot(entries))
 		// Map id's to positions
 		const positionMap: Sockets.UpdateWorldLoreEntryPositions.Call["positions"] =
 			[]

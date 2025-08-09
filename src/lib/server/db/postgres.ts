@@ -1,7 +1,7 @@
 import * as dbConfig from "./drizzle.config"
 import { PGlite } from "@electric-sql/pglite"
 
-const GLOBAL_PGLITE_KEY = Symbol.for("serene-pub.pglite")
+const GLOBAL_PGLITE_KEY = Symbol.for("serene-pub.db")
 
 type PgliteGlobal = { pglite?: PGlite }
 

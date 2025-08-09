@@ -1,8 +1,8 @@
 // SvelteKit endpoint to serve avatar files from the OS-agnostic app data directory
 import type { RequestHandler } from "@sveltejs/kit"
-import envPaths from "env-paths"
 import path from "path"
 import fs from "fs/promises"
+import { getAppDataDir } from "$lib/server/utils"
 
 export const GET: RequestHandler = async ({ params }) => {
 	const { reqPath } = params
@@ -11,7 +11,7 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 	// reqPath is an array (SvelteKit catchall)
 	const relPath = Array.isArray(reqPath) ? reqPath.join("/") : reqPath
-	const appData = envPaths("SerenePub", { suffix: "" }).data
+	const appData = getAppDataDir()
 	const filePath = path.join(appData, relPath)
 	try {
 		const data = await fs.readFile(filePath)

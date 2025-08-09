@@ -133,8 +133,6 @@ await checkDatabaseLock()
 // Start lock updates
 startLockUpdates()
 
-// const { firstInit, pglite } = await startPg()
-
 export let db = drizzle(dbConfig.dbPath, { schema })
 export { schema }
 

@@ -7,8 +7,8 @@
 	import { goto } from "$app/navigation"
 	import { toaster } from "$lib/client/utils/toaster"
 	import { page } from "$app/state"
-	import Avatar from "../Avatar.svelte"
-	import SidebarListItem from "../SidebarListItem.svelte"
+	import ChatListItem from "../listItems/ChatListItem.svelte"
+	import ChatsUnsavedChangesModal from "../modals/ChatsUnsavedChangesModal.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -24,6 +24,9 @@
 	let searchCharacter: SelectCharacter | null = $state(null)
 	let searchPersona: SelectPersona | null = $state(null)
 	let editChatId: number | null = $state(null)
+	let chatFormHasChanges = $state(false)
+	let showUnsavedChangesModal = $state(false)
+	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 	const socket = skio.get()
 
 	// Filtered chats derived from search
@@ -34,13 +37,20 @@
 	})
 
 	async function handleOnClose() {
-		// Remove "chats-by-characterId" and "chats-by-personaId" from search params
-		const url = new URL(window.location.href)
-		url.searchParams.delete("chats-by-characterId")
-		url.searchParams.delete("chats-by-personaId")
-		goto(url.toString(), { replaceState: true })
+		if (chatFormHasChanges) {
+			showUnsavedChangesModal = true
+			return new Promise<boolean>((resolve) => {
+				confirmCloseSidebarResolve = resolve
+			})
+		} else {
+			// Remove "chats-by-characterId" and "chats-by-personaId" from search params
+			const url = new URL(window.location.href)
+			url.searchParams.delete("chats-by-characterId")
+			url.searchParams.delete("chats-by-personaId")
+			goto(url.toString(), { replaceState: true })
 
-		return true // TODO
+			return true
+		}
 	}
 
 	function handleCreateClick(
@@ -98,6 +108,29 @@
 		toaster.success({ title: "Chat deleted" })
 	})
 
+	function handleCloseModalDiscard() {
+		showUnsavedChangesModal = false
+		// Clear search params when discarding changes and closing
+		const url = new URL(window.location.href)
+		url.searchParams.delete("chats-by-characterId")
+		url.searchParams.delete("chats-by-personaId")
+		goto(url.toString(), { replaceState: true })
+		
+		if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(true)
+	}
+
+	function handleCloseModalCancel() {
+		showUnsavedChangesModal = false
+		if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
+	}
+
+	function handleUnsavedChangesOnOpenChange(e: { open: boolean }) {
+		if (!e.open) {
+			showUnsavedChangesModal = false
+			if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
+		}
+	}
+
 	$effect(() => {
 		const lower = search.toLowerCase()
 
@@ -129,20 +162,30 @@
 			const characterNames = (chat.chatCharacters || [])
 				.map((cc) => cc.character?.name?.toLowerCase() || "")
 				.join(" ")
+			const tagNames = (chat.chatTags || [])
+				.map((ct: any) => ct.tag?.name?.toLowerCase() || "")
+				.join(" ")
 			return (
 				chatName.includes(lower) ||
 				personaNames.includes(lower) ||
-				characterNames.includes(lower)
+				characterNames.includes(lower) ||
+				tagNames.includes(lower)
 			)
 		})
 	})
 
 	$effect(() => {
+		if (panelsCtx.digest.chatId) {
+			showEditChatForm = true
+			editChatId = panelsCtx.digest.chatId
+			delete panelsCtx.digest.chatId
+			delete panelsCtx.digest.chatCharacterId
+			delete panelsCtx.digest.chatPersonaId
+		}
+	})
+
+	$effect(() => {
 		if (panelsCtx.digest.chatCharacterId) {
-			console.log(
-				"Searching chats by character ID:",
-				panelsCtx.digest.chatCharacterId
-			)
 			searchByCharacterId = panelsCtx.digest.chatCharacterId
 		}
 		if (panelsCtx.digest.chatPersonaId) {
@@ -151,6 +194,7 @@
 		delete panelsCtx.digest.chatCharacterId
 		delete panelsCtx.digest.chatPersonaId
 	})
+
 
 	$effect(() => {
 		if (searchByCharacterId) {
@@ -190,7 +234,11 @@
 
 <div class="text-foreground flex h-full flex-col p-4">
 	{#if showEditChatForm}
-		<EditChatForm bind:showEditChatForm bind:editChatId />
+		<EditChatForm 
+			bind:showEditChatForm 
+			bind:editChatId 
+			bind:hasChanges={chatFormHasChanges}
+		/>
 	{:else}
 		<div class="mb-2 flex gap-2">
 			<button
@@ -208,7 +256,7 @@
 			<input
 				class="input w-full"
 				type="text"
-				placeholder="Search chats, personas, characters..."
+				placeholder="Search chats, personas, characters, tags..."
 				bind:value={search}
 			/>
 		</div>
@@ -244,114 +292,12 @@
 			{:else}
 				<ul class="flex flex-col gap-2">
 					{#each filteredChats as chat}
-						{@const avatars = [
-							...(chat.chatCharacters || []).map((cc) => ({
-								type: "character",
-								data: cc.character
-							})),
-							...(chat.chatPersonas || []).map((cp) => ({
-								type: "persona",
-								data: cp.persona
-							}))
-						]}
-						<SidebarListItem
-							onclick={(e) => handleChatClick(chat)}
-							contentTitle="Go to chat"
-						>
-							{#snippet content()}
-								<div class="relative w-fit">
-									<div
-										class="relative mr-2 flex flex-shrink-0 flex-grow-0 items-center"
-									>
-										{#if avatars.length <= 2}
-											{#each avatars as avatar, i}
-												<div
-													class="inline-block"
-													style="margin-left: {i === 0
-														? '0'
-														: '-0.7em'}; z-index: {10 -
-														i};"
-												>
-													<Avatar
-														char={avatar.data}
-													/>
-												</div>
-											{/each}
-										{:else}
-											{#each avatars.slice(0, 3) as avatar, i}
-												<div
-													class="ml-[-2.25em] inline-block first:ml-0"
-													style="z-index: {10 - i};"
-												>
-													<Avatar
-														char={avatar.data}
-													/>
-												</div>
-											{/each}
-											{#if avatars.length > 3}
-												<div
-													class="preset-tonal-secondary relative z-1 mb-auto aspect-square rounded-full px-1 pt-[0.15em] text-xs select-none"
-												>
-													+{avatars.length - 3}
-												</div>
-											{/if}
-										{/if}
-									</div>
-								</div>
-								<div class="flex min-w-0 flex-col">
-									<div
-										class="truncate text-left font-semibold"
-									>
-										{chat.name || "Untitled Chat"}
-									</div>
-									<div
-										class="text-muted-foreground line-clamp-2 text-left text-xs"
-									>
-										{#if chat.chatCharacters?.length}
-											{chat.chatCharacters
-												.map(
-													(cc) =>
-														cc.character
-															?.nickname ||
-														cc.character?.name
-												)
-												.filter(Boolean)
-												.join(", ")}
-										{/if}
-										{chat.chatPersonas?.length ? "," : ""}
-										{#if chat.chatPersonas?.length}
-											{chat.chatPersonas
-												.map((cp) => cp.persona?.name)
-												.filter(Boolean)
-												.join(", ")}
-										{/if}
-									</div>
-								</div>
-							{/snippet}
-							{#snippet controls()}
-								<div class="ml-auto flex flex-col gap-4">
-									<button
-										class="btn btn-sm text-primary-500 p-4"
-										onclick={() => {
-											handleEditClick(chat.id!)
-										}}
-										title="Edit Character"
-									>
-										<Icons.Edit size={16} />
-									</button>
-									<button
-										class="btn btn-sm text-error-500 p-4"
-										onclick={(e) => {
-											e.stopPropagation()
-											handleDeleteClick(chat.id!)
-										}}
-										title="Delete Character"
-									>
-										<Icons.Trash2 size={16} />
-									</button>
-								</div>
-							{/snippet}
-						</SidebarListItem>
+						<ChatListItem
+							{chat}
+							onclick={handleChatClick}
+							onEdit={handleEditClick}
+							onDelete={handleDeleteClick}
+						/>
 					{/each}
 				</ul>
 			{/if}
@@ -389,3 +335,12 @@
 		</div>
 	{/snippet}
 </Modal>
+
+{#if showUnsavedChangesModal}
+	<ChatsUnsavedChangesModal
+		open={showUnsavedChangesModal}
+		onOpenChange={handleUnsavedChangesOnOpenChange}
+		onConfirm={handleCloseModalDiscard}
+		onCancel={handleCloseModalCancel}
+	/>
+{/if}

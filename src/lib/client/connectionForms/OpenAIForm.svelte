@@ -124,13 +124,8 @@
 		}
 	})
 
-	$effect(() => {
-		console.log("extraJson", $state.snapshot(openAIFields))
-	})
-
 	onMount(() => {
 		if (connection.extraJson) {
-			console.log("Using existing extraJson", connection.extraJson)
 			const extraJson = { ...defaultExtraJson, ...connection.extraJson }
 			openAIFields = extraJsonToExtraFields(extraJson)
 		} else {

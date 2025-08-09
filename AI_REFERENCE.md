@@ -1,6 +1,6 @@
 # Serene Pub - AI Assistant Reference
 
-**Version**: 0.2.2  
+**Version**: 0.4.0  
 **License**: AGPL-3.0  
 **Author**: Jody Doolittle  
 **Repository**: https://github.com/doolijb/serene-pub
@@ -33,7 +33,6 @@ Serene Pub is a modern, customizable chat application designed for immersive rol
 - **PostgreSQL** - Database via pglite
 - **Drizzle ORM** - Type-safe SQL ORM with migrations
 - **TypeScript** - Server-side type safety
-- **Sqlite** - Deprecated database, removing in 0.4.0
 
 ### Development & Build Tools
 

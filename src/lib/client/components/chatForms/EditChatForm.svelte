@@ -24,11 +24,13 @@
 	interface Props {
 		editChatId?: number | null // If provided, edit mode; else create mode
 		showEditChatForm: boolean // Controls visibility of the form
+		hasChanges?: boolean // Track if the form has unsaved changes
 	}
 
 	let {
 		editChatId = $bindable(null),
-		showEditChatForm = $bindable()
+		showEditChatForm = $bindable(),
+		hasChanges = $bindable(false)
 	}: Props = $props()
 
 	const socket = skio.get()
@@ -101,6 +103,11 @@
 				data?.characterIds.length > 0 &&
 				data?.personaIds.length > 0)
 	)
+
+	// Sync hasChanges with isDirty
+	$effect(() => {
+		hasChanges = isDirty
+	})
 
 	// SELECTED CHARACTERS AND PERSONAS
 	let selectedCharacters: SelectCharacter[] = $state([])
@@ -186,7 +193,7 @@
 		}
 
 		if (!originalData) {
-			originalData = { ...data }
+			originalData = JSON.parse(JSON.stringify(data))
 		}
 	})
 
@@ -310,6 +317,8 @@
 					chat.chatPersonas?.map((cp) => cp.persona) || []
 				lorebookId = chat.lorebookId || null
 				selectedTags = chat.tags || []
+				// Reset originalData to null so it gets re-initialized with the loaded data
+				originalData = undefined
 			}
 		})
 		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
@@ -638,7 +647,7 @@
 		</div>
 
 		<!-- Tags Section -->
-		<div>
+		<div class="pb-10">
 			<label class="font-semibold" for="tagInput">Tags</label>
 			<div class="relative">
 				<input

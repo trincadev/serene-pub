@@ -1,5 +1,11 @@
 import { marked } from "marked"
 
+// Fix italic formatting to handle trailing spaces before closing asterisk
+function fixItalicSpaces(text: string): string {
+	// Replace patterns like "*text *" with "*text*" to fix italic parsing
+	return text.replace(/\*([^*\n]+?)\s+\*/g, "*$1*")
+}
+
 export function markQuotedText(md: string): string {
 	return md
 		.replaceAll("“", '"')
@@ -14,7 +20,9 @@ export function replaceQuotedTextMarkers(html: string): string {
 }
 
 export function renderMarkdownWithQuotedText(md: string): string {
-	const markedMd = markQuotedText(md)
+	// Fix italic formatting with trailing spaces before processing
+	const fixedMd = fixItalicSpaces(md)
+	const markedMd = markQuotedText(fixedMd)
 	let html = marked.parse(markedMd) as string
 	html = replaceQuotedTextMarkers(html)
 	return html

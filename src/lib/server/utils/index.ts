@@ -6,9 +6,32 @@ import * as schema from "$lib/server/db/schema"
 import { writeFile, mkdir } from "fs/promises"
 import { v4 as uuid } from "uuid"
 
+/**
+ * Gets the application data directory with optional override from environment
+ * Checks SERENE_PUB_DATA_DIR environment variable first, falls back to envPaths
+ */
 export function getAppDataDir() {
+	const envDataDir = process.env.SERENE_PUB_DATA_DIR
+	if (envDataDir) {
+		return envDataDir
+	}
+
 	const paths = envPaths("SerenePub", { suffix: "" })
 	return paths.data
+}
+
+/**
+ * Gets the database data directory (app data dir + /data)
+ * Includes CI environment check for compatibility with existing logic
+ */
+export function getDbDataDir() {
+	const isCI = process.env.CI === "true"
+	if (isCI) {
+		return "~/SerenePubData"
+	}
+
+	const appDataDir = getAppDataDir()
+	return path.join(appDataDir, "data")
 }
 
 export function getCharacterDataDir({

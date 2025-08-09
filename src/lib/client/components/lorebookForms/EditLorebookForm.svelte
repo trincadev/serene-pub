@@ -33,6 +33,8 @@
 	let originalLorebook: Sockets.Lorebook.Response["lorebook"] | undefined =
 		$state()
 	let validationErrors: ValidationErrors = $state({})
+	let isLoading = $state(true)
+	let loadError = $state("")
 
 	$effect(() => {
 		hasUnsavedChanges =
@@ -132,6 +134,11 @@
 			if (msg.lorebook && msg.lorebook.id === lorebookId) {
 				editLorebook = { ...msg.lorebook }
 				originalLorebook = { ...msg.lorebook }
+				isLoading = false
+				loadError = ""
+			} else {
+				loadError = "Lorebook not found"
+				isLoading = false
 			}
 			await tick() // Force state to update
 		})
@@ -165,7 +172,21 @@
 	})
 </script>
 
-{#if editLorebook}
+{#if isLoading}
+	<div class="flex items-center justify-center p-4">
+		<div class="text-center">
+			<Icons.Loader size={24} class="animate-spin mx-auto mb-2" />
+			<p>Loading lorebook...</p>
+		</div>
+	</div>
+{:else if loadError}
+	<div class="flex items-center justify-center p-4">
+		<div class="text-center">
+			<Icons.AlertTriangle size={24} class="mx-auto mb-2 text-error-500" />
+			<p class="text-error-500">{loadError}</p>
+		</div>
+	</div>
+{:else if editLorebook}
 	<div class="flex flex-col gap-6">
 		<div class="flex gap-2">
 			<button

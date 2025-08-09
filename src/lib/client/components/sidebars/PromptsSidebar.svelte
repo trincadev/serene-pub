@@ -170,6 +170,8 @@
 			"updatePromptConfig",
 			(msg: Sockets.UpdatePromptConfig.Response) => {
 				if (msg.promptConfig.id === promptConfig.id) {
+					promptConfig = { ...msg.promptConfig }
+					originalData = { ...msg.promptConfig }
 					toaster.success({ title: "Prompt Config Updated" })
 				}
 			}

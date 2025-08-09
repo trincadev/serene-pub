@@ -8,6 +8,56 @@ import { getConnectionAdapter } from "../utils/getConnectionAdapter"
 import { TokenCounters } from "$lib/server/utils/TokenCounterManager"
 import { GroupReplyStrategies } from "$lib/shared/constants/GroupReplyStrategies"
 import { InterpolationEngine } from "../utils/promptBuilder"
+import { dev } from "$app/environment"
+
+// Helper function to process tags for chat creation/update
+async function processChatTags(chatId: number, tagNames: string[]) {
+	if (!tagNames || tagNames.length === 0) return
+
+	// First, remove all existing tags for this chat
+	await db
+		.delete(schema.chatTags)
+		.where(eq(schema.chatTags.chatId, chatId))
+
+	// Process each tag name
+	const tagIds: number[] = []
+
+	for (const tagName of tagNames) {
+		if (!tagName.trim()) continue
+
+		// Check if tag exists
+		let existingTag = await db.query.tags.findFirst({
+			where: eq(schema.tags.name, tagName.trim())
+		})
+
+		// Create tag if it doesn't exist
+		if (!existingTag) {
+			const [newTag] = await db
+				.insert(schema.tags)
+				.values({
+					name: tagName.trim()
+					// description and colorPreset will use database defaults
+				})
+				.returning()
+			existingTag = newTag
+		}
+
+		tagIds.push(existingTag.id)
+	}
+
+	// Link all tags to the chat
+	if (tagIds.length > 0) {
+		const chatTagsData = tagIds.map((tagId) => ({
+			chatId,
+			tagId
+		}))
+
+		await db
+			.insert(schema.chatTags)
+			.values(chatTagsData)
+			.onConflictDoNothing() // In case of race conditions
+	}
+}
 
 // --- Global map for active adapters ---
 export const activeAdapters = new Map<string, BaseConnectionAdapter>()
@@ -31,12 +81,17 @@ export async function chatsList(
 				with: {
 					persona: true
 				}
+			},
+			chatTags: {
+				with: {
+					tag: true
+				}
 			}
 		},
 		where: (c, { eq }) => eq(c.userId, userId)
 	})
 
-	// Drizzle/Sqlite may not properly handle orderby,
+	// Drizzle may not properly handle orderby,
 	// Lets sort it manually
 	// Order the chatCharacters by position
 	chatsList.forEach((chat) => {
@@ -62,8 +117,14 @@ export async function createChat(
 ) {
 	try {
 		const userId = 1 // Replace with actual user id
+		const tags = message.chat.tags || []
+
+		// Remove tags from chat data as it will be handled separately
+		const chatDataWithoutTags = { ...message.chat }
+		delete chatDataWithoutTags.tags
+
 		const chatData: InsertChat = {
-			...message.chat,
+			...chatDataWithoutTags,
 			userId,
 			isGroup: message.characterIds.length > 1
 		}
@@ -71,6 +132,11 @@ export async function createChat(
 			.insert(schema.chats)
 			.values(chatData)
 			.returning()
+
+		// Process tags after chat creation
+		if (tags.length > 0) {
+			await processChatTags(newChat.id, tags)
+		}
 		for (const personaId of message.personaIds) {
 			await db.insert(schema.chatPersonas).values({
 				chatId: newChat.id,
@@ -94,7 +160,8 @@ export async function createChat(
 		const chatPersona = await db.query.chatPersonas.findFirst({
 			where: (cp, { eq, and, isNotNull }) =>
 				and(eq(cp.chatId, newChat.id), isNotNull(cp.personaId)),
-			with: { persona: true }
+			with: { persona: true },
+			orderBy: (cp, { asc }) => asc(cp.position ?? 0)
 		})
 		for (const cc of chatCharacters) {
 			if (!cc.character) continue
@@ -184,11 +251,16 @@ async function getChatFromDB(
 				orderBy: (cm, { desc }) => desc(cm.id),
 				limit: limit,
 				offset: offset
+			},
+			chatTags: {
+				with: {
+					tag: true
+				}
 			}
 		}
 	})
 
-	// Drizzle/Sqlite may not properly handle orderby,
+	// Drizzle may not properly handle orderby,
 	// Lets sort it manually
 	const chat = await res
 	if (chat) {
@@ -205,6 +277,13 @@ async function getChatFromDB(
 		// Sort messages by id ascending (oldest first) for correct display order
 		// When paginating, we fetched newest first (DESC) but want to display oldest first
 		chat.chatMessages.sort((a, b) => a.id - b.id)
+
+		// Transform chat tags to include tags as string array
+		const chatWithTags = {
+			...chat,
+			tags: chat.chatTags?.map((ct) => ct.tag.name) || []
+		}
+		return chatWithTags
 	}
 	return chat
 }
@@ -305,15 +384,18 @@ export async function sendPersonaMessage(
 	}
 	emitToUser("sendPersonaMessage", res)
 
-	// --- Round-robin character response loop ---
+	// --- Auto-response logic ---
 	let maxTurns = 20 // Prevent infinite loops in case of data issues
 	let currentTurn = 1
 
-	// Check if group and group reply strategy
-	if (
-		!chat.isGroup ||
-		chat.groupReplyStrategy !== GroupReplyStrategies.MANUAL
-	) {
+	// Determine if we should auto-generate responses:
+	// - For single character chats: Generate one response only
+	// - For group chats: Continue based on reply strategy (not manual)
+	const shouldAutoRespond = chat.isGroup 
+		? chat.groupReplyStrategy !== GroupReplyStrategies.MANUAL
+		: true // Single character chat gets one response
+
+	if (shouldAutoRespond) {
 		const abortedCharacters = new Set<number>() // Track characters whose responses were aborted
 
 		while (
@@ -340,9 +422,11 @@ export async function sendPersonaMessage(
 			const nextCharacterId = getNextCharacterTurn(
 				{
 					chatMessages: chat!.chatMessages,
-					chatCharacters: chat!.chatCharacters.filter(
-						(cc) => cc.character !== null
-					) as any,
+					chatCharacters: chat!.chatCharacters
+						.filter((cc) => cc.character !== null && cc.isActive)
+						.sort(
+							(a, b) => (a.position ?? 0) - (b.position ?? 0)
+						) as any,
 					chatPersonas: chat!.chatPersonas.filter(
 						(cp) => cp.persona !== null
 					) as any
@@ -394,6 +478,12 @@ export async function sendPersonaMessage(
 				console.log(
 					`Character ${nextCharacterId} response was aborted, stopping auto-response loop`
 				)
+				break
+			}
+
+			// For single character chats, stop after one response
+			if (!chat.isGroup) {
+				console.log("Single character chat - stopping after one response")
 				break
 			}
 		}
@@ -633,9 +723,13 @@ export async function promptTokenCount(
 		const currentCharacterId = getNextCharacterTurn(
 			{
 				chatMessages: chat.chatMessages,
-				chatCharacters: chat.chatCharacters.filter(
-					(cc: any) => cc && cc.character != null
-				) as any,
+				chatCharacters: chat.chatCharacters
+					.filter(
+						(cc: any) => cc && cc.character != null && cc.isActive
+					)
+					.sort(
+						(a, b) => (a.position ?? 0) - (b.position ?? 0)
+					) as any,
 				chatPersonas: chat.chatPersonas.filter(
 					(cp: any) => cp && cp.persona != null
 				) as any
@@ -778,9 +872,11 @@ export async function triggerGenerateMessage(
 			getNextCharacterTurn(
 				{
 					chatMessages: chat.chatMessages,
-					chatCharacters: chat.chatCharacters.filter(
-						(cc) => cc.character !== null
-					) as any,
+					chatCharacters: chat.chatCharacters
+						.filter((cc) => cc.character !== null && cc.isActive)
+						.sort(
+							(a, b) => (a.position ?? 0) - (b.position ?? 0)
+						) as any,
 					chatPersonas: chat.chatPersonas.filter(
 						(cp) => cp.persona !== null
 					) as any
@@ -873,17 +969,20 @@ export async function updateChat(
 	try {
 		console.log("Updating chat with message:", message)
 		const userId = 1 // Replace with actual user id
+		const tags = message.chat.tags || []
 
 		//  Select the chat to compare data
 		const existingChat = await getPromptChatFromDb(message.chat.id, userId)
 
-		// Update chat main fields
-		const data = { ...message.chat }
-		delete data.id // Remove id to avoid conflicts
+		// Remove tags from chat data as it will be handled separately
+		const chatDataWithoutTags = { ...message.chat }
+		delete chatDataWithoutTags.tags
+		delete chatDataWithoutTags.id // Remove id to avoid conflicts
+
 		await db
 			.update(schema.chats)
 			.set({
-				...message.chat,
+				...chatDataWithoutTags,
 				isGroup: message.characterIds.length > 1,
 				userId: undefined
 			})
@@ -893,6 +992,9 @@ export async function updateChat(
 					eq(schema.chats.userId, userId)
 				)
 			)
+
+		// Process tags after chat update
+		await processChatTags(message.chat.id, tags)
 
 		// Remove any characters that are not in the new list
 		const deletedCharacterIds =
@@ -1385,35 +1487,76 @@ function buildCharacterFirstChatMessage({
 	persona: SelectPersona | undefined | null
 	isGroup: boolean
 }): string[] {
-	console.log("Building first chat message for character:", character.name)
+	if (dev) {
+		console.log(
+			"Building first chat message for character:",
+			character.name,
+			"with persona:",
+			persona?.name
+		)
+	}
 	const history: string[] = []
 	const engine = new InterpolationEngine()
 	const context = engine.createInterpolationContext({
 		currentCharacterName: character.nickname || character.name,
 		currentPersonaName: persona?.name || "User"
 	})
+	if (dev) {
+		console.log("Interpolation context:", context)
+	}
 	if (!isGroup || !character.groupOnlyGreetings?.length) {
 		if (character.firstMessage) {
-			history.push(
-				engine.interpolateString(
+			const interpolated = engine.interpolateString(
+				character.firstMessage.trim(),
+				context
+			)!
+			if (dev) {
+				console.log(
+					"Interpolated firstMessage:",
 					character.firstMessage.trim(),
-					context
-				)!
-			)
+					"->",
+					interpolated
+				)
+			}
+			history.push(interpolated)
 		}
 		if (character.alternateGreetings) {
 			history.push(
-				...character.alternateGreetings.map(
-					(g) => engine.interpolateString(g.trim(), context)!
-				)
+				...character.alternateGreetings.map((g) => {
+					const interpolated = engine.interpolateString(
+						g.trim(),
+						context
+					)!
+					if (dev) {
+						console.log(
+							"Interpolated alternateGreeting:",
+							g.trim(),
+							"->",
+							interpolated
+						)
+					}
+					return interpolated
+				})
 			)
 		}
 	} else if (character.groupOnlyGreetings?.length) {
 		// If this is a group chat, use only group greetings
 		history.push(
-			...character.groupOnlyGreetings.map(
-				(g) => engine.interpolateString(g.trim(), context)!
-			)
+			...character.groupOnlyGreetings.map((g) => {
+				const interpolated = engine.interpolateString(
+					g.trim(),
+					context
+				)!
+				if (dev) {
+					console.log(
+						"Interpolated groupOnlyGreeting:",
+						g.trim(),
+						"->",
+						interpolated
+					)
+				}
+				return interpolated
+			})
 		)
 	} else {
 		// Fallback firstMessage if no greetings are available
@@ -1478,4 +1621,70 @@ export async function toggleChatCharacterActive(
 	emitToUser("toggleChatCharacterActive", res)
 
 	await getChat(socket, { id: chat.id }, emitToUser)
+}
+
+export async function getChatResponseOrder(
+	socket: any,
+	message: Sockets.GetChatResponseOrder.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	// console.log('Debug - getChatResponseOrder called for chatId:', message.chatId)
+	const userId = 1 // Replace with actual user id
+	const chat = await getPromptChatFromDb(message.chatId, userId)
+
+	if (!chat) {
+		const res: Sockets.GetChatResponseOrder.Response = {
+			error: "Chat not found.",
+			chatId: message.chatId,
+			characterIds: [],
+			nextCharacterId: null
+		}
+		emitToUser("getChatResponseOrder", res)
+		return
+	}
+
+	// Sort characters by position to get the response order (IDs only)
+	// First try active characters, if none exist, use all characters
+	const activeCharacters = chat.chatCharacters.filter(
+		(cc) => cc.character && cc.isActive
+	)
+	const charactersToUse =
+		activeCharacters.length > 0
+			? activeCharacters
+			: chat.chatCharacters.filter((cc) => cc.character)
+
+	const sortedCharacterIds = charactersToUse
+		.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+		.map((cc) => cc.character!.id)
+
+	// console.log('Debug - Characters for next turn:', { totalCharacters: chat.chatCharacters.length, activeCharacters: activeCharacters.length, charactersToUse: charactersToUse.length, sortedCharacterIds })
+
+	// Use getNextCharacterTurn to determine who should respond next based on message history
+	const nextCharacterId =
+		getNextCharacterTurn(
+			{
+				chatMessages: chat.chatMessages,
+				chatCharacters: chat.chatCharacters
+					.filter((cc) => cc.character !== null && cc.isActive)
+					.sort(
+						(a, b) => (a.position ?? 0) - (b.position ?? 0)
+					) as any,
+				chatPersonas: chat.chatPersonas.filter(
+					(cp) => cp.persona !== null
+				) as any
+			},
+			{ triggered: false }
+		) || (sortedCharacterIds.length > 0 ? sortedCharacterIds[0] : null)
+
+	// console.log('Debug - Next character logic simplified:', { sortedCharacterIds, nextCharacterId })
+
+	const res: Sockets.GetChatResponseOrder.Response = {
+		chatId: message.chatId,
+		characterIds: sortedCharacterIds,
+		nextCharacterId
+	}
+
+	// console.log('Debug - Sending response:', { chatId: res.chatId, characterIdsCount: res.characterIds.length, nextCharacterId: res.nextCharacterId })
+
+	emitToUser("getChatResponseOrder", res)
 }

@@ -41,10 +41,12 @@
 
 	let {
 		personaId,
-		isSafeToClose: hasChanges = $bindable(),
+		isSafeToClose = $bindable(),
 		closeForm = $bindable(),
 		onCancel = $bindable()
 	}: Props = $props()
+
+	let hasChanges = $state(false)
 
 	const socket = skio.get()
 
@@ -270,6 +272,7 @@
 		hasChanges =
 			JSON.stringify(editPersonaData) !==
 			JSON.stringify(originalPersonaData)
+		isSafeToClose = hasChanges
 	})
 
 	onMount(() => {

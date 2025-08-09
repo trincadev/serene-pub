@@ -111,10 +111,13 @@ content = content.replace(
 					import('open').then(({ default: open }) => {
 						open(\`http://localhost:\${port}\`);
 						console.log(\`🚀 Opening Serene Pub in your default browser...\`);
-					}).catch(() => {
-						// Silently fail if 'open' package is not available
+					}).catch((err) => {
+						console.warn(\`⚠️  Could not auto-open browser: \${err.message}\`);
+						console.log(\`💡 You can manually open http://localhost:\${port} in your browser\`);
 					});
 				}, 1000);
+			} else {
+				console.log(\`ℹ️  Auto-open browser disabled (SERENE_AUTO_OPEN=false)\`);
 			}
 		}`
 )

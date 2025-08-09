@@ -19,7 +19,6 @@
 
 	if (browser) {
 		const domain = page.url.hostname
-		console.log(`Serene Pub is running on domain: ${domain}`)
 		loadSocketsClient({ domain }).then(() => {
 			socketsInitialized = true
 		})

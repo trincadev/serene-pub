@@ -5,6 +5,11 @@
 	import * as Icons from "@lucide/svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import { z } from "zod"
+	import CharacterListItem from "../listItems/CharacterListItem.svelte"
+	import PersonaListItem from "../listItems/PersonaListItem.svelte"
+	import ChatListItem from "../listItems/ChatListItem.svelte"
+	import LorebookListItem from "../listItems/LorebookListItem.svelte"
+	import { goto } from "$app/navigation"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -312,13 +317,23 @@
 	}
 
 	function handleCharacterClick(character: SelectCharacter) {
+		panelsCtx.digest.chatCharacterId = character.id
+		panelsCtx.openPanel({ key: "chats", toggle: false })
+	}
+
+	function handleCharacterEditClick(character: SelectCharacter) {
 		panelsCtx.digest.characterId = character.id
-		panelsCtx.openPanel({ key: "characters", toggle: false })
+		panelsCtx.openPanel({ key: "characters", toggle: false})
 	}
 
 	function handlePersonaClick(persona: SelectPersona) {
-		panelsCtx.digest.personaId = persona.id
-		panelsCtx.openPanel({ key: "personas", toggle: false })
+		panelsCtx.digest.chatPersonaId = persona.id
+		panelsCtx.openPanel({ key: "chats", toggle: false })
+	}
+
+	function handlePersonaEditClick(persona: SelectPersona) {
+		panelsCtx.digest.characterId = persona.id
+		panelsCtx.openPanel({ key: "personas", toggle: false})
 	}
 
 	function handleLorebookClick(lorebook: SelectLorebook) {
@@ -327,9 +342,12 @@
 	}
 
 	function handleChatClick(chat: SelectChat) {
-		panelsCtx.openPanel({ key: "chats", toggle: false })
-		// Navigate to specific chat
-		window.location.href = `/chats/${chat.id}`
+		goto(`/chats/${chat.id}`)
+	}
+
+	function handleChatEditClick(chat: SelectChat) {
+		panelsCtx.digest.chatId = chat.id
+		panelsCtx.openPanel({ key: "chats", toggle: false})
 	}
 
 	onMount(() => {
@@ -437,23 +455,15 @@
 						<Icons.User size={18} />
 						Characters ({relatedCharacters.length})
 					</h3>
-					<div class="grid gap-2">
+					<div class="flex flex-col gap-2">
 						{#each relatedCharacters as character}
-							<button
-								class="bg-surface-100-900 hover:bg-surface-200-800 rounded-lg p-3 text-left transition-colors"
-								onclick={() => handleCharacterClick(character)}
-							>
-								<div class="font-medium">
-									{character.nickname || character.name}
-								</div>
-								{#if character.description}
-									<div
-										class="text-muted-foreground mt-1 line-clamp-2 text-sm"
-									>
-										{character.description}
-									</div>
-								{/if}
-							</button>
+							<CharacterListItem
+								{character}
+								onclick={handleCharacterClick}
+								onEdit={() => handleCharacterEditClick(character)}
+								showControls={true}
+								contentTitle="Go to character chats"
+							/>
 						{/each}
 					</div>
 				</div>
@@ -467,21 +477,15 @@
 						<Icons.UserCog size={18} />
 						Personas ({relatedPersonas.length})
 					</h3>
-					<div class="grid gap-2">
+					<div class="flex flex-col gap-2">
 						{#each relatedPersonas as persona}
-							<button
-								class="bg-surface-100-900 hover:bg-surface-200-800 rounded-lg p-3 text-left transition-colors"
-								onclick={() => handlePersonaClick(persona)}
-							>
-								<div class="font-medium">{persona.name}</div>
-								{#if persona.description}
-									<div
-										class="text-muted-foreground mt-1 line-clamp-2 text-sm"
-									>
-										{persona.description}
-									</div>
-								{/if}
-							</button>
+							<PersonaListItem
+								{persona}
+								onclick={handlePersonaClick}
+								onEdit={() => handlePersonaEditClick(persona)}
+								showControls={true}
+								contentTitle="Go to persona chats"
+							/>
 						{/each}
 					</div>
 				</div>
@@ -497,19 +501,12 @@
 					</h3>
 					<div class="grid gap-2">
 						{#each relatedLorebooks as lorebook}
-							<button
-								class="bg-surface-100-900 hover:bg-surface-200-800 rounded-lg p-3 text-left transition-colors"
+							<LorebookListItem
+								{lorebook}
 								onclick={() => handleLorebookClick(lorebook)}
-							>
-								<div class="font-medium">{lorebook.name}</div>
-								{#if lorebook.description}
-									<div
-										class="text-muted-foreground mt-1 line-clamp-2 text-sm"
-									>
-										{lorebook.description}
-									</div>
-								{/if}
-							</button>
+								showControls={false}
+								contentTitle="Go to lorebook"
+							/>
 						{/each}
 					</div>
 				</div>
@@ -523,23 +520,15 @@
 						<Icons.MessageSquare size={18} />
 						Chats ({relatedChats.length})
 					</h3>
-					<div class="grid gap-2">
+					<div class="flex flex-col gap-2">
 						{#each relatedChats as chat}
-							<button
-								class="bg-surface-100-900 hover:bg-surface-200-800 rounded-lg p-3 text-left transition-colors"
-								onclick={() => handleChatClick(chat)}
-							>
-								<div class="font-medium">
-									{chat.name || "Unnamed Chat"}
-								</div>
-								{#if chat.scenario}
-									<div
-										class="text-muted-foreground mt-1 line-clamp-2 text-sm"
-									>
-										{chat.scenario}
-									</div>
-								{/if}
-							</button>
+							<ChatListItem
+								{chat}
+								onclick={handleChatClick}
+								onEdit={() => {handleChatEditClick(chat)}}
+								showControls={true}
+								contentTitle="Go to chat"
+							/>
 						{/each}
 					</div>
 				</div>

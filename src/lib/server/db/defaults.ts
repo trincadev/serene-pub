@@ -103,7 +103,10 @@ Story history:
 {{/if}}
 
 {{#if exampleDialogue}}
+Example dialogue:
+"""
 {{{exampleDialogue}}}
+"""
 {{/if}}
 {{/systemBlock}}
 

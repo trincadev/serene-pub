@@ -182,12 +182,6 @@ export class PromptBuilder {
 		if (!character?.scenario) return undefined
 		return character.scenario
 	}
-	contextBuildCharacterExampleDialogue(): string | undefined {
-		return undefined
-	}
-	contextBuildCharacterPostHistoryInst(): string | undefined {
-		return undefined
-	}
 	contextBuildPersonaDescription(persona: any): string {
 		return persona.description
 	}
@@ -197,8 +191,12 @@ export class PromptBuilder {
 	contextBuildCharacterExampleDialogues(
 		character: SelectCharacter
 	): string | undefined {
-		if (!character?.exampleDialogues) return undefined
-		return character.exampleDialogues
+		if (!character?.exampleDialogues || !Array.isArray(character.exampleDialogues)) return undefined
+		const validDialogues = character.exampleDialogues.filter(Boolean)
+		if (validDialogues.length === 0) return undefined
+		// Select 1 random example dialogue
+		const randomIndex = Math.floor(Math.random() * validDialogues.length)
+		return validDialogues[randomIndex]
 	}
 	contextBuildPostHistoryInstructions(
 		character: SelectCharacter
@@ -296,9 +294,9 @@ export class PromptBuilder {
 			this.compilePersonaData(cp.persona)
 		)
 		this.instructions = this.contextBuildSystemPrompt()
-		this.exampleDialogue = this.contextBuildCharacterExampleDialogue()
+		this.exampleDialogue = this.contextBuildCharacterExampleDialogues(currentCharacter)
 		this.postHistoryInstructions =
-			this.contextBuildCharacterPostHistoryInst()
+			this.contextBuildPostHistoryInstructions(currentCharacter)
 	}
 
 	// --- Modularized section: scenario interpolation and source ---
@@ -491,7 +489,7 @@ export class PromptBuilder {
 					description: Boolean(c.description),
 					personality: Boolean(c.personality),
 					exampleDialogue: Boolean(
-						this.contextBuildCharacterExampleDialogue()
+						c.exampleDialogues && Array.isArray(c.exampleDialogues) && c.exampleDialogues.length > 0
 					),
 					postHistoryInstructions: Boolean(c.postHistoryInstructions)
 				}

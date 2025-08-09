@@ -6,12 +6,37 @@ import type { TemplateContextCharacter, TemplateContextPersona } from "./index"
 export function populateLorebookEntryBindings(
 	entry: SelectWorldLoreEntry | SelectCharacterLoreEntry | SelectHistoryEntry,
 	chat: BasePromptChat
-): SelectWorldLoreEntry | SelectCharacterLoreEntry {
+): SelectWorldLoreEntry | SelectCharacterLoreEntry | SelectHistoryEntry {
 	const lorebook =
 		chat.lorebook && chat.lorebook.id === entry.lorebookId
 			? chat.lorebook
 			: undefined
 	if (!lorebook) return entry
+	
+	// Handle {{char:#}} syntax by replacing with actual character names
+	lorebook.lorebookBindings.forEach((binding) => {
+		if (binding.character) {
+			const name = binding.character.nickname || binding.character.name
+			// Extract the number from the binding string (e.g., "{{char:1}}")
+			const bindingMatch = binding.binding.match(/\{\{char:(\d+)\}\}/)
+			if (bindingMatch) {
+				const bindingNumber = bindingMatch[1]
+				// Replace {{char:#}} syntax
+				entry.content = entry.content.replaceAll(`{{char:${bindingNumber}}}`, name)
+			}
+		} else if (binding.persona) {
+			const name = binding.persona.name
+			// Extract the number from the binding string (e.g., "{{char:1}}")
+			const bindingMatch = binding.binding.match(/\{\{char:(\d+)\}\}/)
+			if (bindingMatch) {
+				const bindingNumber = bindingMatch[1]
+				// Replace {{char:#}} syntax
+				entry.content = entry.content.replaceAll(`{{char:${bindingNumber}}}`, name)
+			}
+		}
+	})
+	
+	// Then handle direct binding replacements (legacy approach)
 	lorebook.lorebookBindings.forEach((binding) => {
 		if (binding.character) {
 			const name = binding.character.nickname || binding.character.name

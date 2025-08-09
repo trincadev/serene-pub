@@ -55,7 +55,8 @@ import {
 	updateChat,
 	chatMessageSwipeRight,
 	chatMessageSwipeLeft,
-	toggleChatCharacterActive
+	toggleChatCharacterActive,
+	getChatResponseOrder
 } from "./chats"
 import {
 	promptConfigsList,
@@ -66,31 +67,7 @@ import {
 	setUserActivePromptConfig
 } from "./promptConfigs"
 import { user } from "./users"
-import {
-	createLorebook,
-	createLorebookBinding,
-	createWorldLoreEntry,
-	deleteWorldLoreEntry,
-	lorebook,
-	lorebookBindingList,
-	lorebookList,
-	updateLorebookBinding,
-	updateWorldLoreEntry,
-	worldLoreEntryList,
-	updateWorldLoreEntryPositions,
-	deleteLorebook,
-	characterLoreEntryList,
-	createCharacterLoreEntry,
-	deleteCharacterLoreEntry,
-	updateCharacterLoreEntry,
-	updateCharacterLoreEntryPositions,
-	historyEntryList,
-	createHistoryEntry,
-	deleteHistoryEntry,
-	updateHistoryEntry,
-	iterateNextHistoryEntry,
-	lorebookImport
-} from "./lorebooks"
+import {createLorebook, createLorebookBinding, createWorldLoreEntry, deleteWorldLoreEntry, lorebook, lorebookBindingList, lorebookList, updateLorebookBinding, updateWorldLoreEntry, worldLoreEntryList, updateWorldLoreEntryPositions, deleteLorebook, characterLoreEntryList, createCharacterLoreEntry, deleteCharacterLoreEntry, updateCharacterLoreEntry, updateCharacterLoreEntryPositions, historyEntryList, createHistoryEntry, deleteHistoryEntry, updateHistoryEntry, iterateNextHistoryEntry, lorebookImport, updateLorebook} from './lorebooks';
 import {
 	tagsList,
 	createTag,
@@ -230,6 +207,7 @@ export function connectSockets(io: {
 		register(socket, chatMessageSwipeRight, emitToUser)
 		register(socket, chatMessageSwipeLeft, emitToUser)
 		register(socket, toggleChatCharacterActive, emitToUser)
+		register(socket, getChatResponseOrder, emitToUser)
 
 		// Lorebooks
 		register(socket, lorebookList, emitToUser)
@@ -239,6 +217,7 @@ export function connectSockets(io: {
 			register(socket, lorebookBindingList, emitToUser))
 		register(socket, createLorebookBinding, emitToUser)
 		register(socket, updateLorebookBinding, emitToUser)
+		register(socket, updateLorebook, emitToUser)
 		register(socket, worldLoreEntryList, emitToUser)
 		register(socket, createWorldLoreEntry, emitToUser)
 		register(socket, updateWorldLoreEntry, emitToUser)

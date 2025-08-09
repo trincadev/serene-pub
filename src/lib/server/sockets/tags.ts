@@ -148,7 +148,7 @@ export async function tagRelatedData(
 		})
 
 		// Get chats with this tag directly
-		const directChats = await db.query.chatTags.findMany({
+		const chats = await db.query.chatTags.findMany({
 			where: eq(schema.chatTags.tagId, message.tagId),
 			with: {
 				chat: {
@@ -158,49 +158,28 @@ export async function tagRelatedData(
 						scenario: true,
 						createdAt: true,
 						isGroup: true
+					},
+					with: {
+						chatCharacters: {
+							with: {
+								character: true
+							}
+						},
+						chatPersonas: {
+							with: {
+								persona: true
+							}
+						}
 					}
 				}
 			}
 		})
 
-		// Get related chats through characters (existing functionality)
-		const characterIds = characters
-			.map((ct) => ct.character?.id)
-			.filter(Boolean)
-		const characterChats =
-			characterIds.length > 0
-				? await db.query.chatCharacters.findMany({
-						where: (cc, { inArray }) =>
-							inArray(cc.characterId, characterIds),
-						with: {
-							chat: {
-								columns: {
-									id: true,
-									name: true,
-									scenario: true,
-									createdAt: true,
-									isGroup: true
-								}
-							}
-						}
-					})
-				: []
-
-		// Combine direct chats and character-related chats, removing duplicates
-		const allChats = [
-			...directChats.map((ct) => ct.chat).filter(Boolean),
-			...characterChats.map((cc) => cc.chat).filter(Boolean)
-		]
-		const uniqueChats = allChats.filter(
-			(chat, index, self) =>
-				index === self.findIndex((c) => c.id === chat.id)
-		)
-
 		const res = {
 			characters: characters.map((ct) => ct.character).filter(Boolean),
 			personas: personas.map((pt) => pt.persona).filter(Boolean),
 			lorebooks: lorebooks.map((lt) => lt.lorebook).filter(Boolean),
-			chats: uniqueChats
+			chats: chats.map((ct) => ct.chat)
 		}
 
 		emitToUser("tagRelatedData", res)

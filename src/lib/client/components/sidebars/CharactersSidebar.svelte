@@ -8,7 +8,7 @@
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import type { SpecV3 } from "@lenml/char-card-reader"
-	import SidebarListItem from "../SidebarListItem.svelte"
+	import CharacterListItem from "../listItems/CharacterListItem.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -29,7 +29,6 @@
 	let characterId: number | undefined = $state()
 	let isCreating = $state(false)
 	let showCharacterCreator = $state(false)
-	let isSafeToCloseCharacterForm = $state(true)
 	let showDeleteModal = $state(false)
 	let characterToDelete: number | undefined = $state(undefined)
 	let showUnsavedChangesModal = $state(false)
@@ -39,17 +38,17 @@
 	let importingLorebook: SpecV3.Lorebook | null = $state(null)
 	let importingLorebookCharacter: SelectCharacter | null = $state(null)
 	let showLorebookImportConfirmationModal = $state(false)
+	let characterFormHasChanges = $state(false)
 
-	let unsavedChanges = $derived.by(() => {
-		return !characterId && !isCreating ? false : !isSafeToCloseCharacterForm
-	})
+	// Note: Despite the name "isSafeToClose", this prop actually tracks when there ARE changes
+	// It's misnamed in the CharacterForm component - it should be called "hasChanges"
 
 	$effect(() => {
 		if (panelsCtx.digest.characterId) {
 			// Check if we have unsaved changes
 			if (
 				characterId !== panelsCtx.digest.characterId &&
-				unsavedChanges
+				characterFormHasChanges
 			) {
 				onEditFormCancel?.()
 			} else {
@@ -71,13 +70,26 @@
 				return 0
 			})
 			if (!search) return list
+			
+			const searchLower = search.toLowerCase()
 			return list.filter(
-				(c: Sockets.CharacterList.Response["characterList"][0]) =>
-					c.name!.toLowerCase().includes(search.toLowerCase()) ||
-					(c.description &&
-						c.description
-							.toLowerCase()
-							.includes(search.toLowerCase()))
+				(c: Sockets.CharacterList.Response["characterList"][0]) => {
+					// Search by name
+					if (c.name!.toLowerCase().includes(searchLower)) return true
+					
+					// Search by description
+					if (c.description && c.description.toLowerCase().includes(searchLower)) return true
+					
+					// Search by tags
+					if (c.characterTags) {
+						const tagMatch = c.characterTags.some((ct: any) => 
+							ct.tag && ct.tag.name.toLowerCase().includes(searchLower)
+						)
+						if (tagMatch) return true
+					}
+					
+					return false
+				}
 			)
 		})
 
@@ -127,7 +139,7 @@
 	}
 
 	async function handleOnClose() {
-		if (unsavedChanges) {
+		if (characterFormHasChanges) {
 			showUnsavedChangesModal = true
 			return new Promise<boolean>((resolve) => {
 				confirmCloseSidebarResolve = resolve
@@ -240,14 +252,14 @@
 <div class="text-foreground h-full p-4">
 	{#if isCreating}
 		<CharacterForm
-			bind:isSafeToClose={isSafeToCloseCharacterForm}
+			bind:isSafeToClose={characterFormHasChanges}
 			closeForm={closeCharacterForm}
 			bind:onCancel={onEditFormCancel}
 		/>
 	{:else if characterId}
 		{#key characterId}
 			<CharacterForm
-				bind:isSafeToClose={isSafeToCloseCharacterForm}
+				bind:isSafeToClose={characterFormHasChanges}
 				{characterId}
 				closeForm={closeCharacterForm}
 				bind:onCancel={onEditFormCancel}
@@ -283,7 +295,7 @@
 		<div class="mb-4 flex items-center gap-2">
 			<input
 				type="text"
-				placeholder="Search characters..."
+				placeholder="Search characters, descriptions, tags..."
 				class="input"
 				bind:value={search}
 			/>
@@ -296,67 +308,14 @@
 					No characters found.
 				</div>
 			{:else}
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				{#each filteredCharacters as c}
-					<SidebarListItem
-						id={c.id}
-						onclick={() => handleCharacterClick(c)}
+					<CharacterListItem
+						character={c}
+						onclick={handleCharacterClick}
+						onEdit={handleEditClick}
+						onDelete={handleDeleteClick}
 						contentTitle="Go to character chats"
-						classes={c.isFavorite
-							? "border border-primary-500"
-							: ""}
-					>
-						{#snippet content()}
-							<Avatar
-								src={c.avatar || ""}
-								size="w-[4em] h-[4em] min-w-[4em] min-h-[4em]"
-								imageClasses="object-cover"
-								name={c.nickname || c.name!}
-							>
-								<Icons.User size={36} />
-							</Avatar>
-							<div class="relative flex min-w-0 flex-1 gap-2">
-								<div class="relative min-w-0 flex-1">
-									<div
-										class="truncate text-left font-semibold"
-									>
-										{c.nickname || c.name}
-									</div>
-									{#if c.description}
-										<div
-											class="text-muted-foreground line-clamp-2 text-left text-xs"
-										>
-											{c.description}
-										</div>
-									{/if}
-								</div>
-							</div>
-						{/snippet}
-						{#snippet controls()}
-							<div class="flex flex-col gap-4">
-								<button
-									class="btn btn-sm text-primary-500 p-2"
-									onclick={(e) => {
-										e.stopPropagation()
-										handleEditClick(c.id!)
-									}}
-									title="Edit Character"
-								>
-									<Icons.Edit size={16} />
-								</button>
-								<button
-									class="btn btn-sm text-error-500 p-2"
-									onclick={(e) => {
-										e.stopPropagation()
-										handleDeleteClick(c.id!)
-									}}
-									title="Delete Character"
-								>
-									<Icons.Trash2 size={16} />
-								</button>
-							</div>
-						{/snippet}
-					</SidebarListItem>
+					/>
 				{/each}
 			{/if}
 		</div>

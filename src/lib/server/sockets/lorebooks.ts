@@ -4,6 +4,55 @@ import type { SpecV3 } from "@lenml/char-card-reader"
 import { and, eq } from "drizzle-orm"
 import { CharacterBook } from "@lenml/char-card-reader"
 
+// Helper function to process tags for lorebook creation/update
+async function processLorebookTags(lorebookId: number, tagNames: string[]) {
+	if (!tagNames || tagNames.length === 0) return
+
+	// First, remove all existing tags for this lorebook
+	await db
+		.delete(schema.lorebookTags)
+		.where(eq(schema.lorebookTags.lorebookId, lorebookId))
+
+	// Process each tag name
+	const tagIds: number[] = []
+
+	for (const tagName of tagNames) {
+		if (!tagName.trim()) continue
+
+		// Check if tag exists
+		let existingTag = await db.query.tags.findFirst({
+			where: eq(schema.tags.name, tagName.trim())
+		})
+
+		// Create tag if it doesn't exist
+		if (!existingTag) {
+			const [newTag] = await db
+				.insert(schema.tags)
+				.values({
+					name: tagName.trim()
+					// description and colorPreset will use database defaults
+				})
+				.returning()
+			existingTag = newTag
+		}
+
+		tagIds.push(existingTag.id)
+	}
+
+	// Link all tags to the lorebook
+	if (tagIds.length > 0) {
+		const lorebookTagsData = tagIds.map((tagId) => ({
+			lorebookId,
+			tagId
+		}))
+
+		await db
+			.insert(schema.lorebookTags)
+			.values(lorebookTagsData)
+			.onConflictDoNothing() // In case of race conditions
+	}
+}
+
 export async function lorebookList(
 	socket: any,
 	message: Sockets.LorebookList.Call,
@@ -35,10 +84,22 @@ export async function lorebookList(
 				columns: {
 					id: true
 				}
+			},
+			lorebookTags: {
+				with: {
+					tag: true
+				}
 			}
 		}
 	})
-	const res: Sockets.LorebookList.Response = { lorebookList: books }
+
+	// Transform lorebook tags to include tags as string array
+	const booksWithTags = books.map((book) => ({
+		...book,
+		tags: book.lorebookTags?.map((lt) => lt.tag.name) || []
+	}))
+
+	const res: Sockets.LorebookList.Response = { lorebookList: booksWithTags }
 	emitToUser("lorebookList", res)
 }
 
@@ -56,14 +117,26 @@ export async function lorebook(
 			worldLoreEntries: true,
 			characterLoreEntries: true,
 			historyEntries: true,
-			lorebookBindings: true
+			lorebookBindings: true,
+			lorebookTags: {
+				with: {
+					tag: true
+				}
+			}
 		}
 	})
+
 	if (!book) {
-		return socket.emit("error", { error: "Lorebook not found." })
+		return socket.emit("lorebook", { lorebook: null })
 	}
-	const res: Sockets.Lorebook.Response = { lorebook: book }
-	await lorebookList(socket, { userId }, emitToUser)
+
+	// Transform lorebook tags to include tags as string array
+	const bookWithTags = {
+		...book,
+		tags: book.lorebookTags?.map((lt) => lt.tag.name) || []
+	}
+
+	const res: Sockets.Lorebook.Response = { lorebook: bookWithTags }
 	emitToUser("lorebook", res)
 }
 
@@ -76,6 +149,7 @@ export async function createLorebook(
 ) {
 	try {
 		const userId = 1 // TODO: Replace with actual user ID from socket data
+		const tags = message.tags || []
 
 		const [newBook] = await db
 			.insert(schema.lorebooks)
@@ -84,6 +158,12 @@ export async function createLorebook(
 				userId
 			})
 			.returning()
+
+		// Process tags after lorebook creation
+		if (tags.length > 0) {
+			await processLorebookTags(newBook.id, tags)
+		}
+
 		const res: Sockets.CreateLorebook.Response = { lorebook: newBook }
 		emitToUser("createLorebook", res)
 		await lorebookList(socket, { userId }, emitToUser)
@@ -98,12 +178,22 @@ export async function updateLorebook(
 	message: Sockets.UpdateLorebook.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
+	console.log("Updating lorebook with message:", message)
 	try {
 		const userId = 1 // TODO: Replace with actual user ID from socket data
+		const tags = message.lorebook.tags || []
+
+		// Only update fields that exist in the lorebooks table
+		const updateData: Partial<typeof schema.lorebooks.$inferInsert> = {
+			name: message.lorebook.name,
+			description: message.lorebook.description,
+			extraJson: message.lorebook.extraJson,
+			userId
+		}
 
 		const [updatedBook] = await db
 			.update(schema.lorebooks)
-			.set({ ...message.lorebook, userId, id: undefined })
+			.set(updateData)
 			.where(
 				and(
 					eq(schema.lorebooks.id, message.lorebook.id),
@@ -118,7 +208,38 @@ export async function updateLorebook(
 			})
 		}
 
-		const res: Sockets.UpdateLorebook.Response = { lorebook: updatedBook }
+		// Process tags after lorebook update
+		await processLorebookTags(updatedBook.id, tags)
+
+		// Fetch the complete updated lorebook with all related data
+		const completeBook = await db.query.lorebooks.findFirst({
+			where: (l, { eq }) => eq(l.id, updatedBook.id),
+			with: {
+				worldLoreEntries: true,
+				characterLoreEntries: true,
+				historyEntries: true,
+				lorebookBindings: true,
+				lorebookTags: {
+					with: {
+						tag: true
+					}
+				}
+			}
+		})
+
+		if (!completeBook) {
+			return socket.emit("error", {
+				error: "Failed to fetch updated lorebook."
+			})
+		}
+
+		// Transform lorebook tags to include tags as string array
+		const bookWithTags = {
+			...completeBook,
+			tags: completeBook.lorebookTags?.map((lt) => lt.tag.name) || []
+		}
+
+		const res: Sockets.UpdateLorebook.Response = { lorebook: bookWithTags }
 		emitToUser("updateLorebook", res)
 		await lorebookList(socket, { userId }, emitToUser)
 	} catch (error) {
@@ -197,9 +318,9 @@ export async function createLorebookBinding(
 			return socket.emit("error", { error: "Lorebook not found." })
 		}
 
-		// binding is strictly shapped as  "{char:1}", 2, 3 etc. Find the next available binding number by parsing the existing bindings
+		// binding is strictly shaped as "{{char:1}}" (preferred) or "{char:1}" (deprecated), etc. Find the next available binding number by parsing the existing bindings
 		const existingBindings = book.lorebookBindings.map((b) => b.binding)
-		const rgx: RegExp = /{(\w+):(\d+)}/
+		const rgx: RegExp = /\{\{?(\w+):(\d+)\}?\}/  // Matches both {{char:1}} and {char:1}
 		const existingNumbers = existingBindings
 			.map((binding) => {
 				const match = binding.match(rgx)
@@ -214,7 +335,7 @@ export async function createLorebookBinding(
 		// Create the new binding
 		const newBinding = {
 			lorebookId: book.id,
-			binding: `{char:${nextBindingNumber}}`,
+			binding: `{{char:${nextBindingNumber}}}`, // Use preferred {{char:#}} syntax
 			characterId: message.lorebookBinding.characterId || null,
 			personaId: message.lorebookBinding.personaId || null
 		}
@@ -477,11 +598,11 @@ async function syncLorebookBindings({ lorebookId }: { lorebookId: number }) {
 		...characterEntries,
 		...historyEntries
 	]) {
-		// use regex to find all {char:1}, {char:2}, etc. bindings in the entry content
-		const rgx: RegExp = /{(\w+):(\d+)}/g
+		// use regex to find all {{char:1}}, {{char:2}}, {char:1}, {char:2}, etc. bindings in the entry content
+		const rgx: RegExp = /\{\{?(\w+):(\d+)\}?\}/g  // Matches both {{char:1}} and {char:1} (deprecated)
 		let match: RegExpExecArray | null
 		while ((match = rgx.exec(entry.content)) !== null) {
-			const binding = `{${match[1]}:${match[2]}}`
+			const binding = `{{${match[1]}:${match[2]}}}` // Store as preferred syntax
 			if (!foundBindings.includes(binding)) {
 				foundBindings.push(binding)
 			}
@@ -489,12 +610,14 @@ async function syncLorebookBindings({ lorebookId }: { lorebookId: number }) {
 	}
 	// If a binding does not exist in the lorebook bindings, create it without a character or persona
 	foundBindings.forEach((fb) => {
-		const existingBinding = existingBindings.find((eb) => eb.binding === fb)
+		// Check for both {{char:#}} and {char:#} syntax when looking for existing bindings
+		const legacyBinding = fb.replace(/\{\{(\w+):(\d+)\}\}/, '{$1:$2}') // Convert {{char:1}} to {char:1}
+		const existingBinding = existingBindings.find((eb) => eb.binding === fb || eb.binding === legacyBinding)
 		if (!existingBinding) {
 			queries.push(
 				db.insert(schema.lorebookBindings).values({
 					lorebookId,
-					binding: fb,
+					binding: fb, // Use preferred {{char:#}} syntax
 					characterId: null,
 					personaId: null
 				}) as any as () => Promise<any>

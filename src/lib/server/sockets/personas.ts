@@ -66,6 +66,13 @@ export async function personaList(
 			description: true,
 			position: true
 		},
+		with: {
+			personaTags: {
+				with: {
+					tag: true
+				}
+			}
+		},
 		where: (p, { eq }) => eq(p.userId, 1) // TODO: Replace with actual user id
 	})
 	const res: Sockets.PersonaList.Response = { personaList }

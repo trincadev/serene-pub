@@ -202,7 +202,7 @@ export const lorebookBindings = pgTable(
 		personaId: integer("persona_id").references(() => personas.id, {
 			onDelete: "set null"
 		}),
-		binding: text("binding").notNull() // e.g. "{char:1}"
+		binding: text("binding").notNull() // e.g. "{{char:1}}" (preferred) or "{char:1}" (deprecated)
 	},
 	(table) => ({
 		uniqueBinding: uniqueIndex("lorebook_bindings_unique").on(
