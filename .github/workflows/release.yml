@@ -50,11 +50,30 @@ jobs:
             - name: Build app
               run: npm run build
 
+            - name: Prepare production dependencies
+              shell: bash
+              run: |
+                  # Install production dependencies
+                  npm install --production
+                  npm rebuild
+
+                  # Clean node_modules with modclean, preserving license files
+                  npx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"
+
+            - name: Bundle for ${{ matrix.target }}
+              run: node scripts/bundle-dist.js ${{ matrix.target }}
+
             - name: Create production environment example
               shell: bash
               run: |
-                  mkdir -p build
-                  cat > build/.env.example << 'EOF'
+                  cd dist
+                  DIST_DIR=$(ls -d serene-pub-*-${{ matrix.target }} 2>/dev/null | head -1)
+                  if [ -z "$DIST_DIR" ]; then
+                    echo "Error: No directory found matching serene-pub-*-${{ matrix.target }}"
+                    ls -la
+                    exit 1
+                  fi
+                  cat > "$DIST_DIR/.env.example" << 'EOF'
                   # Serene Pub 0.4.0 - Production Configuration
                   # Copy this file to .env in the same directory to customize settings
 
@@ -82,19 +101,6 @@ jobs:
                   # Set to 1 to disable auto-open
                   # SERENE_AUTO_OPEN=1
                   EOF
-
-            - name: Prepare production dependencies
-              shell: bash
-              run: |
-                  # Install production dependencies
-                  npm install --production
-                  npm rebuild
-
-                  # Clean node_modules with modclean, preserving license files
-                  npx modclean --run --patterns="default:safe,default:caution,default:danger" --ignore="**/LICENSE,**/COPYING,**/NOTICE,**/README*,**/COPYRIGHT,**/AUTHORS,**/CONTRIBUTORS"
-
-            - name: Bundle for ${{ matrix.target }}
-              run: node scripts/bundle-dist.js ${{ matrix.target }}
 
             - name: Zip dist directory (Windows)
               if: runner.os == 'Windows'

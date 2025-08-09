@@ -6,7 +6,7 @@ To run the app:
 
 1. Extract the archive to your preferred location.
 2. Open the extracted folder (e.g., serene-pub-<version>-win).
-3. Double-click the "run.ps1" file to start Serene Pub.
+3. Double-click the "run.bat" file to start Serene Pub.
 
    - The first launch will automatically download and set up Node.js if needed. No manual installation is required.
    - The launcher will automatically detect your Windows architecture (x64 or ARM64) and download the appropriate Node.js version.
@@ -25,10 +25,9 @@ Notes:
     - Look for the "IPv4 Address" under your active network adapter (e.g., 192.168.1.42). You can access Serene Pub from your phone at http://<your-ip>:3000
 
 Troubleshooting:
-- If double-clicking "run.ps1" does not start the app, try right-clicking and selecting "Run with PowerShell."
-- If you see a PowerShell execution policy warning, the script will automatically adjust the policy for the current session.
-- If you see a security warning, click "More info" and then "Run anyway."
-- If Node.js fails to download, check your internet connection or firewall settings.
+- If double-clicking "run.bat" does not start the app, you may need to run it as administrator
+- If Node.js fails to download, check your internet connection or firewall settings
+- Windows Defender or antivirus software might flag the batch file - this is normal for downloaded scripts
 
 Uninstall:
 - To remove Serene Pub, simply delete the extracted folder. No files are installed outside this directory.
