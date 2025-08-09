@@ -7,6 +7,57 @@ import type { BaseConnectionAdapter } from "../connectionAdapters/BaseConnection
 import { getConnectionAdapter } from "../utils/getConnectionAdapter"
 import { TokenCounters } from "$lib/server/utils/TokenCounterManager"
 import { GroupReplyStrategies } from "$lib/shared/constants/GroupReplyStrategies"
+import { InterpolationEngine } from "../utils/promptBuilder"
+import { dev } from "$app/environment"
+
+// Helper function to process tags for chat creation/update
+async function processChatTags(chatId: number, tagNames: string[]) {
+	if (!tagNames || tagNames.length === 0) return
+
+	// First, remove all existing tags for this chat
+	await db
+		.delete(schema.chatTags)
+		.where(eq(schema.chatTags.chatId, chatId))
+
+	// Process each tag name
+	const tagIds: number[] = []
+
+	for (const tagName of tagNames) {
+		if (!tagName.trim()) continue
+
+		// Check if tag exists
+		let existingTag = await db.query.tags.findFirst({
+			where: eq(schema.tags.name, tagName.trim())
+		})
+
+		// Create tag if it doesn't exist
+		if (!existingTag) {
+			const [newTag] = await db
+				.insert(schema.tags)
+				.values({
+					name: tagName.trim()
+					// description and colorPreset will use database defaults
+				})
+				.returning()
+			existingTag = newTag
+		}
+
+		tagIds.push(existingTag.id)
+	}
+
+	// Link all tags to the chat
+	if (tagIds.length > 0) {
+		const chatTagsData = tagIds.map((tagId) => ({
+			chatId,
+			tagId
+		}))
+
+		await db
+			.insert(schema.chatTags)
+			.values(chatTagsData)
+			.onConflictDoNothing() // In case of race conditions
+	}
+}
 
 // --- Global map for active adapters ---
 export const activeAdapters = new Map<string, BaseConnectionAdapter>()
@@ -30,12 +81,17 @@ export async function chatsList(
 				with: {
 					persona: true
 				}
+			},
+			chatTags: {
+				with: {
+					tag: true
+				}
 			}
 		},
 		where: (c, { eq }) => eq(c.userId, userId)
 	})
 
-	// Drizzle/Sqlite may not properly handle orderby,
+	// Drizzle may not properly handle orderby,
 	// Lets sort it manually
 	// Order the chatCharacters by position
 	chatsList.forEach((chat) => {
@@ -61,8 +117,14 @@ export async function createChat(
 ) {
 	try {
 		const userId = 1 // Replace with actual user id
+		const tags = message.chat.tags || []
+
+		// Remove tags from chat data as it will be handled separately
+		const chatDataWithoutTags = { ...message.chat }
+		delete chatDataWithoutTags.tags
+
 		const chatData: InsertChat = {
-			...message.chat,
+			...chatDataWithoutTags,
 			userId,
 			isGroup: message.characterIds.length > 1
 		}
@@ -70,6 +132,11 @@ export async function createChat(
 			.insert(schema.chats)
 			.values(chatData)
 			.returning()
+
+		// Process tags after chat creation
+		if (tags.length > 0) {
+			await processChatTags(newChat.id, tags)
+		}
 		for (const personaId of message.personaIds) {
 			await db.insert(schema.chatPersonas).values({
 				chatId: newChat.id,
@@ -90,10 +157,17 @@ export async function createChat(
 			with: { character: true },
 			orderBy: (cc, { asc }) => asc(cc.position ?? 0)
 		})
+		const chatPersona = await db.query.chatPersonas.findFirst({
+			where: (cp, { eq, and, isNotNull }) =>
+				and(eq(cp.chatId, newChat.id), isNotNull(cp.personaId)),
+			with: { persona: true },
+			orderBy: (cp, { asc }) => asc(cp.position ?? 0)
+		})
 		for (const cc of chatCharacters) {
 			if (!cc.character) continue
 			const greetings = buildCharacterFirstChatMessage({
 				character: cc.character,
+				persona: chatPersona?.persona,
 				isGroup: !!newChat.isGroup
 			})
 			if (greetings.length > 0) {
@@ -133,9 +207,25 @@ export async function chat(
 	emitToUser: (event: string, data: any) => void
 ) {
 	const userId = 1 // Replace with actual user id
-	const chat = await getChatFromDB(message.id, userId) // Replace with actual user id
+	const limit = message.limit || 25
+	const offset = message.offset || 0
+
+	const chat = await getChatFromDB(message.id, userId, limit, offset)
 	if (chat) {
-		const res: Sockets.Chat.Response = { chat: chat as any }
+		// Get total message count for pagination
+		const totalMessages = await db.query.chatMessages.findMany({
+			where: (cm, { eq }) => eq(cm.chatId, message.id)
+		})
+
+		const hasMore = offset + limit < totalMessages.length
+
+		const res: Sockets.Chat.Response = {
+			chat: chat as any,
+			pagination: {
+				total: totalMessages.length,
+				hasMore
+			}
+		}
 		emitToUser("chat", res)
 	}
 }
@@ -143,7 +233,12 @@ export async function chat(
 export const getChat = chat
 
 // Helper to get chat with userId
-async function getChatFromDB(chatId: number, userId: number) {
+async function getChatFromDB(
+	chatId: number,
+	userId: number,
+	limit?: number,
+	offset?: number
+) {
 	const res = db.query.chats.findFirst({
 		where: (c, { eq, and }) => and(eq(c.id, chatId), eq(c.userId, userId)),
 		with: {
@@ -153,12 +248,19 @@ async function getChatFromDB(chatId: number, userId: number) {
 			},
 			chatCharacters: { with: { character: true } },
 			chatMessages: {
-				orderBy: (cm, { asc }) => asc(cm.id)
+				orderBy: (cm, { desc }) => desc(cm.id),
+				limit: limit,
+				offset: offset
+			},
+			chatTags: {
+				with: {
+					tag: true
+				}
 			}
 		}
 	})
 
-	// Drizzle/Sqlite may not properly handle orderby,
+	// Drizzle may not properly handle orderby,
 	// Lets sort it manually
 	const chat = await res
 	if (chat) {
@@ -172,6 +274,16 @@ async function getChatFromDB(chatId: number, userId: number) {
 				(a, b) => (a.position ?? 0) - (b.position ?? 0)
 			)
 		}
+		// Sort messages by id ascending (oldest first) for correct display order
+		// When paginating, we fetched newest first (DESC) but want to display oldest first
+		chat.chatMessages.sort((a, b) => a.id - b.id)
+
+		// Transform chat tags to include tags as string array
+		const chatWithTags = {
+			...chat,
+			tags: chat.chatTags?.map((ct) => ct.tag.name) || []
+		}
+		return chatWithTags
 	}
 	return chat
 }
@@ -272,15 +384,20 @@ export async function sendPersonaMessage(
 	}
 	emitToUser("sendPersonaMessage", res)
 
-	// --- Round-robin character response loop ---
+	// --- Auto-response logic ---
 	let maxTurns = 20 // Prevent infinite loops in case of data issues
 	let currentTurn = 1
 
-	// Check if group and group reply strategy
-	if (
-		!chat.isGroup ||
-		chat.groupReplyStrategy !== GroupReplyStrategies.MANUAL
-	) {
+	// Determine if we should auto-generate responses:
+	// - For single character chats: Generate one response only
+	// - For group chats: Continue based on reply strategy (not manual)
+	const shouldAutoRespond = chat.isGroup 
+		? chat.groupReplyStrategy !== GroupReplyStrategies.MANUAL
+		: true // Single character chat gets one response
+
+	if (shouldAutoRespond) {
+		const abortedCharacters = new Set<number>() // Track characters whose responses were aborted
+
 		while (
 			chat &&
 			chat.chatCharacters.length > 0 &&
@@ -290,12 +407,26 @@ export async function sendPersonaMessage(
 			// Always fetch the latest chat state at the start of each loop
 			chat = await getPromptChatFromDb(chatId, userId)
 			if (!chat) break
+
+			// Check if there are any ongoing generations before starting a new one
+			const hasGeneratingMessages = chat.chatMessages.some(
+				(msg) => msg.isGenerating
+			)
+			if (hasGeneratingMessages) {
+				console.log(
+					"Generation already in progress, stopping auto-response loop"
+				)
+				break
+			}
+
 			const nextCharacterId = getNextCharacterTurn(
 				{
 					chatMessages: chat!.chatMessages,
-					chatCharacters: chat!.chatCharacters.filter(
-						(cc) => cc.character !== null
-					) as any,
+					chatCharacters: chat!.chatCharacters
+						.filter((cc) => cc.character !== null && cc.isActive)
+						.sort(
+							(a, b) => (a.position ?? 0) - (b.position ?? 0)
+						) as any,
 					chatPersonas: chat!.chatPersonas.filter(
 						(cp) => cp.persona !== null
 					) as any
@@ -305,6 +436,15 @@ export async function sendPersonaMessage(
 			if (!nextCharacterId) {
 				break
 			}
+
+			// Skip this character if their response was aborted in this turn cycle
+			if (abortedCharacters.has(nextCharacterId)) {
+				console.log(
+					`Skipping character ${nextCharacterId} due to previous abort`
+				)
+				break
+			}
+
 			const nextCharacter = chat.chatCharacters.find(
 				(cc) => cc.character && cc.character.id === nextCharacterId
 			)
@@ -323,13 +463,29 @@ export async function sendPersonaMessage(
 				.insert(schema.chatMessages)
 				.values(assistantMessage)
 				.returning()
-			await generateResponse({
+
+			const generationResult = await generateResponse({
 				socket,
 				emitToUser,
 				chatId,
 				userId,
 				generatingMessage: generatingMessage as any
 			})
+
+			// If generation was aborted (returned false), track this character and stop the loop
+			if (!generationResult) {
+				abortedCharacters.add(nextCharacterId)
+				console.log(
+					`Character ${nextCharacterId} response was aborted, stopping auto-response loop`
+				)
+				break
+			}
+
+			// For single character chats, stop after one response
+			if (!chat.isGroup) {
+				console.log("Single character chat - stopping after one response")
+				break
+			}
 		}
 	}
 }
@@ -342,7 +498,9 @@ export async function deleteChatMessage(
 	const chatMsg = await db.query.chatMessages.findFirst({
 		where: (cm, { eq }) => eq(cm.id, message.id),
 		columns: {
-			chatId: true
+			chatId: true,
+			adapterId: true,
+			isGenerating: true
 		}
 	})
 	if (!chatMsg) {
@@ -350,6 +508,26 @@ export async function deleteChatMessage(
 		emitToUser("error", res)
 		return
 	}
+
+	// If the message being deleted is currently generating, abort it first
+	if (chatMsg.isGenerating && chatMsg.adapterId) {
+		const adapter = activeAdapters.get(chatMsg.adapterId)
+		if (adapter) {
+			try {
+				adapter.abort()
+				console.log(
+					`Aborted generating message ${message.id} before deletion`
+				)
+			} catch (e) {
+				console.warn(
+					`Failed to abort adapter for message ${message.id}:`,
+					e
+				)
+			}
+		}
+		activeAdapters.delete(chatMsg.adapterId)
+	}
+
 	const userId = 1 // Replace with actual user id
 	await db
 		.delete(schema.chatMessages)
@@ -359,9 +537,13 @@ export async function deleteChatMessage(
 				eq(schema.chatMessages.userId, userId)
 			)
 		)
-	await getChat(socket, { id: chatMsg.chatId }, emitToUser)
+
+	// Emit the delete response first
 	const res: Sockets.DeleteChatMessage.Response = { id: message.id }
 	emitToUser("deleteChatMessage", res)
+
+	// Then refresh the chat to ensure UI is updated with latest state
+	await getChat(socket, { id: chatMsg.chatId }, emitToUser)
 }
 
 export async function updateChatMessage(
@@ -494,7 +676,9 @@ export async function promptTokenCount(
 		const userId = 1 // Replace with actual user id
 		const chat = await getPromptChatFromDb(message.chatId, userId)
 		if (!chat) {
-			emitToUser("error", { error: "Error Generating Prompt Token Count: Chat not found." })
+			emitToUser("error", {
+				error: "Error Generating Prompt Token Count: Chat not found."
+			})
 			return
 		}
 		const user = await db.query.users.findFirst({
@@ -539,9 +723,13 @@ export async function promptTokenCount(
 		const currentCharacterId = getNextCharacterTurn(
 			{
 				chatMessages: chat.chatMessages,
-				chatCharacters: chat.chatCharacters.filter(
-					(cc: any) => cc && cc.character != null
-				) as any,
+				chatCharacters: chat.chatCharacters
+					.filter(
+						(cc: any) => cc && cc.character != null && cc.isActive
+					)
+					.sort(
+						(a, b) => (a.position ?? 0) - (b.position ?? 0)
+					) as any,
 				chatPersonas: chat.chatPersonas.filter(
 					(cp: any) => cp && cp.persona != null
 				) as any
@@ -605,7 +793,7 @@ export async function abortChatMessage(
 		return
 	}
 
-	[chatMsg] = await db
+	;[chatMsg] = await db
 		.update(schema.chatMessages)
 		.set({ isGenerating: false, adapterId: null })
 		.where(eq(schema.chatMessages.id, message.id))
@@ -669,15 +857,26 @@ export async function triggerGenerateMessage(
 			return
 		}
 
+		// Check if there are any ongoing generations before starting a new one
+		const hasGeneratingMessages = chat.chatMessages.some(
+			(msg) => msg.isGenerating
+		)
+		if (hasGeneratingMessages) {
+			console.log("Generation already in progress, stopping trigger loop")
+			break
+		}
+
 		// Find the next character who should reply (using triggered: true)
 		const nextCharacterId =
 			message.characterId ||
 			getNextCharacterTurn(
 				{
 					chatMessages: chat.chatMessages,
-					chatCharacters: chat.chatCharacters.filter(
-						(cc) => cc.character !== null
-					) as any,
+					chatCharacters: chat.chatCharacters
+						.filter((cc) => cc.character !== null && cc.isActive)
+						.sort(
+							(a, b) => (a.position ?? 0) - (b.position ?? 0)
+						) as any,
 					chatPersonas: chat.chatPersonas.filter(
 						(cp) => cp.persona !== null
 					) as any
@@ -718,6 +917,12 @@ export async function triggerGenerateMessage(
 				userId,
 				generatingMessage: generatingMessage as any
 			})
+
+			// If generation was aborted, stop the loop
+			if (!ok) {
+				console.log("Generation was aborted, stopping trigger loop")
+				break
+			}
 		}
 		if (message.once) {
 			break
@@ -764,17 +969,20 @@ export async function updateChat(
 	try {
 		console.log("Updating chat with message:", message)
 		const userId = 1 // Replace with actual user id
+		const tags = message.chat.tags || []
 
 		//  Select the chat to compare data
 		const existingChat = await getPromptChatFromDb(message.chat.id, userId)
 
-		// Update chat main fields
-		const data = { ...message.chat }
-		delete data.id // Remove id to avoid conflicts
+		// Remove tags from chat data as it will be handled separately
+		const chatDataWithoutTags = { ...message.chat }
+		delete chatDataWithoutTags.tags
+		delete chatDataWithoutTags.id // Remove id to avoid conflicts
+
 		await db
 			.update(schema.chats)
 			.set({
-				...message.chat,
+				...chatDataWithoutTags,
 				isGroup: message.characterIds.length > 1,
 				userId: undefined
 			})
@@ -784,6 +992,9 @@ export async function updateChat(
 					eq(schema.chats.userId, userId)
 				)
 			)
+
+		// Process tags after chat update
+		await processChatTags(message.chat.id, tags)
 
 		// Remove any characters that are not in the new list
 		const deletedCharacterIds =
@@ -815,8 +1026,6 @@ export async function updateChat(
 		const newPersonaIds = message.personaIds.filter(
 			(id) => !existingChat?.chatPersonas.some((p) => p.personaId === id)
 		)
-
-		console.log("chatId", message.chat.id)
 
 		// Delete characters that are no longer in the chat
 		if (deletedCharacterIds.length > 0) {
@@ -924,11 +1133,21 @@ export async function updateChat(
 				with: { character: true },
 				orderBy: (cc, { asc }) => asc(cc.position ?? 0)
 			})
+			const chatPersona = await db.query.chatPersonas.findFirst({
+				where: (cp, { eq, and, isNotNull }) =>
+					and(
+						eq(cp.chatId, message.chat.id),
+						isNotNull(cp.personaId)
+					),
+				with: { persona: true },
+				orderBy: (cp, { asc }) => asc(cp.position ?? 0)
+			})
 			for (const cc of newChatCharacters) {
 				if (!cc.character) continue
 				if (!newCharacterIds.includes(cc.character.id)) continue
 				const greetings = buildCharacterFirstChatMessage({
 					character: cc.character,
+					persona: chatPersona?.persona,
 					isGroup: message.characterIds.length > 1
 				})
 				if (greetings.length > 0) {
@@ -1064,8 +1283,8 @@ export async function chatMessageSwipeRight(
 			""
 	} else {
 		if (data.metadata!.swipes!.currentIdx === null) {
-			;(data.metadata!.swipes!.currentIdx = 0),
-				data.metadata!.swipes!.history.push(data.content)
+			;((data.metadata!.swipes!.currentIdx = 0),
+				data.metadata!.swipes!.history.push(data.content))
 		}
 		// Now increment the current index and content
 		data.metadata!.swipes!.currentIdx += 1
@@ -1261,23 +1480,84 @@ export async function chatMessageSwipeLeft(
 // Builds the chatMessage history for the first chat message of a character, with history swipes for the user to choose from
 function buildCharacterFirstChatMessage({
 	character,
+	persona,
 	isGroup
 }: {
 	character: SelectCharacter
+	persona: SelectPersona | undefined | null
 	isGroup: boolean
 }): string[] {
-	console.log("Building first chat message for character:", character.name)
+	if (dev) {
+		console.log(
+			"Building first chat message for character:",
+			character.name,
+			"with persona:",
+			persona?.name
+		)
+	}
 	const history: string[] = []
+	const engine = new InterpolationEngine()
+	const context = engine.createInterpolationContext({
+		currentCharacterName: character.nickname || character.name,
+		currentPersonaName: persona?.name || "User"
+	})
+	if (dev) {
+		console.log("Interpolation context:", context)
+	}
 	if (!isGroup || !character.groupOnlyGreetings?.length) {
 		if (character.firstMessage) {
-			history.push(character.firstMessage.trim())
+			const interpolated = engine.interpolateString(
+				character.firstMessage.trim(),
+				context
+			)!
+			if (dev) {
+				console.log(
+					"Interpolated firstMessage:",
+					character.firstMessage.trim(),
+					"->",
+					interpolated
+				)
+			}
+			history.push(interpolated)
 		}
 		if (character.alternateGreetings) {
-			history.push(...character.alternateGreetings.map((g) => g.trim()))
+			history.push(
+				...character.alternateGreetings.map((g) => {
+					const interpolated = engine.interpolateString(
+						g.trim(),
+						context
+					)!
+					if (dev) {
+						console.log(
+							"Interpolated alternateGreeting:",
+							g.trim(),
+							"->",
+							interpolated
+						)
+					}
+					return interpolated
+				})
+			)
 		}
 	} else if (character.groupOnlyGreetings?.length) {
 		// If this is a group chat, use only group greetings
-		history.push(...character.groupOnlyGreetings.map((g) => g.trim()))
+		history.push(
+			...character.groupOnlyGreetings.map((g) => {
+				const interpolated = engine.interpolateString(
+					g.trim(),
+					context
+				)!
+				if (dev) {
+					console.log(
+						"Interpolated groupOnlyGreeting:",
+						g.trim(),
+						"->",
+						interpolated
+					)
+				}
+				return interpolated
+			})
+		)
 	} else {
 		// Fallback firstMessage if no greetings are available
 		history.push(
@@ -1341,4 +1621,70 @@ export async function toggleChatCharacterActive(
 	emitToUser("toggleChatCharacterActive", res)
 
 	await getChat(socket, { id: chat.id }, emitToUser)
+}
+
+export async function getChatResponseOrder(
+	socket: any,
+	message: Sockets.GetChatResponseOrder.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	// console.log('Debug - getChatResponseOrder called for chatId:', message.chatId)
+	const userId = 1 // Replace with actual user id
+	const chat = await getPromptChatFromDb(message.chatId, userId)
+
+	if (!chat) {
+		const res: Sockets.GetChatResponseOrder.Response = {
+			error: "Chat not found.",
+			chatId: message.chatId,
+			characterIds: [],
+			nextCharacterId: null
+		}
+		emitToUser("getChatResponseOrder", res)
+		return
+	}
+
+	// Sort characters by position to get the response order (IDs only)
+	// First try active characters, if none exist, use all characters
+	const activeCharacters = chat.chatCharacters.filter(
+		(cc) => cc.character && cc.isActive
+	)
+	const charactersToUse =
+		activeCharacters.length > 0
+			? activeCharacters
+			: chat.chatCharacters.filter((cc) => cc.character)
+
+	const sortedCharacterIds = charactersToUse
+		.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+		.map((cc) => cc.character!.id)
+
+	// console.log('Debug - Characters for next turn:', { totalCharacters: chat.chatCharacters.length, activeCharacters: activeCharacters.length, charactersToUse: charactersToUse.length, sortedCharacterIds })
+
+	// Use getNextCharacterTurn to determine who should respond next based on message history
+	const nextCharacterId =
+		getNextCharacterTurn(
+			{
+				chatMessages: chat.chatMessages,
+				chatCharacters: chat.chatCharacters
+					.filter((cc) => cc.character !== null && cc.isActive)
+					.sort(
+						(a, b) => (a.position ?? 0) - (b.position ?? 0)
+					) as any,
+				chatPersonas: chat.chatPersonas.filter(
+					(cp) => cp.persona !== null
+				) as any
+			},
+			{ triggered: false }
+		) || (sortedCharacterIds.length > 0 ? sortedCharacterIds[0] : null)
+
+	// console.log('Debug - Next character logic simplified:', { sortedCharacterIds, nextCharacterId })
+
+	const res: Sockets.GetChatResponseOrder.Response = {
+		chatId: message.chatId,
+		characterIds: sortedCharacterIds,
+		nextCharacterId
+	}
+
+	// console.log('Debug - Sending response:', { chatId: res.chatId, characterIdsCount: res.characterIds.length, nextCharacterId: res.nextCharacterId })
+
+	emitToUser("getChatResponseOrder", res)
 }

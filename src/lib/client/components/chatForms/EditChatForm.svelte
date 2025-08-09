@@ -10,20 +10,38 @@
 	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import { GroupReplyStrategies } from "$lib/shared/constants/GroupReplyStrategies"
+	import { z } from "zod"
+
+	// Zod validation schema
+	const chatSchema = z.object({
+		name: z.string().min(1, "Chat name is required").trim(),
+		scenario: z.string().optional(),
+		groupReplyStrategy: z.string().optional()
+	})
+
+	type ValidationErrors = Record<string, string>
 
 	interface Props {
 		editChatId?: number | null // If provided, edit mode; else create mode
 		showEditChatForm: boolean // Controls visibility of the form
+		hasChanges?: boolean // Track if the form has unsaved changes
 	}
 
 	let {
 		editChatId = $bindable(null),
-		showEditChatForm = $bindable()
+		showEditChatForm = $bindable(),
+		hasChanges = $bindable(false)
 	}: Props = $props()
 
 	const socket = skio.get()
 
 	// STATE VARIABLES
+
+	// Tag-related state
+	let tagsList: SelectTag[] = $state([])
+	let tagSearchInput = $state("")
+	let showTagSuggestions = $state(false)
+	let selectedTags: string[] = $state([])
 
 	let chat: Sockets.Chat.Response["chat"] | undefined = $state()
 	let isCreating = $state(!chat)
@@ -40,6 +58,7 @@
 					scenario: string
 					groupReplyStrategy: string
 					lorebookId?: number | null
+					tags: string[]
 				}
 				characterIds: number[]
 				personaIds: number[]
@@ -55,6 +74,7 @@
 					scenario: string
 					groupReplyStrategy: string
 					lorebookId?: number | null
+					tags: string[]
 				}
 				characterIds: number[]
 				personaIds: number[]
@@ -84,6 +104,11 @@
 				data?.personaIds.length > 0)
 	)
 
+	// Sync hasChanges with isDirty
+	$effect(() => {
+		hasChanges = isDirty
+	})
+
 	// SELECTED CHARACTERS AND PERSONAS
 	let selectedCharacters: SelectCharacter[] = $state([])
 	let selectedPersonas: SelectPersona[] = $state([])
@@ -91,6 +116,57 @@
 	let removeType: "character" | "persona" = $state("character")
 	let removeName = $state("")
 	let removeId: number | null = $state(null)
+	let validationErrors: ValidationErrors = $state({})
+
+	// Filtered tags for suggestions
+	let filteredTags = $derived.by(() => {
+		if (!tagSearchInput)
+			return tagsList.filter(
+				(tag) =>
+					!selectedTags.some(
+						(selectedTag) =>
+							selectedTag.toLowerCase() === tag.name.toLowerCase()
+					)
+			)
+		return tagsList.filter(
+			(tag) =>
+				tag.name.toLowerCase().includes(tagSearchInput.toLowerCase()) &&
+				!selectedTags.some(
+					(selectedTag) =>
+						selectedTag.toLowerCase() === tag.name.toLowerCase()
+				)
+		)
+	})
+
+	// Tag helper functions
+	function addTag(tagName: string) {
+		const trimmedName = tagName.trim()
+		if (!trimmedName) return
+
+		// Check for case-insensitive duplicates
+		const isDuplicate = selectedTags.some(
+			(existingTag) =>
+				existingTag.toLowerCase() === trimmedName.toLowerCase()
+		)
+		if (isDuplicate) return
+
+		selectedTags = [...selectedTags, trimmedName]
+		tagSearchInput = ""
+		showTagSuggestions = false
+	}
+
+	function removeTag(tagName: string) {
+		selectedTags = selectedTags.filter((tag) => tag !== tagName)
+	}
+
+	function handleTagInputKeydown(e: KeyboardEvent) {
+		if (e.key === "Enter" && tagSearchInput.trim()) {
+			e.preventDefault()
+			addTag(tagSearchInput)
+		} else if (e.key === "Escape") {
+			showTagSuggestions = false
+		}
+	}
 
 	$effect(() => {
 		const _name = name.trim()
@@ -99,13 +175,15 @@
 		const _selectedCharacters = selectedCharacters
 		const _selectedPersonas = selectedPersonas
 		const _lorebookId = lorebookId || null
+		const _tags = selectedTags
 		data = {
 			chat: {
 				id: chat?.id,
 				name: _name,
 				scenario: _scenario,
 				groupReplyStrategy: _groupReplyStrategy || "ordered",
-				lorebookId: _lorebookId
+				lorebookId: _lorebookId,
+				tags: _tags
 			},
 			characterIds: _selectedCharacters.map((cc) => cc.id),
 			personaIds: _selectedPersonas.map((cp) => cp.id),
@@ -115,7 +193,7 @@
 		}
 
 		if (!originalData) {
-			originalData = { ...data }
+			originalData = JSON.parse(JSON.stringify(data))
 		}
 	})
 
@@ -147,6 +225,7 @@
 	}
 
 	function handleSave() {
+		if (!validateForm()) return
 		if (
 			!data?.chat.name.trim() ||
 			selectedCharacters.length === 0 ||
@@ -168,7 +247,6 @@
 			socket.emit("createChat", createChat)
 		}
 		isCreating = false
-		showEditChatForm = false
 	}
 
 	function confirmRemoveCharacter(id: number, name: string) {
@@ -199,6 +277,28 @@
 		removeName = ""
 	}
 
+	function validateForm(): boolean {
+		const result = chatSchema.safeParse({
+			name: name,
+			scenario: scenario,
+			groupReplyStrategy: groupReplyStrategy
+		})
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
+	}
+
 	function handleCloseForm() {
 		// TODO handle unsaved changes if any
 		showEditChatForm = false
@@ -216,6 +316,9 @@
 				selectedPersonas =
 					chat.chatPersonas?.map((cp) => cp.persona) || []
 				lorebookId = chat.lorebookId || null
+				selectedTags = chat.tags || []
+				// Reset originalData to null so it gets re-initialized with the loaded data
+				originalData = undefined
 			}
 		})
 		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
@@ -227,6 +330,9 @@
 		socket.on("lorebookList", (msg: Sockets.LorebookList.Response) => {
 			lorebookList = msg.lorebookList || []
 		})
+		socket.on("tagsList", (msg: any) => {
+			tagsList = msg.tagsList || []
+		})
 		socket.on(
 			"toggleChatCharacterActive",
 			(msg: Sockets.ToggleChatCharacterActive.Response) => {
@@ -237,9 +343,24 @@
 				}
 			}
 		)
+		socket.on("createChat", (res: any) => {
+			toaster.success({
+				title: "Chat Created",
+				description: `Chat "${res.chat.name || "Unnamed Chat"}" created successfully.`
+			})
+			showEditChatForm = false
+		})
+		socket.on("updateChat", (res: any) => {
+			toaster.success({
+				title: "Chat Updated",
+				description: `Chat "${res.chat.name || "Unnamed Chat"}" updated successfully.`
+			})
+			showEditChatForm = false
+		})
 		socket.emit("characterList", {})
 		socket.emit("personaList", {})
 		socket.emit("lorebookList", {})
+		socket.emit("tagsList", {})
 	})
 
 	onDestroy(() => {
@@ -247,7 +368,10 @@
 		socket.off("characterList")
 		socket.off("personaList")
 		socket.off("lorebookList")
+		socket.off("tagsList")
 		socket.off("toggleChatCharacterActive")
+		socket.off("createChat")
+		socket.off("updateChat")
 	})
 
 	function toggleCharacterActive(
@@ -283,12 +407,25 @@
 			<label class="font-semibold" for="chatName">Chat Name*</label>
 			<input
 				id="chatName"
-				class="input input-lg w-full"
+				class="input input-lg w-full {validationErrors.name
+					? 'border-red-500'
+					: ''}"
 				type="text"
 				placeholder="Enter chat name"
 				bind:value={name}
 				required
+				oninput={() => {
+					if (validationErrors.name) {
+						const { name, ...rest } = validationErrors
+						validationErrors = rest
+					}
+				}}
 			/>
+			{#if validationErrors.name}
+				<p class="mt-1 text-sm text-red-500" role="alert">
+					{validationErrors.name}
+				</p>
+			{/if}
 		</div>
 		<div>
 			<span class="mb-2 font-semibold">Characters*</span>
@@ -305,9 +442,11 @@
 					onfinalize={(e) => (selectedCharacters = e.detail.items)}
 				>
 					{#each selectedCharacters as c (c.id)}
-						{@const isActive = chat ? !!chat?.chatCharacters?.find(
-							(cc) => cc.characterId === c.id
-						)?.isActive : true}
+						{@const isActive = chat
+							? !!chat?.chatCharacters?.find(
+									(cc) => cc.characterId === c.id
+								)?.isActive
+							: true}
 						<div class="flex gap-2">
 							<div
 								class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"
@@ -505,6 +644,73 @@
 					<option value={lorebook.id}>{lorebook.name}</option>
 				{/each}
 			</select>
+		</div>
+
+		<!-- Tags Section -->
+		<div class="pb-10">
+			<label class="font-semibold" for="tagInput">Tags</label>
+			<div class="relative">
+				<input
+					id="tagInput"
+					type="text"
+					bind:value={tagSearchInput}
+					class="input input-lg w-full"
+					placeholder="Add a tag..."
+					onfocus={() => (showTagSuggestions = true)}
+					onblur={() =>
+						setTimeout(() => (showTagSuggestions = false), 200)}
+					onkeydown={handleTagInputKeydown}
+				/>
+
+				<!-- Tag suggestions dropdown -->
+				{#if showTagSuggestions && filteredTags.length > 0}
+					<div
+						class="bg-surface-100-900 absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border shadow-lg"
+					>
+						{#each filteredTags as tag}
+							<button
+								type="button"
+								class="hover:bg-surface-200-800 w-full px-3 py-2 text-left transition-colors"
+								onclick={() => addTag(tag.name)}
+							>
+								<span
+									class="chip mr-2 {tag.colorPreset ||
+										'preset-filled-primary-500'}"
+								>
+									{tag.name}
+								</span>
+								{#if tag.description}
+									<span class="text-muted-foreground text-sm">
+										- {tag.description}
+									</span>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Selected tags display -->
+			{#if selectedTags.length > 0}
+				<div class="mt-2 flex flex-wrap gap-2">
+					{#each selectedTags as tagName}
+						{@const tag = tagsList.find((t) => t.name === tagName)}
+						<button
+							type="button"
+							class="chip {tag?.colorPreset ||
+								'preset-filled-primary-500'} group relative"
+							onclick={() => removeTag(tagName)}
+							title="Click to remove tag"
+						>
+							{tagName}
+							<Icons.X
+								size={14}
+								class="ml-1 opacity-60 group-hover:opacity-100"
+							/>
+						</button>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	</div>
 	<CharacterSelectModal

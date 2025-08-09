@@ -55,7 +55,8 @@ import {
 	updateChat,
 	chatMessageSwipeRight,
 	chatMessageSwipeLeft,
-	toggleChatCharacterActive
+	toggleChatCharacterActive,
+	getChatResponseOrder
 } from "./chats"
 import {
 	promptConfigsList,
@@ -66,31 +67,38 @@ import {
 	setUserActivePromptConfig
 } from "./promptConfigs"
 import { user } from "./users"
+import {createLorebook, createLorebookBinding, createWorldLoreEntry, deleteWorldLoreEntry, lorebook, lorebookBindingList, lorebookList, updateLorebookBinding, updateWorldLoreEntry, worldLoreEntryList, updateWorldLoreEntryPositions, deleteLorebook, characterLoreEntryList, createCharacterLoreEntry, deleteCharacterLoreEntry, updateCharacterLoreEntry, updateCharacterLoreEntryPositions, historyEntryList, createHistoryEntry, deleteHistoryEntry, updateHistoryEntry, iterateNextHistoryEntry, lorebookImport, updateLorebook} from './lorebooks';
 import {
-	createLorebook,
-	createLorebookBinding,
-	createWorldLoreEntry,
-	deleteWorldLoreEntry,
-	lorebook,
-	lorebookBindingList,
-	lorebookList,
-	updateLorebookBinding,
-	updateWorldLoreEntry,
-	worldLoreEntryList,
-	updateWorldLoreEntryPositions,
-	deleteLorebook,
-	characterLoreEntryList,
-	createCharacterLoreEntry,
-	deleteCharacterLoreEntry,
-	updateCharacterLoreEntry,
-	updateCharacterLoreEntryPositions,
-	historyEntryList,
-	createHistoryEntry,
-	deleteHistoryEntry,
-	updateHistoryEntry,
-	iterateNextHistoryEntry,
-	lorebookImport
-} from "./lorebooks"
+	tagsList,
+	createTag,
+	updateTag,
+	deleteTag,
+	tagRelatedData,
+	addTagToCharacter,
+	removeTagFromCharacter
+} from "./tags"
+import {
+	updateOllamaManagerEnabled,
+	updateShowAllCharacterFields,
+	updateEasyCharacterCreation,
+	updateEasyPersonaCreation,
+	systemSettings
+} from "./systemSettings"
+import {
+	ollamaConnectModel,
+	ollamaSearchAvailableModels,
+	ollamaSetBaseUrl,
+	ollamaModelsList,
+	ollamaDeleteModel,
+	ollamaListRunningModels,
+	ollamaPullModel,
+	ollamaVersion,
+	ollamaIsUpdateAvailable,
+	ollamaCancelPull,
+	ollamaGetDownloadProgress,
+	ollamaClearDownloadHistory,
+	ollamaRecommendedModels
+} from "./ollama"
 
 const userId = 1 // Replace with actual user id
 
@@ -110,6 +118,7 @@ export function connectSockets(io: {
 
 		// Users
 		register(socket, user, emitToUser)
+
 		// SamplingConfig
 		register(socket, sampling, emitToUser)
 		register(socket, samplingConfigsList, emitToUser)
@@ -117,6 +126,7 @@ export function connectSockets(io: {
 		register(socket, createSamplingConfig, emitToUser)
 		register(socket, deleteSamplingConfig, emitToUser)
 		register(socket, updateSamplingConfig, emitToUser)
+
 		// Connections
 		register(socket, connectionsList, emitToUser)
 		register(socket, connection, emitToUser)
@@ -126,18 +136,43 @@ export function connectSockets(io: {
 		register(socket, setUserActiveConnection, emitToUser)
 		register(socket, testConnection, emitToUser)
 		register(socket, refreshModels, emitToUser)
+
+		// Ollama Manager
+		register(socket, ollamaConnectModel, emitToUser)
+		register(socket, ollamaSearchAvailableModels, emitToUser)
+		register(socket, ollamaSetBaseUrl, emitToUser)
+		register(socket, ollamaModelsList, emitToUser)
+		register(socket, ollamaDeleteModel, emitToUser)
+		register(socket, ollamaListRunningModels, emitToUser)
+		register(socket, ollamaPullModel, emitToUser)
+		register(socket, ollamaCancelPull, emitToUser)
+		register(socket, ollamaVersion, emitToUser)
+		register(socket, ollamaIsUpdateAvailable, emitToUser)
+		register(socket, ollamaGetDownloadProgress, emitToUser)
+		register(socket, ollamaClearDownloadHistory, emitToUser)
+		register(socket, ollamaRecommendedModels, emitToUser)
+
+		// App Settings
+		register(socket, systemSettings, emitToUser)
+		register(socket, updateOllamaManagerEnabled, emitToUser)
+		register(socket, updateShowAllCharacterFields, emitToUser)
+		register(socket, updateEasyCharacterCreation, emitToUser)
+		register(socket, updateEasyPersonaCreation, emitToUser)
+
 		// Characters
 		register(socket, characterList, emitToUser)
 		register(socket, character, emitToUser)
 		register(socket, createCharacter, emitToUser)
 		register(socket, updateCharacter, emitToUser)
 		register(socket, deleteCharacter, emitToUser)
+
 		// Personas
 		register(socket, personaList, emitToUser)
 		register(socket, persona, emitToUser)
 		register(socket, createPersona, emitToUser)
 		register(socket, updatePersona, emitToUser)
 		register(socket, deletePersona, emitToUser)
+
 		// Context Configs
 		register(socket, contextConfigsList, emitToUser)
 		register(socket, contextConfig, emitToUser)
@@ -145,6 +180,7 @@ export function connectSockets(io: {
 		register(socket, updateContextConfig, emitToUser)
 		register(socket, deleteContextConfig, emitToUser)
 		register(socket, setUserActiveContextConfig, emitToUser)
+
 		// Prompt Configs
 		register(socket, promptConfigsList, emitToUser)
 		register(socket, promptConfig, emitToUser)
@@ -152,6 +188,7 @@ export function connectSockets(io: {
 		register(socket, updatePromptConfig, emitToUser)
 		register(socket, deletePromptConfig, emitToUser)
 		register(socket, setUserActivePromptConfig, emitToUser)
+
 		// Chats
 		register(socket, chatsList, emitToUser)
 		register(socket, createChat, emitToUser)
@@ -170,14 +207,17 @@ export function connectSockets(io: {
 		register(socket, chatMessageSwipeRight, emitToUser)
 		register(socket, chatMessageSwipeLeft, emitToUser)
 		register(socket, toggleChatCharacterActive, emitToUser)
+		register(socket, getChatResponseOrder, emitToUser)
+
 		// Lorebooks
 		register(socket, lorebookList, emitToUser)
 		register(socket, lorebook, emitToUser)
 		register(socket, createLorebook, emitToUser)
-		register(socket, deleteLorebook, emitToUser),
-			register(socket, lorebookBindingList, emitToUser)
+		;(register(socket, deleteLorebook, emitToUser),
+			register(socket, lorebookBindingList, emitToUser))
 		register(socket, createLorebookBinding, emitToUser)
 		register(socket, updateLorebookBinding, emitToUser)
+		register(socket, updateLorebook, emitToUser)
 		register(socket, worldLoreEntryList, emitToUser)
 		register(socket, createWorldLoreEntry, emitToUser)
 		register(socket, updateWorldLoreEntry, emitToUser)
@@ -193,7 +233,15 @@ export function connectSockets(io: {
 		register(socket, updateHistoryEntry, emitToUser)
 		register(socket, deleteHistoryEntry, emitToUser)
 		register(socket, iterateNextHistoryEntry, emitToUser)
-        register(socket, lorebookImport, emitToUser)
+		register(socket, lorebookImport, emitToUser)
+		// Tags
+		register(socket, tagsList, emitToUser)
+		register(socket, createTag, emitToUser)
+		register(socket, updateTag, emitToUser)
+		register(socket, deleteTag, emitToUser)
+		register(socket, tagRelatedData, emitToUser)
+		register(socket, addTagToCharacter, emitToUser)
+		register(socket, removeTagFromCharacter, emitToUser)
 		console.log(`Socket connected: ${socket.id} for user ${userId}`)
 	})
 }

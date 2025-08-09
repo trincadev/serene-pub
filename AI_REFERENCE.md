@@ -1,6 +1,6 @@
 # Serene Pub - AI Assistant Reference
 
-**Version**: 0.2.2  
+**Version**: 0.4.0  
 **License**: AGPL-3.0  
 **Author**: Jody Doolittle  
 **Repository**: https://github.com/doolijb/serene-pub
@@ -18,6 +18,7 @@ Serene Pub is a modern, customizable chat application designed for immersive rol
 ## Software Stack
 
 ### Frontend
+
 - **SvelteKit** - Full-stack Svelte framework (using Svelte 5)
 - **Tailwind CSS** - Utility-first CSS framework
 - **Skeleton UI** - Component library built on Tailwind for theming and components
@@ -25,21 +26,23 @@ Serene Pub is a modern, customizable chat application designed for immersive rol
 - **Socket.IO Client** - Real-time bidirectional communication via `sveltekit-io`
 
 ### Backend
+
 - **Node.js** - JavaScript runtime
 - **SvelteKit Server** - Server-side rendering and API routes
 - **Socket.IO Server** - Real-time WebSocket communication via `sveltekit-io`
 - **PostgreSQL** - Database via pglite
 - **Drizzle ORM** - Type-safe SQL ORM with migrations
 - **TypeScript** - Server-side type safety
-- **Sqlite** - Deprecated database, removing in 0.4.0
 
 ### Development & Build Tools
+
 - **Npm** - Package manager and runtime (preferred for development), bun may not be compatible with embedded postgres
 - **Vite** - Build tool and dev server
 - **Prettier** - Code formatting
 - **Svelte Check** - TypeScript checking for Svelte files
 
 ### AI & Connection Adapters
+
 - **BaseConnectionAdapter** - Base class for adding new LLM API's
 - **OpenAI API** - ChatGPT and compatible APIs - chat completions only
 - **Ollama** - Ollama's native API - chat and generation endpoints
@@ -50,6 +53,7 @@ Serene Pub is a modern, customizable chat application designed for immersive rol
 - **ConnectionTypes** - Class used as enum for connection adapter options, add new adapters here
 
 ### Key Dependencies
+
 - `@sveltejs/adapter-node` - Node.js deployment adapter
 - `drizzle-orm` & `drizzle-kit` - Database ORM and migration tools
 - `pglite` - Embedded PostgreSQL for portable deployment
@@ -63,6 +67,7 @@ Serene Pub is a modern, customizable chat application designed for immersive rol
 ## Application Architecture
 
 ### Project Structure
+
 ```
 src/
 ├── app.html                 # Base HTML template
@@ -95,6 +100,7 @@ src/
 **Database**: PostgreSQL with Drizzle ORM
 
 **Key Tables**:
+
 - `users` - User accounts and preferences
 - `connections` - AI service connection configurations
 - `samplingConfigs` - AI generation parameters (temperature, top_k, etc.)
@@ -114,11 +120,13 @@ src/
 **WebSocket Architecture**: Built on Socket.IO via `sveltekit-io`
 
 **Socket Namespace Structure**:
+
 - All events are typed in `app.d.ts` under the `Sockets` namespace
 - Each entity type has CRUD operations (Create, Read, Update, Delete, List)
 - Real-time synchronization across multiple browser tabs/devices
 
 **Key Socket Events**:
+
 - User management: `user`, `updateUser`
 - Chat operations: `chatsList`, `chat`, `createChat`, `sendPersonaMessage`, `triggerGenerateMessage`
 - Character management: `characterList`, `character`, `createCharacter`, `updateCharacter`
@@ -130,12 +138,14 @@ src/
 **Base Architecture**: Abstract `BaseConnectionAdapter` class with implementations for different AI services
 
 **Connection Adapters**:
+
 - `OpenAIChatAdapter` - OpenAI API and compatible services
 - `OllamaAdapter` - Local Ollama installations
 - `LMStudioAdapter` - LM Studio local server
 - `LlamaCppAdapter` - Direct llama.cpp integration
 
 **Key Features**:
+
 - Async generation with abort capability
 - Token counting and context management
 - Model listing and testing
@@ -146,6 +156,7 @@ src/
 **Core Component**: `PromptBuilder` class in `/src/lib/server/utils/promptBuilder.ts`
 
 **Features**:
+
 - Handlebars template engine for dynamic prompt construction
 - Token counting and context window management
 - Modular prompt sections (system, characters, personas, chat history)
@@ -153,6 +164,7 @@ src/
 - Support for both string prompts and message arrays
 
 **Template Structure**:
+
 - System instructions
 - Character definitions (JSON format)
 - User personas (JSON format)
@@ -162,6 +174,7 @@ src/
 ### UI/UX Architecture
 
 **Component Structure**:
+
 - **Layouts**: Root layout with sidebar navigation
 - **Pages**: Main chat interface, character/persona management
 - **Sidebars**: Context-sensitive sidebars for configuration
@@ -169,20 +182,24 @@ src/
 - **Chat Components**: Message display, input handling, generation controls
 
 **State Management**:
+
 - Svelte 5 runes for reactive state
 - Socket.IO for real-time data synchronization
 - Context APIs for global state (user, active chat)
 
 **Svelte 5 Syntax**
+
 - Do not use svelte 4 `$:` or `on:` syntax
 - Use svelte 5 `$effect(()=>{})`, `$state()`, `$derived()` || `$derived.by(()=>{})` syntax
 
 **JS/TS Formatting**
+
 - Do not use semi-colons unless required, i.e. inline
 - Do not use single quotes unless required, i.e. compound/nested sentenced
 - Use 4 space tabs
 
 **Responsive Design**:
+
 - Mobile-first responsive layout
 - Skeleton UI components for consistent theming
 - Dark/light theme support
@@ -190,6 +207,7 @@ src/
 ## Key Configuration Files
 
 ### Development
+
 - `package.json` - Dependencies and scripts
 - `tsconfig.json` - TypeScript configuration
 - `svelte.config.js` - Svelte/SvelteKit configuration
@@ -197,11 +215,13 @@ src/
 - `tailwind.config.js` - Tailwind CSS configuration
 
 ### Database
+
 - `src/lib/server/db/drizzle.config.ts` - Database connection and migration config
 - `src/lib/server/db/schema.ts` - Database schema definitions
 - `drizzle/` - Migration files and metadata
 
 ### Deployment
+
 - `dist-assets/` - Platform-specific deployment scripts
 - `scripts/bundle-dist.js` - Build bundling script
 - Platform launchers for Windows (`run.cmd`), Linux/macOS (`run.sh`)
@@ -209,6 +229,7 @@ src/
 ## Deployment Architecture
 
 ### Portable Deployment
+
 - Self-contained executable with embedded Node.js runtime
 - Embedded PostgreSQL database for data persistence
 - Platform-specific launchers handle privilege management
@@ -217,11 +238,13 @@ src/
 - Distributed modules must have compatible licenses that permit redistribution
 
 ### Windows Considerations
+
 - PostgreSQL requires non-admin privileges for security
 - Automatic privilege dropping using PowerShell `Start-Process -Verb runAsUser`
 - Alternative deployment via Docker/WSL2 for sandboxing
 
 ### Development Environment
+
 1. Install Node.js, Bun, and optionally Ollama
 2. Clone repository and run `bun install`
 3. Run `bun run db:migrate` for database setup
@@ -239,17 +262,20 @@ src/
 ## Integration Points
 
 ### Character Card Compatibility
+
 - Import/export compatibility with Silly Tavern character cards
 - Support for PNG metadata and JSON formats
 - Character image handling and avatar management
 
 ### AI Service Integration
+
 - Modular adapter system for easy extension
 - Support for multiple concurrent connections
 - Model discovery and testing capabilities
 - Token counting for various model types
 
 ### File Handling
+
 - Character card imports
 - Avatar image uploads
 - Lorebook imports
@@ -258,12 +284,14 @@ src/
 ## Development Patterns
 
 ### Socket Event Handling
+
 1. Define types in `app.d.ts` under `Sockets` namespace
 2. Implement handlers in `/src/lib/server/sockets/`
 3. Register in `/src/lib/server/sockets/index.ts`
 4. Client-side listeners in Svelte components
 
 ### Database Operations
+
 1. Define schema in `db/schema.ts`
 2. Add new tables Select/Insert inference to `app.d.ts`
 3. Generate migrations with `bun run db:generate`
@@ -271,6 +299,7 @@ src/
 5. Use Drizzle ORM queries in socket handlers
 
 ### UI Component Development
+
 1. Create Svelte components in `/src/lib/client/components/`
 2. Use Skeleton UI primitives for consistency
 3. Implement real-time updates via Socket.IO

@@ -67,7 +67,7 @@ export class CONNECTION_TYPE {
 			description: openaiChatDesc,
 			difficulty: openaiChatDiff
 		},
-        {
+		{
 			value: CONNECTION_TYPE.LLAMACPP_COMPLETION,
 			label: "Llama.cpp",
 			description: llamaCppCompletionDesc,

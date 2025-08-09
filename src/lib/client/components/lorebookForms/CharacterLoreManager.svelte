@@ -126,7 +126,6 @@
 		entry: SelectWorldLoreEntry
 		warn?: boolean
 	}): boolean {
-
 		if (!entry.name.trim()) {
 			if (warn) {
 				toaster.error({ title: "Name is required" })
@@ -516,7 +515,6 @@
 								<LoreContentField
 									bind:content={entry.content}
 									bind:lorebookBindingList
-
 								/>
 							</div>
 							<div>

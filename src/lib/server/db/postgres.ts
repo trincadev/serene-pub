@@ -1,26 +1,29 @@
 import * as dbConfig from "./drizzle.config"
 import { PGlite } from "@electric-sql/pglite"
 
-const GLOBAL_PGLITE_KEY = Symbol.for("serene-pub.pglite")
+const GLOBAL_PGLITE_KEY = Symbol.for("serene-pub.db")
 
 type PgliteGlobal = { pglite?: PGlite }
 
 // Check if already initialized
 const globalPglite = globalThis as unknown as PgliteGlobal
 
-export async function startPg(): Promise<{ firstInit: boolean; pglite: PGlite }> {
+export async function startPg(): Promise<{
+	firstInit: boolean
+	pglite: PGlite
+}> {
 	let firstInit = false
 	try {
 		console.log("Starting PGlite database...")
-		
+
 		// Return existing instance if available
 		if (globalPglite.pglite) {
 			return { firstInit: false, pglite: globalPglite.pglite }
 		}
-		
+
 		// Create the PGlite instance
 		const pglite = new PGlite(dbConfig.dbPath)
-		
+
 		// Check if this is the first initialization
 		// PGlite creates the database file automatically, so we check if it's new
 		try {
@@ -33,7 +36,7 @@ export async function startPg(): Promise<{ firstInit: boolean; pglite: PGlite }>
 
 		// Set global reference
 		globalPglite.pglite = pglite
-		
+
 		console.log(`PGlite database ready at: ${dbConfig.dbPath}`)
 		return { firstInit, pglite }
 	} catch (error) {

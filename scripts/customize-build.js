@@ -1,52 +1,58 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import path from 'path';
+import fs from "fs"
+import path from "path"
 
-const buildFile = 'build/index.js';
+const buildFile = "build/index.js"
 
 if (!fs.existsSync(buildFile)) {
-    console.log('Build file not found:', buildFile);
-    process.exit(1);
+	console.log("Build file not found:", buildFile)
+	process.exit(1)
 }
 
-console.log('🔧 Customizing server build output...');
+console.log("🔧 Customizing server build output...")
 
-let content = fs.readFileSync(buildFile, 'utf8');
+let content = fs.readFileSync(buildFile, "utf8")
 
 // Debug: Check what patterns exist in the file
-console.log('Looking for patterns in the file...');
-console.log('Contains "Listening on file descriptor":', content.includes('Listening on file descriptor'));
-console.log('Contains "Listening on ${path":', content.includes('Listening on ${path'));
+console.log("Looking for patterns in the file...")
+console.log(
+	'Contains "Listening on file descriptor":',
+	content.includes("Listening on file descriptor")
+)
+console.log(
+	'Contains "Listening on ${path":',
+	content.includes("Listening on ${path")
+)
 
 // Replace console.log messages
-let replacements = 0;
+let replacements = 0
 
-const originalListeningFd = content;
+const originalListeningFd = content
 content = content.replace(
-    /console\.log\(`Listening on file descriptor/g,
-    'console.log(`🚀 Serene Pub listening on file descriptor'
-);
+	/console\.log\(`Listening on file descriptor/g,
+	"console.log(`🚀 Serene Pub listening on file descriptor"
+)
 if (content !== originalListeningFd) {
-    replacements++;
-    console.log('✅ Replaced file descriptor listening message');
+	replacements++
+	console.log("✅ Replaced file descriptor listening message")
 }
 
-const originalListeningPath = content;
+const originalListeningPath = content
 content = content.replace(
-    /console\.log\(`Listening on \$\{path/g,
-    'console.log(`🚀 Serene Pub listening on ${path'
-);
+	/console\.log\(`Listening on \$\{path/g,
+	"console.log(`🚀 Serene Pub listening on ${path"
+)
 if (content !== originalListeningPath) {
-    replacements++;
-    console.log('✅ Replaced path listening message');
+	replacements++
+	console.log("✅ Replaced path listening message")
 }
 
-console.log(`Applied ${replacements} basic replacements`);
+console.log(`Applied ${replacements} basic replacements`)
 
 // Add launch message after the listening message
 content = content.replace(
-    /console\.log\(`🚀 Serene Pub listening on \$\{path \|\| `http:\/\/\$\{host\}:\$\{port\}`\}`\);/g,
-    `console.log(\`🚀 Serene Pub listening on \${path || \`http://\${host}:\${port}\`}\`);
+	/console\.log\(`🚀 Serene Pub listening on \$\{path \|\| `http:\/\/\$\{host\}:\$\{port\}`\}`\);/g,
+	`console.log(\`🚀 Serene Pub listening on \${path || \`http://\${host}:\${port}\`}\`);
 		if (!path) {
 			console.log(\`\`);
 			console.log(\`                                                  \`);
@@ -105,19 +111,22 @@ content = content.replace(
 					import('open').then(({ default: open }) => {
 						open(\`http://localhost:\${port}\`);
 						console.log(\`🚀 Opening Serene Pub in your default browser...\`);
-					}).catch(() => {
-						// Silently fail if 'open' package is not available
+					}).catch((err) => {
+						console.warn(\`⚠️  Could not auto-open browser: \${err.message}\`);
+						console.log(\`💡 You can manually open http://localhost:\${port} in your browser\`);
 					});
 				}, 1000);
+			} else {
+				console.log(\`ℹ️  Auto-open browser disabled (SERENE_AUTO_OPEN=false)\`);
 			}
 		}`
-);
+)
 
 // Add shutdown message - fix the function call pattern
 content = content.replace(
-    /function graceful_shutdown\(reason\) \{/g,
-    'function graceful_shutdown(reason) {\n\tconsole.log(`👋 Serene Pub shutting down (${reason})`);'
-);
+	/function graceful_shutdown\(reason\) \{/g,
+	"function graceful_shutdown(reason) {\n\tconsole.log(`👋 Serene Pub shutting down (${reason})`);"
+)
 
-fs.writeFileSync(buildFile, content);
-console.log('✅ Server build output customized successfully!');
+fs.writeFileSync(buildFile, content)
+console.log("✅ Server build output customized successfully!")

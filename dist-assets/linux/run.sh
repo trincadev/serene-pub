@@ -7,6 +7,13 @@ NODE_ARCHIVE="node-archive.linux.tar.xz"
 NODE_DIR="node-v20.13.1-linux-x64"
 NODE_BIN_PATH="$NODE_DIR/bin/node"
 
+# Load environment variables from .env file if present
+ENV_FILE="$DIR/.env"
+if [ -f "$ENV_FILE" ]; then
+    echo "Loading environment variables from .env file..."
+    export $(grep -v '^#' "$ENV_FILE" | xargs -d '\n')
+fi
+
 if [ ! -f "$NODE_BIN" ]; then
   echo "Downloading Node.js..."
   curl -L -o "$NODE_ARCHIVE" "$NODE_URL"
