@@ -51,6 +51,7 @@ jobs:
               run: npm run build
 
             - name: Create production environment example
+              shell: bash
               run: |
                   mkdir -p build
                   cat > build/.env.example << 'EOF'
