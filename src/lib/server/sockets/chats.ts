@@ -1660,21 +1660,20 @@ export async function getChatResponseOrder(
 	// console.log('Debug - Characters for next turn:', { totalCharacters: chat.chatCharacters.length, activeCharacters: activeCharacters.length, charactersToUse: charactersToUse.length, sortedCharacterIds })
 
 	// Use getNextCharacterTurn to determine who should respond next based on message history
-	const nextCharacterId =
-		getNextCharacterTurn(
-			{
-				chatMessages: chat.chatMessages,
-				chatCharacters: chat.chatCharacters
-					.filter((cc) => cc.character !== null && cc.isActive)
-					.sort(
-						(a, b) => (a.position ?? 0) - (b.position ?? 0)
-					) as any,
-				chatPersonas: chat.chatPersonas.filter(
-					(cp) => cp.persona !== null
-				) as any
-			},
-			{ triggered: false }
-		) || (sortedCharacterIds.length > 0 ? sortedCharacterIds[0] : null)
+	const nextCharacterId = getNextCharacterTurn(
+		{
+			chatMessages: chat.chatMessages,
+			chatCharacters: chat.chatCharacters
+				.filter((cc) => cc.character !== null && cc.isActive)
+				.sort(
+					(a, b) => (a.position ?? 0) - (b.position ?? 0)
+				) as any,
+			chatPersonas: chat.chatPersonas.filter(
+				(cp) => cp.persona !== null
+			) as any
+		},
+		{ triggered: false }
+	)
 
 	// console.log('Debug - Next character logic simplified:', { sortedCharacterIds, nextCharacterId })
 

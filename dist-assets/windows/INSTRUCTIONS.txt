@@ -5,19 +5,20 @@ Thank you for downloading Serene Pub.
 To run the app:
 
 1. Extract the archive to your preferred location.
-2. Open the extracted folder (e.g., serene-pub-<version>-win).
-3. Double-click the "run.bat" file to start Serene Pub.
+2. Double-click the "run.cmd" file to start Serene Pub.
 
-   - The first launch will automatically download and set up Node.js if needed. No manual installation is required.
-   - The launcher will automatically detect your Windows architecture (x64 or ARM64) and download the appropriate Node.js version.
+   - Node.js runtime is included - no installation or download required!
+   - The application will start immediately.
 
-4. Optional Configuration:
+3. Optional Configuration:
    - Copy ".env.example" to ".env" to customize settings
    - Edit ".env" to set custom data directory: SERENE_PUB_DATA_DIR=C:\path\to\data
    - Change server ports: SOCKETS_PORT=3001, PORT=3000
    - Disable auto-browser opening: SERENE_AUTO_OPEN=1
 
-5. On your Windows PC, access Serene Pub from http://0.0.0.0:3000 or http://localhost:3000.
+4. On your Windows PC, access Serene Pub from http://localhost:3000.
+
+5. To stop the application, press Ctrl+C in the command window.
 
 Notes:
 - Serene Pub will attempt to automatically identify your local network IP address, allowing access across other devices (e.g. mobile phones.)
@@ -25,9 +26,9 @@ Notes:
     - Look for the "IPv4 Address" under your active network adapter (e.g., 192.168.1.42). You can access Serene Pub from your phone at http://<your-ip>:3000
 
 Troubleshooting:
-- If double-clicking "run.bat" does not start the app, you may need to run it as administrator
-- If Node.js fails to download, check your internet connection or firewall settings
-- Windows Defender or antivirus software might flag the batch file - this is normal for downloaded scripts
+- If double-clicking "run.cmd" does not start the app, you may need to run it as administrator
+- Ensure all files were extracted properly from the ZIP archive
+- This is open source software - you can review all code at https://github.com/doolijb/serene-pub
 
 Uninstall:
 - To remove Serene Pub, simply delete the extracted folder. No files are installed outside this directory.

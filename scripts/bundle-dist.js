@@ -281,6 +281,22 @@ if (!target) {
 			fs.copyFileSync(instrFile, path.join(outDir, "INSTRUCTIONS.txt"))
 		}
 
+		// Copy Node.js binary for the target platform
+		const isWindows = target.platform === "win32"
+		const nodeSrcName = isWindows ? "node.exe" : "node"
+		const nodeSrcPath = path.resolve(__dirname, "..", nodeSrcName)
+		const nodeDestPath = path.join(outDir, nodeSrcName)
+		
+		if (fs.existsSync(nodeSrcPath)) {
+			fs.copyFileSync(nodeSrcPath, nodeDestPath)
+			if (!isWindows) {
+				fs.chmodSync(nodeDestPath, 0o755)
+			}
+			console.log(`Copied Node.js binary: ${nodeSrcName}`)
+		} else {
+			console.warn(`Warning: Node.js binary not found at ${nodeSrcPath}`)
+		}
+
 		// Copy all run files from dist-assets/<os>/
 		const runFiles = fs
 			.readdirSync(

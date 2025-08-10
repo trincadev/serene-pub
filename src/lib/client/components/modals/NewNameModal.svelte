@@ -61,45 +61,62 @@
 	{onOpenChange}
 	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-xl max-w-md"
 	backdropClasses="backdrop-blur-sm"
+	role="dialog"
+	aria-labelledby="modal-title"
+	aria-describedby="modal-description"
 >
 	{#snippet content()}
 		<header class="flex justify-between">
-			<h2 class="h2">{title ? title : "Create new"}</h2>
+			<h2 id="modal-title" class="h2">{title ? title : "Create new"}</h2>
 		</header>
 		<article class="space-y-4">
 			{#if description}
-				<p class="text-muted-foreground">{description}</p>
+				<p id="modal-description" class="text-muted-foreground">{description}</p>
 			{/if}
-			<input
-				bind:this={inputRef}
-				bind:value={name}
-				class="input w-full {validationErrors.name
-					? 'border-red-500'
-					: ''}"
-				type="text"
-				placeholder="Enter a name..."
-				onkeydown={(e) => {
-					if (e.key === "Enter" && isValid) {
-						if (validateForm()) {
-							onConfirm(name)
+			<div class="form-field">
+				<label for="name-input" class="sr-only">
+					Name
+				</label>
+				<input
+					id="name-input"
+					bind:this={inputRef}
+					bind:value={name}
+					class="input w-full {validationErrors.name
+						? 'border-red-500'
+						: ''}"
+					type="text"
+					placeholder="Enter a name..."
+					aria-required="true"
+					aria-invalid={!!validationErrors.name}
+					aria-describedby={validationErrors.name ? "name-error" : undefined}
+					onkeydown={(e) => {
+						if (e.key === "Enter" && isValid) {
+							if (validateForm()) {
+								onConfirm(name)
+							}
 						}
-					}
-				}}
-				oninput={() => {
-					if (validationErrors.name) {
-						const { name, ...rest } = validationErrors
-						validationErrors = rest
-					}
-				}}
-			/>
-			{#if validationErrors.name}
-				<p class="mt-1 text-sm text-red-500" role="alert">
-					{validationErrors.name}
-				</p>
-			{/if}
+					}}
+					oninput={() => {
+						if (validationErrors.name) {
+							const { name, ...rest } = validationErrors
+							validationErrors = rest
+						}
+					}}
+				/>
+				{#if validationErrors.name}
+					<p id="name-error" class="mt-1 text-sm text-red-500" role="alert">
+						{validationErrors.name}
+					</p>
+				{/if}
+			</div>
 		</article>
 		<footer class="flex justify-end gap-4">
-			<button class="btn preset-filled-surface-500" onclick={onCancel}>
+			<button 
+				class="btn preset-filled-surface-500" 
+				onclick={onCancel}
+				type="button"
+				aria-label="Cancel and close modal"
+			>
 				Cancel
 			</button>
 			<button
@@ -110,6 +127,8 @@
 					}
 				}}
 				disabled={!isValid}
+				type="button"
+				aria-label="Confirm and create new item"
 			>
 				Confirm
 			</button>

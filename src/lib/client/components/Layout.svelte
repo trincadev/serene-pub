@@ -243,12 +243,18 @@
 {#if !!userCtx.user}
 	<div
 		class="bg-surface-100-900 relative h-full max-h-[100dvh] w-full justify-between"
+		role="application"
+		aria-label="Serene Pub Chat Application"
 	>
 		<div
 			class="relative flex h-svh max-w-full min-w-full flex-1 flex-col overflow-hidden lg:flex-row lg:gap-2"
 		>
 			<!-- Left Sidebar -->
-			<aside class="desktop-sidebar">
+			<aside 
+				class="desktop-sidebar"
+				role="complementary"
+				aria-label="Left navigation panel"
+			>
 				{#if panelsCtx.leftPanel}
 					{@const title =
 						panelsCtx.leftNav[panelsCtx.leftPanel]?.title ||
@@ -257,18 +263,23 @@
 						class="bg-surface-50-950 me-2 flex h-full w-full flex-col overflow-y-auto rounded-r-lg"
 						in:fly={{ x: -100, duration: 200 }}
 						out:fly={{ x: -100, duration: 200 }}
+						role="region"
+						aria-labelledby="left-panel-title"
 					>
 						<div class="flex items-center justify-between p-4">
-							<span
+							<h2 
+								id="left-panel-title"
 								class="text-foreground text-lg font-semibold capitalize"
 							>
 								{title}
-							</span>
+							</h2>
 							<button
 								class="btn-ghost"
 								onclick={() => closePanel({ panel: "left" })}
+								aria-label="Close {title} panel"
+								type="button"
 							>
-								<Icons.X class="text-foreground h-5 w-5" />
+								<Icons.X class="text-foreground h-5 w-5" aria-hidden="true" />
 							</button>
 						</div>
 						<div class="flex-1 overflow-y-auto">
@@ -302,14 +313,22 @@
 				{/if}
 			</aside>
 			<!-- Main Content -->
-			<main class="flex h-full flex-col overflow-hidden">
+			<main 
+				class="flex h-full flex-col overflow-hidden"
+				role="main"
+				aria-label="Main content area"
+			>
 				<Header />
 				<div class="flex-1 overflow-auto">
 					{@render children?.()}
 				</div>
 			</main>
 			<!-- Right Sidebar -->
-			<aside class="desktop-sidebar pt-1">
+			<aside 
+				class="desktop-sidebar pt-1"
+				role="complementary"
+				aria-label="Right navigation panel"
+			>
 				{#if panelsCtx.rightPanel}
 					{@const title =
 						panelsCtx.rightNav[panelsCtx.rightPanel]?.title ||
@@ -318,21 +337,26 @@
 						class="bg-surface-50-950 flex h-full w-full flex-col overflow-y-auto rounded-l-lg"
 						in:fly={{ x: 100, duration: 200 }}
 						out:fly={{ x: 100, duration: 200 }}
+						role="region"
+						aria-labelledby="right-panel-title"
 					>
 						<div class="flex items-center justify-between p-4">
-							<span
+							<h2
+								id="right-panel-title"
 								class="text-foreground text-lg font-semibold capitalize"
 							>
 								{title}
-							</span>
+							</h2>
 							<button
 								class="btn-ghost"
 								onclick={() => closePanel({ panel: "right" })}
+								aria-label="Close {title} panel"
+								type="button"
 							>
-								<Icons.X class="text-foreground h-5 w-5" />
+								<Icons.X class="text-foreground h-5 w-5" aria-hidden="true" />
 							</button>
 						</div>
-						<div class="flex-1 overflow-y-auto">
+						<nav class="flex-1 overflow-y-auto">
 							{#if panelsCtx.rightPanel === "personas"}
 								<PersonasSidebar
 									bind:onclose={panelsCtx.onRightPanelClose}
@@ -354,7 +378,7 @@
 									bind:onclose={panelsCtx.onRightPanelClose}
 								/>
 							{/if}
-						</div>
+						</nav>
 					</div>
 				{/if}
 			</aside>
@@ -366,6 +390,9 @@
 				]?.title || panelsCtx.mobilePanel}
 			<div
 				class="bg-surface-100-900 fixed inset-0 z-[51] flex flex-col overflow-y-auto lg:hidden"
+				role="dialog"
+				aria-labelledby="mobile-panel-title"
+				aria-modal="true"
 			>
 				<div
 					class="border-border flex items-center justify-between border-b p-4"

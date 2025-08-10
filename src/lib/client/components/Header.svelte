@@ -25,26 +25,34 @@
 	})
 </script>
 
-<header class="w-full">
+<header class="w-full" role="banner">
 	<div
 		class="bg-surface-100-900 bg-opacity-25 relative mx-auto flex w-full justify-between px-4 py-2 backdrop-blur"
 	>
 		<!-- Desktop left nav -->
-		<div class="hidden flex-1 justify-start gap-2 lg:flex">
+		<nav 
+			class="hidden flex-1 justify-start gap-2 lg:flex"
+			aria-label="Left navigation"
+			role="navigation"
+		>
 			{#each Object.entries(panelsCtx.leftNav) as [key, item]}
 				{@const isOpen = panelsCtx.leftPanel === key}
 				<button
 					title={item.title}
 					onclick={() => panelsCtx.openPanel({ key })}
+					aria-pressed={isOpen}
+					aria-label="Open {item.title} panel"
+					type="button"
 				>
 					<item.icon
 						class="{isOpen
 							? 'text-primary-800-200'
 							: ''} hover:text-primary-500 h-5 w-5 transition-colors"
+						aria-hidden="true"
 					/>
 				</button>
 			{/each}
-		</div>
+		</nav>
 
 		<!-- Title (centered absolutely for desktop) -->
 		<div
@@ -53,38 +61,49 @@
 			<a
 				class="text-foreground funnel-display pointer-events-auto text-xl font-bold tracking-tight whitespace-nowrap"
 				href="/"
+				aria-label="Serene Pub - Home"
 			>
 				Serene Pub
 			</a>
 		</div>
 
 		<!-- Desktop right nav -->
-		<div class="hidden flex-1 justify-end gap-2 lg:flex">
+		<nav 
+			class="hidden flex-1 justify-end gap-2 lg:flex"
+			aria-label="Right navigation"
+			role="navigation"
+		>
 			{#each Object.entries(panelsCtx.rightNav) as [key, item]}
 				{@const isOpen = panelsCtx.rightPanel === key}
 				<button
 					class="btn-ghost"
 					title={item.title}
 					onclick={() => panelsCtx.openPanel({ key })}
+					aria-pressed={isOpen}
+					aria-label="Open {item.title} panel"
+					type="button"
 				>
 					<item.icon
 						class="{isOpen
 							? 'text-primary-800-200'
 							: ''} hover:text-primary-500 h-5 w-5 transition-colors"
+						aria-hidden="true"
 					/>
 				</button>
 			{/each}
-		</div>
+		</nav>
 
 		<div class="flex items-center gap-2 lg:hidden">
 			<button
 				class="btn preset-tonal"
-				aria-label="Open menu"
+				aria-label="Open navigation menu"
 				onclick={() => {
 					panelsCtx.isMobileMenuOpen = true
 				}}
+				type="button"
+				aria-expanded={panelsCtx.isMobileMenuOpen}
 			>
-				<Icons.Menu class="text-foreground h-6 w-6" />
+				<Icons.Menu class="text-foreground h-6 w-6" aria-hidden="true" />
 			</button>
 		</div>
 	</div>

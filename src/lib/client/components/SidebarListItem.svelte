@@ -24,12 +24,20 @@
 
 <div
 	class="card preset-tonal hover:preset-filled-surface-300-700 relative flex w-full gap-2 overflow-hidden rounded-lg py-2 pr-3 pl-2 {classes}"
+	role="listitem"
 >
 	<div class="relative flex min-w-0 flex-1 gap-2">
 		{#if id !== undefined}
-			<button {onclick} class="flex min-w-0 gap-2" title={contentTitle}>
+			<button 
+				{onclick} 
+				class="flex min-w-0 gap-2" 
+				title={contentTitle}
+				aria-label="Item {id}: {contentTitle}"
+				type="button"
+			>
 				<span
 					class="text-muted-foreground my-auto h-fit w-8 flex-shrink-0 text-center text-xs"
+					aria-hidden="true"
 				>
 					{id}
 				</span>
@@ -41,6 +49,8 @@
 					{onclick}
 					class="flex min-w-0 flex-1 gap-2"
 					title={contentTitle}
+					aria-label="{contentTitle}"
+					type="button"
 				>
 					{@render content()}
 				</button>
@@ -48,5 +58,11 @@
 			{@render extraContent?.()}
 		</div>
 	</div>
-	{@render controls?.()}
+	<div 
+		class="controls"
+		role="group"
+		aria-label="Actions for {contentTitle}"
+	>
+		{@render controls?.()}
+	</div>
 </div>

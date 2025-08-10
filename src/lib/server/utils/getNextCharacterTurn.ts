@@ -114,11 +114,11 @@ export function getNextCharacterTurn(
 			}
 		}
 
-		// If all active characters have replied, start over with first active character
+		// If all active characters have replied, stop the turn cycle (return null)
 		console.log(
-			"Debug - All characters have replied, cycling back to first"
+			"Debug - All characters have replied, stopping turn cycle"
 		)
-		return activeCharacters[0]?.character.id || null
+		return null
 	} else {
 		// For triggered: check if each character has replied since the last user message
 		for (const cc of activeCharacters) {
@@ -134,10 +134,10 @@ export function getNextCharacterTurn(
 				return cc.character.id
 			}
 		}
-		// If all have replied, default to the first active character
+		// If all have replied, stop the turn cycle (return null)
 		console.log(
-			"Debug - Triggered mode - All characters have replied, defaulting to first"
+			"Debug - Triggered mode - All characters have replied, stopping turn cycle"
 		)
-		return activeCharacters[0]?.character.id || null
+		return null
 	}
 }

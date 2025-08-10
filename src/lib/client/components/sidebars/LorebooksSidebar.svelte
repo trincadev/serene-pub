@@ -13,7 +13,6 @@
 	import HistoryEntryManager from "../lorebookForms/HistoryEntryManager.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import type { SpecV3 } from "@lenml/char-card-reader"
-	import SidebarListItem from "../SidebarListItem.svelte"
 	import LorebookListItem from "../listItems/LorebookListItem.svelte"
 
 	interface Props {

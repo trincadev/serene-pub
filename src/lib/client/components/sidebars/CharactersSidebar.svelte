@@ -249,24 +249,28 @@
 	})
 </script>
 
-<div class="text-foreground h-full p-4">
+<div class="text-foreground h-full p-4" role="region" aria-label="Characters management">
 	{#if isCreating}
-		<CharacterForm
-			bind:isSafeToClose={characterFormHasChanges}
-			closeForm={closeCharacterForm}
-			bind:onCancel={onEditFormCancel}
-		/>
-	{:else if characterId}
-		{#key characterId}
+		<section aria-label="Create new character">
 			<CharacterForm
 				bind:isSafeToClose={characterFormHasChanges}
-				{characterId}
 				closeForm={closeCharacterForm}
 				bind:onCancel={onEditFormCancel}
 			/>
+		</section>
+	{:else if characterId}
+		{#key characterId}
+			<section aria-label="Edit character">
+				<CharacterForm
+					bind:isSafeToClose={characterFormHasChanges}
+					{characterId}
+					closeForm={closeCharacterForm}
+					bind:onCancel={onEditFormCancel}
+				/>
+			</section>
 		{/key}
 	{:else}
-		<div class="mb-2 flex gap-2">
+		<div class="mb-2 flex gap-2" role="toolbar" aria-label="Character actions">
 			<button
 				class="btn btn-sm preset-filled-primary-500 {panelsCtx.digest
 					.tutorial
@@ -274,38 +278,51 @@
 					: ''}"
 				onclick={handleCreateClick}
 				title="Create New Character"
+				aria-label="Create new character"
+				type="button"
 			>
-				<Icons.Plus size={16} />
+				<Icons.Plus size={16} aria-hidden="true" />
 			</button>
 			<button
 				class="btn btn-sm preset-filled-primary-500"
 				title="Import Character"
 				onclick={handleImportClick}
+				aria-label="Import character from file"
+				type="button"
 			>
-				<Icons.Upload size={16} />
+				<Icons.Upload size={16} aria-hidden="true" />
 			</button>
 			<button
 				class="btn btn-sm preset-filled-primary-500"
 				title="Export Character"
 				disabled
+				aria-label="Export character (coming soon)"
+				type="button"
 			>
-				<Icons.Download size={16} />
+				<Icons.Download size={16} aria-hidden="true" />
 			</button>
 		</div>
 		<div class="mb-4 flex items-center gap-2">
+			<label for="character-search" class="sr-only">
+				Search characters
+			</label>
 			<input
+				id="character-search"
 				type="text"
 				placeholder="Search characters, descriptions, tags..."
 				class="input"
 				bind:value={search}
+				aria-label="Search characters by name, description, or tags"
 			/>
 		</div>
-		<div class="flex flex-col gap-2">
+		<div class="flex flex-col gap-2" role="list" aria-label="Characters list">
 			{#if filteredCharacters.length === 0}
 				<div
 					class="text-muted-foreground relative w-100 py-8 text-center"
+					role="status"
+					aria-live="polite"
 				>
-					No characters found.
+					{search ? `No characters found matching "${search}".` : "No characters found."}
 				</div>
 			{:else}
 				{#each filteredCharacters as c}
@@ -328,24 +345,31 @@
 		onOpenChange={(e) => (showDeleteModal = e.open)}
 		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
 		backdropClasses="backdrop-blur-sm"
+		role="alertdialog"
+		aria-labelledby="delete-modal-title"
+		aria-describedby="delete-modal-description"
 	>
 		{#snippet content()}
 			<div class="p-6">
-				<h2 class="mb-2 text-lg font-bold">Delete Character?</h2>
-				<p class="mb-4">
+				<h2 id="delete-modal-title" class="mb-2 text-lg font-bold">Delete Character?</h2>
+				<p id="delete-modal-description" class="mb-4">
 					Are you sure you want to delete this character? This action
 					cannot be undone.
 				</p>
-				<div class="flex justify-end gap-2">
+				<div class="flex justify-end gap-2" role="group" aria-label="Delete confirmation actions">
 					<button
 						class="btn preset-filled-surface-500"
 						onclick={cancelDelete}
+						type="button"
+						aria-label="Cancel deletion"
 					>
 						Cancel
 					</button>
 					<button
 						class="btn preset-filled-error-500"
 						onclick={confirmDelete}
+						type="button"
+						aria-label="Confirm deletion"
 					>
 						Delete
 					</button>

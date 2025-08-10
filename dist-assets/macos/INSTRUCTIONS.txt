@@ -11,18 +11,20 @@ To run the app:
 3. Navigate to the extracted folder (e.g., serene-pub-<version>-macos):
       cd /path/to/serene-pub-<version>-macos
 
-3. Run the app with:
+4. Run the app with:
       bash run.sh
 
-4. On first launch, the app will automatically download and set up a local Node.js runtime if needed. No manual installation is required.
+5. Node.js runtime is included - no installation or download required! The application will start immediately.
 
-5. Optional Configuration:
+6. To stop the application, press Ctrl+C in the terminal window.
+
+7. Optional Configuration:
    - Copy ".env.example" to ".env" to customize settings
    - Edit ".env" to set custom data directory: SERENE_PUB_DATA_DIR=/path/to/data
    - Change server ports: SOCKETS_PORT=3001, PORT=3000
    - Disable auto-browser opening: SERENE_AUTO_OPEN=1
 
-6. On your Mac, access Serene Pub from http://0.0.0.0:3000 or http://localhost:3000.
+8. On your Mac, access Serene Pub from http://localhost:3000.
 
 Notes:
 - Serene Pub will attempt to automatically identify your local network IP address, allowing access across other devices (e.g. mobile phones.)

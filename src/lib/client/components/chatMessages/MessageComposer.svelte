@@ -66,18 +66,26 @@
 	value={tabGroup}
 	{classes}
 	onValueChange={(e) => (tabGroup = e.value as "compose" | "preview")}
+	role="region"
+	aria-label="Message composer"
 >
 	{#snippet list()}
 		<Tabs.Control value="compose" classes="min-h-[2.75em]">
-			<span title="Compose"><Icons.Pen size="0.75em" /></span>
+			<span title="Compose" aria-label="Compose tab">
+				<Icons.Pen size="0.75em" aria-hidden="true" />
+			</span>
 		</Tabs.Control>
 		<Tabs.Control value="preview" classes="min-h-[2.75em]">
-			<span title="Preview"><Icons.Eye size="0.75em" /></span>
+			<span title="Preview" aria-label="Preview tab">
+				<Icons.Eye size="0.75em" aria-hidden="true" />
+			</span>
 		</Tabs.Control>
 		{#if extraTabs}
 			{#each extraTabs as tab}
 				<Tabs.Control value={tab.value} classes="min-h-[2.75em]">
-					<span title={tab.title}>{@render tab.control?.()}</span>
+					<span title={tab.title} aria-label="{tab.title} tab">
+						{@render tab.control?.()}
+					</span>
 				</Tabs.Control>
 			{/each}
 		{/if}
@@ -91,6 +99,8 @@
 					title="Token Count"
 					class="text-xs"
 					class:text-error-500={contextExceeded}
+					aria-label="Token count: {compiledPrompt.meta.tokenCounts.total} of {compiledPrompt.meta.tokenCounts.limit}"
+					aria-live="polite"
 				>
 					{compiledPrompt.meta.tokenCounts.total} / {compiledPrompt
 						.meta.tokenCounts.limit}
@@ -100,21 +110,40 @@
 	{/snippet}
 	{#snippet content()}
 		<div class="flex gap-4">
-			{@render leftControls?.()}
+			<div role="group" aria-label="Message controls">
+				{@render leftControls?.()}
+			</div>
 			<div class="w-full">
 				<Tabs.Panel value="compose">
+					<label class="sr-only" for="message-input">
+						Type your message here
+					</label>
 					<textarea
+						id="message-input"
 						class="input field-sizing-content flex-1 rounded-xl lg:min-h-[3.75em]"
 						placeholder="Type a message..."
 						bind:value={markdown}
 						autocomplete="off"
 						spellcheck="true"
 						onkeydown={handleKeyDown}
+						aria-describedby={contextExceeded ? "token-warning" : undefined}
+						aria-invalid={contextExceeded}
 					></textarea>
+					{#if contextExceeded}
+						<div 
+							id="token-warning" 
+							class="text-error-500 text-xs mt-1"
+							role="alert"
+						>
+							Token limit exceeded. Message may be truncated.
+						</div>
+					{/if}
 				</Tabs.Panel>
 				<Tabs.Panel value="preview">
 					<div
 						class="card bg-surface-100-900 min-h-[4em] w-full rounded-lg p-2"
+						role="region"
+						aria-label="Message preview"
 					>
 						<div class="rendered-chat-message-content">
 							{@html renderMarkdownWithQuotedText(markdown)}
@@ -124,12 +153,16 @@
 				{#if extraTabs}
 					{#each extraTabs as tab}
 						<Tabs.Panel value={tab.value}>
-							{@render tab.content?.()}
+							<div role="region" aria-label="{tab.title} content">
+								{@render tab.content?.()}
+							</div>
 						</Tabs.Panel>
 					{/each}
 				{/if}
 			</div>
-			{@render rightControls?.()}
+			<div role="group" aria-label="Send controls">
+				{@render rightControls?.()}
+			</div>
 		</div>
 	{/snippet}
 </Tabs>
