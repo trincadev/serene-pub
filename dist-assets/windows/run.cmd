@@ -86,33 +86,3 @@ echo.
 echo Press any key to exit...
 pause >nul
 exit /b %EXIT_CODE%
-"%NODE_BIN%" "%APP_MAIN%"
-
-REM === Application Exit Handling ===
-set EXIT_CODE=%ERRORLEVEL%
-echo.
-echo ========================================
-if %EXIT_CODE% equ 0 (
-    echo Serene Pub stopped normally.
-) else (
-    echo Serene Pub exited with code: %EXIT_CODE%
-    echo Check the output above for any error messages.
-)
-echo.
-goto :End
-
-:Error
-echo.
-echo ========================================
-echo Setup failed. Please try the following:
-echo 1. Check your internet connection
-echo 2. Temporarily disable antivirus/firewall
-echo 3. Run as administrator if needed
-echo 4. Visit https://github.com/doolijb/serene-pub for help
-echo ========================================
-echo.
-
-:End
-echo Press any key to exit...
-pause >nul
-exit /b %EXIT_CODE%
