@@ -34,7 +34,8 @@
 		"db:migrate": "node scripts/check-db-lock.js drizzle-kit migrate --config ./src/lib/server/db/drizzle.config.ts",
 		"db:studio": "node scripts/check-db-lock.js drizzle-kit studio --config ./src/lib/server/db/drizzle.config.ts",
 		"bundle": "node scripts/bundle-dist.js",
-		"dist": "npm run build && npm run bundle"
+		"dist": "npm run build && npm run bundle",
+		"create-executables": "node scripts/create-executables.js"
 	},
 	"devDependencies": {
 		"@enviro/metadata": "^1.5.1",

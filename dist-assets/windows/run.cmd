@@ -16,7 +16,7 @@ REM === Load Environment Variables ===
 set ENV_FILE=%DIR%\.env
 if exist "%ENV_FILE%" (
     echo Loading configuration from .env file...
-    for /f "usebackq tokens=1,2 delims==" %%a in ("%ENV_FILE%") do (
+    for /f "usebackq tokens=1* delims==" %%a in ("%ENV_FILE%") do (
         set "line=%%a"
         if not "!line:~0,1!"=="#" (
             if not "%%a"=="" if not "%%b"=="" (
@@ -57,6 +57,7 @@ echo ========================================
 echo.
 
 REM === Start Application ===
+echo Starting application...
 "%NODE_BIN%" "%APP_MAIN%"
 
 REM === Application Exit Handling ===
@@ -68,6 +69,12 @@ if %EXIT_CODE% equ 0 (
 ) else (
     echo Serene Pub exited with code: %EXIT_CODE%
     echo Check the output above for any error messages.
+    echo.
+    echo Common issues:
+    echo - Missing or corrupted application files
+    echo - Port 3000 already in use by another application
+    echo - Insufficient permissions
+    echo - Antivirus software blocking the application
 )
 echo.
 goto :End

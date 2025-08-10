@@ -1,0 +1,7 @@
+#!/bin/bash
+# Serene Pub Application Launcher for macOS
+# This launches the main run.sh script
+APP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+BUNDLE_DIR="$( cd "$APP_DIR/../.." &> /dev/null && pwd )"
+cd "$BUNDLE_DIR"
+exec ./run.sh
