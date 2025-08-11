@@ -56,6 +56,7 @@ import {
 	chatMessageSwipeRight,
 	chatMessageSwipeLeft,
 	toggleChatCharacterActive,
+	updateChatCharacterVisibility,
 	getChatResponseOrder
 } from "./chats"
 import {
@@ -207,6 +208,7 @@ export function connectSockets(io: {
 		register(socket, chatMessageSwipeRight, emitToUser)
 		register(socket, chatMessageSwipeLeft, emitToUser)
 		register(socket, toggleChatCharacterActive, emitToUser)
+		register(socket, updateChatCharacterVisibility, emitToUser)
 		register(socket, getChatResponseOrder, emitToUser)
 
 		// Lorebooks

@@ -50,6 +50,7 @@
 </script>
 
 <SidebarListItem
+	itemType="Chat"
 	onclick={handleClick}
 	{contentTitle}
 	{classes}

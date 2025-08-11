@@ -42,6 +42,7 @@
 	id={persona.id}
 	onclick={handleClick}
 	{contentTitle}
+	itemType="Persona"
 	{classes}
 >
 	{#snippet content()}

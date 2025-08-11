@@ -665,6 +665,10 @@
 		class="flex flex-1 flex-col gap-3 overflow-auto"
 		bind:this={chatMessagesContainer}
 		onscroll={handleScroll}
+		role="log"
+		aria-label="Chat messages"
+		aria-live="polite"
+		aria-atomic="false"
 	>
 		<div class="p-2">
 			{#if !chat || chat.chatMessages.length === 0}
@@ -685,6 +689,8 @@
 				<ul
 					class="flex flex-1 flex-col gap-3"
 					bind:this={messagesContainer}
+					role="group"
+					aria-label="Chat conversation with {chat.chatMessages.length} messages"
 				>
 					{#each chat.chatMessages as msg, index (msg.id)}
 						{@const character = getMessageCharacter(msg)}
@@ -692,9 +698,30 @@
 						{@const isLastMessage =
 							index === chat.chatMessages.length - 1}
 						<li
+							id="message-{msg.id}"
 							class="preset-filled-primary-50-950 flex flex-col rounded-lg p-2"
 							class:opacity-50={msg.isHidden &&
 								editChatMessage?.id !== msg.id}
+							tabindex="-1"
+							role="article"
+							aria-label="Message {index + 1} of {chat.chatMessages.length} from {character?.nickname || character?.name || 'Unknown'}: {msg.content.slice(0, 100)}{msg.content.length > 100 ? '...' : ''}"
+							onkeydown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault();
+									// Focus first available action button
+									const messageEl = e.currentTarget;
+									const firstButton = messageEl.querySelector('button:not([disabled])');
+									if (firstButton) firstButton.focus();
+								} else if (e.key === 'ArrowUp' && index > 0) {
+									e.preventDefault();
+									const prevMessage = document.getElementById(`message-${chat.chatMessages[index - 1].id}`);
+									if (prevMessage) prevMessage.focus();
+								} else if (e.key === 'ArrowDown' && index < chat.chatMessages.length - 1) {
+									e.preventDefault();
+									const nextMessage = document.getElementById(`message-${chat.chatMessages[index + 1].id}`);
+									if (nextMessage) nextMessage.focus();
+								}
+							}}
 						>
 							<div class="flex justify-between gap-2">
 								<div class="group flex gap-2">
@@ -1244,39 +1271,43 @@
 {/snippet}
 
 {#snippet messageControls(msg: SelectChatMessage)}
-	<button
-		class="btn btn-sm msg-cntrl-icon hover:preset-filled-secondary-500"
-		class:preset-filled-secondary-500={msg.isHidden}
-		title={msg.isHidden ? "Unhide Message" : "Hide Message"}
-		disabled={lastMessage?.isGenerating || !!editChatMessage}
-		onclick={(e) => handleHideMessage(e, msg)}
-	>
-		<Icons.Ghost size={16} />
-		<span class="lg:hidden">
-			{msg.isHidden ? "Unhide Message" : "Hide Message"}
-		</span>
-	</button>
-	<button
-		class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
-		title="Edit Message"
-		disabled={lastMessage?.isGenerating ||
-			!!editChatMessage ||
-			msg.isGenerating ||
-			msg.isHidden}
-		onclick={(e) => handleEditMessage(e, msg)}
-	>
-		<Icons.Edit size={16} />
-		<span class="lg:hidden">Edit Message</span>
-	</button>
-	<button
-		class="btn btn-sm msg-cntrl-icon hover:preset-filled-error-500"
-		title="Delete Message"
-		disabled={lastMessage?.isGenerating || !!editChatMessage}
-		onclick={(e) => handleDeleteMessage(e, msg)}
-	>
-		<Icons.Trash2 size={16} />
-		<span class="lg:hidden">Delete Message</span>
-	</button>
+	<div role="group" aria-label="Message actions">
+		<button
+			class="btn btn-sm msg-cntrl-icon hover:preset-filled-secondary-500"
+			class:preset-filled-secondary-500={msg.isHidden}
+			title={msg.isHidden ? "Unhide Message" : "Hide Message"}
+			aria-label={msg.isHidden ? "Unhide this message" : "Hide this message"}
+			disabled={lastMessage?.isGenerating || !!editChatMessage}
+			onclick={(e) => handleHideMessage(e, msg)}
+		>
+			<Icons.Ghost size={16} aria-hidden="true" />
+			<span class="lg:hidden">
+				{msg.isHidden ? "Unhide Message" : "Hide Message"}
+			</span>
+		</button>
+		<button
+			class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
+			title="Edit Message"
+			aria-label="Edit this message"
+			disabled={lastMessage?.isGenerating ||
+				!!editChatMessage ||
+				msg.isGenerating ||
+				msg.isHidden}
+			onclick={(e) => handleEditMessage(e, msg)}
+		>
+			<Icons.Edit size={16} aria-hidden="true" />
+			<span class="lg:hidden">Edit Message</span>
+		</button>
+		<button
+			class="btn btn-sm msg-cntrl-icon hover:preset-filled-error-500"
+			title="Delete Message"
+			aria-label="Delete this message"
+			disabled={lastMessage?.isGenerating || !!editChatMessage}
+			onclick={(e) => handleDeleteMessage(e, msg)}
+		>
+			<Icons.Trash2 size={16} aria-hidden="true" />
+			<span class="lg:hidden">Delete Message</span>
+		</button>
 	{#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
 		<button
 			class="btn btn-sm msg-cntrl-icon hover:preset-filled-warning-500"

@@ -46,6 +46,7 @@
 </script>
 
 <SidebarListItem
+	itemType="Lorebook"
 	id={lorebook.id}
 	onclick={handleClick}
 	{contentTitle}

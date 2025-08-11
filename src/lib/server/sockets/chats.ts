@@ -1623,6 +1623,61 @@ export async function toggleChatCharacterActive(
 	await getChat(socket, { id: chat.id }, emitToUser)
 }
 
+export async function updateChatCharacterVisibility(
+	socket: any,
+	message: Sockets.UpdateChatCharacterVisibility.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	const userId = 1 // Replace with actual user id
+	if (!userId) return
+
+	const chat = await db.query.chats.findFirst({
+		where: (c, { eq, and }) =>
+			and(eq(c.id, message.chatId), eq(c.userId, userId)),
+		with: {
+			chatCharacters: {
+				where: (cc, { eq }) => eq(cc.characterId, message.characterId)
+			}
+		}
+	})
+	if (!chat) {
+		const res = {
+			error: "Error updating character visibility: Chat not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	if (!chat.chatCharacters || chat.chatCharacters.length === 0) {
+		const res = {
+			error: "Chat character not found."
+		}
+		emitToUser("error", res)
+		return
+	}
+
+	// Update visibility in database
+	await db
+		.update(schema.chatCharacters)
+		.set({ visibility: message.visibility })
+		.where(
+			and(
+				eq(schema.chatCharacters.characterId, message.characterId),
+				eq(schema.chatCharacters.chatId, message.chatId)
+			)
+		)
+
+	const res: Sockets.UpdateChatCharacterVisibility.Response = {
+		chatId: message.chatId,
+		characterId: message.characterId,
+		visibility: message.visibility
+	}
+
+	emitToUser("updateChatCharacterVisibility", res)
+
+	await getChat(socket, { id: chat.id }, emitToUser)
+}
+
 export async function getChatResponseOrder(
 	socket: any,
 	message: Sockets.GetChatResponseOrder.Call,

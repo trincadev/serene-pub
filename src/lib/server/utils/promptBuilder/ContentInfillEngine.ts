@@ -688,9 +688,17 @@ export class ContentInfillEngine {
 
 		// If we have an interpolation context, build characters and personas with lore
 		if (interpolationContext) {
-			// Get interpolated characters from the chat's characters
-			const assistantCharacters =
-				this.getInterpolatedCharacters(interpolationContext)
+			// Use characters from baseContext if available (already filtered by PromptBuilder)
+			// Otherwise fall back to getting them from chat (for backward compatibility)
+			let assistantCharacters
+			if (baseContext.characters && typeof baseContext.characters === 'string') {
+				// Characters are already compiled and interpolated in the base context
+				assistantCharacters = JSON.parse(baseContext.characters)
+			} else {
+				// Fall back to getting characters from chat (may not respect visibility filtering)
+				assistantCharacters = this.getInterpolatedCharacters(interpolationContext)
+			}
+			
 			const assistantCharactersWithLore = attachCharacterLoreToCharacters(
 				assistantCharacters,
 				state.includedCharacterLore,

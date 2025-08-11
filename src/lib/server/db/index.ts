@@ -26,15 +26,29 @@ if (!fs.existsSync(metaPath)) {
 	fs.writeFileSync(metaPath, JSON.stringify({ version: "0.0.0" }, null, 2))
 }
 
-// Read meta.json
-let meta: MetaFile = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+// Read meta.json with error handling
+let meta: MetaFile
+try {
+	meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+} catch (error) {
+	console.warn(`Warning: Invalid meta.json detected, recreating. Error: ${error}`)
+	// Recreate meta.json if it's corrupted
+	meta = { version: "0.0.0" }
+	fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2))
+}
 
 // Database lock functions
 const DEFAULT_LOCK_LENGTH = 5000 // 5 seconds in milliseconds
 
 async function checkDatabaseLock(): Promise<void> {
-	// Refresh meta from file
-	meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+	// Refresh meta from file with error handling
+	try {
+		meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+	} catch (error) {
+		console.warn(`Warning: Error reading meta.json during lock check. Error: ${error}`)
+		meta = { version: "0.0.0" }
+		fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2))
+	}
 
 	if (!meta.lock) {
 		// No lock exists, continue
@@ -54,7 +68,13 @@ async function checkDatabaseLock(): Promise<void> {
 		await new Promise((resolve) => setTimeout(resolve, waitTime))
 
 		// Check again after waiting
-		meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+		try {
+			meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+		} catch (error) {
+			console.warn(`Warning: Error reading meta.json during lock recheck. Error: ${error}`)
+			meta = { version: "0.0.0" }
+			fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2))
+		}
 
 		if (
 			meta.lock &&
@@ -73,8 +93,13 @@ async function checkDatabaseLock(): Promise<void> {
 
 function updateDatabaseLock(): void {
 	try {
-		// Refresh meta from file
-		meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+		// Refresh meta from file with error handling
+		try {
+			meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+		} catch (error) {
+			console.warn(`Warning: Error reading meta.json during lock update. Error: ${error}`)
+			meta = { version: "0.0.0" }
+		}
 
 		meta.lock = {
 			timestamp: Date.now(),
@@ -108,7 +133,12 @@ function stopLockUpdates(): void {
 
 	// Clear the lock when stopping
 	try {
-		meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+		try {
+			meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+		} catch (error) {
+			console.warn(`Warning: Error reading meta.json during lock clear. Error: ${error}`)
+			meta = { version: "0.0.0" }
+		}
 		delete meta.lock
 		fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2))
 	} catch (error) {

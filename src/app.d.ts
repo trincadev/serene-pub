@@ -1091,6 +1091,19 @@ declare global {
 				isActive: boolean
 			}
 		}
+		// Update Chat Character Visibility
+		namespace UpdateChatCharacterVisibility {
+			interface Call {
+				chatId: number
+				characterId: number
+				visibility: string
+			}
+			interface Response {
+				chatId: number
+				characterId: number
+				visibility: string
+			}
+		}
 		namespace SetTheme {
 			interface Call {
 				theme: string

@@ -10,6 +10,7 @@ import {
 	date
 } from "drizzle-orm/pg-core"
 import { GroupReplyStrategies } from "../../shared/constants/GroupReplyStrategies"
+import { ChatCharacterVisibility } from "../../shared/constants/ChatCharacterVisibility"
 
 export const users = pgTable("users", {
 	id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
@@ -686,7 +687,9 @@ export const chatCharacters = pgTable(
 			onDelete: "set null"
 		}),
 		position: integer("position").default(0), // Position in the chat
-		isActive: boolean("is_active").notNull().default(true) // 1 if active in chat, 0 if not
+		isActive: boolean("is_active").notNull().default(true), // 1 if active in chat, 0 if not
+		// Character visibility optimization setting
+		visibility: text("visibility").notNull().default(ChatCharacterVisibility.VISIBLE) // Controls how much character info is shown when not responding
 	},
 	(table) => ({
 		pk: uniqueIndex("chat_characters_pk").on(

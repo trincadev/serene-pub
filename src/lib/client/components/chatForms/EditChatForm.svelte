@@ -10,6 +10,7 @@
 	import { Switch } from "@skeletonlabs/skeleton-svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import { GroupReplyStrategies } from "$lib/shared/constants/GroupReplyStrategies"
+	import { ChatCharacterVisibility } from "$lib/shared/constants/ChatCharacterVisibility"
 	import { z } from "zod"
 
 	// Zod validation schema
@@ -343,6 +344,19 @@
 				}
 			}
 		)
+		socket.on(
+			"updateChatCharacterVisibility",
+			(msg: Sockets.UpdateChatCharacterVisibility.Response) => {
+				if (chat && chat.id === msg.chatId) {
+					const visibilityLabel = ChatCharacterVisibility.options.find(
+						opt => opt.value === msg.visibility
+					)?.label || msg.visibility
+					toaster.success({
+						title: `Character visibility set to ${visibilityLabel}`
+					})
+				}
+			}
+		)
 		socket.on("createChat", (res: any) => {
 			toaster.success({
 				title: "Chat Created",
@@ -370,6 +384,7 @@
 		socket.off("lorebookList")
 		socket.off("tagsList")
 		socket.off("toggleChatCharacterActive")
+		socket.off("updateChatCharacterVisibility")
 		socket.off("createChat")
 		socket.off("updateChat")
 	})
@@ -383,6 +398,57 @@
 			characterId: c.id
 		}
 		socket.emit("toggleChatCharacterActive", req)
+	}
+
+	function updateCharacterVisibility(
+		c: SelectCharacter,
+		visibility: string
+	): void {
+		const req: Sockets.UpdateChatCharacterVisibility.Call = {
+			chatId: chat!.id,
+			characterId: c.id,
+			visibility
+		}
+		socket.emit("updateChatCharacterVisibility", req)
+	}
+
+	function getVisibilityIcon(visibility: string) {
+		switch (visibility) {
+			case ChatCharacterVisibility.VISIBLE:
+				return Icons.Eye
+			case ChatCharacterVisibility.MINIMAL:
+				return Icons.EyeClosed
+			case ChatCharacterVisibility.HIDDEN:
+				return Icons.EyeOff
+			default:
+				return Icons.Eye
+		}
+	}
+
+	function getVisibilityColor(visibility: string) {
+		switch (visibility) {
+			case ChatCharacterVisibility.VISIBLE:
+				return "text-success-500"
+			case ChatCharacterVisibility.MINIMAL:
+				return "text-warning-500"
+			case ChatCharacterVisibility.HIDDEN:
+				return "text-error-500"
+			default:
+				return "text-success-500"
+		}
+	}
+
+	function getNextVisibility(current: string): string {
+		switch (current) {
+			case ChatCharacterVisibility.VISIBLE:
+				return ChatCharacterVisibility.MINIMAL
+			case ChatCharacterVisibility.MINIMAL:
+				return ChatCharacterVisibility.HIDDEN
+			case ChatCharacterVisibility.HIDDEN:
+				return ChatCharacterVisibility.VISIBLE
+			default:
+				return ChatCharacterVisibility.VISIBLE
+		}
 	}
 </script>
 
@@ -447,6 +513,11 @@
 									(cc) => cc.characterId === c.id
 								)?.isActive
 							: true}
+						{@const visibility = chat
+							? chat?.chatCharacters?.find(
+									(cc) => cc.characterId === c.id
+								)?.visibility || ChatCharacterVisibility.VISIBLE
+							: ChatCharacterVisibility.VISIBLE}
 						<div class="flex gap-2">
 							<div
 								class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-3"
@@ -480,39 +551,53 @@
 								</div>
 							</div>
 							<div
-								class="flex flex-col justify-between py-1 text-center"
+								class="flex flex-col justify-between py-1 text-center gap-2"
 							>
-								<button
-									class="preset-tonal-error btn btn-sm opacity-75"
-									onclick={() =>
-										confirmRemoveCharacter(
-											c.id,
-											c.nickname || c.name
-										)}
-									title="Remove"
-								>
-									<Icons.X size={16} />
-								</button>
-								<span title="Toggle Character Active">
-									<Switch
-										name="Toggle Character Active"
-										controlWidth="w-9"
-										controlActive="preset-filled-success-500"
-										controlDisabled="preset-filled-surface-500"
-										compact
-										checked={isActive}
-										disabled={!chat}
-										onCheckedChange={(e) =>
-											toggleCharacterActive(e, c)}
+								<!-- Show remove button only when creating (no chat) -->
+								{#if !chat}
+									<button
+										class="preset-tonal-error btn btn-sm opacity-75"
+										onclick={() =>
+											confirmRemoveCharacter(
+												c.id,
+												c.nickname || c.name
+											)}
+										title="Remove"
 									>
-										{#snippet inactiveChild()}<Icons.Meh
-												size="20"
-											/>{/snippet}
-										{#snippet activeChild()}<Icons.Smile
-												size="20"
-											/>{/snippet}
-									</Switch>
-								</span>
+										<Icons.X size={16} />
+									</button>
+								{/if}
+								<!-- Show character controls only when editing (chat exists) -->
+								{#if chat}
+									<div class="flex flex-col gap-1">
+										<span title="Toggle Character Active">
+											<Switch
+												name="Toggle Character Active"
+												controlWidth="w-9"
+												controlActive="preset-filled-success-500"
+												controlDisabled="preset-filled-surface-500"
+												compact
+												checked={isActive}
+												onCheckedChange={(e) =>
+													toggleCharacterActive(e, c)}
+											>
+												{#snippet inactiveChild()}<Icons.Meh
+														size="20"
+													/>{/snippet}
+												{#snippet activeChild()}<Icons.Smile
+														size="20"
+													/>{/snippet}
+											</Switch>
+										</span>
+										<button
+											class="btn btn-sm {getVisibilityColor(visibility)} hover:scale-110 transition-transform"
+											onclick={() => updateCharacterVisibility(c, getNextVisibility(visibility))}
+											title="Context Optimization: {ChatCharacterVisibility.options.find(opt => opt.value === visibility)?.label || 'Full Info'}"
+										>
+											<svelte:component this={getVisibilityIcon(visibility)} size={20} />
+										</button>
+									</div>
+								{/if}
 							</div>
 						</div>
 					{/each}
@@ -552,27 +637,33 @@
 									{p.description || ""}
 								</div>
 							</div>
-							<button
-								class="text-text-error-500 absolute -top-2 -right-2 z-10 mt-2 mr-2 opacity-0 group-hover:opacity-100"
-								onclick={() =>
-									confirmRemovePersona(p.id, p.name)}
-								title="Remove"
-							>
-								<Icons.X size={26} class="text-error-500" />
-							</button>
+							<!-- Show remove button only when creating (no chat) -->
+							{#if !chat}
+								<button
+									class="text-text-error-500 absolute -top-2 -right-2 z-10 mt-2 mr-2 opacity-0 group-hover:opacity-100"
+									onclick={() =>
+										confirmRemovePersona(p.id, p.name)}
+									title="Remove"
+								>
+									<Icons.X size={26} class="text-error-500" />
+								</button>
+							{/if}
 						</div>
-						<div
-							class="flex flex-col justify-between py-1 text-center"
-						>
-							<button
-								class="preset-tonal-error btn btn-sm opacity-75"
-								onclick={() =>
-									confirmRemovePersona(p.id, p.name)}
-								title="Remove"
+						<!-- Show remove button only when creating (no chat) -->
+						{#if !chat}
+							<div
+								class="flex flex-col justify-between py-1 text-center"
 							>
-								<Icons.X size={16} />
-							</button>
-						</div>
+								<button
+									class="preset-tonal-error btn btn-sm opacity-75"
+									onclick={() =>
+										confirmRemovePersona(p.id, p.name)}
+									title="Remove"
+								>
+									<Icons.X size={16} />
+								</button>
+							</div>
+						{/if}
 					</div>
 				{/each}
 			</div>

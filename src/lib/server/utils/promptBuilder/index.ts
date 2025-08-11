@@ -11,6 +11,7 @@ import {
 	historyEntryIterator
 } from "./PromptIterators"
 import { PromptFormats } from "$lib/shared/constants/PromptFormats"
+import { ChatCharacterVisibility } from "$lib/shared/constants/ChatCharacterVisibility"
 
 // Import modular components
 import { InterpolationEngine } from "./InterpolationEngine"
@@ -216,17 +217,30 @@ export class PromptBuilder {
 		return persona.name
 	}
 
-	compileCharacterData(character: SelectCharacter): {
+	compileCharacterData(character: SelectCharacter, visibility?: string): {
 		name: string
 		nickname?: string
 		description: string
 		personality?: string
-	} {
-		const char = {
+	} | null {
+		// If character is hidden, return null to exclude from prompt entirely
+		if (visibility === ChatCharacterVisibility.HIDDEN) {
+			return null
+		}
+
+		const char: any = {
 			name: this.contextBuildCharacterName(character),
-			nickname: this.contextBuildCharacterNickname(character),
-			description: this.contextBuildCharacterDescription(character),
-			personality: this.contextBuildCharacterPersonality(character)
+			nickname: this.contextBuildCharacterNickname(character)
+		}
+
+		// For minimal visibility, only include name/nickname and description
+		if (visibility === ChatCharacterVisibility.MINIMAL) {
+			char.description = this.contextBuildCharacterDescription(character)
+		} 
+		// For visible (default) or undefined, include all character data
+		else {
+			char.description = this.contextBuildCharacterDescription(character)
+			char.personality = this.contextBuildCharacterPersonality(character)
 		}
 
 		// delete any undefined/null properties
@@ -283,13 +297,94 @@ export class PromptBuilder {
 		}
 	}
 
+	// Modified character lore iterator that respects visibility settings
+	private characterLoreEntryIteratorWithVisibility = function* ({
+		chat,
+		priority,
+		currentCharacterId
+	}: {
+		chat: BasePromptChat
+		priority: number
+		currentCharacterId: number
+	}): IterableIterator<SelectCharacterLoreEntry> {
+		const chatWithLorebook = chat as typeof chat & {
+			lorebook?: { characterLoreEntries: SelectCharacterLoreEntry[] }
+		}
+		const entries: SelectCharacterLoreEntry[] =
+			chatWithLorebook.lorebook?.characterLoreEntries || []
+		let filtered: SelectCharacterLoreEntry[] = []
+		
+		if (priority === 4) {
+			filtered = entries.filter((e) => e.constant === true)
+		} else if ([3, 2, 1].includes(priority)) {
+			filtered = entries.filter((e) => e.priority === priority)
+		}
+		
+		filtered = filtered.filter((e) => {
+			if (!e.lorebookBindingId) return false
+			const lorebook =
+				chat.lorebookId === e.lorebookId ? chat.lorebook : undefined
+			if (!lorebook) return false
+			const binding = lorebook.lorebookBindings.find(
+				(b: SelectLorebookBinding) => b.id === e.lorebookBindingId
+			)
+			if (!binding) return false
+			
+			if (binding.characterId) {
+				const chatCharacter = chat.chatCharacters?.find(
+					(cc) => cc.character.id === binding.characterId
+				)
+				
+				if (!chatCharacter) return false
+				
+				// Always include lore for the current character
+				if (binding.characterId === currentCharacterId) {
+					return true
+				}
+				
+				// For other characters, check their visibility setting
+				// Hidden or minimal characters don't get lore included
+				if (chatCharacter.visibility === ChatCharacterVisibility.HIDDEN ||
+					chatCharacter.visibility === ChatCharacterVisibility.MINIMAL) {
+					return false
+				}
+				
+				return true
+			} else if (binding.personaId) {
+				return chat.chatPersonas?.some(
+					(cp) => cp.persona.id === binding.personaId
+				)
+			}
+			return false
+		})
+		
+		filtered.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+		for (const entry of filtered) {
+			yield entry
+		}
+	}
+
 	buildContextData(currentCharacter: SelectCharacter) {
 		const chatCharacters = this.chat.chatCharacters as
 			| (SelectChatCharacter & { character: SelectCharacter })[]
 			| undefined
-		this.assistantCharacters = (chatCharacters || []).map((cc) =>
-			this.compileCharacterData(cc.character)
-		)
+		
+		// Build assistant characters with visibility filtering
+		this.assistantCharacters = (chatCharacters || [])
+			.filter((cc) => {
+				// Always include the current character
+				const isCurrentCharacter = cc.character.id === this.currentCharacterId
+				// Filter out hidden characters unless they're the current character
+				return isCurrentCharacter || cc.visibility !== ChatCharacterVisibility.HIDDEN
+			})
+			.map((cc) => {
+				// Always show the current character with full visibility
+				const isCurrentCharacter = cc.character.id === this.currentCharacterId
+				const visibility = isCurrentCharacter ? ChatCharacterVisibility.VISIBLE : cc.visibility
+				
+				return this.compileCharacterData(cc.character, visibility)
+			})
+		
 		this.userCharacters = (this.chat.chatPersonas || []).map((cp) =>
 			this.compilePersonaData(cp.persona)
 		)
@@ -407,6 +502,13 @@ export class PromptBuilder {
 		// Create the content infill engine with optional matching strategy
 		let infillEngine: ContentInfillEngine
 
+		// Create a bound version of the character lore iterator with current character ID
+		const boundCharacterLoreIterator = (params: { chat: BasePromptChat; priority: number }) =>
+			this.characterLoreEntryIteratorWithVisibility({
+				...params,
+				currentCharacterId: this.currentCharacterId
+			})
+
 		if (matchingStrategyConfig) {
 			// Create engine with strategy from config
 			infillEngine = await ContentInfillEngine.createWithStrategy(
@@ -416,7 +518,7 @@ export class PromptBuilder {
 				isHistoryEntry,
 				this.chatMessageIterator.bind(this),
 				this.worldLoreEntryIterator.bind(this),
-				characterLoreEntryIterator,
+				boundCharacterLoreIterator,
 				historyEntryIterator,
 				matchingStrategyConfig
 			)
@@ -429,7 +531,7 @@ export class PromptBuilder {
 				isHistoryEntry,
 				this.chatMessageIterator.bind(this),
 				this.worldLoreEntryIterator.bind(this),
-				characterLoreEntryIterator,
+				boundCharacterLoreIterator,
 				historyEntryIterator,
 				matchingStrategy // Will default to keyword if undefined
 			)
@@ -479,8 +581,17 @@ export class PromptBuilder {
 	private buildSources(scenarioSource: null | "character" | "chat") {
 		const chatCharactersArr = this.chat.chatCharacters || []
 		const chatPersonasArr = this.chat.chatPersonas || []
+		
+		// Filter characters based on visibility settings (same logic as buildContextData)
+		const visibleChatCharacters = chatCharactersArr.filter((cc: any) => {
+			// Always include the current character
+			const isCurrentCharacter = cc.character.id === this.currentCharacterId
+			// Filter out hidden characters unless they're the current character
+			return isCurrentCharacter || cc.visibility !== ChatCharacterVisibility.HIDDEN
+		})
+		
 		return {
-			characters: chatCharactersArr.map((cc: any) => {
+			characters: visibleChatCharacters.map((cc: any) => {
 				const c = cc.character
 				return {
 					id: c.id,

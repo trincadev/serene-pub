@@ -16,6 +16,7 @@
 	import TagsSidebar from "./sidebars/TagsSidebar.svelte"
 	import * as skio from "sveltekit-io"
 	import { toaster } from "$lib/client/utils/toaster"
+	import { KeyboardNavigationManager } from "$lib/client/utils/keyboardNavigation"
 	import SettingsSidebar from "$lib/client/components/sidebars/SettingsSidebar.svelte"
 	import type { Snippet } from "svelte"
 	import { Theme } from "$lib/client/consts/Theme"
@@ -28,6 +29,12 @@
 	let { children }: Props = $props()
 
 	const socket = skio.get()
+	
+	// Focus management refs
+	let mainContentRef: HTMLElement
+	let leftSidebarRef: HTMLElement  
+	let rightSidebarRef: HTMLElement
+	let keyboardNavManager: KeyboardNavigationManager
 
 	let userCtx: { user: any } = $state({} as { user: any })
 	let panelsCtx: PanelsCtx = $state({
@@ -204,6 +211,32 @@
 		setContext("themeCtx", themeCtx)
 		setContext("systemSettingsCtx", systemSettingsCtx)
 
+		// Initialize keyboard navigation
+		keyboardNavManager = new KeyboardNavigationManager({
+			panelsCtx,
+			onFocusMain: () => {
+				if (mainContentRef) {
+					KeyboardNavigationManager.focusFirstInteractive(mainContentRef)
+					KeyboardNavigationManager.announceToScreenReader("Main content focused")
+				}
+			},
+			onFocusLeftSidebar: () => {
+				if (leftSidebarRef) {
+					KeyboardNavigationManager.focusFirstInteractive(leftSidebarRef)
+					const panelName = panelsCtx.leftNav[panelsCtx.leftPanel!]?.title || panelsCtx.leftPanel
+					KeyboardNavigationManager.announceToScreenReader(`${panelName} sidebar focused`)
+				}
+			},
+			onFocusRightSidebar: () => {
+				if (rightSidebarRef) {
+					KeyboardNavigationManager.focusFirstInteractive(rightSidebarRef)
+					const panelName = panelsCtx.rightNav[panelsCtx.rightPanel!]?.title || panelsCtx.rightPanel
+					KeyboardNavigationManager.announceToScreenReader(`${panelName} sidebar focused`)
+				}
+			}
+		})
+		keyboardNavManager.addGlobalListener()
+
 		socket.on("user", (message: Sockets.User.Response) => {
 			userCtx.user = message.user
 		})
@@ -233,6 +266,7 @@
 	})
 
 	onDestroy(() => {
+		keyboardNavManager?.removeGlobalListener()
 		socket.off("user")
 		socket.off("systemSettings")
 		socket.off("error")
@@ -260,11 +294,14 @@
 						panelsCtx.leftNav[panelsCtx.leftPanel]?.title ||
 						panelsCtx.leftPanel}
 					<div
+						bind:this={leftSidebarRef}
 						class="bg-surface-50-950 me-2 flex h-full w-full flex-col overflow-y-auto rounded-r-lg"
 						in:fly={{ x: -100, duration: 200 }}
 						out:fly={{ x: -100, duration: 200 }}
 						role="region"
 						aria-labelledby="left-panel-title"
+						aria-label="{title} sidebar - {Object.keys(panelsCtx.leftNav).indexOf(panelsCtx.leftPanel) + 1} of {Object.keys(panelsCtx.leftNav).length}"
+						tabindex="-1"
 					>
 						<div class="flex items-center justify-between p-4">
 							<h2 
@@ -314,9 +351,10 @@
 			</aside>
 			<!-- Main Content -->
 			<main 
+				bind:this={mainContentRef}
 				class="flex h-full flex-col overflow-hidden"
 				role="main"
-				aria-label="Main content area"
+				tabindex="-1"
 			>
 				<Header />
 				<div class="flex-1 overflow-auto">
@@ -334,11 +372,14 @@
 						panelsCtx.rightNav[panelsCtx.rightPanel]?.title ||
 						panelsCtx.rightPanel}
 					<div
+						bind:this={rightSidebarRef}
 						class="bg-surface-50-950 flex h-full w-full flex-col overflow-y-auto rounded-l-lg"
 						in:fly={{ x: 100, duration: 200 }}
 						out:fly={{ x: 100, duration: 200 }}
 						role="region"
 						aria-labelledby="right-panel-title"
+						aria-label="{title} sidebar - {Object.keys(panelsCtx.rightNav).indexOf(panelsCtx.rightPanel) + 1} of {Object.keys(panelsCtx.rightNav).length}"
+						tabindex="-1"
 					>
 						<div class="flex items-center justify-between p-4">
 							<h2

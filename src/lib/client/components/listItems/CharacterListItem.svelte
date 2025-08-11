@@ -42,6 +42,7 @@
 	id={character.id}
 	onclick={handleClick}
 	{contentTitle}
+	itemType="Character"
 	classes={character.isFavorite ? "border border-primary-500 " + classes : classes}
 >
 	{#snippet content()}

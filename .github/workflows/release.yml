@@ -50,6 +50,9 @@ jobs:
             - name: Build app
               run: npm run build
 
+            - name: Create platform-specific executables and icons
+              run: node scripts/create-executables.js
+
             - name: Prepare production dependencies
               shell: bash
               run: |
