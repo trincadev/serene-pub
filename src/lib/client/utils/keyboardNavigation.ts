@@ -38,6 +38,10 @@ export class KeyboardNavigationManager {
 				event.preventDefault()
 				this.focusMainContent()
 				break
+			case ',':
+				event.preventDefault()
+				this.focusSiteNavigation()
+				break
 		}
 
 		// Chat-specific navigation (when in chat)
@@ -92,12 +96,11 @@ export class KeyboardNavigationManager {
 	}
 
 	private focusLeftSidebar() {
-		// If no left panel is open, open the first available one
+		// Check if left panel is already open
 		if (!this.panelsCtx.leftPanel) {
-			const firstLeftPanel = Object.keys(this.panelsCtx.leftNav)[0]
-			if (firstLeftPanel) {
-				this.panelsCtx.openPanel({ key: firstLeftPanel })
-			}
+			// Inform screen reader that no sidebar is open
+			KeyboardNavigationManager.announceToScreenReader('No left sidebar is currently open')
+			return
 		}
 		
 		// Focus the left sidebar
@@ -110,12 +113,11 @@ export class KeyboardNavigationManager {
 	}
 
 	private focusRightSidebar() {
-		// If no right panel is open, open the first available one
+		// Check if right panel is already open
 		if (!this.panelsCtx.rightPanel) {
-			const firstRightPanel = Object.keys(this.panelsCtx.rightNav)[0]
-			if (firstRightPanel) {
-				this.panelsCtx.openPanel({ key: firstRightPanel })
-			}
+			// Inform screen reader that no sidebar is open
+			KeyboardNavigationManager.announceToScreenReader('No right sidebar is currently open')
+			return
 		}
 		
 		// Focus the right sidebar
@@ -128,6 +130,42 @@ export class KeyboardNavigationManager {
 		// Close any open mobile menus to focus main content
 		this.panelsCtx.isMobileMenuOpen = false
 		this.panelsCtx.mobilePanel = null
+	}
+
+	private focusSiteNavigation() {
+		// Focus the main site navigation/header area
+		const siteNav = document.querySelector('nav[role="navigation"]') as HTMLElement ||
+			document.querySelector('header nav') as HTMLElement ||
+			document.querySelector('[aria-label*="navigation"]') as HTMLElement ||
+			document.querySelector('[aria-label*="Navigation"]') as HTMLElement ||
+			document.querySelector('.site-nav') as HTMLElement ||
+			document.querySelector('header') as HTMLElement
+
+		if (siteNav) {
+			// Try to focus the first interactive element in the navigation
+			const firstInteractive = siteNav.querySelector(
+				'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+			) as HTMLElement
+
+			if (firstInteractive) {
+				firstInteractive.focus()
+				KeyboardNavigationManager.announceToScreenReader('Site navigation focused')
+			} else {
+				// If no interactive elements, focus the nav itself
+				siteNav.focus()
+				KeyboardNavigationManager.announceToScreenReader('Site navigation area focused')
+			}
+		} else {
+			// Fallback: focus the document body or first main element
+			const main = document.querySelector('main') as HTMLElement ||
+				document.querySelector('[role="main"]') as HTMLElement ||
+				document.body
+
+			if (main) {
+				KeyboardNavigationManager.focusFirstInteractive(main)
+				KeyboardNavigationManager.announceToScreenReader('Main navigation area focused')
+			}
+		}
 	}
 
 	// Add listener for global keyboard events

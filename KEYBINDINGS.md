@@ -5,9 +5,10 @@ This document outlines all keyboard shortcuts and navigation patterns available 
 ## Global Navigation
 
 ### Panel Focus
-- **Alt + [** - Focus left sidebar panel
-- **Alt + ]** - Focus right sidebar panel  
+- **Alt + [** - Focus left sidebar panel (if open, otherwise announces no sidebar is open)
+- **Alt + ]** - Focus right sidebar panel (if open, otherwise announces no sidebar is open)
 - **Alt + /** - Focus main content area
+- **Alt + ,** - Focus site navigation area
 
 ### General Navigation
 - **Tab** - Navigate forward through interactive elements
@@ -110,8 +111,10 @@ When focusing panels, screen readers will announce:
 - Panel name and purpose
 - Number of items (if applicable)
 - Current selection
+- Status messages when panels are not open
 
 Example: "Characters Sidebar - 12 characters available, Bob selected"
+Example: "No left sidebar is currently open" when pressing Alt+[ with no open left panel
 
 ### Action Feedback Announcements
 When using keyboard shortcuts, screen readers will announce:
@@ -119,8 +122,11 @@ When using keyboard shortcuts, screen readers will announce:
 - **Regeneration**: "Regenerating last response" or "No response available to regenerate"
 - **Swiping**: "Swiped message left/right" or "Cannot swipe - no variations available"
 - **Focus changes**: When moving between messages or panels
+- **Site navigation**: "Site navigation focused" when using Alt+,
+- **Panel status**: "No left/right sidebar is currently open" when attempting to focus closed panels
 
 Example: "Navigated to latest message" when pressing Shift + G
+Example: "Site navigation focused" when pressing Alt + ,
 
 ## Form Field Guidance
 

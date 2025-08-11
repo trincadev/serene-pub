@@ -690,7 +690,8 @@
 					class="flex flex-1 flex-col gap-3"
 					bind:this={messagesContainer}
 					role="group"
-					aria-label="Chat conversation with {chat.chatMessages.length} messages"
+					aria-label="Chat conversation with {chat.chatMessages
+						.length} messages"
 				>
 					{#each chat.chatMessages as msg, index (msg.id)}
 						{@const character = getMessageCharacter(msg)}
@@ -704,22 +705,38 @@
 								editChatMessage?.id !== msg.id}
 							tabindex="-1"
 							role="article"
-							aria-label="Message {index + 1} of {chat.chatMessages.length} from {character?.nickname || character?.name || 'Unknown'}: {msg.content.slice(0, 100)}{msg.content.length > 100 ? '...' : ''}"
+							aria-label="Message {index + 1} of {chat
+								.chatMessages
+								.length} from {character?.nickname ||
+								character?.name ||
+								'Unknown'}: {msg.content.slice(0, 100)}{msg
+								.content.length > 100
+								? '...'
+								: ''}"
 							onkeydown={(e) => {
-								if (e.key === 'Enter' || e.key === ' ') {
-									e.preventDefault();
+								if (e.key === "Enter" || e.key === " ") {
+									e.preventDefault()
 									// Focus first available action button
-									const messageEl = e.currentTarget;
-									const firstButton = messageEl.querySelector('button:not([disabled])');
-									if (firstButton) firstButton.focus();
-								} else if (e.key === 'ArrowUp' && index > 0) {
-									e.preventDefault();
-									const prevMessage = document.getElementById(`message-${chat.chatMessages[index - 1].id}`);
-									if (prevMessage) prevMessage.focus();
-								} else if (e.key === 'ArrowDown' && index < chat.chatMessages.length - 1) {
-									e.preventDefault();
-									const nextMessage = document.getElementById(`message-${chat.chatMessages[index + 1].id}`);
-									if (nextMessage) nextMessage.focus();
+									const messageEl = e.currentTarget
+									const firstButton = messageEl.querySelector(
+										"button:not([disabled])"
+									)
+									if (firstButton) firstButton.focus()
+								} else if (e.key === "ArrowUp" && index > 0) {
+									e.preventDefault()
+									const prevMessage = document.getElementById(
+										`message-${chat.chatMessages[index - 1].id}`
+									)
+									if (prevMessage) prevMessage.focus()
+								} else if (
+									e.key === "ArrowDown" &&
+									index < chat.chatMessages.length - 1
+								) {
+									e.preventDefault()
+									const nextMessage = document.getElementById(
+										`message-${chat.chatMessages[index + 1].id}`
+									)
+									if (nextMessage) nextMessage.focus()
 								}
 							}}
 						>
@@ -1276,7 +1293,9 @@
 			class="btn btn-sm msg-cntrl-icon hover:preset-filled-secondary-500"
 			class:preset-filled-secondary-500={msg.isHidden}
 			title={msg.isHidden ? "Unhide Message" : "Hide Message"}
-			aria-label={msg.isHidden ? "Unhide this message" : "Hide this message"}
+			aria-label={msg.isHidden
+				? "Unhide this message"
+				: "Hide this message"}
 			disabled={lastMessage?.isGenerating || !!editChatMessage}
 			onclick={(e) => handleHideMessage(e, msg)}
 		>
@@ -1308,27 +1327,28 @@
 			<Icons.Trash2 size={16} aria-hidden="true" />
 			<span class="lg:hidden">Delete Message</span>
 		</button>
-	{#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
-		<button
-			class="btn btn-sm msg-cntrl-icon hover:preset-filled-warning-500"
-			title="Regenerate Response"
-			disabled={!canRegenerateLastMessage}
-			onclick={(e) => handleRegenerateMessage(e, msg)}
-		>
-			<Icons.RefreshCw size={16} />
-			<span class="lg:hidden">Regenerate Response</span>
-		</button>
-	{/if}
-	{#if msg.isGenerating}
-		<button
-			class="btn btn-sm msg-cntrl-icon preset-filled-error-500"
-			title="Stop Generation"
-			onclick={(e) => handleAbortMessage(e, msg)}
-		>
-			<Icons.Square size={16} />
-			<span class="lg:hidden">Stop Generation</span>
-		</button>
-	{/if}
+		{#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
+			<button
+				class="btn btn-sm msg-cntrl-icon hover:preset-filled-warning-500"
+				title="Regenerate Response"
+				disabled={!canRegenerateLastMessage}
+				onclick={(e) => handleRegenerateMessage(e, msg)}
+			>
+				<Icons.RefreshCw size={16} />
+				<span class="lg:hidden">Regenerate Response</span>
+			</button>
+		{/if}
+		{#if msg.isGenerating}
+			<button
+				class="btn btn-sm msg-cntrl-icon preset-filled-error-500"
+				title="Stop Generation"
+				onclick={(e) => handleAbortMessage(e, msg)}
+			>
+				<Icons.Square size={16} />
+				<span class="lg:hidden">Stop Generation</span>
+			</button>
+		{/if}
+	</div>
 {/snippet}
 
 {#snippet extraControlsButton()}
