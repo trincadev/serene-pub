@@ -714,7 +714,7 @@
 								? '...'
 								: ''}"
 							onkeydown={(e) => {
-								if (e.key === "Enter" || e.key === " ") {
+								if (e.key === "Enter") {
 									e.preventDefault()
 									// Focus first available action button
 									const messageEl = e.currentTarget

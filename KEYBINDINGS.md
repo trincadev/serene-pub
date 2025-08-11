@@ -14,7 +14,6 @@ This document outlines all keyboard shortcuts and navigation patterns available 
 - **Tab** - Navigate forward through interactive elements
 - **Shift + Tab** - Navigate backward through interactive elements
 - **Enter** - Activate buttons, links, and other interactive elements
-- **Space** - Activate buttons and toggle controls
 - **Escape** - Close modals, popups, and cancel operations
 
 ## Chat Interface Navigation
@@ -26,7 +25,7 @@ This document outlines all keyboard shortcuts and navigation patterns available 
 - `Alt + End` - Navigate to last message
 - `Shift + G` - Navigate to latest (most recent) message
 - `Arrow Up/Down` - Navigate between messages when focused
-- `Enter/Space` - Focus message action buttons when on a message
+- `Enter` - Focus message action buttons when on a message
 
 ### Message Actions
 - `Ctrl/Cmd + R` - Refresh (regenerate) last response
@@ -55,7 +54,7 @@ This document outlines all keyboard shortcuts and navigation patterns available 
 
 ### Character Management
 - **Tab** - Navigate between character list items
-- **Enter/Space** - Select character
+- **Enter** - Select character
 - **E** - Edit character (when character is focused)
 - **D** - Delete character (when character is focused) 
 - **F** - Toggle favorite status
@@ -63,13 +62,13 @@ This document outlines all keyboard shortcuts and navigation patterns available 
 
 ### Chat Management  
 - **Tab** - Navigate between chat list items
-- **Enter/Space** - Open chat
+- **Enter** - Open chat
 - **E** - Edit chat settings
 - **D** - Delete chat
 
 ### Persona Management
 - **Tab** - Navigate between persona list items
-- **Enter/Space** - Select persona
+- **Enter** - Select persona
 - **E** - Edit persona
 - **D** - Delete persona
 
