@@ -754,8 +754,6 @@ export class PromptBuilder {
 			historyTotal = lorebook.historyEntries.length
 		}
 
-		// console.log("Prompt messages:" + JSON.stringify(renderedMessages))
-
 		// Default: return as before
 		return {
 			prompt: renderedPrompt,

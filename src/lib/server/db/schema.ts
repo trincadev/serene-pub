@@ -755,5 +755,6 @@ export const systemSettings = pgTable("system_settings", {
 		.default(true),
 	enableEasyPersonaCreation: boolean("enable_easy_persona_creation")
 		.notNull()
-		.default(true)
+		.default(true),
+	showHomePageBanner: boolean("show_home_page_banner").default(true),
 })

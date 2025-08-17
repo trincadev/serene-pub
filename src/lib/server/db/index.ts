@@ -180,7 +180,7 @@ export function compareVersions(a: string, b: string): -1 | 0 | 1 {
 }
 
 async function runMigrations() {
-	// TODO: Update this in 0.4.0 to perform pg backups. Not needed for 0.3.0
+	// TODO: Update this in 0.4.1 to perform pg backups. Not needed for 0.3.0
 
 	await migrate(db, {
 		migrationsFolder: dbConfig.migrationsDir

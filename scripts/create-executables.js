@@ -185,9 +185,9 @@ async function createMacOSExecutable(platformDir, config) {
 	<key>CFBundleName</key>
 	<string>Serene Pub</string>
 	<key>CFBundleVersion</key>
-	<string>0.4.0</string>
+	<string>0.4.1</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.4.0</string>
+	<string>0.4.1</string>
 	<key>CFBundleIconFile</key>
 	<string>favicon.icns</string>
 	<key>CFBundlePackageType</key>

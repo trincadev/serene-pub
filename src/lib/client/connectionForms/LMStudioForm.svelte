@@ -270,6 +270,7 @@
 				<label class="font-semibold" for="stream">Stream</label>
 				<input
 					type="checkbox"
+					id="stream"
 					name="stream"
 					bind:checked={extraFields.stream}
 					onchange={() => {

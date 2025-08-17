@@ -184,16 +184,20 @@
 	}
 
 	$effect(() => {
-		const _chatId = page.params.id
-		if (_chatId) {
-			chatId = Number.parseInt(_chatId)
+		// React to chatId changes (which is derived from page.params.id)
+		if (chatId) {
 			// Reset state when switching chats
+			chat = undefined // Clear current chat data
+			pagination = undefined
+			chatResponseOrder = undefined
+			draftCompiledPrompt = undefined
+			editChatMessage = undefined
+			newMessage = ""
 			isInitialLoad = true
 			lastSeenMessageId = null
 			lastSeenMessageContent = ""
 			loadingOlderMessages = false
 			socket.emit("chat", { id: chatId, limit: 25, offset: 0 })
-			// console.log('Debug - Emitting getChatResponseOrder for chatId:', chatId)
 			socket.emit("getChatResponseOrder", { chatId })
 		}
 	})
@@ -472,7 +476,7 @@
 
 	onMount(() => {
 		socket.on("chat", (msg: Sockets.Chat.Response) => {
-			if (msg.chat.id === Number.parseInt(page.params.id)) {
+			if (msg.chat.id === chatId) {
 				if (chat && loadingOlderMessages) {
 					// Merge older messages (avoiding duplicates)
 					const existingIds = new Set(

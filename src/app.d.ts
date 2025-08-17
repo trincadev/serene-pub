@@ -82,6 +82,7 @@ declare global {
 			showAllCharacterFields: boolean
 			enableEasyCharacterCreation: boolean
 			enableEasyPersonaCreation: boolean
+			showHomePageBanner: boolean
 		}
 	}
 
@@ -137,6 +138,7 @@ declare global {
 					showAllCharacterFields: boolean
 					enableEasyCharacterCreation: boolean
 					enableEasyPersonaCreation: boolean
+					showHomePageBanner: boolean
 				}
 			}
 		}
@@ -539,6 +541,15 @@ declare global {
 			}
 		}
 		namespace UpdateEasyPersonaCreation {
+			interface Call {
+				enabled: boolean
+			}
+			interface Response {
+				success: boolean
+				enabled?: boolean
+			}
+		}
+		namespace UpdateShowHomePageBanner {
 			interface Call {
 				enabled: boolean
 			}

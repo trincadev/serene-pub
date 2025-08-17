@@ -8,37 +8,9 @@ export function getNextCharacterTurn(
 	opts: { triggered?: boolean } = {}
 ): number | null {
 	const { triggered = false } = opts
-	console.log("Debug - getNextCharacterTurn called with:", {
-		charactersLength: chat.chatCharacters?.length,
-		personasLength: chat.chatPersonas?.length,
-		triggered
-	})
 
 	if (!chat.chatCharacters?.length || !chat.chatPersonas?.length) {
-		console.log(
-			"Debug - getNextCharacterTurn early return: no characters or personas"
-		)
 		return null
-	}
-
-	// Validate input data
-	if (!chat.chatCharacters?.every((cc) => cc.character?.id)) {
-		console.error(
-			"Debug - Invalid character data detected:",
-			chat.chatCharacters?.map((cc) => ({
-				hasCharacter: !!cc.character,
-				characterId: cc.character?.id
-			}))
-		)
-	}
-
-	// Ensure positions are consistent
-	const positions = chat.chatCharacters
-		.map((cc) => cc.position)
-		.filter((p) => p !== null && p !== undefined)
-	const hasDuplicatePositions = positions.length !== new Set(positions).size
-	if (hasDuplicatePositions) {
-		console.warn("Debug - Duplicate positions detected:", positions)
 	}
 
 	// Sort ALL characters by position first with normalization, then filter active ones while preserving order
@@ -52,28 +24,8 @@ export function getNextCharacterTurn(
 
 	const activeCharacters = allCharactersSorted.filter((cc) => cc.isActive)
 
-	console.log("Debug - Active characters filtering:", {
-		totalCharacters: allCharactersSorted.length,
-		activeCharacters: activeCharacters.length,
-		activeCharacterIds: activeCharacters.map((cc) => cc.character.id)
-	})
-
-	console.log("Debug - Character positions and activity:", {
-		characters: activeCharacters.map((cc) => ({
-			id: cc.character.id,
-			name: cc.character.name,
-			position: cc.position,
-			normalizedPosition: cc.normalizedPosition,
-			isActive: cc.isActive
-		})),
-		poolSize: 0, // Will be set after pool calculation
-		lastPersonaIdx: -1, // Will be set after calculation
-		triggered
-	})
-
 	// If no active characters, return null
 	if (activeCharacters.length === 0) {
-		console.log("Debug - getNextCharacterTurn: no active characters")
 		return null
 	}
 
@@ -92,12 +44,6 @@ export function getNextCharacterTurn(
 	// Pool of messages since the last persona message (exclusive)
 	const pool = chat.chatMessages.slice(lastPersonaIdx + 1)
 
-	console.log("Debug - Message pool analysis:", {
-		lastPersonaIdx,
-		poolSize: pool.length,
-		totalMessages: chat.chatMessages.length
-	})
-
 	if (!triggered) {
 		// Round-robin: find first active character who hasn't replied since last user message
 		for (const cc of activeCharacters) {
@@ -106,18 +52,12 @@ export function getNextCharacterTurn(
 					msg.role === "assistant" &&
 					msg.characterId === cc.character.id
 			)
-			console.log(
-				`Debug - Checking character ${cc.character.name} (ID: ${cc.character.id}): hasMessage=${hasMessage}`
-			)
 			if (!hasMessage) {
 				return cc.character.id
 			}
 		}
 
 		// If all active characters have replied, stop the turn cycle (return null)
-		console.log(
-			"Debug - All characters have replied, stopping turn cycle"
-		)
 		return null
 	} else {
 		// For triggered: check if each character has replied since the last user message
@@ -127,17 +67,44 @@ export function getNextCharacterTurn(
 					msg.role === "assistant" &&
 					msg.characterId === cc.character.id
 			)
-			console.log(
-				`Debug - Triggered mode - Checking character ${cc.character.name} (ID: ${cc.character.id}): hasRecentReply=${hasRecentReply}`
-			)
 			if (!hasRecentReply) {
 				return cc.character.id
 			}
 		}
-		// If all have replied, stop the turn cycle (return null)
-		console.log(
-			"Debug - Triggered mode - All characters have replied, stopping turn cycle"
-		)
+		
+		// If all have replied in the normal flow, select the character with the oldest most recent reply
+		// (furthest removed from their latest response)
+		
+		// Find the most recent message for each character in the pool
+		let oldestRecentCharacter: { id: number; lastMessageIndex: number } | null = null
+		
+		for (const cc of activeCharacters) {
+			// Find the most recent message from this character in the pool
+			let lastMessageIndex = -1
+			for (let i = pool.length - 1; i >= 0; i--) {
+				const msg = pool[i]
+				if (msg.role === "assistant" && msg.characterId === cc.character.id) {
+					lastMessageIndex = i
+					break // Found the most recent message from this character
+				}
+			}
+			
+			// If this character has a message in the pool, compare their most recent message
+			if (lastMessageIndex >= 0) {
+				if (!oldestRecentCharacter || lastMessageIndex < oldestRecentCharacter.lastMessageIndex) {
+					oldestRecentCharacter = {
+						id: cc.character.id,
+						lastMessageIndex: lastMessageIndex
+					}
+				}
+			}
+		}
+		
+		if (oldestRecentCharacter) {
+			return oldestRecentCharacter.id
+		}
+		
+		// Fallback: if for some reason no character is found with a recent reply, return null
 		return null
 	}
 }

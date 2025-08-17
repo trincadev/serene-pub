@@ -83,6 +83,7 @@ import {
 	updateShowAllCharacterFields,
 	updateEasyCharacterCreation,
 	updateEasyPersonaCreation,
+	updateShowHomePageBanner,
 	systemSettings
 } from "./systemSettings"
 import {
@@ -159,6 +160,7 @@ export function connectSockets(io: {
 		register(socket, updateShowAllCharacterFields, emitToUser)
 		register(socket, updateEasyCharacterCreation, emitToUser)
 		register(socket, updateEasyPersonaCreation, emitToUser)
+		register(socket, updateShowHomePageBanner, emitToUser)
 
 		// Characters
 		register(socket, characterList, emitToUser)

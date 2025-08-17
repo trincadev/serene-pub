@@ -110,7 +110,7 @@
 		const enabledKey = key + "Enabled"
 		return (
 			key !== "isImmutable" &&
-			(sampling![enabledKey] === undefined || sampling![enabledKey])
+			((sampling as any)?.[enabledKey] === undefined || (sampling as any)?.[enabledKey])
 		)
 	}
 
@@ -139,6 +139,7 @@
 		$state([])
 
 	function handleSelectChange(e: Event) {
+		if (!socket) return
 		socket.emit("setUserActiveSamplingConfig", {
 			id: (e.target as HTMLSelectElement).value
 		})
@@ -148,6 +149,7 @@
 		showNewNameModal = true
 	}
 	function handleNewNameConfirm(name: string) {
+		if (!socket) return
 		const newSamplingConfig = { ...sampling }
 		delete newSamplingConfig.id
 		delete newSamplingConfig.isImmutable
@@ -182,7 +184,8 @@
 	}
 
 	function handleUpdate() {
-		if (sampling!.isImmutable) {
+		if (!socket || !sampling) return
+		if (sampling.isImmutable) {
 			toaster.error({
 				title: "Cannot Save",
 				description: "Cannot save immutable sampling configuration."
@@ -194,11 +197,14 @@
 	}
 
 	function handleReset() {
-		sampling = { ...originalSamplingConfig }
+		if (originalSamplingConfig) {
+			sampling = { ...originalSamplingConfig }
+		}
 	}
 
 	function handleDelete() {
-		if (sampling!.isImmutable) {
+		if (!socket || !sampling) return
+		if (sampling.isImmutable) {
 			toaster.error({
 				title: "Cannot Delete",
 				description: "Cannot delete immutable sampling configuration."
@@ -209,6 +215,7 @@
 	}
 
 	function confirmDelete() {
+		if (!socket) return
 		socket.emit("deleteSamplingConfig", {
 			id: userCtx.user.activeSamplingConfigId
 		})
@@ -254,6 +261,8 @@
 
 	onMount(() => {
 		onclose = handleOnClose
+		if (!socket) return
+
 		socket.on("sampling", (message: Sockets.SamplingConfig.Response) => {
 			sampling = { ...message.sampling }
 			originalSamplingConfig = { ...message.sampling }
@@ -267,7 +276,7 @@
 					!userCtx.user.activeSamplingConfigId &&
 					samplingConfigsList.length > 0
 				) {
-					socket.emit("setUserActiveSamplingConfig", {
+					socket?.emit("setUserActiveSamplingConfig", {
 						id: samplingConfigsList[0].id
 					})
 				}
@@ -287,7 +296,7 @@
 		)
 		socket.on(
 			"createSamplingConfig",
-			(message: Sockets.CreateSamplingConfig.Response) => {
+			(message: Sockets.SamplingConfig.Response) => {
 				toaster.success({ title: "Sampling Config Created" })
 			}
 		)
@@ -297,11 +306,12 @@
 	})
 
 	onDestroy(() => {
-		socket.off("sampling")
-		socket.off("samplingConfigsList")
-		socket.off("deleteSamplingConfig")
-		socket.off("updateSamplingConfig")
-		socket.off("createSamplingConfig")
+		if (!socket) return
+		socket.removeAllListeners("sampling")
+		socket.removeAllListeners("samplingConfigsList")
+		socket.removeAllListeners("deleteSamplingConfig")
+		socket.removeAllListeners("updateSamplingConfig")
+		socket.removeAllListeners("createSamplingConfig")
 	})
 </script>
 
@@ -326,12 +336,19 @@
 					{#if meta.type === "number" || meta.type === "boolean"}
 						<label
 							class="hover:bg-muted flex items-center gap-2 rounded p-2 transition"
+							for="{key}Enabled"
 						>
 							<input
+								id="{key}Enabled"
 								type="checkbox"
-								bind:checked={sampling[key + "Enabled"]!}
+								checked={(sampling as any)?.[key + "Enabled"] ?? false}
+								onchange={(e) => {
+									if (sampling) {
+										(sampling as any)[key + "Enabled"] = (e.target as HTMLInputElement).checked
+									}
+								}}
 								class="accent-primary"
-								disabled={sampling[key + "Enabled"] ===
+								disabled={(sampling as any)?.[key + "Enabled"] ===
 									undefined}
 							/>
 							<span class="font-medium">{meta.label}</span>
@@ -446,7 +463,12 @@
 									max={getFieldMax(key)}
 									step={meta.step}
 									id={key}
-									bind:value={sampling![key]}
+									value={(sampling as any)?.[key] ?? 0}
+									oninput={(e) => {
+										if (sampling) {
+											(sampling as any)[key] = parseFloat((e.target as HTMLInputElement).value)
+										}
+									}}
 									class="accent-primary w-full"
 								/>
 								<div
@@ -464,7 +486,12 @@
 											min={meta.min}
 											max={getFieldMax(key)}
 											step={meta.step}
-											bind:value={sampling![key]}
+											value={(sampling as any)?.[key] ?? 0}
+											oninput={(e) => {
+												if (sampling) {
+													(sampling as any)[key] = parseFloat((e.target as HTMLInputElement).value)
+												}
+											}}
 											id={key + "-manual"}
 											class="border-primary input w-16 rounded border"
 											onblur={() => (editingField = null)}
@@ -487,7 +514,7 @@
 												)
 											}}
 										>
-											{sampling![key]}
+											{(sampling as any)?.[key]}
 										</button>
 									{/if}
 									<span
@@ -538,14 +565,24 @@
 							<input
 								type="checkbox"
 								id={key}
-								bind:checked={sampling[key]}
+								checked={(sampling as any)?.[key] ?? false}
+								onchange={(e) => {
+									if (sampling) {
+										(sampling as any)[key] = (e.target as HTMLInputElement).checked
+									}
+								}}
 								class="accent-primary"
 							/>
 						{:else}
 							<input
 								type="text"
 								id={key}
-								bind:value={sampling[key]}
+								value={(sampling as any)?.[key] ?? ""}
+								oninput={(e) => {
+									if (sampling) {
+										(sampling as any)[key] = (e.target as HTMLInputElement).value
+									}
+								}}
 								class="input"
 							/>
 						{/if}

@@ -1,6 +1,6 @@
 # Serene Pub - AI Assistant Reference
 
-**Version**: 0.4.0  
+**Version**: 0.4.1  
 **License**: AGPL-3.0  
 **Author**: Jody Doolittle  
 **Repository**: https://github.com/doolijb/serene-pub

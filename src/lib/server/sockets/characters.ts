@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm"
 import * as schema from "$lib/server/db/schema"
 import * as fsPromises from "fs/promises"
 import { getCharacterDataDir, handleCharacterAvatarUpload } from "../utils"
-import { CharacterCard } from "@lenml/char-card-reader"
+import { CharacterCard, type SpecV3 } from "@lenml/char-card-reader"
 import { fileTypeFromBuffer } from "file-type"
 
 // Helper function to process tags for character creation/update
@@ -266,7 +266,9 @@ export async function characterCardImport(
 			card = await CharacterCard.from_file(buffer)
 		}
 
-		const v3Data = card.toSpecV3().data
+		
+
+		const v3Data: SpecV3.CharacterCardV3["data"] = card.toSpecV3().data
 		const creationDate =
 			v3Data.creation_date && !isNaN(Number(v3Data.creation_date))
 				? new Date(Number(v3Data.creation_date)).toISOString()
@@ -298,6 +300,14 @@ export async function characterCardImport(
 			.insert(schema.characters)
 			.values(data)
 			.returning()
+
+		// Handle tags
+
+		const tagsNames: string[] = v3Data.tags || []
+
+		if (tagsNames.length > 0) {
+			await processCharacterTags(character.id, tagsNames)
+		}
 
 		// Extract file extension and check if it's a supported image type
 		let ext = ""

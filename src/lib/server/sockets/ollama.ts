@@ -462,8 +462,6 @@ export async function ollamaSearchAvailableModels(
 
 			const data = await response.json()
 
-			// console.log("OllamaDB response:", data)
-
 			// Transform ollamadb.dev response to our format
 			models = (data.models || []).map((model: any) => ({
 				name: model.model_identifier || model.model_name,

@@ -116,6 +116,8 @@
 
 	// Quick setup functions
 	function handleQuickSetup() {
+		if (!socket) return
+		
 		// Auto-set the default configs if not already set
 		if (!userCtx.user?.activeSamplingConfig) {
 			socket.emit("setUserActiveSamplingConfig", { id: 1 }) // Default
@@ -140,18 +142,23 @@
 	}
 
 	function connectToOllamaModel(modelName: string) {
+		if (!socket) return
 		socket.emit("ollamaConnectModel", { modelName: modelName })
 	}
 
 	function checkOllamaConnection() {
+		if (!socket) return
 		socket.emit("ollamaVersion", {})
 	}
 
 	function refreshOllamaModels() {
+		if (!socket) return
 		socket.emit("ollamaModelsList", {})
 	}
 
 	function createSamplePersona() {
+		if (!socket) return
+		
 		const samplePersona = {
 			name: "You",
 			description:
@@ -171,8 +178,16 @@
 		closeWizard()
 	}
 
+	function toggleBanner() {
+		const res: Sockets.UpdateShowHomePageBanner.Call = {
+			enabled: false
+		}
+		socket.emit("updateShowHomePageBanner", res)
+	}
+
 	// Listen for socket events
 	onMount(() => {
+
 		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
 			characters = msg.characterList || []
 		})
@@ -256,10 +271,6 @@
 		// Handle successful chat creation
 		socket.on("createChat", (res: any) => {
 			if (res.chat) {
-				toaster.success({
-					title: "Chat Created!",
-					description: "Your chat is ready. Opening chat panel..."
-				})
 				// Close wizard if it's open
 				if (showWizard) {
 					closeWizard()
@@ -298,13 +309,24 @@
 <div
 	class="flex flex-1 flex-col items-center justify-center gap-4 px-2 md:px-0"
 >
-	<img
-		src={themeCtx.mode === "dark"
-			? "logo-w-text-dark.png"
-			: "logo-w-text.png"}
-		alt="Serene Pub Logo"
-		class="bg-primary-500/25 w-full rounded-xl"
-	/>
+	{#if systemSettingsCtx.settings.showHomePageBanner}
+		<div class="relative w-full">
+			<img
+				src={themeCtx.mode === "dark"
+					? "logo-w-text-dark.png"
+					: "logo-w-text.png"}
+				alt="Serene Pub Logo"
+				class="bg-primary-500/25 w-full rounded-xl"
+			/>
+			<button
+				class="text-primary-800 hover:text-primary-900 dark:text-primary-200 hover:dark:text-primary-100 absolute right-2 top-2 text-xl leading-none font-bold bg-black/20 hover:bg-black/30 rounded-full w-6 h-6 flex items-center justify-center"
+				onclick={toggleBanner}
+				title="Hide banner"
+			>
+				×
+			</button>
+		</div>
+	{/if}
 
 	<!-- Alpha disclaimer card below the logo -->
 	<div
@@ -762,7 +784,7 @@
 						<button
 							class="btn preset-filled-primary-500"
 							onclick={() => {
-								if (selectedOllamaModel) {
+								if (selectedOllamaModel && socket) {
 									// Manual connection creation
 									const newConnection = {
 										name: `Ollama - ${selectedOllamaModel}`,

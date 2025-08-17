@@ -13,17 +13,6 @@ console.log("🔧 Customizing server build output...")
 
 let content = fs.readFileSync(buildFile, "utf8")
 
-// Debug: Check what patterns exist in the file
-console.log("Looking for patterns in the file...")
-console.log(
-	'Contains "Listening on file descriptor":',
-	content.includes("Listening on file descriptor")
-)
-console.log(
-	'Contains "Listening on ${path":',
-	content.includes("Listening on ${path")
-)
-
 // Replace console.log messages
 let replacements = 0
 
@@ -106,7 +95,7 @@ content = content.replace(
 			console.log(\`\`);
 			
 			// Auto-open browser if SERENE_AUTO_OPEN is not disabled
-			if (process.env.SERENE_AUTO_OPEN !== 'false') {
+			if (process.env.SERENE_AUTO_OPEN !== '1' && process.env.SERENE_AUTO_OPEN !== 'true') {
 				setTimeout(() => {
 					import('open').then(({ default: open }) => {
 						open(\`http://localhost:\${port}\`);
@@ -117,7 +106,7 @@ content = content.replace(
 					});
 				}, 1000);
 			} else {
-				console.log(\`ℹ️  Auto-open browser disabled (SERENE_AUTO_OPEN=false)\`);
+				console.log(\`ℹ️  Auto-open browser disabled (SERENE_AUTO_OPEN=\${process.env.SERENE_AUTO_OPEN})\`);
 			}
 		}`
 )

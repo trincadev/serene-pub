@@ -572,7 +572,7 @@
 									<div class="flex flex-col gap-1">
 										<span title="Toggle Character Active">
 											<Switch
-												name="Toggle Character Active"
+												name="toggle-character-active-{c.id}"
 												controlWidth="w-9"
 												controlActive="preset-filled-success-500"
 												controlDisabled="preset-filled-surface-500"
@@ -580,6 +580,7 @@
 												checked={isActive}
 												onCheckedChange={(e) =>
 													toggleCharacterActive(e, c)}
+												aria-label="Toggle character {c.name} active status"
 											>
 												{#snippet inactiveChild()}<Icons.Meh
 														size="20"

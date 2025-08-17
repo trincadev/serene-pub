@@ -1683,7 +1683,6 @@ export async function getChatResponseOrder(
 	message: Sockets.GetChatResponseOrder.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	// console.log('Debug - getChatResponseOrder called for chatId:', message.chatId)
 	const userId = 1 // Replace with actual user id
 	const chat = await getPromptChatFromDb(message.chatId, userId)
 
@@ -1712,8 +1711,6 @@ export async function getChatResponseOrder(
 		.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 		.map((cc) => cc.character!.id)
 
-	// console.log('Debug - Characters for next turn:', { totalCharacters: chat.chatCharacters.length, activeCharacters: activeCharacters.length, charactersToUse: charactersToUse.length, sortedCharacterIds })
-
 	// Use getNextCharacterTurn to determine who should respond next based on message history
 	const nextCharacterId = getNextCharacterTurn(
 		{
@@ -1730,15 +1727,11 @@ export async function getChatResponseOrder(
 		{ triggered: false }
 	)
 
-	// console.log('Debug - Next character logic simplified:', { sortedCharacterIds, nextCharacterId })
-
 	const res: Sockets.GetChatResponseOrder.Response = {
 		chatId: message.chatId,
 		characterIds: sortedCharacterIds,
 		nextCharacterId
 	}
-
-	// console.log('Debug - Sending response:', { chatId: res.chatId, characterIdsCount: res.characterIds.length, nextCharacterId: res.nextCharacterId })
 
 	emitToUser("getChatResponseOrder", res)
 }

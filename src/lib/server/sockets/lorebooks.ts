@@ -178,7 +178,6 @@ export async function updateLorebook(
 	message: Sockets.UpdateLorebook.Call,
 	emitToUser: (event: string, data: any) => void
 ) {
-	console.log("Updating lorebook with message:", message)
 	try {
 		const userId = 1 // TODO: Replace with actual user ID from socket data
 		const tags = message.lorebook.tags || []
@@ -505,7 +504,10 @@ export async function createWorldLoreEntry(
 		const data: InsertWorldLoreEntry = message.worldLoreEntry
 		data.name = data.name.trim()
 		data.content = data.content?.trim() || ""
-		// data.keys = data.keys
+		// Convert keys to string if it's an array (frontend might send array)
+		data.keys = Array.isArray(data.keys) 
+			? data.keys.join(", ") 
+			: (data.keys || "")
 
 		// Get next available position for the lore entry
 		const existingBook = await db.query.lorebooks.findFirst({
@@ -572,7 +574,6 @@ export async function createWorldLoreEntry(
 }
 
 async function syncLorebookBindings({ lorebookId }: { lorebookId: number }) {
-	console.log("Syncing lorebook bindings for lorebookId:", lorebookId)
 	const queries: (() => Promise<any>)[] = []
 	// Query all lorebook bindings for the given lorebook
 	const existingBindings = await db.query.lorebookBindings.findMany({
@@ -689,7 +690,10 @@ export async function updateWorldLoreEntry(
 		const data: SelectWorldLoreEntry = { ...message.worldLoreEntry }
 		data.name = data.name!.trim()
 		data.content = data.content!.trim()
-		// data.keys = data.keys
+		// Convert keys to string if it's an array (frontend might send array)
+		data.keys = Array.isArray(data.keys) 
+			? data.keys.join(", ") 
+			: (data.keys || "")
 
 		const [updatedEntry] = await db
 			.update(schema.worldLoreEntries)
@@ -1437,12 +1441,9 @@ export async function lorebookImport(
 	emitToUser: (event: string, data: any) => void
 ) {
 	try {
-		console.log("Importing lorebook data:", message.lorebookData)
 		let charId: number | undefined = message.characterId
 		let char: Partial<SelectCharacter> | undefined = undefined
 		let card = CharacterBook.from_json(message.lorebookData)
-
-		console.log("Importing lorebook data:", card)
 
 		if (!card) {
 			return socket.emit("error", { error: "No lorebook data provided." })
@@ -1493,7 +1494,6 @@ export async function lorebookImport(
 			} else if ((entry.priority || 1) > 3) {
 				entry.priority = 3
 			}
-			// console.log("Importing lore entry:", JSON.stringify(entry))
 			queries.push(
 				db.insert(schema.worldLoreEntries).values({
 					name: entry.name || entry.comment || "Imported Entry",

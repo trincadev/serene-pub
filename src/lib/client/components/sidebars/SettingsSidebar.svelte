@@ -79,6 +79,13 @@
 		socket.emit("updateEasyPersonaCreation", res)
 	}
 
+	async function onShowHomePageBannerClick(event: { checked: boolean }) {
+		const res: Sockets.UpdateShowHomePageBanner.Call = {
+			enabled: event.checked
+		}
+		socket.emit("updateShowHomePageBanner", res)
+	}
+
 	onMount(() => {
 		onclose = async () => {
 			return true
@@ -175,6 +182,16 @@
 			></Switch>
 			<label for="easy-persona-creation" class="font-semibold">
 				Easy Persona Creation
+			</label>
+		</div>
+		<div class="flex gap-2">
+			<Switch
+				name="show-home-page-banner"
+				checked={systemSettingsCtx.settings.showHomePageBanner}
+				onCheckedChange={onShowHomePageBannerClick}
+			></Switch>
+			<label for="show-home-page-banner" class="font-semibold">
+				Show Home Page Banner
 			</label>
 		</div>
 	</div>

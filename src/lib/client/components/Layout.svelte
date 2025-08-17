@@ -64,7 +64,11 @@
 	let systemSettingsCtx: SystemSettingsCtx = $state({
 		settings: {
 			ollamaManagerEnabled: false,
-			ollamaManagerBaseUrl: ""
+			ollamaManagerBaseUrl: "",
+			showAllCharacterFields: false,
+			enableEasyCharacterCreation: true,
+			enableEasyPersonaCreation: true,
+			showHomePageBanner: true
 		}
 	})
 
