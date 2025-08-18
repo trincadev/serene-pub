@@ -1,219 +1,293 @@
 <script lang="ts">
-    import * as skio from "sveltekit-io"
-    import { getContext, onDestroy, onMount } from "svelte"
-    import * as Icons from "@lucide/svelte"
-    import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
-    import NewNameModal from "../modals/NewNameModal.svelte"
+	import * as skio from "sveltekit-io"
+	import { getContext, onDestroy, onMount } from "svelte"
+	import * as Icons from "@lucide/svelte"
+	import ContextConfigUnsavedChangesModal from "../modals/ContextConfigUnsavedChangesModal.svelte"
+	import NewNameModal from "../modals/NewNameModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
+	import { z } from "zod"
 
-    interface Props {
-        onclose?: () => Promise<boolean> | undefined
-    }
+	interface Props {
+		onclose?: () => Promise<boolean> | undefined
+	}
 
-    let { onclose = $bindable() }: Props = $props()
+	let { onclose = $bindable() }: Props = $props()
 
-    const socket = skio.get()
-    let userCtx: { user: SelectUser } = getContext("userCtx")
-    let configsList: Sockets.ContextConfigsList.Response["contextConfigsList"] = $state([])
-    let selectedConfigId: number | undefined = $state(
-        userCtx.user.activeContextConfigId || undefined
-    )
-    let contextConfig: Sockets.ContextConfig.Response["contextConfig"] = $state(
-        {} as Sockets.ContextConfig.Response["contextConfig"]
-    )
-    let originalData: Sockets.ContextConfig.Response["contextConfig"] = $state(
-        {} as Sockets.ContextConfig.Response["contextConfig"]
-    )
-    let unsavedChanges = $derived(JSON.stringify(contextConfig) !== JSON.stringify(originalData))
-    let showNewNameModal = $state(false)
-    let showUnsavedChangesModal = $state(false)
-    let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
-    let showAdvanced = $state(false)
+	const socket = skio.get()
+	let userCtx: { user: SelectUser } = getContext("userCtx")
+	let configsList: Sockets.ContextConfigsList.Response["contextConfigsList"] =
+		$state([])
+	let selectedConfigId: number | undefined = $state(
+		userCtx.user.activeContextConfigId || undefined
+	)
+	let contextConfig: Sockets.ContextConfig.Response["contextConfig"] = $state(
+		{} as Sockets.ContextConfig.Response["contextConfig"]
+	)
+	let originalData: Sockets.ContextConfig.Response["contextConfig"] = $state(
+		{} as Sockets.ContextConfig.Response["contextConfig"]
+	)
+	let unsavedChanges = $derived(
+		JSON.stringify(contextConfig) !== JSON.stringify(originalData)
+	)
+	let showNewNameModal = $state(false)
+	let showUnsavedChangesModal = $state(false)
+	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
+	let showAdvanced = $state(false)
 
-    function handleSave() {
-        socket.emit("updateContextConfig", {
-            contextConfig
-        })
-        // After saving, reload the config from the server
-        // socket.emit("contextConfig", { id: selectedConfigId })
-    }
+	// Zod validation schema
+	const contextConfigSchema = z.object({
+		name: z.string().min(1, "Name is required").trim()
+	})
 
-    $effect(() => {
-        // When selectedConfigId changes, load the config from the server
-        if (selectedConfigId) {
-            socket.emit("contextConfig", { id: selectedConfigId })
-        }
-    })
+	type ValidationErrors = Record<string, string>
+	let validationErrors: ValidationErrors = $state({})
 
-    function handleDelete() {
-        if (contextConfig.isImmutable) {
-            socket.emit("deleteContextConfig", { id: contextConfig.id })
-            selectedConfigId = undefined
-        }
-    }
+	function validateForm(): boolean {
+		const result = contextConfigSchema.safeParse({
+			name: contextConfig.name
+		})
 
-    function handleReset() {
-        contextConfig = { ...originalData }
-    }
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
+	}
 
-    function handleNew() {
-        showNewNameModal = true
-    }
+	function handleSave() {
+		if (!validateForm()) return
+		socket.emit("updateContextConfig", {
+			contextConfig
+		})
+		// After saving, reload the config from the server
+		// socket.emit("contextConfig", { id: selectedConfigId })
+	}
 
-    function handleNewNameConfirm(name: string) {
-        if (!name.trim()) return
-        const newContextConfig = { ...contextConfig, name: name.trim(), isImmutable: false }
-        delete newContextConfig.id
-        socket.emit("createContextConfig", { contextConfig: newContextConfig })
-        showNewNameModal = false
-    }
+	$effect(() => {
+		// When selectedConfigId changes, load the config from the server
+		if (selectedConfigId) {
+			socket.emit("contextConfig", { id: selectedConfigId })
+		}
+	})
 
-    function handleNewNameCancel() {
-        showNewNameModal = false
-    }
+	function handleDelete() {
+		if (contextConfig.isImmutable) {
+			socket.emit("deleteContextConfig", { id: contextConfig.id })
+			selectedConfigId = undefined
+		}
+	}
 
-    async function handleOnClose() {
-        if (unsavedChanges) {
-            showUnsavedChangesModal = true
-            return new Promise<boolean>((resolve) => {
-                confirmCloseSidebarResolve = resolve
-            })
-        } else {
-            return true
-        }
-    }
+	function handleReset() {
+		contextConfig = { ...originalData }
+	}
 
-    function handleUnsavedChangesModalConfirm() {
-        showUnsavedChangesModal = false
-        if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(true)
-    }
-    function handleUnsavedChangesModalCancel() {
-        showUnsavedChangesModal = false
-        if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
-    }
-    function handleUnsavedChangesModalOpenChange(e: OpenChangeDetails) {
-        if (!e.open) {
-            showUnsavedChangesModal = false
-            if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
-        }
-    }
+	function handleNew() {
+		showNewNameModal = true
+	}
 
-    $effect(() => {
-        if (!!selectedConfigId && selectedConfigId !== userCtx.user.activeContextConfigId) {
-            socket.emit("setUserActiveContextConfig", {
-                id: selectedConfigId
-            })
-        }
-    })
+	function handleNewNameConfirm(name: string) {
+		if (!name.trim()) return
+		const newContextConfig = {
+			...contextConfig,
+			name: name.trim(),
+			isImmutable: false
+		}
+		delete newContextConfig.id
+		socket.emit("createContextConfig", { contextConfig: newContextConfig })
+		showNewNameModal = false
+	}
 
-    onMount(() => {
-        socket.on("contextConfigsList", (msg: Sockets.ContextConfigsList.Response) => {
-            configsList = msg.contextConfigsList
-            if (!selectedConfigId && configsList.length > 0) {
-                selectedConfigId = userCtx.user.activeContextConfigId ?? configsList[0].id
-            }
-        })
+	function handleNewNameCancel() {
+		showNewNameModal = false
+	}
 
-        socket.on("contextConfig", (msg: Sockets.ContextConfig.Response) => {
-            contextConfig = { ...msg.contextConfig }
-            originalData = { ...msg.contextConfig }
-        })
+	async function handleOnClose() {
+		if (unsavedChanges) {
+			showUnsavedChangesModal = true
+			return new Promise<boolean>((resolve) => {
+				confirmCloseSidebarResolve = resolve
+			})
+		} else {
+			return true
+		}
+	}
 
-        socket.on("createContextConfig", (msg: Sockets.CreateContextConfig.Response) => {
-            selectedConfigId = msg.contextConfig.id
-        })
-        socket.on("updateContextConfig", (msg: Sockets.UpdateContextConfig.Response) => {
-            contextConfig = { ...msg.contextConfig }
-            originalData = { ...msg.contextConfig }
-            toaster.success({title:"Context config saved successfully."})
-        })
-        socket.emit("contextConfigsList", {})
-        socket.emit("contextConfig", {
-            id: selectedConfigId
-        })
-        onclose = handleOnClose
-    })
+	function handleUnsavedChangesModalConfirm() {
+		showUnsavedChangesModal = false
+		if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(true)
+	}
+	function handleUnsavedChangesModalCancel() {
+		showUnsavedChangesModal = false
+		if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
+	}
+	function handleUnsavedChangesModalOpenChange(e: OpenChangeDetails) {
+		if (!e.open) {
+			showUnsavedChangesModal = false
+			if (confirmCloseSidebarResolve) confirmCloseSidebarResolve(false)
+		}
+	}
 
-    onDestroy(() => {
-        socket.off("contextConfigsList")
-        socket.off("contextConfig")
-        socket.off("createContextConfig")
-        socket.off("updateContextConfig")
-        onclose = undefined
-    })
+	$effect(() => {
+		if (
+			!!selectedConfigId &&
+			selectedConfigId !== userCtx.user.activeContextConfigId
+		) {
+			socket.emit("setUserActiveContextConfig", {
+				id: selectedConfigId
+			})
+		}
+	})
+
+	onMount(() => {
+		socket.on(
+			"contextConfigsList",
+			(msg: Sockets.ContextConfigsList.Response) => {
+				configsList = msg.contextConfigsList
+				if (!selectedConfigId && configsList.length > 0) {
+					selectedConfigId =
+						userCtx.user.activeContextConfigId ?? configsList[0].id
+				}
+			}
+		)
+
+		socket.on("contextConfig", (msg: Sockets.ContextConfig.Response) => {
+			contextConfig = { ...msg.contextConfig }
+			originalData = { ...msg.contextConfig }
+		})
+
+		socket.on(
+			"createContextConfig",
+			(msg: Sockets.CreateContextConfig.Response) => {
+				selectedConfigId = msg.contextConfig.id
+			}
+		)
+		socket.on(
+			"updateContextConfig",
+			(msg: Sockets.UpdateContextConfig.Response) => {
+				contextConfig = { ...msg.contextConfig }
+				originalData = { ...msg.contextConfig }
+				toaster.success({ title: "Context config saved successfully." })
+			}
+		)
+		socket.emit("contextConfigsList", {})
+		socket.emit("contextConfig", {
+			id: selectedConfigId
+		})
+		onclose = handleOnClose
+	})
+
+	onDestroy(() => {
+		socket.off("contextConfigsList")
+		socket.off("contextConfig")
+		socket.off("createContextConfig")
+		socket.off("updateContextConfig")
+		onclose = undefined
+	})
 </script>
 
 <div class="text-foreground h-full p-4">
-    <div class="mt-2 mb-2 flex gap-2 sm:mt-0">
-        <button type="button" class="btn btn-sm preset-filled-primary-500" onclick={handleNew}>
-            <Icons.Plus size={16} />
-        </button>
-        <button
-            type="button"
-            class="btn btn-sm preset-filled-secondary-500"
-            onclick={handleReset}
-            disabled={!unsavedChanges}
-        >
-            <Icons.RefreshCcw size={16} />
-        </button>
-        <button
-            type="button"
-            class="btn btn-sm preset-filled-error-500"
-            onclick={handleDelete}
-            disabled={!contextConfig || contextConfig.isImmutable}
-        >
-            <Icons.X size={16} />
-        </button>
-    </div>
-    <div class="mb-6 flex items-center gap-2">
-        <select class="select w-full" bind:value={selectedConfigId} disabled={unsavedChanges}>
-            {#each configsList.filter((c) => c.isImmutable) as c}
-                <option value={c.id}>{c.name}{c.isImmutable ? "*" : ""}</option>
-            {/each}
-            {#each configsList.filter((c) => !c.isImmutable) as c}
-                <option value={c.id}>{c.name}{c.isImmutable ? "*" : ""}</option>
-            {/each}
-        </select>
-    </div>
-    {#if contextConfig}
-        <div class="mt-4 mb-4 flex w-full justify-end gap-2">
-            <button
-                class="btn btn-sm preset-filled-success-500 w-full"
-                onclick={handleSave}
-                disabled={contextConfig.isImmutable || !unsavedChanges}>
-                <Icons.Save size={16} />
-                Save
-                </button>
-        </div>
-        <div class="flex flex-col gap-4">
-            <div class="flex flex-col gap-1">
-                <label class="font-semibold" for="contextName">Name*</label>
-                <input
-                    id="contextName"
-                    type="text"
-                    bind:value={contextConfig.name}
-                    class="input w-full"
-                    disabled={contextConfig.isImmutable}
-                />
-            </div>
-            <button
-                type="button"
-                class="btn btn-sm preset-filled-surface-500 mt-2 mb-2 w-full"
-                onclick={() => (showAdvanced = !showAdvanced)}
-            >
-                {showAdvanced ? "Hide Advanced" : "Show Advanced"}
-            </button>
-            {#if showAdvanced}
-                <div class="flex flex-col gap-1">
-                    <label class="font-semibold" for="contextTemplate">Template</label>
-                    <textarea
-                        id="template"
-                        rows="20"
-                        bind:value={contextConfig.template}
-                        class="input w-full"
-                    ></textarea>
-                </div>
-                <!-- <div class="flex flex-col gap-4">
+	<div class="mt-2 mb-2 flex gap-2 sm:mt-0">
+		<button
+			type="button"
+			class="btn btn-sm preset-filled-primary-500"
+			onclick={handleNew}
+		>
+			<Icons.Plus size={16} />
+		</button>
+		<button
+			type="button"
+			class="btn btn-sm preset-filled-secondary-500"
+			onclick={handleReset}
+			disabled={!unsavedChanges}
+		>
+			<Icons.RefreshCcw size={16} />
+		</button>
+		<button
+			type="button"
+			class="btn btn-sm preset-filled-error-500"
+			onclick={handleDelete}
+			disabled={!contextConfig || contextConfig.isImmutable}
+		>
+			<Icons.X size={16} />
+		</button>
+	</div>
+	<div class="mb-6 flex items-center gap-2">
+		<select
+			class="select w-full"
+			bind:value={selectedConfigId}
+			disabled={unsavedChanges}
+		>
+			{#each configsList.filter((c) => c.isImmutable) as c}
+				<option value={c.id}>{c.name}{c.isImmutable ? "*" : ""}</option>
+			{/each}
+			{#each configsList.filter((c) => !c.isImmutable) as c}
+				<option value={c.id}>{c.name}{c.isImmutable ? "*" : ""}</option>
+			{/each}
+		</select>
+	</div>
+	{#if contextConfig}
+		<div class="mt-4 mb-4 flex w-full justify-end gap-2">
+			<button
+				class="btn btn-sm preset-filled-success-500 w-full"
+				onclick={handleSave}
+				disabled={contextConfig.isImmutable || !unsavedChanges}
+			>
+				<Icons.Save size={16} />
+				Save
+			</button>
+		</div>
+		<div class="flex flex-col gap-4">
+			<div class="flex flex-col gap-1">
+				<label class="font-semibold" for="contextName">Name*</label>
+				<input
+					id="contextName"
+					type="text"
+					bind:value={contextConfig.name}
+					class="input w-full {validationErrors.name
+						? 'border-red-500'
+						: ''}"
+					disabled={contextConfig.isImmutable}
+					oninput={() => {
+						if (validationErrors.name) {
+							const { name, ...rest } = validationErrors
+							validationErrors = rest
+						}
+					}}
+				/>
+				{#if validationErrors.name}
+					<p class="mt-1 text-sm text-red-500" role="alert">
+						{validationErrors.name}
+					</p>
+				{/if}
+			</div>
+			<button
+				type="button"
+				class="btn btn-sm preset-filled-surface-500 mt-2 mb-2 w-full"
+				onclick={() => (showAdvanced = !showAdvanced)}
+			>
+				{showAdvanced ? "Hide Advanced" : "Show Advanced"}
+			</button>
+			{#if showAdvanced}
+				<div class="flex flex-col gap-1">
+					<label class="font-semibold" for="contextTemplate">
+						Template
+					</label>
+					<textarea
+						id="template"
+						rows="20"
+						bind:value={contextConfig.template}
+						class="input w-full"
+					></textarea>
+				</div>
+				<!-- <div class="flex flex-col gap-4">
                     <div class="flex flex-col gap-1">
                         <label class="flex items-center gap-2 font-semibold disabled">
                             <input
@@ -234,23 +308,23 @@
                         </div>
                     </div>
                 </div> -->
-            {/if}
-        </div>
-    {/if}
+			{/if}
+		</div>
+	{/if}
 </div>
 
 <ContextConfigUnsavedChangesModal
-    open={showUnsavedChangesModal}
-    onOpenChange={handleUnsavedChangesModalOpenChange}
-    onConfirm={handleUnsavedChangesModalConfirm}
-    onCancel={handleUnsavedChangesModalCancel}
+	open={showUnsavedChangesModal}
+	onOpenChange={handleUnsavedChangesModalOpenChange}
+	onConfirm={handleUnsavedChangesModalConfirm}
+	onCancel={handleUnsavedChangesModalCancel}
 />
 
 <NewNameModal
-    open={showNewNameModal}
-    onOpenChange={(e) => (showNewNameModal = e.open)}
-    onConfirm={handleNewNameConfirm}
-    onCancel={handleNewNameCancel}
-    title="New Context Config"
-    description="Your current settings will be copied."
+	open={showNewNameModal}
+	onOpenChange={(e) => (showNewNameModal = e.open)}
+	onConfirm={handleNewNameConfirm}
+	onCancel={handleNewNameCancel}
+	title="New Context Config"
+	description="Your current settings will be copied."
 />

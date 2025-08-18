@@ -9,6 +9,7 @@
 	import Avatar from "$lib/client/components/Avatar.svelte"
 
 	let chat: Sockets.Chat.Response["chat"] | undefined = $state()
+	let pagination: Sockets.Chat.Response["pagination"] | undefined = $state()
 	let newMessage = $state("")
 	const socket = skio.get()
 	let showDeleteMessageModal = $state(false)
@@ -18,6 +19,8 @@
 	let userCtx: UserCtx = getContext("userCtx")
 	let panelsCtx: PanelsCtx = getContext("panelsCtx")
 	let promptTokenCountTimeout: ReturnType<typeof setTimeout> | null = null
+	let loadingOlderMessages = $state(false)
+	let messagesContainer: HTMLElement | undefined = $state()
 	let contextExceeded = $derived(
 		!!draftCompiledPrompt
 			? draftCompiledPrompt!.meta.tokenCounts.total >
@@ -28,6 +31,8 @@
 	let showDraftCompiledPromptModal = $state(false)
 	let showTriggerCharacterMessageModal = $state(false)
 	let triggerCharacterSearch = $state("")
+	let chatResponseOrder: Sockets.GetChatResponseOrder.Response | undefined =
+		$state()
 
 	// Get chat id from route params
 	let chatId: number = $derived.by(() => Number(page.params.id))
@@ -61,6 +66,52 @@
 		)
 	})
 
+	// Determine if we should show the next character block
+	let shouldShowNextCharacterBlock: boolean = $derived.by(() => {
+		const hasGeneratingMessage =
+			chat?.chatMessages?.some((msg) => msg.isGenerating) || false
+		const hasMessageDraft = newMessage.trim().length > 0
+		const isEditingMessage = !!editChatMessage
+		const hasNextCharacter = !!chatResponseOrder?.nextCharacterId
+		const isGroupChat =
+			!!chat?.isGroup && (chat?.chatCharacters?.length || 0) > 1
+
+		const shouldShow =
+			isGroupChat &&
+			!hasGeneratingMessage &&
+			!hasMessageDraft &&
+			!isEditingMessage &&
+			hasNextCharacter &&
+			!!chat?.chatMessages?.length // Only show if there are messages
+
+		return shouldShow
+	})
+
+	// Get the next character info from chat data
+	let nextCharacter: SelectCharacter | undefined = $derived.by(() => {
+		if (!chatResponseOrder?.nextCharacterId) {
+			return undefined
+		}
+
+		const foundCharacter = chat?.chatCharacters?.find(
+			(cc) => cc.characterId === chatResponseOrder.nextCharacterId
+		)?.character
+
+		return foundCharacter
+	})
+
+	// Get ordered characters from chat data using the response order
+	let orderedCharacters: SelectCharacter[] = $derived.by(() => {
+		if (!chatResponseOrder?.characterIds || !chat?.chatCharacters) return []
+		return chatResponseOrder.characterIds
+			.map(
+				(id) =>
+					chat.chatCharacters.find((cc) => cc.characterId === id)
+						?.character
+			)
+			.filter((char) => char !== undefined) as SelectCharacter[]
+	})
+
 	function handleSend() {
 		if (!newMessage.trim()) return
 		// TODO: Implement send message socket call
@@ -71,6 +122,8 @@
 		}
 		socket.emit("sendPersonaMessage", msg)
 		newMessage = ""
+		// Refresh response order after sending message
+		socket.emit("getChatResponseOrder", { chatId })
 	}
 
 	function getMessageCharacter(
@@ -92,7 +145,6 @@
 	function openDeleteMessageModal(message: SelectChatMessage) {
 		deleteChatMessage = message
 		showDeleteMessageModal = true
-		console.log("Opening delete message modal for:", message)
 	}
 
 	function onOpenMessageDeleteChange(details: OpenChangeDetails) {
@@ -103,7 +155,6 @@
 	}
 
 	function onDeleteMessageConfirm() {
-		console.log("Deleting message")
 		socket.emit("deleteChatMessage", {
 			id: deleteChatMessage?.id
 		})
@@ -112,7 +163,6 @@
 	}
 
 	function onDeleteMessageCancel() {
-		console.log("Delete message cancelled")
 		deleteChatMessage = undefined
 		showDeleteMessageModal = false
 	}
@@ -134,10 +184,21 @@
 	}
 
 	$effect(() => {
-		const _chatId = page.params.id
-		if (_chatId) {
-			chatId = Number.parseInt(_chatId)
-			socket.emit("chat", { id: chatId })
+		// React to chatId changes (which is derived from page.params.id)
+		if (chatId) {
+			// Reset state when switching chats
+			chat = undefined // Clear current chat data
+			pagination = undefined
+			chatResponseOrder = undefined
+			draftCompiledPrompt = undefined
+			editChatMessage = undefined
+			newMessage = ""
+			isInitialLoad = true
+			lastSeenMessageId = null
+			lastSeenMessageContent = ""
+			loadingOlderMessages = false
+			socket.emit("chat", { id: chatId, limit: 25, offset: 0 })
+			socket.emit("getChatResponseOrder", { chatId })
 		}
 	})
 
@@ -167,22 +228,68 @@
 	})
 
 	let chatMessagesContainer: HTMLDivElement | null = $state(null)
+	let lastSeenMessageId: number | null = $state(null)
+	let lastSeenMessageContent: string = $state("")
+	let isInitialLoad = $state(true)
 
-	// Auto-scroll to bottom when messages change or container is mounted
+	// Helper function to perform autoscroll with retries
+	function performAutoscroll(attempt = 1, maxAttempts = 3) {
+		if (!chatMessagesContainer || loadingOlderMessages) return
+
+		const scrollHeight = chatMessagesContainer.scrollHeight
+		const clientHeight = chatMessagesContainer.clientHeight
+
+		// Check if there's actually content to scroll to
+		if (scrollHeight > clientHeight) {
+			chatMessagesContainer.scrollTo({
+				top: scrollHeight,
+				behavior: isInitialLoad ? "instant" : "smooth"
+			})
+			return
+		}
+
+		// If no content yet and we haven't exceeded max attempts, retry
+		if (attempt < maxAttempts) {
+			const delay = attempt === 1 ? 100 : 300
+			setTimeout(() => performAutoscroll(attempt + 1, maxAttempts), delay)
+		}
+	}
+
+	// Auto-scroll to bottom on new messages, initial load, or last message content updates
 	$effect(() => {
 		// React to changes in messages and container
 		const messagesLength = chat?.chatMessages?.length ?? 0
-		if (chatMessagesContainer && messagesLength > 0) {
-			// Use setTimeout to ensure DOM has updated
-			setTimeout(() => {
-				if (chatMessagesContainer) {
-					chatMessagesContainer.scrollTo({
-						top: chatMessagesContainer.scrollHeight,
-						behavior: "smooth"
-					})
-				}
-			// }, 50) // Slightly longer delay to ensure content is rendered
-			}, 30)
+		const lastMessage = chat?.chatMessages?.[messagesLength - 1]
+		const currentLastMessageId = lastMessage?.id
+		const currentLastMessageContent = lastMessage?.content || ""
+
+		if (
+			chatMessagesContainer &&
+			messagesLength > 0 &&
+			!loadingOlderMessages
+		) {
+			// Determine if we should autoscroll
+			const isNewMessage =
+				currentLastMessageId &&
+				(!lastSeenMessageId || currentLastMessageId > lastSeenMessageId)
+			const isLastMessageContentUpdated =
+				currentLastMessageId === lastSeenMessageId &&
+				currentLastMessageContent !== lastSeenMessageContent
+
+			const shouldAutoscroll =
+				isInitialLoad || isNewMessage || isLastMessageContentUpdated
+
+			if (shouldAutoscroll) {
+				// Use the new performAutoscroll function
+				performAutoscroll()
+				isInitialLoad = false
+			}
+
+			// Update tracking variables
+			if (currentLastMessageId) {
+				lastSeenMessageId = currentLastMessageId
+				lastSeenMessageContent = currentLastMessageContent
+			}
 		}
 	})
 
@@ -257,6 +364,19 @@
 		})
 	}
 
+	function handleContinueWithNextCharacter() {
+		if (!nextCharacter) return
+		socket.emit("triggerGenerateMessage", {
+			chatId,
+			characterId: nextCharacter.id,
+			once: true
+		})
+	}
+
+	function handleChooseDifferentCharacter() {
+		showTriggerCharacterMessageModal = true
+	}
+
 	function handleCharacterNameClick(msg: SelectChatMessage): void {
 		if (msg.characterId) {
 			panelsCtx.openPanel({ key: "characters", toggle: false })
@@ -281,6 +401,40 @@
 			chatMessageId: msg.id
 		}
 		socket.emit("chatMessageSwipeLeft", req)
+	}
+
+	async function loadOlderMessages() {
+		if (loadingOlderMessages || !pagination?.hasMore || !chat) return
+
+		loadingOlderMessages = true
+
+		// Store current scroll position to restore it after loading
+		const scrollHeight = chatMessagesContainer?.scrollHeight || 0
+		const currentOffset = chat.chatMessages.length
+
+		socket.emit("chat", {
+			id: chatId,
+			limit: 25,
+			offset: currentOffset
+		})
+
+		// Store scroll height for position restoration
+		if (chatMessagesContainer) {
+			chatMessagesContainer.dataset.previousScrollHeight =
+				scrollHeight.toString()
+		}
+
+		// loadingOlderMessages will be set to false in the socket response handler
+	}
+
+	function handleScroll(event: Event) {
+		const target = event.target as HTMLElement
+		if (!target || loadingOlderMessages || !pagination?.hasMore) return
+
+		// Check if user scrolled to within 200px of the top
+		if (target.scrollTop <= 200) {
+			loadOlderMessages()
+		}
 	}
 
 	function canSwipeRight(
@@ -322,8 +476,49 @@
 
 	onMount(() => {
 		socket.on("chat", (msg: Sockets.Chat.Response) => {
-			if (msg.chat.id === Number.parseInt(page.params.id)) {
-				chat = msg.chat
+			if (msg.chat.id === chatId) {
+				if (chat && loadingOlderMessages) {
+					// Merge older messages (avoiding duplicates)
+					const existingIds = new Set(
+						chat.chatMessages.map((m) => m.id)
+					)
+					const newMessages = msg.chat.chatMessages.filter(
+						(m) => !existingIds.has(m.id)
+					)
+					// Add older messages at the beginning, then sort all messages by ID (chronological order)
+					const allMessages = [...newMessages, ...chat.chatMessages]
+					chat.chatMessages = allMessages.sort((a, b) => a.id - b.id)
+
+					// Restore scroll position after loading older messages
+					setTimeout(() => {
+						if (chatMessagesContainer) {
+							const previousScrollHeight = parseInt(
+								chatMessagesContainer.dataset
+									.previousScrollHeight || "0"
+							)
+							const newScrollHeight =
+								chatMessagesContainer.scrollHeight
+							const scrollDiff =
+								newScrollHeight - previousScrollHeight
+
+							// Maintain the user's relative position by scrolling down by the difference
+							chatMessagesContainer.scrollTop = scrollDiff
+							delete chatMessagesContainer.dataset
+								.previousScrollHeight
+						}
+						loadingOlderMessages = false
+					}, 10)
+				} else {
+					// Initial load or refresh - ensure messages are sorted chronologically
+					chat = {
+						...msg.chat,
+						chatMessages: msg.chat.chatMessages.sort(
+							(a, b) => a.id - b.id
+						)
+					}
+					loadingOlderMessages = false
+				}
+				pagination = msg.pagination
 				// Auto-scroll is handled by the $effect
 			}
 		})
@@ -338,11 +533,20 @@
 					updatedMessages[existingIndex] = msg.chatMessage
 					chat = { ...chat, chatMessages: updatedMessages }
 				} else {
+					// Add new message and maintain chronological order
+					const updatedMessages = [
+						...chat.chatMessages,
+						msg.chatMessage
+					]
 					chat = {
 						...chat,
-						chatMessages: [...chat.chatMessages, msg.chatMessage]
+						chatMessages: updatedMessages.sort(
+							(a, b) => a.id - b.id
+						)
 					}
 				}
+				// Refresh response order when messages change
+				socket.emit("getChatResponseOrder", { chatId })
 				// Auto-scroll is handled by the $effect
 			}
 		})
@@ -392,6 +596,52 @@
 				draftCompiledPrompt = msg
 			}
 		)
+
+		socket.on(
+			"deleteChatMessage",
+			(msg: Sockets.DeleteChatMessage.Response) => {
+				if (chat) {
+					// Check if we're deleting the last message
+					const wasLastMessage = lastSeenMessageId === msg.id
+
+					// Remove the deleted message from the chat messages array
+					const filteredMessages = chat.chatMessages.filter(
+						(m: SelectChatMessage) => m.id !== msg.id
+					)
+
+					// Ensure messages remain sorted chronologically
+					chat = {
+						...chat,
+						chatMessages: filteredMessages.sort(
+							(a, b) => a.id - b.id
+						)
+					}
+
+					// Update tracking state if we deleted the last message
+					if (wasLastMessage && chat.chatMessages.length > 0) {
+						const newLastMessage =
+							chat.chatMessages[chat.chatMessages.length - 1]
+						lastSeenMessageId = newLastMessage.id
+						lastSeenMessageContent = newLastMessage.content || ""
+					} else if (chat.chatMessages.length === 0) {
+						lastSeenMessageId = null
+						lastSeenMessageContent = ""
+					}
+
+					// Refresh response order after deletion
+					socket.emit("getChatResponseOrder", { chatId })
+				}
+			}
+		)
+
+		socket.on(
+			"getChatResponseOrder",
+			(msg: Sockets.GetChatResponseOrder.Response) => {
+				if (msg.chatId === chatId) {
+					chatResponseOrder = msg
+				}
+			}
+		)
 	})
 
 	let showAvatarModal = $state(false)
@@ -418,19 +668,81 @@
 		id="chat-history"
 		class="flex flex-1 flex-col gap-3 overflow-auto"
 		bind:this={chatMessagesContainer}
+		onscroll={handleScroll}
+		role="log"
+		aria-label="Chat messages"
+		aria-live="polite"
+		aria-atomic="false"
 	>
 		<div class="p-2">
 			{#if !chat || chat.chatMessages.length === 0}
 				<div class="text-muted mt-8 text-center">No messages yet.</div>
 			{:else}
-				<ul class="flex flex-1 flex-col gap-3">
-					{#each chat.chatMessages as msg (msg.id)}
+				<!-- Loading indicator for older messages -->
+				{#if loadingOlderMessages}
+					<div class="text-muted py-2 text-center">
+						<div class="inline-flex items-center gap-2">
+							<div
+								class="h-4 w-4 animate-spin rounded-full border-b-2 border-current"
+							></div>
+							Loading older messages...
+						</div>
+					</div>
+				{/if}
+
+				<ul
+					class="flex flex-1 flex-col gap-3"
+					bind:this={messagesContainer}
+					role="group"
+					aria-label="Chat conversation with {chat.chatMessages
+						.length} messages"
+				>
+					{#each chat.chatMessages as msg, index (msg.id)}
 						{@const character = getMessageCharacter(msg)}
 						{@const isGreeting = !!msg.metadata?.isGreeting}
+						{@const isLastMessage =
+							index === chat.chatMessages.length - 1}
 						<li
+							id="message-{msg.id}"
 							class="preset-filled-primary-50-950 flex flex-col rounded-lg p-2"
 							class:opacity-50={msg.isHidden &&
 								editChatMessage?.id !== msg.id}
+							tabindex="-1"
+							role="article"
+							aria-label="Message {index + 1} of {chat
+								.chatMessages
+								.length} from {character?.nickname ||
+								character?.name ||
+								'Unknown'}: {msg.content.slice(0, 100)}{msg
+								.content.length > 100
+								? '...'
+								: ''}"
+							onkeydown={(e) => {
+								if (e.key === "Enter") {
+									e.preventDefault()
+									// Focus first available action button
+									const messageEl = e.currentTarget
+									const firstButton = messageEl.querySelector(
+										"button:not([disabled])"
+									)
+									if (firstButton) firstButton.focus()
+								} else if (e.key === "ArrowUp" && index > 0) {
+									e.preventDefault()
+									const prevMessage = document.getElementById(
+										`message-${chat.chatMessages[index - 1].id}`
+									)
+									if (prevMessage) prevMessage.focus()
+								} else if (
+									e.key === "ArrowDown" &&
+									index < chat.chatMessages.length - 1
+								) {
+									e.preventDefault()
+									const nextMessage = document.getElementById(
+										`message-${chat.chatMessages[index + 1].id}`
+									)
+									if (nextMessage) nextMessage.focus()
+								}
+							}}
 						>
 							<div class="flex justify-between gap-2">
 								<div class="group flex gap-2">
@@ -621,6 +933,46 @@
 								{/if}
 							</div>
 						</li>
+
+						<!-- Show next character block after the last message -->
+						{#if isLastMessage && shouldShowNextCharacterBlock && nextCharacter}
+							<li
+								class="preset-tonal-surface-100-900 border-surface-300-700 my-2 flex items-center justify-between rounded-full px-4"
+							>
+								<div class="flex items-center gap-3">
+									<Avatar char={nextCharacter} />
+									<div class="flex flex-col">
+										<span
+											class="text-surface-700-300 text-sm font-medium"
+										>
+											{nextCharacter.nickname ||
+												nextCharacter.name}
+										</span>
+										<span class="text-surface-500 text-xs">
+											ready to continue
+										</span>
+									</div>
+								</div>
+								<div class="flex gap-2">
+									<button
+										class="btn btn-sm preset-filled-primary-500"
+										onclick={handleContinueWithNextCharacter}
+										title="Continue with {nextCharacter.nickname ||
+											nextCharacter.name}"
+									>
+										<Icons.Play size={16} />
+										Continue
+									</button>
+									<button
+										class="btn btn-sm preset-tonal-surface-500"
+										onclick={handleChooseDifferentCharacter}
+										title="Choose a different character"
+									>
+										<Icons.Users size={16} />
+									</button>
+								</div>
+							</li>
+						{/if}
 					{/each}
 				</ul>
 			{/if}
@@ -692,7 +1044,7 @@
 <Modal
 	open={showDeleteMessageModal}
 	onOpenChange={onOpenMessageDeleteChange}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -724,7 +1076,7 @@
 <Modal
 	open={showDraftCompiledPromptModal}
 	onOpenChange={(details) => (showDraftCompiledPromptModal = details.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-full w-[60em]"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-full w-[60em] border border-surface-300-700"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -866,13 +1218,19 @@
 						<button
 							class="group preset-outlined-surface-400-600 hover:preset-filled-surface-500 relative flex w-full gap-3 overflow-hidden rounded p-2"
 							onclick={() =>
-								onSelectTriggerCharacterMessage(filtered.character.id)}
+								onSelectTriggerCharacterMessage(
+									filtered.character.id
+								)}
 						>
 							<div class="w-fit">
 								<Avatar char={filtered.character} />
 							</div>
-							<div class="relative flex w-0 min-w-0 flex-1 flex-col">
-								<div class="w-full truncate text-left font-semibold">
+							<div
+								class="relative flex w-0 min-w-0 flex-1 flex-col"
+							>
+								<div
+									class="w-full truncate text-left font-semibold"
+								>
 									{filtered.character.nickname ||
 										filtered.character.name}
 								</div>
@@ -895,7 +1253,7 @@
 <Modal
 	open={showAvatarModal}
 	onOpenChange={(e) => (showAvatarModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md flex flex-col items-center"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-md flex flex-col items-center border border-surface-300-700"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -934,60 +1292,67 @@
 {/snippet}
 
 {#snippet messageControls(msg: SelectChatMessage)}
-	<button
-		class="btn btn-sm msg-cntrl-icon hover:preset-filled-secondary-500"
-		class:preset-filled-secondary-500={msg.isHidden}
-		title={msg.isHidden ? "Unhide Message" : "Hide Message"}
-		disabled={lastMessage?.isGenerating || !!editChatMessage}
-		onclick={(e) => handleHideMessage(e, msg)}
-	>
-		<Icons.Ghost size={16} />
-		<span class="lg:hidden">
-			{msg.isHidden ? "Unhide Message" : "Hide Message"}
-		</span>
-	</button>
-	<button
-		class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
-		title="Edit Message"
-		disabled={lastMessage?.isGenerating ||
-			!!editChatMessage ||
-			msg.isGenerating ||
-			msg.isHidden}
-		onclick={(e) => handleEditMessage(e, msg)}
-	>
-		<Icons.Edit size={16} />
-		<span class="lg:hidden">Edit Message</span>
-	</button>
-	<button
-		class="btn btn-sm msg-cntrl-icon hover:preset-filled-error-500"
-		title="Delete Message"
-		disabled={lastMessage?.isGenerating || !!editChatMessage}
-		onclick={(e) => handleDeleteMessage(e, msg)}
-	>
-		<Icons.Trash2 size={16} />
-		<span class="lg:hidden">Delete Message</span>
-	</button>
-	{#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
+	<div role="group" aria-label="Message actions">
 		<button
-			class="btn btn-sm msg-cntrl-icon hover:preset-filled-warning-500"
-			title="Regenerate Response"
-			disabled={!canRegenerateLastMessage}
-			onclick={(e) => handleRegenerateMessage(e, msg)}
+			class="btn btn-sm msg-cntrl-icon hover:preset-filled-secondary-500"
+			class:preset-filled-secondary-500={msg.isHidden}
+			title={msg.isHidden ? "Unhide Message" : "Hide Message"}
+			aria-label={msg.isHidden
+				? "Unhide this message"
+				: "Hide this message"}
+			disabled={lastMessage?.isGenerating || !!editChatMessage}
+			onclick={(e) => handleHideMessage(e, msg)}
 		>
-			<Icons.RefreshCw size={16} />
-			<span class="lg:hidden">Regenerate Response</span>
+			<Icons.Ghost size={16} aria-hidden="true" />
+			<span class="lg:hidden">
+				{msg.isHidden ? "Unhide Message" : "Hide Message"}
+			</span>
 		</button>
-	{/if}
-	{#if msg.isGenerating}
 		<button
-			class="btn btn-sm msg-cntrl-icon preset-filled-error-500"
-			title="Stop Generation"
-			onclick={(e) => handleAbortMessage(e, msg)}
+			class="btn btn-sm msg-cntrl-icon hover:preset-filled-success-500"
+			title="Edit Message"
+			aria-label="Edit this message"
+			disabled={lastMessage?.isGenerating ||
+				!!editChatMessage ||
+				msg.isGenerating ||
+				msg.isHidden}
+			onclick={(e) => handleEditMessage(e, msg)}
 		>
-			<Icons.Square size={16} />
-			<span class="lg:hidden">Stop Generation</span>
+			<Icons.Edit size={16} aria-hidden="true" />
+			<span class="lg:hidden">Edit Message</span>
 		</button>
-	{/if}
+		<button
+			class="btn btn-sm msg-cntrl-icon hover:preset-filled-error-500"
+			title="Delete Message"
+			aria-label="Delete this message"
+			disabled={lastMessage?.isGenerating || !!editChatMessage}
+			onclick={(e) => handleDeleteMessage(e, msg)}
+		>
+			<Icons.Trash2 size={16} aria-hidden="true" />
+			<span class="lg:hidden">Delete Message</span>
+		</button>
+		{#if !!msg.characterId && msg.id === lastMessage?.id && !msg.isGenerating}
+			<button
+				class="btn btn-sm msg-cntrl-icon hover:preset-filled-warning-500"
+				title="Regenerate Response"
+				disabled={!canRegenerateLastMessage}
+				onclick={(e) => handleRegenerateMessage(e, msg)}
+			>
+				<Icons.RefreshCw size={16} />
+				<span class="lg:hidden">Regenerate Response</span>
+			</button>
+		{/if}
+		{#if msg.isGenerating}
+			<button
+				class="btn btn-sm msg-cntrl-icon preset-filled-error-500"
+				title="Stop Generation"
+				onclick={(e) => handleAbortMessage(e, msg)}
+			>
+				<Icons.Square size={16} />
+				<span class="lg:hidden">Stop Generation</span>
+			</button>
+		{/if}
+	</div>
 {/snippet}
 
 {#snippet extraControlsButton()}

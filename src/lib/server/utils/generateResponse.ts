@@ -86,7 +86,10 @@ export async function generateResponse({
 		(cc) => cc.character?.id === adapter.currentCharacterId
 	)
 
-	const charName = currentCharacter?.character?.nickname || currentCharacter?.character?.name || ""
+	const charName =
+		currentCharacter?.character?.nickname ||
+		currentCharacter?.character?.name ||
+		""
 	const startString = `${charName}:`
 
 	// Generate completion
@@ -106,15 +109,19 @@ export async function generateResponse({
 				// If stagedContent length is <= startString, remove partial startString
 				if (stagedContent.length <= startString.length) {
 					// Check if content starts with startString substring
-					if (content.startsWith(startString.substring(0, stagedContent.length))) {
+					if (
+						content.startsWith(
+							startString.substring(0, stagedContent.length)
+						)
+					) {
 						stagedContent = ""
 					}
 				}
 
 				// --- SWIPE HISTORY LOGIC ---
-				let updateData: any = { 
+				let updateData: any = {
 					content: stagedContent.trim(),
-					isGenerating: true 
+					isGenerating: true
 				}
 				if (
 					generatingMessage.metadata &&

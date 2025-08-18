@@ -6,6 +6,7 @@
 	import { onMount, setContext, onDestroy } from "svelte"
 	import SamplingSidebar from "./sidebars/SamplingSidebar.svelte"
 	import ConnectionsSidebar from "./sidebars/ConnectionsSidebar.svelte"
+	import OllamaSidebar from "./sidebars/OllamaSidebar.svelte"
 	import ContextSidebar from "./sidebars/ContextSidebar.svelte"
 	import LorebooksSidebar from "./sidebars/LorebooksSidebar.svelte"
 	import PersonasSidebar from "./sidebars/PersonasSidebar.svelte"
@@ -15,9 +16,11 @@
 	import TagsSidebar from "./sidebars/TagsSidebar.svelte"
 	import * as skio from "sveltekit-io"
 	import { toaster } from "$lib/client/utils/toaster"
+	import { KeyboardNavigationManager } from "$lib/client/utils/keyboardNavigation"
 	import SettingsSidebar from "$lib/client/components/sidebars/SettingsSidebar.svelte"
 	import type { Snippet } from "svelte"
 	import { Theme } from "$lib/client/consts/Theme"
+	import OllamaIcon from "./icons/OllamaIcon.svelte"
 
 	interface Props {
 		children?: Snippet
@@ -26,6 +29,12 @@
 	let { children }: Props = $props()
 
 	const socket = skio.get()
+	
+	// Focus management refs
+	let mainContentRef: HTMLElement
+	let leftSidebarRef: HTMLElement  
+	let rightSidebarRef: HTMLElement
+	let keyboardNavManager: KeyboardNavigationManager
 
 	let userCtx: { user: any } = $state({} as { user: any })
 	let panelsCtx: PanelsCtx = $state({
@@ -38,29 +47,55 @@
 		onLeftPanelClose: undefined,
 		onRightPanelClose: undefined,
 		onMobilePanelClose: undefined,
-		leftNav: {
+		leftNav: {},
+		rightNav: {
+			tags: { icon: Icons.Tag, title: "Tags" },
+			personas: { icon: Icons.UserCog, title: "Personas" },
+			characters: { icon: Icons.Users, title: "Characters" },
+			lorebooks: { icon: Icons.BookMarked, title: "Lorebooks+" },
+			chats: { icon: Icons.MessageSquare, title: "Chats" }
+		},
+		digest: {}
+	})
+	let themeCtx: ThemeCtx = $state({
+		mode: (localStorage.getItem("mode") as "light" | "dark") || "dark",
+		theme: localStorage.getItem("theme") || Theme.HAMLINDIGO
+	})
+	let systemSettingsCtx: SystemSettingsCtx = $state({
+		settings: {
+			ollamaManagerEnabled: false,
+			ollamaManagerBaseUrl: "",
+			showAllCharacterFields: false,
+			enableEasyCharacterCreation: true,
+			enableEasyPersonaCreation: true,
+			showHomePageBanner: true
+		}
+	})
+
+	$effect(() => {
+		console.log(
+			"Layout systemSettingsCtx",
+			$state.snapshot(systemSettingsCtx)
+		)
+	})
+
+	// Update leftNav based on Ollama Manager setting
+	$effect(() => {
+		const baseLeftNav = {
 			sampling: {
 				icon: Icons.SlidersHorizontal,
 				title: "Sampling"
 			},
 			connections: { icon: Icons.Cable, title: "Connections" },
+			...(systemSettingsCtx.settings.ollamaManagerEnabled && {
+				ollama: { icon: OllamaIcon, title: "Ollama Manager" }
+			}),
 			contexts: { icon: Icons.BookOpenText, title: "Contexts" },
 			prompts: { icon: Icons.MessageCircle, title: "Prompts" },
 			settings: { icon: Icons.Settings, title: "Settings" }
-		},
-		rightNav: {
-			personas: { icon: Icons.UserCog, title: "Personas" },
-			characters: { icon: Icons.Users, title: "Characters" },
-			lorebooks: { icon: Icons.BookMarked, title: "Lorebooks+" },
-			tags: { icon: Icons.Tag, title: "Tags" },
-			chats: { icon: Icons.MessageSquare, title: "Chats" }
-		},
-		digest: {}
-	})
-	// TODO use setTheme socket call
-	let themeCtx: ThemeCtx = $state({
-		mode: (localStorage.getItem("mode") as "light" | "dark") || "dark",
-		theme: localStorage.getItem("theme") || Theme.HAMLINDIGO
+		}
+
+		panelsCtx.leftNav = baseLeftNav
 	})
 
 	function openPanel({
@@ -137,18 +172,24 @@
 	}: {
 		panel: "left" | "right" | "mobile"
 	}) {
-		let res: boolean
+		let res: boolean = true // Default to allowing close
 		if (panel === "mobile") {
-			res = await panelsCtx.onMobilePanelClose!()
+			res = panelsCtx.onMobilePanelClose
+				? await panelsCtx.onMobilePanelClose()
+				: true
 			panelsCtx.mobilePanel = res ? null : panelsCtx.mobilePanel
 		} else if (panel === "left") {
-			res = await panelsCtx.onLeftPanelClose!()
+			res = panelsCtx.onLeftPanelClose
+				? await panelsCtx.onLeftPanelClose()
+				: true
 			panelsCtx.leftPanel = res ? null : panelsCtx.leftPanel
 		} else if (panel === "right") {
-			res = await panelsCtx.onRightPanelClose!()
+			res = panelsCtx.onRightPanelClose
+				? await panelsCtx.onRightPanelClose()
+				: true
 			panelsCtx.rightPanel = res ? null : panelsCtx.rightPanel
 		}
-		return res!
+		return res
 	}
 
 	function handleMobilePanelClick(key: string) {
@@ -168,57 +209,118 @@
 		document.documentElement.setAttribute("data-theme", theme)
 	})
 
-	setContext("panelsCtx", panelsCtx as PanelsCtx)
-	setContext("userCtx", userCtx)
-	setContext("themeCtx", themeCtx)
-
 	onMount(() => {
-		socket.on("user", (message) => {
+		setContext("panelsCtx", panelsCtx as PanelsCtx)
+		setContext("userCtx", userCtx)
+		setContext("themeCtx", themeCtx)
+		setContext("systemSettingsCtx", systemSettingsCtx)
+
+		// Initialize keyboard navigation
+		keyboardNavManager = new KeyboardNavigationManager({
+			panelsCtx,
+			onFocusMain: () => {
+				if (mainContentRef) {
+					KeyboardNavigationManager.focusFirstInteractive(mainContentRef)
+					KeyboardNavigationManager.announceToScreenReader("Main content focused")
+				}
+			},
+			onFocusLeftSidebar: () => {
+				if (leftSidebarRef) {
+					KeyboardNavigationManager.focusFirstInteractive(leftSidebarRef)
+					const panelName = panelsCtx.leftNav[panelsCtx.leftPanel!]?.title || panelsCtx.leftPanel
+					KeyboardNavigationManager.announceToScreenReader(`${panelName} sidebar focused`)
+				}
+			},
+			onFocusRightSidebar: () => {
+				if (rightSidebarRef) {
+					KeyboardNavigationManager.focusFirstInteractive(rightSidebarRef)
+					const panelName = panelsCtx.rightNav[panelsCtx.rightPanel!]?.title || panelsCtx.rightPanel
+					KeyboardNavigationManager.announceToScreenReader(`${panelName} sidebar focused`)
+				}
+			}
+		})
+		keyboardNavManager.addGlobalListener()
+
+		socket.on("user", (message: Sockets.User.Response) => {
 			userCtx.user = message.user
 		})
+		socket.on(
+			"systemSettings",
+			(message: Sockets.SystemSettings.Response) => {
+				systemSettingsCtx.settings = message.systemSettings
+			}
+		)
 
 		socket.on("error", (message: Sockets.Error.Response) => {
-			toaster.error({ title: "Error", description: message.error })
+			toaster.error({
+				title: message.error,
+				description: message.description
+			})
+		})
+
+		socket.on("success", (message: Sockets.Success.Response) => {
+			toaster.success({
+				title: message.title,
+				description: message.description
+			})
 		})
 
 		socket.emit("user", {})
+		socket.emit("systemSettings", {})
 	})
 
 	onDestroy(() => {
+		keyboardNavManager?.removeGlobalListener()
 		socket.off("user")
+		socket.off("systemSettings")
 		socket.off("error")
+		socket.off("success")
 	})
 </script>
 
 {#if !!userCtx.user}
 	<div
 		class="bg-surface-100-900 relative h-full max-h-[100dvh] w-full justify-between"
+		role="application"
+		aria-label="Serene Pub Chat Application"
 	>
 		<div
-			class="relative flex h-svh min-w-full max-w-full flex-1 flex-col lg:flex-row lg:gap-2 overflow-hidden"
+			class="relative flex h-svh max-w-full min-w-full flex-1 flex-col overflow-hidden lg:flex-row lg:gap-2"
 		>
 			<!-- Left Sidebar -->
-			<aside class="desktop-sidebar">
+			<aside 
+				class="desktop-sidebar"
+				role="complementary"
+				aria-label="Left navigation panel"
+			>
 				{#if panelsCtx.leftPanel}
 					{@const title =
 						panelsCtx.leftNav[panelsCtx.leftPanel]?.title ||
 						panelsCtx.leftPanel}
 					<div
+						bind:this={leftSidebarRef}
 						class="bg-surface-50-950 me-2 flex h-full w-full flex-col overflow-y-auto rounded-r-lg"
 						in:fly={{ x: -100, duration: 200 }}
 						out:fly={{ x: -100, duration: 200 }}
+						role="region"
+						aria-labelledby="left-panel-title"
+						aria-label="{title} sidebar - {Object.keys(panelsCtx.leftNav).indexOf(panelsCtx.leftPanel) + 1} of {Object.keys(panelsCtx.leftNav).length}"
+						tabindex="-1"
 					>
 						<div class="flex items-center justify-between p-4">
-							<span
+							<h2 
+								id="left-panel-title"
 								class="text-foreground text-lg font-semibold capitalize"
 							>
 								{title}
-							</span>
+							</h2>
 							<button
 								class="btn-ghost"
 								onclick={() => closePanel({ panel: "left" })}
+								aria-label="Close {title} panel"
+								type="button"
 							>
-								<Icons.X class="text-foreground h-5 w-5" />
+								<Icons.X class="text-foreground h-5 w-5" aria-hidden="true" />
 							</button>
 						</div>
 						<div class="flex-1 overflow-y-auto">
@@ -228,6 +330,10 @@
 								/>
 							{:else if panelsCtx.leftPanel === "connections"}
 								<ConnectionsSidebar
+									bind:onclose={panelsCtx.onLeftPanelClose}
+								/>
+							{:else if panelsCtx.leftPanel === "ollama"}
+								<OllamaSidebar
 									bind:onclose={panelsCtx.onLeftPanelClose}
 								/>
 							{:else if panelsCtx.leftPanel === "contexts"}
@@ -248,37 +354,54 @@
 				{/if}
 			</aside>
 			<!-- Main Content -->
-			<main class="flex flex-col h-full overflow-hidden">
+			<main 
+				bind:this={mainContentRef}
+				class="flex h-full flex-col overflow-hidden"
+				role="main"
+				tabindex="-1"
+			>
 				<Header />
 				<div class="flex-1 overflow-auto">
 					{@render children?.()}
 				</div>
 			</main>
 			<!-- Right Sidebar -->
-			<aside class="desktop-sidebar pt-1">
+			<aside 
+				class="desktop-sidebar pt-1"
+				role="complementary"
+				aria-label="Right navigation panel"
+			>
 				{#if panelsCtx.rightPanel}
 					{@const title =
 						panelsCtx.rightNav[panelsCtx.rightPanel]?.title ||
 						panelsCtx.rightPanel}
 					<div
+						bind:this={rightSidebarRef}
 						class="bg-surface-50-950 flex h-full w-full flex-col overflow-y-auto rounded-l-lg"
 						in:fly={{ x: 100, duration: 200 }}
 						out:fly={{ x: 100, duration: 200 }}
+						role="region"
+						aria-labelledby="right-panel-title"
+						aria-label="{title} sidebar - {Object.keys(panelsCtx.rightNav).indexOf(panelsCtx.rightPanel) + 1} of {Object.keys(panelsCtx.rightNav).length}"
+						tabindex="-1"
 					>
 						<div class="flex items-center justify-between p-4">
-							<span
+							<h2
+								id="right-panel-title"
 								class="text-foreground text-lg font-semibold capitalize"
 							>
 								{title}
-							</span>
+							</h2>
 							<button
 								class="btn-ghost"
 								onclick={() => closePanel({ panel: "right" })}
+								aria-label="Close {title} panel"
+								type="button"
 							>
-								<Icons.X class="text-foreground h-5 w-5" />
+								<Icons.X class="text-foreground h-5 w-5" aria-hidden="true" />
 							</button>
 						</div>
-						<div class="flex-1 overflow-y-auto">
+						<nav class="flex-1 overflow-y-auto">
 							{#if panelsCtx.rightPanel === "personas"}
 								<PersonasSidebar
 									bind:onclose={panelsCtx.onRightPanelClose}
@@ -300,7 +423,7 @@
 									bind:onclose={panelsCtx.onRightPanelClose}
 								/>
 							{/if}
-						</div>
+						</nav>
 					</div>
 				{/if}
 			</aside>
@@ -312,6 +435,9 @@
 				]?.title || panelsCtx.mobilePanel}
 			<div
 				class="bg-surface-100-900 fixed inset-0 z-[51] flex flex-col overflow-y-auto lg:hidden"
+				role="dialog"
+				aria-labelledby="mobile-panel-title"
+				aria-modal="true"
 			>
 				<div
 					class="border-border flex items-center justify-between border-b p-4"
@@ -335,6 +461,10 @@
 						/>
 					{:else if panelsCtx.mobilePanel === "connections"}
 						<ConnectionsSidebar
+							bind:onclose={panelsCtx.onMobilePanelClose}
+						/>
+					{:else if panelsCtx.mobilePanel === "ollama"}
+						<OllamaSidebar
 							bind:onclose={panelsCtx.onMobilePanelClose}
 						/>
 					{:else if panelsCtx.mobilePanel === "contexts"}
@@ -428,6 +558,6 @@
 	/* w-[25%] max-w-[25%] */
 
 	.desktop-sidebar {
-		@apply hidden min-h-full max-h-full basis-1/4 overflow-x-hidden lg:block py-1;
+		@apply hidden max-h-full min-h-full basis-1/4 overflow-x-hidden py-1 lg:block;
 	}
 </style>

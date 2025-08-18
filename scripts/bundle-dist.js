@@ -14,7 +14,7 @@ const version = pkg.version
 const distDir = path.resolve(__dirname, "../dist")
 const buildDir = path.resolve(__dirname, "../build")
 const staticDir = path.resolve(__dirname, "../static")
-const filesToCopy = ["LICENSE", "README.md", "NOTICE.md"]
+const filesToCopy = ["LICENSE", "README.md", "NOTICE.md", "KEYBINDINGS.md"]
 
 function copyRecursive(src, dest) {
 	if (!fs.existsSync(src)) return
@@ -209,20 +209,20 @@ const targets = [
 	{ name: "macos-x64", platform: "darwin", arch: "x64" },
 	{ name: "macos-arm64", platform: "darwin", arch: "arm64" },
 	{ name: "windows-x64", platform: "win32", arch: "x64" },
-	{ name: "windows-arm64", platform: "win32", arch: "arm64" },
+	{ name: "windows-arm64", platform: "win32", arch: "arm64" }
 ]
 
 // Accept a single target as a command-line argument
 const argTarget = process.argv[2]
 if (!argTarget) {
 	console.error("Usage: node bundle-dist.js <target>")
-	console.error("Valid targets:", targets.map(t => t.name).join(", "))
+	console.error("Valid targets:", targets.map((t) => t.name).join(", "))
 	process.exit(1)
 }
-const target = targets.find(t => t.name === argTarget)
+const target = targets.find((t) => t.name === argTarget)
 if (!target) {
 	console.error(`Invalid target: ${argTarget}`)
-	console.error("Valid targets:", targets.map(t => t.name).join(", "))
+	console.error("Valid targets:", targets.map((t) => t.name).join(", "))
 	process.exit(1)
 }
 
@@ -244,21 +244,24 @@ if (!target) {
 		}
 
 		// 2. Create dist bundle
-		const outDir = path.join(distDir, `serene-pub-${version}-${target.name}`)
+		const outDir = path.join(
+			distDir,
+			`serene-pub-${version}-${target.name}`
+		)
 		if (fs.existsSync(outDir))
 			fs.rmSync(outDir, { recursive: true, force: true })
 		fs.mkdirSync(outDir, { recursive: true })
-		
+
 		// Copy build and static
 		copyRecursive(buildDir, path.join(outDir, "build"))
 		copyRecursive(staticDir, path.join(outDir, "static"))
-		
+
 		// Copy node_modules (assuming it's already prepared for this target)
 		copyRecursive(
 			path.resolve(__dirname, "../node_modules"),
 			path.join(outDir, "node_modules")
 		)
-		
+
 		// Copy LICENSE, README, etc.
 		for (const file of filesToCopy) {
 			if (fs.existsSync(path.resolve(__dirname, "..", file))) {
@@ -268,7 +271,7 @@ if (!target) {
 				)
 			}
 		}
-		
+
 		// Copy platform-specific instructions
 		const instrFile = path.resolve(
 			__dirname,
@@ -277,23 +280,80 @@ if (!target) {
 		if (fs.existsSync(instrFile)) {
 			fs.copyFileSync(instrFile, path.join(outDir, "INSTRUCTIONS.txt"))
 		}
+
+		// Copy Node.js binary for the target platform
+		const isWindows = target.platform === "win32"
+		const nodeSrcName = isWindows ? "node.exe" : "node"
+		const nodeSrcPath = path.resolve(__dirname, "..", nodeSrcName)
+		const nodeDestPath = path.join(outDir, nodeSrcName)
 		
+		if (fs.existsSync(nodeSrcPath)) {
+			fs.copyFileSync(nodeSrcPath, nodeDestPath)
+			if (!isWindows) {
+				fs.chmodSync(nodeDestPath, 0o755)
+			}
+			console.log(`Copied Node.js binary: ${nodeSrcName}`)
+		} else {
+			console.warn(`Warning: Node.js binary not found at ${nodeSrcPath}`)
+		}
+
 		// Copy all run files from dist-assets/<os>/
 		const runFiles = fs
-			.readdirSync(path.resolve(__dirname, `../dist-assets/${target.name.split("-")[0]}`))
+			.readdirSync(
+				path.resolve(
+					__dirname,
+					`../dist-assets/${target.name.split("-")[0]}`
+				)
+			)
 			.filter((f) => f.startsWith("run."))
 		for (const runFile of runFiles) {
-			const src = path.resolve(__dirname, `../dist-assets/${target.name.split("-")[0]}/${runFile}`)
+			const src = path.resolve(
+				__dirname,
+				`../dist-assets/${target.name.split("-")[0]}/${runFile}`
+			)
 			const dest = path.join(outDir, runFile)
 			fs.copyFileSync(src, dest)
 			if (target.platform !== "win32" && runFile.endsWith(".sh")) {
 				fs.chmodSync(dest, 0o755)
 			}
 		}
+
+		// Copy platform-specific executables and icons
+		const platformDir = path.resolve(__dirname, `../dist-assets/${target.name.split("-")[0]}`)
+		const platformFiles = fs.readdirSync(platformDir)
 		
+		for (const file of platformFiles) {
+			const srcPath = path.join(platformDir, file)
+			const destPath = path.join(outDir, file)
+			
+			// Skip run files (already copied above) and INSTRUCTIONS.txt (copied separately)
+			if (file.startsWith("run.") || file === "INSTRUCTIONS.txt") {
+				continue
+			}
+			
+			if (fs.lstatSync(srcPath).isDirectory()) {
+				// Copy directories recursively (like .app bundles)
+				copyRecursive(srcPath, destPath)
+				console.log(`Copied directory: ${file}`)
+			} else {
+				// Copy individual files
+				fs.copyFileSync(srcPath, destPath)
+				
+				// Make executables executable on Unix platforms
+				if (target.platform !== "win32" && 
+					(file === "Serene Pub" || file.endsWith(".desktop"))) {
+					fs.chmodSync(destPath, 0o755)
+				}
+				console.log(`Copied file: ${file}`)
+			}
+		}
+
 		// Copy drizzle migrations folder
-		copyRecursive(path.resolve(__dirname, '../drizzle'), path.join(outDir, 'drizzle'))
-		
+		copyRecursive(
+			path.resolve(__dirname, "../drizzle"),
+			path.join(outDir, "drizzle")
+		)
+
 		// Write minimal package.json
 		fs.writeFileSync(
 			path.join(outDir, "package.json"),

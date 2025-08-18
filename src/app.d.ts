@@ -6,6 +6,7 @@ import type { Schema } from "inspector/promises"
 import type { P } from "ollama/dist/shared/ollama.d792a03f.mjs"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions/completions"
 import { FileAcceptDetails } from "../node_modules/@zag-js/file-upload/dist/index.d"
+import type { ListResponse } from "ollama"
 
 // for information about these interfaces
 declare global {
@@ -50,8 +51,11 @@ declare global {
 		digest: {
 			characterId?: number
 			personaId?: number
+			chatId?: number
 			chatPersonaId?: number
 			chatCharacterId?: number
+			lorebookId?: number
+			tutorial?: boolean
 		}
 	}
 
@@ -69,6 +73,17 @@ declare global {
 	interface ThemeCtx {
 		mode: "light" | "dark"
 		theme: string
+	}
+
+	interface SystemSettingsCtx {
+		settings: {
+			ollamaManagerEnabled: boolean
+			ollamaManagerBaseUrl: string
+			showAllCharacterFields: boolean
+			enableEasyCharacterCreation: boolean
+			enableEasyPersonaCreation: boolean
+			showHomePageBanner: boolean
+		}
 	}
 
 	// Model select and insert
@@ -114,6 +129,31 @@ declare global {
 	type InsertLorebookBinding = typeof schema.lorebookBindings.$inferInsert
 
 	namespace Sockets {
+		namespace SystemSettings {
+			interface Call {}
+			interface Response {
+				systemSettings: {
+					ollamaManagerEnabled: boolean
+					ollamaManagerBaseUrl: string
+					showAllCharacterFields: boolean
+					enableEasyCharacterCreation: boolean
+					enableEasyPersonaCreation: boolean
+					showHomePageBanner: boolean
+				}
+			}
+		}
+		namespace Error {
+			interface Response {
+				error: string
+				description?: string
+			}
+		}
+		namespace Success {
+			interface Response {
+				title: string
+				description?: string
+			}
+		}
 		namespace SamplingConfig {
 			interface Call {
 				id: number
@@ -322,6 +362,202 @@ declare global {
 				error: string | null
 			}
 		}
+		// --- OLLAMA ---
+		namespace OllamaSetBaseUrl {
+			interface Call {
+				baseUrl: string
+			}
+			interface Response {
+				success: boolean
+			}
+		}
+		namespace OllamaModelsList {
+			interface Call {}
+			interface Response {
+				models: any[]
+			}
+		}
+		namespace OllamaDeleteModel {
+			interface Call {
+				modelName: string
+			}
+			interface Response {
+				success: boolean
+			}
+		}
+		namespace OllamaConnectModel {
+			interface Call {
+				modelName: string
+			}
+			interface Response {
+				success: boolean
+			}
+		}
+		namespace OllamaListRunningModels {
+			interface Call {}
+			interface Response {
+				models: ListResponse["models"]
+			}
+		}
+		namespace OllamaPullModel {
+			interface Call {
+				modelName: string
+			}
+			interface Response {
+				success: boolean
+				error?: string
+				progress?: any
+			}
+		}
+		namespace OllamaPullProgress {
+			interface Response {
+				downloadingQuants: {
+					[key: string]: {
+						modelName: string
+						status: string
+						isDone: boolean
+						files: {
+							[key: string]: { total: number; completed: number }
+						}
+					}
+				}
+			}
+		}
+		namespace OllamaStopModel {
+			interface Call {
+				modelName: string
+			}
+			interface Response {
+				success: boolean
+			}
+		}
+		namespace OllamaCancelPull {
+			interface Call {
+				modelName: string
+			}
+			interface Response {
+				success: boolean
+				modelName?: string
+				error?: string
+			}
+		}
+		namespace OllamaVersion {
+			interface Call {}
+			interface Response {
+				version?: string
+			}
+		}
+		namespace OllamaIsUpdateAvailable {
+			interface Call {}
+			interface Response {
+				updateAvailable: boolean
+				currentVersion?: string
+				latestVersion?: string
+				error?: string
+			}
+		}
+		namespace OllamaSearchAvailableModels {
+			interface Call {
+				search: string
+				source: string
+			}
+			interface Response {
+				models: Array<{
+					name: string
+					description?: string
+					size?: string
+					tags?: string[]
+					popular?: boolean
+					url?: string
+					downloads?: number
+					updatedAtStr?: string
+					createdAt?: Date
+					likes?: number
+					trendingScore?: number
+					pullOptions?: { label: string; pull: string }[]
+				}>
+				error?: string
+			}
+		}
+
+		namespace OllamaRecommendedModels {
+			interface Call {}
+			interface Response {
+				models: Array<{
+					name: string
+					pull: string
+					size: number
+					recommended_vram: number
+					details: {
+						parameter_size: string
+						quantization_level: string
+						modified_at: string
+						description: string
+					}
+				}>
+				error?: string
+			}
+		}
+
+		namespace OllamaGetDownloadProgress {
+			interface Call {}
+			interface Response {
+				// This endpoint doesn't return a direct response,
+				// it triggers ollamaPullProgress events for each active download
+			}
+		}
+		namespace OllamaClearDownloadHistory {
+			interface Call {}
+			interface Response {
+				success: boolean
+			}
+		}
+		// --- APP SETTINGS ---
+		namespace UpdateOllamaManagerEnabled {
+			interface Call {
+				enabled: boolean
+			}
+			interface Response {
+				success: boolean
+				enabled?: boolean
+			}
+		}
+		namespace UpdateShowAllCharacterFields {
+			interface Call {
+				enabled: boolean
+			}
+			interface Response {
+				success: boolean
+				enabled?: boolean
+			}
+		}
+		namespace UpdateEasyCharacterCreation {
+			interface Call {
+				enabled: boolean
+			}
+			interface Response {
+				success: boolean
+				enabled?: boolean
+			}
+		}
+		namespace UpdateEasyPersonaCreation {
+			interface Call {
+				enabled: boolean
+			}
+			interface Response {
+				success: boolean
+				enabled?: boolean
+			}
+		}
+		namespace UpdateShowHomePageBanner {
+			interface Call {
+				enabled: boolean
+			}
+			interface Response {
+				success: boolean
+				enabled?: boolean
+			}
+		}
 		// --- WEIGHTS ---
 		namespace DeleteSamplingConfig {
 			interface Call {
@@ -398,6 +634,8 @@ declare global {
 		namespace Chat {
 			interface Call {
 				id: number
+				limit?: number
+				offset?: number
 			}
 			interface Response {
 				chat: SelectChat & {
@@ -406,6 +644,10 @@ declare global {
 					chatCharacters: SelectChatCharacter &
 						{ character: SelectCharacter }[]
 					chatMessages: SelectChatMessage[]
+				}
+				pagination?: {
+					total: number
+					hasMore: boolean
 				}
 			}
 		}
@@ -568,7 +810,9 @@ declare global {
 				userId?: number
 			}
 			interface Response {
-				lorebookList: SelectLorebook[]
+				lorebookList: (SelectLorebook & {
+					tags: string[]
+				})[]
 			}
 		}
 
@@ -583,6 +827,7 @@ declare global {
 					characterLoreEntries: SelectCharacterLoreEntry[]
 					historyEntries: SelectHistoryEntry[]
 					lorebookBindings: SelectLorebookBinding[]
+					tags: string[]
 				}
 			}
 		}
@@ -591,6 +836,7 @@ declare global {
 		namespace CreateLorebook {
 			interface Call {
 				name: string
+				tags?: string[]
 			}
 			interface Response {
 				lorebook: SelectLorebook
@@ -689,9 +935,8 @@ declare global {
 		// Update Lorebook
 		namespace UpdateLorebook {
 			interface Call {
-				lorebook: {
-					id: number
-					name: string
+				lorebook: SelectLorebook & {
+					tags?: string[]
 				}
 			}
 			interface Response {
@@ -857,12 +1102,100 @@ declare global {
 				isActive: boolean
 			}
 		}
+		// Update Chat Character Visibility
+		namespace UpdateChatCharacterVisibility {
+			interface Call {
+				chatId: number
+				characterId: number
+				visibility: string
+			}
+			interface Response {
+				chatId: number
+				characterId: number
+				visibility: string
+			}
+		}
 		namespace SetTheme {
 			interface Call {
 				theme: string
 				darkMode: boolean
 			}
 			interface Response {}
+		}
+		// TAGS
+		namespace TagsList {
+			interface Call {}
+			interface Response {
+				tagsList: SelectTag[]
+			}
+		}
+		namespace CreateTag {
+			interface Call {
+				tag: InsertTag
+			}
+			interface Response {
+				tag: SelectTag
+			}
+		}
+		namespace UpdateTag {
+			interface Call {
+				tag: SelectTag
+			}
+			interface Response {
+				tag: SelectTag
+			}
+		}
+		namespace DeleteTag {
+			interface Call {
+				id: number
+			}
+			interface Response {
+				id: number
+			}
+		}
+		namespace TagRelatedData {
+			interface Call {
+				tagId: number
+			}
+			interface Response {
+				characters: SelectCharacter[]
+				personas: SelectPersona[]
+				chats: SelectChat[]
+			}
+		}
+		namespace AddTagToCharacter {
+			interface Call {
+				characterId: number
+				tagId: number
+			}
+			interface Response {
+				characterId: number
+				tagId: number
+			}
+		}
+		namespace RemoveTagFromCharacter {
+			interface Call {
+				characterId: number
+				tagId: number
+			}
+			interface Response {
+				characterId: number
+				tagId: number
+			}
+		}
+		// --- USER ---
+		namespace User {
+			interface Call {}
+			interface Response {
+				user:
+					| (SelectUser & {
+							activeConnection: SelectConnection | null
+							activeSamplingConfig: SelectSamplingConfig | null
+							activeContextConfig: SelectContextConfig | null
+							activePromptConfig: SelectPromptConfig | null
+					  })
+					| undefined
+			}
 		}
 	}
 
@@ -917,8 +1250,8 @@ declare global {
 					nickname?: string
 					description: boolean
 					personality: boolean
-					wiBefore: boolean
-					wiAfter: boolean
+					exampleDialogue: boolean
+					postHistoryInstructions: boolean
 					postHistoryInstructions: boolean
 				}>
 				personas: Array<{

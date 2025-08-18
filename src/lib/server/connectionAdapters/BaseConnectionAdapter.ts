@@ -2,20 +2,20 @@ import { PromptBuilder } from "../utils/promptBuilder"
 import type { TokenCounters } from "../utils/TokenCounterManager"
 
 export interface BasePromptChat extends SelectChat {
-		chatCharacters?: (SelectChatCharacter & {
-			character: SelectCharacter & { lorebook?: SelectLorebook }
+	chatCharacters?: (SelectChatCharacter & {
+		character: SelectCharacter & { lorebook?: SelectLorebook }
+	})[]
+	chatPersonas?: (SelectChatPersona & {
+		persona: SelectPersona & { lorebook?: SelectLorebook }
+	})[]
+	chatMessages: SelectChatMessage[]
+	lorebook: SelectLorebook & {
+		lorebookBindings: (SelectLorebookBinding & {
+			character?: SelectCharacter
+			persona?: SelectPersona
 		})[]
-		chatPersonas?: (SelectChatPersona & {
-			persona: SelectPersona & { lorebook?: SelectLorebook }
-		})[]
-		chatMessages: SelectChatMessage[]
-		lorebook: SelectLorebook & {
-			lorebookBindings: (SelectLorebookBinding & {
-				character?: SelectCharacter
-				persona?: SelectPersona
-			})[]
-		}
 	}
+}
 
 // Generic interface for constructor parameters
 export interface BaseConnectionAdapterParams {
@@ -31,11 +31,14 @@ export interface BaseConnectionAdapterParams {
 }
 
 // Types for abstract functions
-export type ListModelsFn = (connection: SelectConnection) => Promise<{ models: any[]; error?: string }>
-export type TestConnectionFn = (connection: SelectConnection) => Promise<{ ok: boolean; error?: string }>
+export type ListModelsFn = (
+	connection: SelectConnection
+) => Promise<{ models: any[]; error?: string }>
+export type TestConnectionFn = (
+	connection: SelectConnection
+) => Promise<{ ok: boolean; error?: string }>
 
 export abstract class BaseConnectionAdapter {
-
 	connection: SelectConnection
 	sampling: SelectSamplingConfig
 	contextConfig: SelectContextConfig
@@ -80,27 +83,29 @@ export abstract class BaseConnectionAdapter {
 		return await this.promptBuilder.compilePrompt(args)
 	}
 
-	abstract generate(): Promise<
-		{
-			completionResult: string | ((cb: (chunk: string) => void) => Promise<void>),
-			compiledPrompt: CompiledPrompt,
-			isAborted: boolean
-		}
-	>
+	abstract generate(): Promise<{
+		completionResult:
+			| string
+			| ((cb: (chunk: string) => void) => Promise<void>)
+		compiledPrompt: CompiledPrompt
+		isAborted: boolean
+	}>
 
 	abort() {
 		this.isAborting = true
 	}
 
 	async getContextTokenLimit(): Promise<number> {
-		return this.sampling.contextTokensEnabled ? this.sampling.contextTokens || 4096 : 4096
+		return this.sampling.contextTokensEnabled
+			? this.sampling.contextTokens || 4096
+			: 4096
 	}
 }
 
 export interface AdapterExports {
-	Adapter: new (args: BaseConnectionAdapterParams) => BaseConnectionAdapter,
+	Adapter: new (args: BaseConnectionAdapterParams) => BaseConnectionAdapter
 	listModels: ListModelsFn
-	testConnection: TestConnectionFn,
+	testConnection: TestConnectionFn
 	connectionDefaults: Record<string, any>
 	samplingKeyMap: Record<string, string>
 }

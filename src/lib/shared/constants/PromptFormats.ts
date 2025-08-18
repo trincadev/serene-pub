@@ -17,7 +17,7 @@ export class PromptFormats {
 		PromptFormats.LLAMA2_INST,
 		PromptFormats.CLAUDE,
 		PromptFormats.INSTRUCT,
-		PromptFormats.SPLIT_CHAT, // ← new
+		PromptFormats.SPLIT_CHAT // ← new
 		// PromptFormats.TEKKEN // ← new
 	]
 
@@ -28,7 +28,7 @@ export class PromptFormats {
 		{ value: PromptFormats.OPENAI, label: "OpenAI" },
 		{ value: PromptFormats.LLAMA2_INST, label: "LLaMA2/Mistral Instruct" },
 		{ value: PromptFormats.CLAUDE, label: "Claude (Human/Assistant)" },
-		{ value: PromptFormats.INSTRUCT, label: "Instruct (Alpaca)" },
+		{ value: PromptFormats.INSTRUCT, label: "Instruct (Alpaca)" }
 		// { value: PromptFormats.TEKKEN, label: "Mistral v7 Tekken" } // ← new
 	]
 }

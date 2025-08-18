@@ -38,11 +38,11 @@
 <Modal
 	{open}
 	{onOpenChange}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-h-[95dvh] relative overflow-hidden w-[50em] max-w-95dvw"
+	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-xl max-h-[95dvh] relative overflow-hidden w-[50em] max-w-95dvw"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
-		<header class="mb-2 flex items-center justify-between">
+		<header class="flex items-center justify-between">
 			<h2 class="h2">Select Character</h2>
 			<button
 				class="btn btn-sm"
@@ -52,7 +52,7 @@
 			</button>
 		</header>
 		<input
-			class="input mb-4 w-full"
+			class="input w-full"
 			type="text"
 			placeholder="Search characters..."
 			bind:value={search}

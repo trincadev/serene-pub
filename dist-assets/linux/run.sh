@@ -1,24 +1,86 @@
 #!/bin/sh
+# Serene Pub Application Launcher
+# Licensed under AGPL-3.0 - See LICENSE file
+# Source: https://github.com/doolijb/serene-pub
+
 DIR=$(dirname "$0")
 export NODE_ENV=production
 NODE_BIN="$DIR/node"
-NODE_URL="https://nodejs.org/dist/v20.13.1/node-v20.13.1-linux-x64.tar.xz"
-NODE_ARCHIVE="node-archive.linux.tar.xz"
-NODE_DIR="node-v20.13.1-linux-x64"
-NODE_BIN_PATH="$NODE_DIR/bin/node"
+APP_MAIN="$DIR/build/index.js"
 
-if [ ! -f "$NODE_BIN" ]; then
-  echo "Downloading Node.js..."
-  curl -L -o "$NODE_ARCHIVE" "$NODE_URL"
-  tar -xf "$NODE_ARCHIVE"
-  cp "$NODE_BIN_PATH" "$NODE_BIN"
-  rm -rf "$NODE_DIR"
-  rm -f "$NODE_ARCHIVE"
+# Load environment variables from .env file if present
+ENV_FILE="$DIR/.env"
+if [ -f "$ENV_FILE" ]; then
+    echo "Loading environment variables from .env file..."
+    # Use a more portable way to load environment variables
+    while IFS='=' read -r key value; do
+        # Skip comments and empty lines
+        case "$key" in
+            '#'*|'') continue ;;
+        esac
+        # Export the variable, removing any surrounding quotes
+        export "$key"="$(echo "$value" | sed 's/^["'\'']\|["'\'']$//g')"
+    done < "$ENV_FILE"
 fi
+
+echo "========================================"
+echo "Serene Pub - AI Chat Application"
+echo "https://github.com/doolijb/serene-pub"
+echo "========================================"
+echo
+
+# Verify Node.js runtime exists
+if [ ! -f "$NODE_BIN" ]; then
+    echo "ERROR: Node.js runtime not found at $NODE_BIN"
+    echo "Please ensure all application files are present in this directory."
+    echo "Press Enter to exit..."
+    read
+    exit 1
+fi
+
+# Verify application files exist
+if [ ! -f "$APP_MAIN" ]; then
+    echo "ERROR: Application file not found at $APP_MAIN"
+    echo "Please ensure all application files are present in this directory."
+    echo "Press Enter to exit..."
+    read
+    exit 1
+fi
+
 chmod +x "$NODE_BIN"
 
 echo "Starting Serene Pub..."
-"$NODE_BIN" "$DIR/build/index.js" "$@"
+echo
+echo "The application will be available at:"
+echo "  - http://localhost:3000"
+echo "  - http://127.0.0.1:3000"
+echo
+echo "Press Ctrl+C to stop the application."
+echo "========================================"
+echo
+
+# Set up signal handling for graceful shutdown
+trap 'echo; echo "Shutting down Serene Pub..."; kill $NODE_PID 2>/dev/null; wait $NODE_PID 2>/dev/null; echo "Serene Pub stopped."; exit 0' INT TERM
+
+# Start the application in background to handle signals
+"$NODE_BIN" "$APP_MAIN" "$@" &
+NODE_PID=$!
+
+# Wait for the Node.js process
+wait $NODE_PID
+EXIT_CODE=$?
+
+echo
+echo "========================================"
+if [ $EXIT_CODE -eq 0 ]; then
+    echo "Serene Pub stopped normally."
+else
+    echo "Serene Pub exited with code: $EXIT_CODE"
+    echo "Check the output above for any error messages."
+fi
+echo
 
 echo "Press Enter to exit..."
+read
+exit $EXIT_CODE
 read

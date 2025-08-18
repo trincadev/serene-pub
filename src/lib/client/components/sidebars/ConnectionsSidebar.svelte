@@ -4,7 +4,6 @@
 	import * as Icons from "@lucide/svelte"
 	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import OllamaForm from "$lib/client/connectionForms/OllamaForm.svelte"
-	// import ChatGPTForm from "$lib/client/connectionForms/ChatGPTForm.svelte"
 	import OpenAIForm from "$lib/client/connectionForms/OpenAIForm.svelte"
 	import LmStudioForm from "$lib/client/connectionForms/LMStudioForm.svelte"
 	import {
@@ -22,14 +21,20 @@
 
 	let { onclose = $bindable() }: Props = $props()
 	let userCtx: UserCtx = getContext("userCtx")
+	let systemSettingsCtx: SystemSettingsCtx = getContext("systemSettingsCtx")
+	let panelsCtx: PanelsCtx = getContext("panelsCtx")
+
 	const socket = skio.get()
 
-	const OAIChatPresets: {name:string, value: number, connectionDefaults: {
-			baseUrl: string,
-			promptFormat?: string,
-			tokenCounter?: string,
+	const OAIChatPresets: {
+		name: string
+		value: number
+		connectionDefaults: {
+			baseUrl: string
+			promptFormat?: string
+			tokenCounter?: string
 			extraJson: {
-				stream: boolean,
+				stream: boolean
 				prerenderPrompt: boolean
 				apiKey: string
 			}
@@ -59,7 +64,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "ollama",
+					apiKey: "ollama"
 				}
 			}
 		},
@@ -87,7 +92,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -101,7 +106,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -115,7 +120,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -129,7 +134,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -143,7 +148,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -157,7 +162,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -171,7 +176,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -185,7 +190,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -199,7 +204,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		},
@@ -213,7 +218,7 @@
 				extraJson: {
 					stream: true,
 					prerenderPrompt: false,
-					apiKey: "",
+					apiKey: ""
 				}
 			}
 		}
@@ -241,15 +246,67 @@
 	let newConnectionOAIChatPreset: number | undefined = $state()
 	let showDeleteModal = $state(false)
 
+	// Screen reader announcements
+	let announcements = $state("")
+
+	function announce(message: string) {
+		announcements = message
+		// Clear after screen reader has time to read
+		setTimeout(() => (announcements = ""), 1000)
+	}
+
+	// Focus management
+	function focusConnectionSelect() {
+		const select = document.getElementById("connection-select")
+		if (select) select.focus()
+	}
+
+	function focusNewConnectionName() {
+		const input = document.getElementById("newConnName")
+		if (input) input.focus()
+	}
+
+	// Keyboard shortcuts
+	function handleKeydown(e: KeyboardEvent) {
+		// Ctrl/Cmd + N to create new connection
+		if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+			e.preventDefault()
+			handleNew()
+		}
+		// Escape to close modals
+		if (e.key === "Escape") {
+			if (showNewConnectionModal) {
+				handleNewConnectionCancel()
+			} else if (showDeleteModal) {
+				handleDeleteModalCancel()
+			} else if (showConfirmModal) {
+				handleModalCancel()
+			}
+		}
+	}
+
 	function handleSelectChange(e: Event) {
+		const selectedId = +(e.target as HTMLSelectElement).value
+		const selectedConnection = connectionsList.find(
+			(c) => c.id === selectedId
+		)
 		socket.emit("setUserActiveConnection", {
-			id: +(e.target as HTMLSelectElement).value
+			id: selectedId
 		})
+		if (selectedConnection) {
+			announce(`Switched to connection: ${selectedConnection.name}`)
+		}
 	}
 	function handleNew() {
 		newConnectionName = ""
 		newConnectionType = CONNECTION_TYPES[0].value
 		showNewConnectionModal = true
+		// Clear tutorial flag when user interacts with the highlighted button
+		if (panelsCtx.digest.tutorial) {
+			panelsCtx.digest.tutorial = false
+		}
+		// Focus the name input after modal opens
+		setTimeout(focusNewConnectionName, 100)
 	}
 	function handleNewConnectionConfirm() {
 		if (!newConnectionName.trim()) {
@@ -272,7 +329,7 @@
 			...(newConnectionType === CONNECTION_TYPE.OPENAI_CHAT
 				? OAIChatPresets.find(
 						(p) => p.value === newConnectionOAIChatPreset
-				  )?.connectionDefaults
+					)?.connectionDefaults
 				: {})
 		}
 		socket.emit("createConnection", { connection: newConn })
@@ -342,22 +399,38 @@
 			"updateConnection",
 			(msg: Sockets.UpdateConnection.Response) => {
 				toaster.success({ title: "Connection Updated" })
+				announce(
+					`Connection ${connection?.name} has been updated successfully`
+				)
 			}
 		)
-		socket.on("deleteConnection", (msg: Sockets.DeleteConnection.Response) => {
-			toaster.success({ title: "Connection Deleted" })
-			connection = undefined
-			originalConnection = undefined
-		})
-		socket.on("createConnection", (msg: Sockets.CreateConnection.Response) => {
-			toaster.success({ title: "Connection Created" })
-		})
+		socket.on(
+			"deleteConnection",
+			(msg: Sockets.DeleteConnection.Response) => {
+				const deletedName = connection?.name
+				toaster.success({ title: "Connection Deleted" })
+				announce(
+					`Connection ${deletedName} has been permanently deleted`
+				)
+				connection = undefined
+				originalConnection = undefined
+			}
+		)
+		socket.on(
+			"createConnection",
+			(msg: Sockets.CreateConnection.Response) => {
+				toaster.success({ title: "Connection Created" })
+				announce(
+					`New connection ${msg.connection?.name} has been created successfully`
+				)
+			}
+		)
 		socket.emit("connectionsList", {})
 		if (userCtx.user?.activeConnectionId) {
 			socket.emit("connection", { id: userCtx.user.activeConnectionId })
 		}
 		onclose = handleOnClose
-		// If ollama, fetch models
+
 		if (connection?.type === "ollama" && connection.baseUrl) {
 			handleRefreshModels()
 		}
@@ -375,41 +448,85 @@
 	})
 </script>
 
-<div class="text-foreground p-4">
-	<div class="mt-2 mb-2 flex gap-2 sm:mt-0">
-		<button
-			type="button"
-			class="btn btn-sm preset-filled-primary-500"
-			onclick={handleNew}
-		>
-			<Icons.Plus size={16} />
-		</button>
-		<button
-			type="button"
-			class="btn btn-sm preset-filled-secondary-500"
-			onclick={handleReset}
-			disabled={!unsavedChanges}
-		>
-			<Icons.RefreshCcw size={16} />
-		</button>
-		<button
-			type="button"
-			class="btn btn-sm preset-filled-error-500"
-			onclick={handleDelete}
-			disabled={!connection}
-		>
-			<Icons.X size={16} />
-		</button>
+<div
+	class="text-foreground p-4"
+	role="main"
+	aria-label="AI Connections Management"
+	onkeydown={handleKeydown}
+>
+	<!-- Screen reader announcements -->
+	<div aria-live="polite" aria-atomic="true" class="sr-only">
+		{announcements}
 	</div>
+	<header class="mb-4">
+		<h2 class="sr-only">Connection Management</h2>
+		<div
+			class="mt-2 mb-2 flex justify-between gap-2 sm:mt-0"
+			role="toolbar"
+			aria-label="Connection actions"
+		>
+			<div class="gap-2">
+				<button
+					type="button"
+					class="btn btn-sm preset-filled-primary-500 {panelsCtx
+						.digest.tutorial
+						? 'ring-primary-500/50 animate-pulse ring-4'
+						: ''}"
+					onclick={handleNew}
+					aria-label="Create new AI connection (Ctrl+N)"
+					title="Create new AI connection (Ctrl+N)"
+				>
+					<Icons.Plus size={16} aria-hidden="true" />
+					<span class="sr-only">Create New Connection</span>
+				</button>
+				<button
+					type="button"
+					class="btn btn-sm preset-filled-secondary-500"
+					onclick={handleReset}
+					disabled={!unsavedChanges}
+					aria-label={unsavedChanges
+						? "Reset unsaved changes"
+						: "No changes to reset"}
+					aria-describedby={unsavedChanges ? "reset-help" : undefined}
+				>
+					<Icons.RefreshCcw size={16} aria-hidden="true" />
+					<span class="sr-only">Reset Changes</span>
+				</button>
+				{#if unsavedChanges}
+					<div id="reset-help" class="sr-only">
+						Resets all unsaved changes to the selected connection
+					</div>
+				{/if}
+				<button
+					type="button"
+					class="btn btn-sm preset-filled-error-500"
+					onclick={handleDelete}
+					disabled={!connection}
+					aria-label={connection
+						? `Delete connection ${connection.name}`
+						: "No connection selected to delete"}
+				>
+					<Icons.X size={16} aria-hidden="true" />
+					<span class="sr-only">Delete Connection</span>
+				</button>
+			</div>
+		</div>
+	</header>
 	<div
 		class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center"
 		class:hidden={!connectionsList.length}
 	>
+		<label for="connection-select" class="sr-only">
+			Select active AI connection
+		</label>
 		<select
+			id="connection-select"
 			class="select bg-background border-muted rounded border"
 			onchange={handleSelectChange}
 			bind:value={userCtx!.user!.activeConnectionId}
 			disabled={unsavedChanges}
+			aria-label="Select active AI connection"
+			aria-describedby="connection-help"
 		>
 			{#each connectionsList as c}
 				<option value={c.id}>
@@ -419,62 +536,74 @@
 				</option>
 			{/each}
 		</select>
+		<div id="connection-help" class="sr-only">
+			{unsavedChanges
+				? "Save or reset changes before switching connections"
+				: "Choose which AI connection to use for conversations"}
+		</div>
 	</div>
 	{#if !!connection}
 		{#key connection.id}
-			<div class="my-4 flex">
-				<button
-					type="button"
-					class="btn btn-sm preset-filled-success-500 w-full"
-					onclick={handleUpdate}
-					disabled={!unsavedChanges}
-				>
-					<Icons.Save size={16} />
-					Save
-				</button>
-			</div>
-			<div class="flex flex-col gap-1">
-				<label class="font-semibold" for="name">Name</label>
-				<input
-					id="name"
-					type="text"
-					bind:value={connection.name}
-					class="input"
-				/>
-			</div>
-			{#if connection.type === CONNECTION_TYPE.OLLAMA}
-				<OllamaForm bind:connection />
-			{:else if connection.type === CONNECTION_TYPE.OPENAI_CHAT}
-				<OpenAIForm bind:connection />
-			{:else if connection.type === CONNECTION_TYPE.LM_STUDIO}
-				<LmStudioForm bind:connection />
-			{:else if connection.type === CONNECTION_TYPE.LLAMACPP_COMPLETION}
-				<LlamaCppForm bind:connection />
-			{/if}
-			<div class="mt-4 flex flex-col gap-2">
-				{#if connection.type === "ollama"}
-					{#if refreshModelsResult}
-						<div class="mt-1 text-sm">
-							{#if refreshModelsResult.models?.length}
-								<div>
-									Available Models: {refreshModelsResult.models.join(
-										", "
-									)}
-								</div>
-							{:else if refreshModelsResult.error}
-								<span class="text-error">
-									{refreshModelsResult.error}
-								</span>
-							{/if}
-						</div>
-					{/if}
+			<section aria-labelledby="connection-details">
+				<h3 id="connection-details" class="sr-only">
+					Connection Details for {connection.name}
+				</h3>
+				<div class="my-4 flex">
+					<button
+						type="button"
+						class="btn btn-sm preset-filled-success-500 w-full"
+						onclick={handleUpdate}
+						disabled={!unsavedChanges}
+						aria-label={unsavedChanges
+							? `Save changes to ${connection.name}`
+							: "No changes to save"}
+						aria-describedby="save-status"
+					>
+						<Icons.Save size={16} aria-hidden="true" />
+						Save
+					</button>
+				</div>
+				<div id="save-status" class="sr-only">
+					{unsavedChanges
+						? "You have unsaved changes"
+						: "All changes saved"}
+				</div>
+				<div class="flex flex-col gap-1">
+					<label class="font-semibold" for="connection-name">
+						Connection Name
+					</label>
+					<input
+						id="connection-name"
+						type="text"
+						bind:value={connection.name}
+						class="input"
+						aria-describedby="name-help"
+						aria-required="true"
+					/>
+					<div id="name-help" class="sr-only">
+						Enter a descriptive name for this AI connection
+					</div>
+				</div>
+				{#if connection.type === CONNECTION_TYPE.OLLAMA}
+					<OllamaForm bind:connection />
+				{:else if connection.type === CONNECTION_TYPE.OPENAI_CHAT}
+					<OpenAIForm bind:connection />
+				{:else if connection.type === CONNECTION_TYPE.LM_STUDIO}
+					<LmStudioForm bind:connection />
+				{:else if connection.type === CONNECTION_TYPE.LLAMACPP_COMPLETION}
+					<LlamaCppForm bind:connection />
 				{/if}
-			</div>
+			</section>
 		{/key}
 	{/if}
 	{#if !connectionsList.length}
-		<div class="text-muted-foreground py-8 text-center">
-			No connections found. Create a new connection to get started.
+		<div
+			class="text-muted-foreground py-8 text-center"
+			role="status"
+			aria-live="polite"
+		>
+			<p>No AI connections found.</p>
+			<p>Create a new connection to get started with AI conversations.</p>
 		</div>
 	{/if}
 </div>
@@ -482,148 +611,208 @@
 <Modal
 	open={showConfirmModal}
 	onOpenChange={(e) => (showConfirmModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-xl max-w-lg w-full"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
-		<header class="flex justify-between">
-			<h2 class="h2">Confirm</h2>
-		</header>
-		<article>
-			<p class="opacity-60">
-				Your connection has unsaved changes. Are you sure you want to
-				discard them?
-			</p>
-		</article>
-		<footer class="flex justify-end gap-4">
-			<button
-				class="btn preset-filled-surface-500"
-				onclick={handleModalCancel}
-			>
-				Cancel
-			</button>
-			<button
-				class="btn preset-filled-error-500"
-				onclick={handleModalDiscard}
-			>
-				Discard
-			</button>
-		</footer>
+		<div
+			role="dialog"
+			aria-labelledby="confirm-title"
+			aria-describedby="confirm-desc"
+		>
+			<header class="flex justify-between">
+				<h2 id="confirm-title" class="h2">Confirm Action</h2>
+			</header>
+			<article>
+				<p id="confirm-desc" class="opacity-60">
+					Your connection has unsaved changes. Are you sure you want
+					to discard them? This action cannot be undone.
+				</p>
+			</article>
+			<footer class="flex justify-end gap-4">
+				<button
+					class="btn preset-filled-surface-500"
+					onclick={handleModalCancel}
+					aria-label="Cancel and keep unsaved changes"
+				>
+					Cancel
+				</button>
+				<button
+					class="btn preset-filled-error-500"
+					onclick={handleModalDiscard}
+					aria-label="Discard all unsaved changes"
+				>
+					Discard
+				</button>
+			</footer>
+		</div>
 	{/snippet}
 </Modal>
 <Modal
 	open={showNewConnectionModal}
 	onOpenChange={(e) => (showNewConnectionModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
-		<header class="flex justify-between">
-			<h2 class="h2">Create New Connection</h2>
-		</header>
-		<article class="flex flex-col gap-2">
-			<div>
-				<label class="font-semibold" for="newConnName">Name</label>
-				<input
-					id="newConnName"
-					type="text"
-					class="input w-full"
-					bind:value={newConnectionName}
-					placeholder="Enter a name..."
-					onkeydown={(e) => {
-						if (e.key === "Enter" && newConnectionName.trim()) {
-							handleNewConnectionConfirm()
-						}
-					}}
-				/>
+		<div
+			role="dialog"
+			aria-labelledby="new-conn-title"
+			aria-describedby="new-conn-desc"
+		>
+			<header class="flex justify-between">
+				<h2 id="new-conn-title" class="h2">Create New AI Connection</h2>
+			</header>
+			<div id="new-conn-desc" class="sr-only">
+				Create a new connection to an AI service for conversations
 			</div>
-			<div>
-				<label class="font-semibold" for="newConnType">Type</label>
-				<select
-					id="newConnType"
-					class="select w-full"
-					bind:value={newConnectionType}
-				>
-					{#each CONNECTION_TYPES as t}
-						<option value={t.value}>{t.label}</option>
-					{/each}
-				</select>
-			</div>
-			{#if newConnectionType === CONNECTION_TYPE.OPENAI_CHAT}
-				<div class="mt-2">
-					<label class="font-semibold" for="oaiChatPreset">
-						Preset
+			<form
+				class="flex flex-col gap-2"
+				onsubmit={(e) => {
+					e.preventDefault()
+					handleNewConnectionConfirm()
+				}}
+			>
+				<div>
+					<label class="font-semibold" for="newConnName">
+						Connection Name
+					</label>
+					<input
+						id="newConnName"
+						type="text"
+						class="input w-full"
+						bind:value={newConnectionName}
+						placeholder="Enter a descriptive name..."
+						aria-required="true"
+						aria-describedby="name-help-new"
+						onkeydown={(e) => {
+							if (e.key === "Enter" && newConnectionName.trim()) {
+								handleNewConnectionConfirm()
+							}
+						}}
+					/>
+					<div id="name-help-new" class="sr-only">
+						Enter a name to identify this AI connection
+					</div>
+				</div>
+				<div>
+					<label class="font-semibold" for="newConnType">
+						Connection Type
 					</label>
 					<select
-						id="oaiChatPreset"
+						id="newConnType"
 						class="select w-full"
-						bind:value={newConnectionOAIChatPreset}
+						bind:value={newConnectionType}
+						aria-describedby="type-help"
 					>
-						{#each OAIChatPresets as preset}
-							<option value={preset.value}>
-								{preset.name}
-							</option>
+						{#each CONNECTION_TYPES as t}
+							<option value={t.value}>{t.label}</option>
 						{/each}
 					</select>
+					<div id="type-help" class="sr-only">
+						Choose the type of AI service to connect to
+					</div>
 				</div>
-			{/if}
-			{#if !!newConnectionType}
-				{@const connectionType = CONNECTION_TYPES.find(
-					(t) => t.value === newConnectionType
-				)}
-				<div class="bg-surface-500/25 flex flex-col gap-2 rounded p-4 mt-4">
-					<span class="preset-filled-primary-500 p-2">
-						Difficulty: {connectionType?.difficulty}
-					</span>
-					{@html connectionType?.description}
-				</div>
-			{/if}
-		</article>
-		<footer class="mt-4 flex justify-end gap-4">
-			<button
-				class="btn preset-filled-surface-500"
-				onclick={handleNewConnectionCancel}
-			>
-				Cancel
-			</button>
-			<button
-				class="btn preset-filled-primary-500"
-				onclick={handleNewConnectionConfirm}
-				disabled={!newConnectionName.trim()}
-			>
-				Create
-			</button>
-		</footer>
+				{#if newConnectionType === CONNECTION_TYPE.OPENAI_CHAT}
+					<div class="mt-2">
+						<label class="font-semibold" for="oaiChatPreset">
+							Service Preset
+						</label>
+						<select
+							id="oaiChatPreset"
+							class="select w-full"
+							bind:value={newConnectionOAIChatPreset}
+							aria-describedby="preset-help"
+						>
+							{#each OAIChatPresets as preset}
+								<option value={preset.value}>
+									{preset.name}
+								</option>
+							{/each}
+						</select>
+						<div id="preset-help" class="sr-only">
+							Choose a preset configuration for this AI service
+						</div>
+					</div>
+				{/if}
+				{#if !!newConnectionType}
+					{@const connectionType = CONNECTION_TYPES.find(
+						(t) => t.value === newConnectionType
+					)}
+					<div
+						class="bg-surface-500/25 mt-4 flex flex-col gap-2 rounded p-4"
+					>
+						<span class="preset-filled-primary-500 p-2">
+							Difficulty: {connectionType?.difficulty}
+						</span>
+						{@html connectionType?.description}
+					</div>
+				{/if}
+			</form>
+			<footer class="mt-4 flex justify-end gap-4">
+				<button
+					type="button"
+					class="btn preset-filled-surface-500"
+					onclick={handleNewConnectionCancel}
+					aria-label="Cancel connection creation"
+				>
+					Cancel
+				</button>
+				<button
+					type="submit"
+					class="btn preset-filled-primary-500"
+					onclick={handleNewConnectionConfirm}
+					disabled={!newConnectionName.trim()}
+					aria-label={newConnectionName.trim()
+						? `Create connection named ${newConnectionName}`
+						: "Enter a name to create connection"}
+				>
+					Create Connection
+				</button>
+			</footer>
+		</div>
 	{/snippet}
 </Modal>
 <Modal
 	open={showDeleteModal}
 	onOpenChange={(e) => (showDeleteModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	contentBase="card bg-surface-100-900 p-6 space-y-6 shadow-xl max-w-lg w-full"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
-		<header class="flex justify-between">
-			<h2 class="h2">Delete Connection</h2>
-		</header>
-		<article>
-			<p class="opacity-60">
-				Are you sure you want to delete this connection? This cannot be undone.
-			</p>
-		</article>
-		<footer class="flex justify-end gap-4">
-			<button
-				class="btn preset-filled-surface-500"
-				onclick={handleDeleteModalCancel}
-			>
-				Cancel
-			</button>
-			<button
-				class="btn preset-filled-error-500"
-				onclick={handleDeleteModalConfirm}
-			>
-				Delete
-			</button>
-		</footer>
+		<div
+			role="alertdialog"
+			aria-labelledby="delete-title"
+			aria-describedby="delete-desc"
+		>
+			<header class="flex justify-between">
+				<h2 id="delete-title" class="h2">Delete AI Connection</h2>
+			</header>
+			<article>
+				<p id="delete-desc" class="opacity-60">
+					Are you sure you want to delete the connection "{connection?.name}"?
+					This action cannot be undone and will permanently remove
+					this AI connection.
+				</p>
+			</article>
+			<footer class="flex justify-end gap-4">
+				<button
+					type="button"
+					class="btn preset-filled-surface-500"
+					onclick={handleDeleteModalCancel}
+					aria-label="Cancel deletion and keep the connection"
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					class="btn preset-filled-error-500"
+					onclick={handleDeleteModalConfirm}
+					aria-label="Permanently delete this AI connection"
+				>
+					Delete Connection
+				</button>
+			</footer>
+		</div>
 	{/snippet}
 </Modal>

@@ -2,9 +2,11 @@
 	import * as skio from "sveltekit-io"
 	import { getContext, onDestroy, onMount, tick } from "svelte"
 	import * as Icons from "@lucide/svelte"
+	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import SamplingConfigUnsavedChangesModal from "../modals/PromptConfigUnsavedChangesModal.svelte"
 	import NewNameModal from "../modals/NewNameModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
+	import { z } from "zod"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -28,8 +30,17 @@
 	let showSelectSamplingConfig = $state(false)
 	let showUnsavedChangesModal = $state(false)
 	let showNewNameModal = $state(false)
+	let showDeleteModal = $state(false)
 	let confirmCloseSidebarResolve: ((v: boolean) => void) | null = null
 	let editingField: string | null = $state(null)
+
+	// Zod validation schema
+	const samplingConfigSchema = z.object({
+		name: z.string().min(1, "Name is required").trim()
+	})
+
+	type ValidationErrors = Record<string, string>
+	let validationErrors: ValidationErrors = $state({})
 
 	type FieldType = "number" | "boolean" | "string"
 
@@ -99,7 +110,7 @@
 		const enabledKey = key + "Enabled"
 		return (
 			key !== "isImmutable" &&
-			(sampling![enabledKey] === undefined || sampling![enabledKey])
+			((sampling as any)?.[enabledKey] === undefined || (sampling as any)?.[enabledKey])
 		)
 	}
 
@@ -128,6 +139,7 @@
 		$state([])
 
 	function handleSelectChange(e: Event) {
+		if (!socket) return
 		socket.emit("setUserActiveSamplingConfig", {
 			id: (e.target as HTMLSelectElement).value
 		})
@@ -137,6 +149,7 @@
 		showNewNameModal = true
 	}
 	function handleNewNameConfirm(name: string) {
+		if (!socket) return
 		const newSamplingConfig = { ...sampling }
 		delete newSamplingConfig.id
 		delete newSamplingConfig.isImmutable
@@ -148,32 +161,69 @@
 		showNewNameModal = false
 	}
 
+	function validateForm(): boolean {
+		if (!sampling) return false
+
+		const result = samplingConfigSchema.safeParse({
+			name: sampling.name
+		})
+
+		if (result.success) {
+			validationErrors = {}
+			return true
+		} else {
+			const errors: ValidationErrors = {}
+			result.error.errors.forEach((error) => {
+				if (error.path.length > 0) {
+					errors[error.path[0] as string] = error.message
+				}
+			})
+			validationErrors = errors
+			return false
+		}
+	}
+
 	function handleUpdate() {
-		if (sampling!.isImmutable) {
-			alert("Cannot save immutable sampling.")
+		if (!socket || !sampling) return
+		if (sampling.isImmutable) {
+			toaster.error({
+				title: "Cannot Save",
+				description: "Cannot save immutable sampling configuration."
+			})
 			return
 		}
+		if (!validateForm()) return
 		socket.emit("updateSamplingConfig", { sampling })
 	}
 
 	function handleReset() {
-		sampling = { ...originalSamplingConfig }
+		if (originalSamplingConfig) {
+			sampling = { ...originalSamplingConfig }
+		}
 	}
 
 	function handleDelete() {
-		if (sampling!.isImmutable) {
-			alert("Cannot delete immutable sampling.")
+		if (!socket || !sampling) return
+		if (sampling.isImmutable) {
+			toaster.error({
+				title: "Cannot Delete",
+				description: "Cannot delete immutable sampling configuration."
+			})
 			return
 		}
-		if (
-			confirm(
-				"Are you sure you want to delete these sampling? This cannot be undone."
-			)
-		) {
-			socket.emit("deleteSamplingConfig", {
-				id: userCtx.user.activeSamplingConfigId
-			})
-		}
+		showDeleteModal = true
+	}
+
+	function confirmDelete() {
+		if (!socket) return
+		socket.emit("deleteSamplingConfig", {
+			id: userCtx.user.activeSamplingConfigId
+		})
+		showDeleteModal = false
+	}
+
+	function cancelDelete() {
+		showDeleteModal = false
 	}
 
 	function handleSelectSamplingConfig() {
@@ -211,6 +261,8 @@
 
 	onMount(() => {
 		onclose = handleOnClose
+		if (!socket) return
+
 		socket.on("sampling", (message: Sockets.SamplingConfig.Response) => {
 			sampling = { ...message.sampling }
 			originalSamplingConfig = { ...message.sampling }
@@ -220,42 +272,54 @@
 			"samplingConfigsList",
 			(message: Sockets.SamplingConfigList.Response) => {
 				samplingConfigsList = message.samplingConfigsList
-				if (!userCtx.user.activeSamplingConfigId &&
-					samplingConfigsList.length > 0) {
-					socket.emit("setUserActiveSamplingConfig", {
+				if (
+					!userCtx.user.activeSamplingConfigId &&
+					samplingConfigsList.length > 0
+				) {
+					socket?.emit("setUserActiveSamplingConfig", {
 						id: samplingConfigsList[0].id
 					})
 				}
 			}
 		)
-		socket.on("deleteSamplingConfig", (message: Sockets.DeleteSamplingConfig.Response) => {
-			toaster.success({title: "Sampling Config Deleted"})
-		})
-		socket.on("updateSamplingConfig", (message: Sockets.UpdateSamplingConfig.Response) => {
-			toaster.success({title: "Sampling Config Updated"})
-		})
-		socket.on("createSamplingConfig", (message: Sockets.CreateSamplingConfig.Response) => {
-			toaster.success({title: "Sampling Config Created"})
-		})
+		socket.on(
+			"deleteSamplingConfig",
+			(message: Sockets.DeleteSamplingConfig.Response) => {
+				toaster.success({ title: "Sampling Config Deleted" })
+			}
+		)
+		socket.on(
+			"updateSamplingConfig",
+			(message: Sockets.UpdateSamplingConfig.Response) => {
+				toaster.success({ title: "Sampling Config Updated" })
+			}
+		)
+		socket.on(
+			"createSamplingConfig",
+			(message: Sockets.SamplingConfig.Response) => {
+				toaster.success({ title: "Sampling Config Created" })
+			}
+		)
 
 		socket.emit("sampling", { id: userCtx.user.activeSamplingConfigId })
 		socket.emit("samplingConfigsList", {})
 	})
 
 	onDestroy(() => {
-		socket.off("sampling")
-		socket.off("samplingConfigsList")
-		socket.off("deleteSamplingConfig")
-		socket.off("updateSamplingConfig")
-		socket.off("createSamplingConfig")
+		if (!socket) return
+		socket.removeAllListeners("sampling")
+		socket.removeAllListeners("samplingConfigsList")
+		socket.removeAllListeners("deleteSamplingConfig")
+		socket.removeAllListeners("updateSamplingConfig")
+		socket.removeAllListeners("createSamplingConfig")
 	})
 </script>
 
-<div class="text-foreground p-4 min-h-100">
+<div class="text-foreground min-h-100 p-4">
 	{#if showSelectSamplingConfig}
 		<!-- ENABLE / DISABLE WEIGHTS -->
 		<div
-			class="animate-fade-in rounded-lg border p-2 shadow-lg border-surface-500/25 min-h-full"
+			class="animate-fade-in border-surface-500/25 min-h-full rounded-lg border p-2 shadow-lg"
 		>
 			<button
 				type="button"
@@ -272,12 +336,19 @@
 					{#if meta.type === "number" || meta.type === "boolean"}
 						<label
 							class="hover:bg-muted flex items-center gap-2 rounded p-2 transition"
+							for="{key}Enabled"
 						>
 							<input
+								id="{key}Enabled"
 								type="checkbox"
-								bind:checked={sampling[key + "Enabled"]!}
+								checked={(sampling as any)?.[key + "Enabled"] ?? false}
+								onchange={(e) => {
+									if (sampling) {
+										(sampling as any)[key + "Enabled"] = (e.target as HTMLInputElement).checked
+									}
+								}}
 								class="accent-primary"
-								disabled={sampling[key + "Enabled"] ===
+								disabled={(sampling as any)?.[key + "Enabled"] ===
 									undefined}
 							/>
 							<span class="font-medium">{meta.label}</span>
@@ -320,7 +391,7 @@
 				class="select select-sm bg-background border-muted rounded border"
 				onchange={handleSelectChange}
 				bind:value={userCtx.user.activeSamplingConfigId}
-                disabled={unsavedChanges}
+				disabled={unsavedChanges}
 			>
 				{#each samplingConfigsList.filter((w) => w.isImmutable) as w}
 					<option value={w.id}>
@@ -340,7 +411,7 @@
 				class="btn btn-sm preset-tonal-primary w-full"
 				onclick={handleSelectSamplingConfig}
 			>
-            <Icons.CheckSquare size={16} />
+				<Icons.CheckSquare size={16} />
 				Select Samplers
 			</button>
 			<button
@@ -361,9 +432,22 @@
 					id="samplingName"
 					type="text"
 					bind:value={sampling.name}
-					class="input"
+					class="input {validationErrors.name
+						? 'border-red-500'
+						: ''}"
 					disabled={!!sampling && sampling.isImmutable}
+					oninput={() => {
+						if (validationErrors.name) {
+							const { name, ...rest } = validationErrors
+							validationErrors = rest
+						}
+					}}
 				/>
+				{#if validationErrors.name}
+					<p class="mt-1 text-sm text-red-500" role="alert">
+						{validationErrors.name}
+					</p>
+				{/if}
 			</div>
 			{#each Object.entries(fieldMeta) as [key, meta]}
 				{#if isFieldVisible(key)}
@@ -379,7 +463,12 @@
 									max={getFieldMax(key)}
 									step={meta.step}
 									id={key}
-									bind:value={sampling![key]}
+									value={(sampling as any)?.[key] ?? 0}
+									oninput={(e) => {
+										if (sampling) {
+											(sampling as any)[key] = parseFloat((e.target as HTMLInputElement).value)
+										}
+									}}
 									class="accent-primary w-full"
 								/>
 								<div
@@ -397,9 +486,14 @@
 											min={meta.min}
 											max={getFieldMax(key)}
 											step={meta.step}
-											bind:value={sampling![key]}
+											value={(sampling as any)?.[key] ?? 0}
+											oninput={(e) => {
+												if (sampling) {
+													(sampling as any)[key] = parseFloat((e.target as HTMLInputElement).value)
+												}
+											}}
 											id={key + "-manual"}
-											class="border-primary input w-16 rounded border "
+											class="border-primary input w-16 rounded border"
 											onblur={() => (editingField = null)}
 											onkeydown={(e) => {
 												if (
@@ -420,7 +514,7 @@
 												)
 											}}
 										>
-											{sampling![key]}
+											{(sampling as any)?.[key]}
 										</button>
 									{/if}
 									<span
@@ -471,14 +565,24 @@
 							<input
 								type="checkbox"
 								id={key}
-								bind:checked={sampling[key]}
+								checked={(sampling as any)?.[key] ?? false}
+								onchange={(e) => {
+									if (sampling) {
+										(sampling as any)[key] = (e.target as HTMLInputElement).checked
+									}
+								}}
 								class="accent-primary"
 							/>
 						{:else}
 							<input
 								type="text"
 								id={key}
-								bind:value={sampling[key]}
+								value={(sampling as any)?.[key] ?? ""}
+								oninput={(e) => {
+									if (sampling) {
+										(sampling as any)[key] = (e.target as HTMLInputElement).value
+									}
+								}}
 								class="input"
 							/>
 						{/if}
@@ -503,3 +607,33 @@
 	title="New Sampling Config"
 	description="Your current settings will be copied."
 />
+
+<Modal
+	open={showDeleteModal}
+	onOpenChange={(e) => (showDeleteModal = e.open)}
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	backdropClasses="backdrop-blur-sm"
+>
+	{#snippet content()}
+		<header class="flex justify-between">
+			<h2 class="h2">Delete Sampling Configuration</h2>
+		</header>
+		<article>
+			<p class="opacity-60">
+				Are you sure you want to delete the sampling configuration "{sampling?.name}"?
+				This action cannot be undone.
+			</p>
+		</article>
+		<footer class="flex justify-end gap-4">
+			<button
+				class="btn preset-filled-surface-500"
+				onclick={cancelDelete}
+			>
+				Cancel
+			</button>
+			<button class="btn preset-filled-error-500" onclick={confirmDelete}>
+				Delete
+			</button>
+		</footer>
+	{/snippet}
+</Modal>

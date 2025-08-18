@@ -1,13 +1,21 @@
 <script lang="ts">
 	import Avatar from "$lib/client/components/Avatar.svelte"
 	import SidebarListItem from "$lib/client/components/SidebarListItem.svelte"
+	import CharacterCreator from "$lib/client/components/modals/CharacterCreatorModal.svelte"
+	import PersonaCreator from "$lib/client/components/modals/PersonaCreatorModal.svelte"
+	import OllamaIcon from "$lib/client/components/icons/OllamaIcon.svelte"
 	import * as Icons from "@lucide/svelte"
 	import { getContext, onMount, onDestroy } from "svelte"
 	import * as skio from "sveltekit-io"
+	import { toaster } from "$lib/client/utils/toaster"
+	import { CONNECTION_TYPE } from "$lib/shared/constants/ConnectionTypes"
 
 	let userCtx: UserCtx = $state(getContext("userCtx"))
 	let panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
 	let themeCtx: ThemeCtx = $state(getContext("themeCtx"))
+	let systemSettingsCtx: SystemSettingsCtx = $state(
+		getContext("systemSettingsCtx")
+	)
 
 	const socket = skio.get()
 
@@ -15,7 +23,59 @@
 	let characters: Sockets.CharacterList.Response["characterList"] = $state([])
 	let personas: Sockets.PersonaList.Response["personaList"] = $state([])
 	let chats: Sockets.ChatsList.Response["chatsList"] = $state([])
+	let connections: Sockets.ConnectionsList.Response["connectionsList"] =
+		$state([])
 
+	// Wizard state
+	let showWizard = $state(false)
+	let wizardStep = $state(0)
+	let showCharacterCreator = $state(false)
+	let showPersonaCreator = $state(false)
+
+	// Connection choice state
+	let connectionChoice: "quick" | "manual" | null = $state(null)
+	let selectedOllamaModel = $state("")
+
+	// Ollama manager state
+	let installedModels: any[] = $state([])
+	let isOllamaConnected = $state(false)
+
+	// Track setup progress
+	let hasConnection = $derived(!!userCtx.user?.activeConnection)
+	let hasCharacter = $derived(characters.length > 0)
+	let hasPersona = $derived(personas.length > 0)
+	let hasChat = $derived(chats.length > 0)
+
+	// Simple setup check - only requires connection + character + persona
+	let isBasicSetup = $derived(hasConnection && hasCharacter && hasPersona)
+
+	// Determine current step based on what's completed
+	let currentStep = $derived.by(() => {
+		if (!hasConnection) return 0 // Connection step
+		if (!hasCharacter) return 2 // Character creation step
+		if (!hasPersona) return 3 // Persona creation step
+		return 4 // Final step - start chat
+	})
+
+	// Check if current wizard step is complete
+	let isCurrentStepComplete = $derived.by(() => {
+		switch (wizardStep) {
+			case 0:
+				return false // Always show choice first
+			case 1:
+				return hasConnection // Connection complete
+			case 2:
+				return hasCharacter // Character created
+			case 3:
+				return hasPersona // Persona created
+			case 4:
+				return true // Final step
+			default:
+				return false
+		}
+	})
+
+	// Full setup check (legacy)
 	let isSetup = $derived.by(() => {
 		return (
 			userCtx.user?.activeSamplingConfig &&
@@ -28,52 +88,206 @@
 		)
 	})
 
-	function openSettings() {
-		panelsCtx.openPanel({ key: "settings" })
+	// Navigation functions
+	function openPanel(key: string) {
+		panelsCtx.openPanel({ key })
 	}
 
-	function openSamplingConfig() {
-		panelsCtx.openPanel({ key: "sampling" })
-	}
-	function openContextConfig() {
-		panelsCtx.openPanel({ key: "context" })
-	}
-	function openPromptConfig() {
-		panelsCtx.openPanel({ key: "prompts" })
-	}
-	function openConnections() {
-		panelsCtx.openPanel({ key: "connections" })
-	}
-	function openCharacters() {
-		panelsCtx.openPanel({ key: "characters" })
-	}
-	function openPersonas() {
-		panelsCtx.openPanel({ key: "personas" })
-	}
-	function openChats() {
-		panelsCtx.openPanel({ key: "chats" })
+	// Wizard functions
+	function startWizard() {
+		showWizard = true
+		// Skip to the current incomplete step
+		wizardStep = currentStep === 4 ? 0 : currentStep
 	}
 
-	// Listen for lists
+	function nextWizardStep() {
+		wizardStep++
+	}
+
+	function prevWizardStep() {
+		if (wizardStep > 0) wizardStep--
+	}
+
+	function closeWizard() {
+		showWizard = false
+		wizardStep = 0
+		connectionChoice = null
+	}
+
+	// Quick setup functions
+	function handleQuickSetup() {
+		if (!socket) return
+		
+		// Auto-set the default configs if not already set
+		if (!userCtx.user?.activeSamplingConfig) {
+			socket.emit("setUserActiveSamplingConfig", { id: 1 }) // Default
+		}
+		if (!userCtx.user?.activeContextConfig) {
+			socket.emit("setUserActiveContextConfig", { id: 1 }) // Default
+		}
+		if (!userCtx.user?.activePromptConfig) {
+			socket.emit("setUserActivePromptConfig", { id: 1 }) // Roleplay - Simple
+		}
+
+		// Start the wizard
+		showWizard = true
+
+		// If basic setup is complete, go directly to chat creation step
+		if (isBasicSetup) {
+			wizardStep = 4 // Chat creation step
+		} else {
+			// Skip to the current incomplete step
+			wizardStep = currentStep === 4 ? 0 : currentStep
+		}
+	}
+
+	function connectToOllamaModel(modelName: string) {
+		if (!socket) return
+		socket.emit("ollamaConnectModel", { modelName: modelName })
+	}
+
+	function checkOllamaConnection() {
+		if (!socket) return
+		socket.emit("ollamaVersion", {})
+	}
+
+	function refreshOllamaModels() {
+		if (!socket) return
+		socket.emit("ollamaModelsList", {})
+	}
+
+	function createSamplePersona() {
+		if (!socket) return
+		
+		const samplePersona = {
+			name: "You",
+			description:
+				"This represents you in conversations. You can edit this later to add more details about yourself or create different personas for different types of chats.",
+			isDefault: true
+		}
+
+		socket.emit("createPersona", { persona: samplePersona })
+	}
+
+	function finishQuickSetup() {
+		toaster.success({
+			title: "Welcome to Serene Pub!",
+			description:
+				"You're all set up and ready to start chatting with your characters."
+		})
+		closeWizard()
+	}
+
+	function toggleBanner() {
+		const res: Sockets.UpdateShowHomePageBanner.Call = {
+			enabled: false
+		}
+		socket.emit("updateShowHomePageBanner", res)
+	}
+
+	// Listen for socket events
 	onMount(() => {
+
 		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
 			characters = msg.characterList || []
+			// If we're in the wizard and just got characters, advance if needed
+			if (showWizard && wizardStep === 2 && characters.length > 0) {
+				nextWizardStep()
+			}
 		})
 		socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
 			personas = msg.personaList || []
+			// If we're in the wizard and just got personas, advance if needed
+			if (showWizard && wizardStep === 3 && personas.length > 0) {
+				nextWizardStep()
+			}
 		})
 		socket.on("chatsList", (msg: Sockets.ChatsList.Response) => {
 			chats = msg.chatsList || []
 		})
+		socket.on(
+			"connectionsList",
+			(msg: Sockets.ConnectionsList.Response) => {
+				connections = msg.connectionsList || []
+			}
+		)
+
+		// Handle Ollama manager events
+		socket.on("ollamaVersion", (message: any) => {
+			isOllamaConnected = !!message.version
+			if (isOllamaConnected && showWizard) {
+				refreshOllamaModels()
+			}
+		})
+
+		socket.on("ollamaModelsList", (message: any) => {
+			installedModels = message.models || []
+		})
+
+		socket.on("ollamaConnectModel", (message: any) => {
+			if (message.success) {
+				nextWizardStep()
+			} else {
+				toaster.error({
+					title: "Connection Failed",
+					description: "Failed to connect to the Ollama model"
+				})
+			}
+		})
+
+		// Handle successful connection creation (fallback for manual setup)
+		socket.on("createConnection", (res: any) => {
+			if (res.connection) {
+				nextWizardStep()
+			}
+		})
+
+		// Handle successful character creation
+		socket.on("createCharacter", (res: any) => {
+			if (res.character) {
+				// Refresh character list to update hasCharacter
+				socket.emit("characterList", {})
+			}
+		})
+
+		// Handle successful persona creation
+		socket.on("createPersona", (res: any) => {
+			if (res.persona) {
+				// Refresh persona list to update hasPersona
+				socket.emit("personaList", {})
+			}
+		})
+
+		// Handle successful chat creation
+		socket.on("createChat", (res: any) => {
+			if (res.chat) {
+				// Close wizard if it's open
+				if (showWizard) {
+					closeWizard()
+				}
+				// Open the chat panel and navigate to the new chat
+				panelsCtx.openPanel({ key: "chats", toggle: false })
+			}
+		})
+
 		socket.emit("characterList", {})
 		socket.emit("personaList", {})
 		socket.emit("chatsList", {})
+		socket.emit("connectionsList", {})
 	})
 
 	onDestroy(() => {
 		socket.off("characterList")
 		socket.off("personaList")
 		socket.off("chatsList")
+		socket.off("connectionsList")
+		socket.off("createConnection")
+		socket.off("createCharacter")
+		socket.off("createPersona")
+		socket.off("createChat")
+		socket.off("ollamaVersion")
+		socket.off("ollamaModelsList")
+		socket.off("ollamaConnectModel")
 	})
 </script>
 
@@ -85,252 +299,535 @@
 <div
 	class="flex flex-1 flex-col items-center justify-center gap-4 px-2 md:px-0"
 >
-	<img
-		src={themeCtx.mode === "dark" ? "logo-w-text-dark.png" : "logo-w-text.png"}
-		alt="Serene Pub Logo"
-		class="w-full rounded-xl bg-primary-500/25"
-	/>
-
-	<!-- Alpha disclaimer card below the logo -->
-	<div class="mx-auto rounded-lg preset-filled-warning-100-900 p-2 text-center text-sm w-full">
-		<strong>Serene Pub is in alpha!</strong> Expect bugs and rapid changes. This project is under heavy development.
-	</div>
-
-	{#if !isSetup}
-		<div
-			class="preset-filled-surface-200-800 mx-auto w-full rounded-xl p-6"
-		>
-			<h1 class="text-foreground mb-2 text-center text-3xl font-bold">
-				Get Started with Serene Pub
-			</h1>
-			<p class="text-muted-foreground mb-6 text-center">
-				Follow these steps to set up your environment and start
-				chatting!
-			</p>
-			<ol class="flex list-none flex-col gap-6">
-				<li class="flex items-start gap-2">
-					<span>
-						<Icons.Settings
-							class="text-primary-600-400 mt-1"
-							size={20}
-						/>
-					</span>
-					<div>
-						<b>Optional: Personalize Appearance</b>
-						<br />
-						<div class="my-2 flex items-center gap-2">
-							<button
-								class="btn btn-sm preset-filled-primary-500"
-								onclick={openSettings}
-							>
-								<Icons.Settings size={16} /> Settings
-							</button>
-						</div>
-					</div>
-				</li>
-				<li class="flex items-start gap-2">
-					{#if userCtx.user?.activeSamplingConfig}
-						<Icons.CheckCircle
-							class="text-success-500 mt-1"
-							size={20}
-						/>
-					{:else}
-						<Icons.XCircle class="text-error-500 mt-1" size={20} />
-					{/if}
-					<div>
-						<b>Sampling Configuration</b>
-						<br />
-						{#if userCtx.user?.activeSamplingConfig}
-							<span class="text-success-500">
-								Sampling config set: {userCtx.user
-									.activeSamplingConfig.name}
-							</span>
-						{:else}
-							<div class="my-2 flex items-center gap-2">
-								<button
-									class="btn btn-sm preset-filled-primary-500"
-									onclick={openSamplingConfig}
-								>
-									<Icons.Settings size={16} /> Set Sampling Config
-								</button>
-							</div>
-						{/if}
-					</div>
-				</li>
-				<li class="flex items-start gap-2">
-					{#if userCtx.user?.activeContextConfig}
-						<Icons.CheckCircle
-							class="text-success-500 mt-1"
-							size={20}
-						/>
-					{:else}
-						<Icons.XCircle class="text-error-500 mt-1" size={20} />
-					{/if}
-					<div>
-						<b>Context Configuration</b>
-						<br />
-						{#if userCtx.user?.activeContextConfig}
-							<span class="text-success-500">
-								Context config set: {userCtx.user
-									.activeContextConfig.name}
-							</span>
-						{:else}
-							<div class="my-2 flex items-center gap-2">
-								<button
-									class="btn btn-sm preset-filled-primary-500"
-									onclick={openContextConfig}
-								>
-									<Icons.Settings size={16} /> Set Context Config
-								</button>
-							</div>
-						{/if}
-					</div>
-				</li>
-				<li class="flex items-start gap-2">
-					{#if userCtx.user?.activePromptConfig}
-						<Icons.CheckCircle
-							class="text-success-500 mt-1"
-							size={20}
-						/>
-					{:else}
-						<Icons.XCircle class="text-error-500 mt-1" size={20} />
-					{/if}
-					<div>
-						<b>Prompt Configuration</b>
-						<br />
-						{#if userCtx.user?.activePromptConfig}
-							<span class="text-success-500">
-								Prompt config set: {userCtx.user
-									.activePromptConfig.name}
-							</span>
-						{:else}
-							<div class="text-primary-500">
-								<button
-									class="btn btn-sm preset-filled-primary-500"
-									onclick={openPromptConfig}
-								>
-									<Icons.Settings size={16} /> Set Prompt Config
-								</button>
-							</div>
-						{/if}
-					</div>
-				</li>
-				<li class="flex items-start gap-2">
-					{#if userCtx.user?.activeConnection}
-						<Icons.CheckCircle
-							class="text-success-500 mt-1"
-							size={20}
-						/>
-					{:else}
-						<Icons.XCircle class="text-error-500 mt-1" size={20} />
-					{/if}
-					<div>
-						<b>Connections</b>
-						<br />
-						{#if userCtx.user?.activeConnection}
-							<span class="text-success-500">
-								Connection set: {userCtx.user.activeConnection
-									.name}
-							</span>
-						{:else}
-							<div class="my-2 flex items-center gap-2">
-								<button
-									class="btn btn-sm preset-filled-primary-500"
-									onclick={openConnections}
-								>
-									<Icons.Cable size={16} /> Add Connection
-								</button>
-							</div>
-						{/if}
-					</div>
-				</li>
-				<li class="flex items-start gap-2">
-					{#if characters.length > 0}
-						<Icons.CheckCircle
-							class="text-success-500 mt-1"
-							size={20}
-						/>
-					{:else}
-						<Icons.XCircle class="text-error-500 mt-1" size={20} />
-					{/if}
-					<div>
-						<b>Add a Character</b>
-						<br />
-						{#if characters.length > 0}
-							<span class="text-success-500">
-								{characters.length} character(s) found.
-							</span>
-						{:else}
-							<div class="my-2 flex items-center gap-2">
-								<button
-									class="btn btn-sm preset-filled-primary-500"
-									onclick={openCharacters}
-								>
-									<Icons.UserPlus size={16} /> Add Character
-								</button>
-							</div>
-						{/if}
-					</div>
-				</li>
-				<li class="flex items-start gap-2">
-					{#if personas.length > 0}
-						<Icons.CheckCircle
-							class="text-success-500 mt-1"
-							size={20}
-						/>
-					{:else}
-						<Icons.XCircle class="text-error-500 mt-1" size={20} />
-					{/if}
-					<div>
-						<b>Add a Persona</b>
-						<br />
-						{#if personas.length > 0}
-							<span class="text-success-500">
-								{personas.length} persona(s) found.
-							</span>
-						{:else}
-							<div class="my-2 flex items-center gap-2">
-								<button
-									class="btn btn-sm preset-filled-primary-500"
-									onclick={openPersonas}
-								>
-									<Icons.UserPlus size={16} /> Add Persona
-								</button>
-							</div>
-						{/if}
-					</div>
-				</li>
-				<li class="flex items-start gap-2">
-					{#if chats.length > 0}
-						<Icons.CheckCircle
-							class="text-success-500 mt-1"
-							size={20}
-						/>
-					{:else}
-						<Icons.XCircle class="text-error-500 mt-1" size={20} />
-					{/if}
-					<div>
-						<b>Add a Chat</b>
-						<br />
-						{#if chats.length > 0}
-							<span class="text-success-500">
-								{chats.length} chat(s) found.
-							</span>
-						{:else}
-							<div class="my-2 flex items-center gap-2">
-								<button
-									class="btn btn-sm preset-filled-primary-500"
-									onclick={openChats}
-								>
-									<Icons.MessageSquarePlus size={16} /> Add Chat
-								</button>
-							</div>
-						{/if}
-					</div>
-				</li>
-			</ol>
+	{#if systemSettingsCtx.settings.showHomePageBanner}
+		<div class="relative w-full">
+			<img
+				src={themeCtx.mode === "dark"
+					? "logo-w-text-dark.png"
+					: "logo-w-text.png"}
+				alt="Serene Pub Logo"
+				class="bg-primary-500/25 w-full rounded-xl"
+			/>
+			<button
+				class="text-primary-800 hover:text-primary-900 dark:text-primary-200 hover:dark:text-primary-100 absolute right-2 top-2 text-xl leading-none font-bold bg-black/20 hover:bg-black/30 rounded-full w-6 h-6 flex items-center justify-center"
+				onclick={toggleBanner}
+				title="Hide banner"
+			>
+				×
+			</button>
 		</div>
 	{/if}
+
+	<!-- Alpha disclaimer card below the logo -->
+	<div
+		class="preset-filled-warning-100-900 mx-auto w-full rounded-lg p-2 text-center text-sm"
+	>
+		<strong>Serene Pub is in alpha!</strong>
+		Expect bugs and rapid changes. This project is under heavy development.
+	</div>
+
+	<!-- New User Welcome / Setup Wizard - Show if not fully setup OR wizard is running -->
+	{#if !isSetup || showWizard}
+		<div
+			class="preset-filled-surface-200-800 mx-auto w-full rounded-xl p-8 text-center"
+		>
+			{#if !showWizard}
+				<!-- Welcome Screen -->
+				<div class="mb-6">
+					<Icons.Sparkles
+						size={48}
+						class="text-primary-500 mx-auto mb-4"
+					/>
+					{#if isBasicSetup}
+						<!-- Basic setup complete, need chat -->
+						<h1 class="text-foreground mb-2 text-3xl font-bold">
+							Ready to Start Chatting!
+						</h1>
+						<p class="text-muted-foreground text-lg">
+							You have everything set up. Let's create your first
+							chat to get started.
+						</p>
+					{:else}
+						<!-- Initial setup needed -->
+						<h1 class="text-foreground mb-2 text-3xl font-bold">
+							Welcome to Serene Pub!
+						</h1>
+						<p class="text-muted-foreground text-lg">
+							We'll guide you through connecting to an AI service
+							and creating your first character
+						</p>
+					{/if}
+				</div>
+
+				<!-- Quick Start -->
+				<div class="mb-6">
+					<button
+						class="btn preset-filled-primary-500 btn-lg mb-4 px-8 py-4 text-lg"
+						onclick={handleQuickSetup}
+					>
+						<Icons.Zap size={20} />
+						{#if isBasicSetup}
+							Create First Chat
+						{:else}
+							Quick Start (5 minutes)
+						{/if}
+					</button>
+				</div>
+
+				<!-- Advanced Option -->
+				<details class="mt-6">
+					<summary
+						class="cursor-pointer text-sm opacity-60 hover:opacity-100"
+					>
+						Advanced Setup (Manual Configuration)
+					</summary>
+					<div class="mt-4 space-y-3">
+						<button
+							class="btn preset-tonal-surface btn-sm"
+							onclick={() => {
+								panelsCtx.digest.tutorial = true
+								openPanel("connections")
+							}}
+						>
+							<Icons.Cable size={16} /> Manage Connections
+						</button>
+						<button
+							class="btn preset-tonal-surface btn-sm"
+							onclick={() => {
+								panelsCtx.digest.tutorial = true
+								openPanel("characters")
+							}}
+						>
+							<Icons.Users size={16} /> Manage Characters
+						</button>
+						<button
+							class="btn preset-tonal-surface btn-sm"
+							onclick={() => {
+								panelsCtx.digest.tutorial = true
+								openPanel("personas")
+							}}
+						>
+							<Icons.User size={16} /> Manage Personas
+						</button>
+						<button
+							class="btn preset-tonal-surface btn-sm"
+							onclick={() => {
+								panelsCtx.digest.tutorial = true
+								openPanel("chats")
+							}}
+						>
+							<Icons.MessageSquare size={16} /> Manage Chats
+						</button>
+					</div>
+				</details>
+			{:else}
+				<!-- Setup Wizard -->
+				<div class="mb-6">
+					<h2 class="text-foreground mb-2 text-3xl font-bold">
+						Quick Setup
+					</h2>
+					<div class="mb-4 flex gap-2">
+						{#each Array(5) as _, i}
+							<div
+								class="h-2 flex-1 rounded-full {i <= wizardStep
+									? 'bg-primary-500'
+									: 'bg-surface-400'}"
+							></div>
+						{/each}
+					</div>
+					<p class="text-muted-foreground text-lg">
+						Step {wizardStep + 1} of 5
+					</p>
+				</div>
+
+				<!-- Step Content -->
+				<div class="mb-6 min-h-[300px]">
+					{#if wizardStep === 0}
+						<!-- Step 1: Choose AI Connection Method -->
+						<Icons.Brain
+							size={48}
+							class="text-primary-500 mx-auto mb-4"
+						/>
+						<h3 class="mb-4 text-center text-xl font-bold">
+							Connect to an AI Service
+						</h3>
+						<p class="mb-6 text-center text-sm opacity-75">
+							Choose how you'd like to connect to an AI model for
+							conversations
+						</p>
+
+						<div class="space-y-3">
+							{#if systemSettingsCtx.settings.ollamaManagerEnabled}
+								<button
+									class="btn preset-filled-primary-500 h-auto w-full flex-col gap-2 p-4"
+									onclick={() => {
+										connectionChoice = "quick"
+										checkOllamaConnection()
+										nextWizardStep()
+									}}
+								>
+									<div class="flex items-center gap-2">
+										<Icons.Zap size={20} />
+										<strong>
+											Quick Setup with Ollama Manager
+										</strong>
+									</div>
+									<p class="text-sm opacity-90">
+										Use the built-in Ollama manager to
+										download and connect models
+									</p>
+								</button>
+							{:else}
+								<button
+									class="btn preset-filled-primary-500 h-auto w-full flex-col gap-2 p-4"
+									onclick={() => {
+										connectionChoice = "quick"
+										nextWizardStep()
+									}}
+								>
+									<div class="flex items-center gap-2">
+										<Icons.Zap size={20} />
+										<strong>Quick Setup with Ollama</strong>
+									</div>
+									<p class="text-sm opacity-90">
+										Download and use local AI models
+										(Recommended for beginners)
+									</p>
+								</button>
+							{/if}
+
+							<button
+								class="btn preset-tonal-surface h-auto w-full flex-col gap-2 p-4"
+								onclick={() => {
+									connectionChoice = "manual"
+									panelsCtx.digest.tutorial = true
+									openPanel("connections")
+								}}
+							>
+								<div class="flex items-center gap-2">
+									<Icons.Settings size={20} />
+									<strong>Manual Setup</strong>
+								</div>
+								<p class="text-sm opacity-75">
+									Configure OpenAI, LM Studio, or other
+									services yourself
+								</p>
+							</button>
+						</div>
+					{:else if wizardStep === 1}
+						<!-- Step 2: Ollama Setup -->
+						{#if hasConnection}
+							<!-- Connection Complete -->
+							<Icons.CheckCircle
+								size={48}
+								class="text-success-500 mx-auto mb-4"
+							/>
+							<h3 class="mb-4 text-center text-xl font-bold">
+								✅ AI Connection Complete!
+							</h3>
+							<p class="mb-6 text-center text-sm opacity-75">
+								You're successfully connected to {userCtx.user
+									?.activeConnection?.name}
+							</p>
+
+							<div class="text-center">
+								<button
+									class="btn preset-filled-primary-500 btn-lg"
+									onclick={nextWizardStep}
+								>
+									<Icons.ArrowRight size={20} />
+									Continue to Character Creation
+								</button>
+							</div>
+						{:else if systemSettingsCtx.settings.ollamaManagerEnabled}
+							<!-- Ollama Manager Flow -->
+							<OllamaIcon
+								class="text-primary-500 mx-auto mb-4 h-12 w-12"
+							/>
+							<h3 class="mb-4 text-center text-xl font-bold">
+								Use Ollama Manager
+							</h3>
+							<p class="mb-6 text-center text-sm opacity-75">
+								Open the Ollama Manager to download models and
+								connect to them
+							</p>
+
+							<div class="text-center">
+								<button
+									class="btn preset-filled-primary-500 btn-lg"
+									onclick={() => {
+										panelsCtx.digest.tutorial = true
+										openPanel("ollama")
+									}}
+								>
+									<OllamaIcon class="h-5 w-5" />
+									Open Ollama Manager
+								</button>
+
+								<p class="mt-4 text-xs opacity-60">
+									Come back to this wizard after connecting a
+									model
+								</p>
+							</div>
+						{:else}
+							<!-- Manual Ollama Setup Flow -->
+							<Icons.Download
+								size={48}
+								class="text-primary-500 mx-auto mb-4"
+							/>
+							<h3 class="mb-4 text-center text-xl font-bold">
+								Set up Ollama
+							</h3>
+							<div class="space-y-4">
+								<div class="bg-surface-500/20 rounded-lg p-4">
+									<h4 class="mb-2 font-semibold">
+										Quick Instructions:
+									</h4>
+									<ol
+										class="list-inside list-decimal space-y-1 text-sm"
+									>
+										<li>
+											Download Ollama from <a
+												href="https://ollama.com"
+												target="_blank"
+												class="text-primary-500 hover:underline"
+											>
+												ollama.com
+											</a>
+										</li>
+										<li>Install and run it</li>
+										<li>Open terminal/command prompt</li>
+										<li>
+											Run: <code
+												class="bg-surface-600 rounded px-2 py-1 text-xs"
+											>
+												ollama pull llama3.2
+											</code>
+										</li>
+									</ol>
+								</div>
+
+								<div class="space-y-3">
+									<label
+										class="block text-sm font-semibold"
+										for="ollama-model-select"
+									>
+										Choose a model:
+									</label>
+									<select
+										id="ollama-model-select"
+										class="select w-full"
+										bind:value={selectedOllamaModel}
+									>
+										<option value="">
+											Select a model...
+										</option>
+										<option value="llama3.2">
+											Llama 3.2 (Recommended)
+										</option>
+										<option value="llama3.2:1b">
+											Llama 3.2 1B (Faster, smaller)
+										</option>
+										<option value="qwen2.5">
+											Qwen 2.5 (Alternative)
+										</option>
+										<option value="mistral">
+											Mistral 7B
+										</option>
+									</select>
+								</div>
+							</div>
+						{/if}
+					{:else if wizardStep === 2}
+						<!-- Step 3: Create Character -->
+						{#if hasCharacter}
+							<!-- Character Complete -->
+							<Icons.CheckCircle
+								size={48}
+								class="text-success-500 mx-auto mb-4"
+							/>
+							<h3 class="mb-4 text-center text-xl font-bold">
+								✅ Character Created!
+							</h3>
+							<p class="mb-6 text-center text-sm opacity-75">
+								You have {characters.length} character{characters.length ===
+								1
+									? ""
+									: "s"} ready to chat with
+							</p>
+
+							<div class="text-center">
+								<button
+									class="btn preset-filled-primary-500 btn-lg"
+									onclick={nextWizardStep}
+								>
+									<Icons.ArrowRight size={20} />
+									Continue to Persona Creation
+								</button>
+							</div>
+						{:else}
+							<Icons.Users
+								size={48}
+								class="text-primary-500 mx-auto mb-4"
+							/>
+							<h3 class="mb-4 text-center text-xl font-bold">
+								Create The First Character to Chat With
+							</h3>
+
+							<div class="text-center">
+								<button
+									class="btn preset-filled-primary-500 btn-lg"
+									onclick={() => {
+										panelsCtx.digest.tutorial = true
+										openPanel("characters")
+									}}
+								>
+									<Icons.UserPlus size={20} />
+									Open Characters Panel
+								</button>
+							</div>
+						{/if}
+					{:else if wizardStep === 3}
+						<!-- Step 4: Create Persona -->
+						{#if hasPersona}
+							<!-- Persona Complete -->
+							<Icons.CheckCircle
+								size={48}
+								class="text-success-500 mx-auto mb-4"
+							/>
+							<h3 class="mb-4 text-center text-xl font-bold">
+								✅ Persona Created!
+							</h3>
+							<p class="mb-6 text-center text-sm opacity-75">
+								You have {personas.length} persona{personas.length ===
+								1
+									? ""
+									: "s"} ready for conversations
+							</p>
+
+							<div class="text-center">
+								<button
+									class="btn preset-filled-primary-500 btn-lg"
+									onclick={nextWizardStep}
+								>
+									<Icons.ArrowRight size={20} />
+									Start Your First Chat
+								</button>
+							</div>
+						{:else}
+							<Icons.User
+								size={48}
+								class="text-primary-500 mx-auto mb-4"
+							/>
+							<h3 class="mb-4 text-center text-xl font-bold">
+								Create Your Persona
+							</h3>
+							<p class="mb-6 text-center text-sm opacity-75">
+								Your persona represents you in conversations
+							</p>
+
+							<div class="text-center">
+								<button
+									class="btn preset-filled-primary-500 btn-lg"
+									onclick={() => {
+										panelsCtx.digest.tutorial = true
+										openPanel("personas")
+									}}
+								>
+									<Icons.UserPlus size={20} />
+									Open Personas Panel
+								</button>
+							</div>
+						{/if}
+					{:else if wizardStep === 4}
+						<!-- Step 5: Open Chat Interface -->
+						<Icons.MessageCircle
+							size={48}
+							class="text-primary-500 mx-auto mb-4"
+						/>
+						<h3 class="mb-4 text-center text-xl font-bold">
+							Ready to Chat!
+						</h3>
+						<p class="mb-6 text-center text-sm opacity-75">
+							You're all set up! Let's open the chat interface
+							where you can create your first conversation.
+						</p>
+
+						<div class="text-center">
+							<button
+								class="btn preset-filled-success-500 btn-lg"
+								onclick={() => {
+									panelsCtx.digest.tutorial = true
+									openPanel("chats")
+								}}
+							>
+								<Icons.MessageCircle size={20} />
+								Open Chat Interface
+							</button>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Navigation -->
+				<div class="flex justify-between">
+					<button
+						class="btn preset-tonal-surface"
+						onclick={wizardStep === 0
+							? closeWizard
+							: prevWizardStep}
+					>
+						{wizardStep === 0 ? "Cancel" : "Previous"}
+					</button>
+
+					{#if wizardStep === 1 && !systemSettingsCtx.settings.ollamaManagerEnabled && !hasConnection}
+						<button
+							class="btn preset-filled-primary-500"
+							onclick={() => {
+								if (selectedOllamaModel && socket) {
+									// Manual connection creation
+									const newConnection = {
+										name: `Ollama - ${selectedOllamaModel}`,
+										type: CONNECTION_TYPE.OLLAMA,
+										baseUrl: "http://localhost:11434",
+										model: selectedOllamaModel,
+										isEnabled: true
+									}
+									socket.emit("createConnection", {
+										connection: newConnection
+									})
+								}
+							}}
+							disabled={!selectedOllamaModel}
+						>
+							Connect
+						</button>
+					{/if}
+				</div>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Character Creator Modal -->
+	<CharacterCreator
+		bind:open={showCharacterCreator}
+		onOpenChange={(e) => {
+			showCharacterCreator = e.open
+			if (!e.open && hasCharacter && showWizard) {
+				nextWizardStep()
+			}
+		}}
+	/>
+
+	<!-- Persona Creator Modal -->
+	<PersonaCreator
+		bind:open={showPersonaCreator}
+		onOpenChange={(e) => {
+			showPersonaCreator = e.open
+			if (!e.open && hasPersona && showWizard) {
+				nextWizardStep()
+			}
+		}}
+	/>
 
 	{#if isSetup}
 		<div
@@ -356,7 +853,7 @@
 
 		<div class="w-full">
 			<h3 class="w-full text-xl">Characters</h3>
-			<div class="grid grid-cols-1 lg:grid-cols-2 justify-between gap-2">
+			<div class="grid grid-cols-1 justify-between gap-2 lg:grid-cols-2">
 				<!-- <div class="card preset-filled-surface-200-800 p-2">
 					tEST
 				</div> -->

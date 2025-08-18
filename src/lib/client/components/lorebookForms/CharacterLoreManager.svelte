@@ -126,7 +126,6 @@
 		entry: SelectWorldLoreEntry
 		warn?: boolean
 	}): boolean {
-
 		if (!entry.name.trim()) {
 			if (warn) {
 				toaster.error({ title: "Name is required" })
@@ -516,7 +515,6 @@
 								<LoreContentField
 									bind:content={entry.content}
 									bind:lorebookBindingList
-
 								/>
 							</div>
 							<div>
@@ -549,41 +547,44 @@
 								</summary>
 								<div class="mt-2 flex flex-col gap-2">
 									<div class="flex w-full justify-between">
-										<span>Use Regex</span>
+										<label for="useRegex-{entry.id}">Use Regex</label>
 										<Switch
-											name="useRegex"
-											label="Use Regex"
+											name="useRegex-{entry.id}"
 											checked={entry.useRegex || false}
 											onCheckedChange={(e) =>
 												(entry.useRegex = e.checked)}
+											aria-labelledby="useRegex-{entry.id}"
 										/>
 									</div>
 									<div class="flex w-full justify-between">
-										<span>Case Sensitive</span>
+										<label for="caseSensitive-{entry.id}">Case Sensitive</label>
 										<Switch
-											name="caseSensitive"
+											name="caseSensitive-{entry.id}"
 											checked={entry.caseSensitive}
 											onCheckedChange={(e) =>
 												(entry.caseSensitive =
 													e.checked)}
+											aria-labelledby="caseSensitive-{entry.id}"
 										/>
 									</div>
 									<div class="flex w-full justify-between">
-										<span>Pinned</span>
+										<label for="constant-{entry.id}">Pinned</label>
 										<Switch
-											name="constant"
+											name="constant-{entry.id}"
 											checked={entry.constant}
 											onCheckedChange={(e) =>
 												(entry.constant = e.checked)}
+											aria-labelledby="constant-{entry.id}"
 										/>
 									</div>
 									<div class="flex w-full justify-between">
-										<span>Enabled</span>
+										<label for="enabled-{entry.id}">Enabled</label>
 										<Switch
-											name="enabled"
+											name="enabled-{entry.id}"
 											checked={entry.enabled}
 											onCheckedChange={(e) =>
 												(entry.enabled = e.checked)}
+											aria-labelledby="enabled-{entry.id}"
 										/>
 									</div>
 									<div class="flex w-full justify-between">

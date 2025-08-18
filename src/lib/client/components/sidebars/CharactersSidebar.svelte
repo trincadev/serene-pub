@@ -4,10 +4,11 @@
 	import { Avatar, FileUpload, Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import CharacterForm from "../characterForms/CharacterForm.svelte"
+	import CharacterCreator from "../modals/CharacterCreatorModal.svelte"
 	import CharacterUnsavedChangesModal from "../modals/CharacterUnsavedChangesModal.svelte"
 	import { toaster } from "$lib/client/utils/toaster"
 	import type { SpecV3 } from "@lenml/char-card-reader"
-	import SidebarListItem from "../SidebarListItem.svelte"
+	import CharacterListItem from "../listItems/CharacterListItem.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -17,6 +18,9 @@
 
 	const socket = skio.get()
 	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
+	const systemSettingsCtx: SystemSettingsCtx = $state(
+		getContext("systemSettingsCtx")
+	)
 
 	let characterList: Sockets.CharacterList.Response["characterList"] = $state(
 		[]
@@ -24,7 +28,7 @@
 	let search = $state("")
 	let characterId: number | undefined = $state()
 	let isCreating = $state(false)
-	let isSafeToCloseCharacterForm = $state(true)
+	let showCharacterCreator = $state(false)
 	let showDeleteModal = $state(false)
 	let characterToDelete: number | undefined = $state(undefined)
 	let showUnsavedChangesModal = $state(false)
@@ -34,17 +38,17 @@
 	let importingLorebook: SpecV3.Lorebook | null = $state(null)
 	let importingLorebookCharacter: SelectCharacter | null = $state(null)
 	let showLorebookImportConfirmationModal = $state(false)
+	let characterFormHasChanges = $state(false)
 
-	let unsavedChanges = $derived.by(() => {
-		return !isCreating && !characterId ? false : !isSafeToCloseCharacterForm
-	})
+	// Note: Despite the name "isSafeToClose", this prop actually tracks when there ARE changes
+	// It's misnamed in the CharacterForm component - it should be called "hasChanges"
 
 	$effect(() => {
 		if (panelsCtx.digest.characterId) {
 			// Check if we have unsaved changes
 			if (
 				characterId !== panelsCtx.digest.characterId &&
-				unsavedChanges
+				characterFormHasChanges
 			) {
 				onEditFormCancel?.()
 			} else {
@@ -66,18 +70,43 @@
 				return 0
 			})
 			if (!search) return list
+			
+			const searchLower = search.toLowerCase()
 			return list.filter(
-				(c: Sockets.CharacterList.Response["characterList"][0]) =>
-					c.name!.toLowerCase().includes(search.toLowerCase()) ||
-					(c.description &&
-						c.description
-							.toLowerCase()
-							.includes(search.toLowerCase()))
+				(c: Sockets.CharacterList.Response["characterList"][0]) => {
+					// Search by name
+					if (c.name!.toLowerCase().includes(searchLower)) return true
+					
+					// Search by description
+					if (c.description && c.description.toLowerCase().includes(searchLower)) return true
+					
+					// Search by tags
+					if (c.characterTags) {
+						const tagMatch = c.characterTags.some((ct: any) => 
+							ct.tag && ct.tag.name.toLowerCase().includes(searchLower)
+						)
+						if (tagMatch) return true
+					}
+					
+					return false
+				}
 			)
 		})
 
 	function handleCreateClick() {
-		isCreating = true
+		// Clear tutorial flag when user interacts with the highlighted button
+		if (panelsCtx.digest.tutorial) {
+			panelsCtx.digest.tutorial = false
+		}
+
+		// Check if easy character creation is enabled
+		if (systemSettingsCtx.settings.enableEasyCharacterCreation) {
+			showCharacterCreator = true
+		} else {
+			// Use regular edit form for creation
+			isCreating = true
+			characterId = undefined
+		}
 	}
 
 	function handleEditClick(id: number) {
@@ -110,7 +139,7 @@
 	}
 
 	async function handleOnClose() {
-		if (unsavedChanges) {
+		if (characterFormHasChanges) {
 			showUnsavedChangesModal = true
 			return new Promise<boolean>((resolve) => {
 				confirmCloseSidebarResolve = resolve
@@ -220,117 +249,90 @@
 	})
 </script>
 
-<div class="text-foreground h-full p-4">
+<div class="text-foreground h-full p-4" role="region" aria-label="Characters management">
 	{#if isCreating}
-		<CharacterForm
-			bind:isSafeToClose={isSafeToCloseCharacterForm}
-			closeForm={closeCharacterForm}
-		/>
-	{:else if characterId}
-		{#key characterId}
+		<section aria-label="Create new character">
 			<CharacterForm
-				bind:isSafeToClose={isSafeToCloseCharacterForm}
-				{characterId}
+				bind:isSafeToClose={characterFormHasChanges}
 				closeForm={closeCharacterForm}
 				bind:onCancel={onEditFormCancel}
 			/>
+		</section>
+	{:else if characterId}
+		{#key characterId}
+			<section aria-label="Edit character">
+				<CharacterForm
+					bind:isSafeToClose={characterFormHasChanges}
+					{characterId}
+					closeForm={closeCharacterForm}
+					bind:onCancel={onEditFormCancel}
+				/>
+			</section>
 		{/key}
 	{:else}
-		<div class="mb-2 flex gap-2">
+		<div class="mb-2 flex gap-2" role="toolbar" aria-label="Character actions">
 			<button
-				class="btn btn-sm preset-filled-primary-500"
+				class="btn btn-sm preset-filled-primary-500 {panelsCtx.digest
+					.tutorial
+					? 'ring-primary-500/50 animate-pulse ring-4'
+					: ''}"
 				onclick={handleCreateClick}
 				title="Create New Character"
+				aria-label="Create new character"
+				type="button"
 			>
-				<Icons.Plus size={16} />
+				<Icons.Plus size={16} aria-hidden="true" />
 			</button>
 			<button
 				class="btn btn-sm preset-filled-primary-500"
 				title="Import Character"
 				onclick={handleImportClick}
+				aria-label="Import character from file"
+				type="button"
 			>
-				<Icons.Upload size={16} />
+				<Icons.Upload size={16} aria-hidden="true" />
 			</button>
 			<button
 				class="btn btn-sm preset-filled-primary-500"
 				title="Export Character"
 				disabled
+				aria-label="Export character (coming soon)"
+				type="button"
 			>
-				<Icons.Download size={16} />
+				<Icons.Download size={16} aria-hidden="true" />
 			</button>
 		</div>
 		<div class="mb-4 flex items-center gap-2">
+			<label for="character-search" class="sr-only">
+				Search characters
+			</label>
 			<input
+				id="character-search"
 				type="text"
-				placeholder="Search characters..."
+				placeholder="Search characters, descriptions, tags..."
 				class="input"
 				bind:value={search}
+				aria-label="Search characters by name, description, or tags"
 			/>
 		</div>
-		<div class="flex flex-col gap-2">
+		<div class="flex flex-col gap-2" role="list" aria-label="Characters list">
 			{#if filteredCharacters.length === 0}
-				<div class="text-muted-foreground py-8 text-center w-100 relative">
-					No characters found.
+				<div
+					class="text-muted-foreground relative w-100 py-8 text-center"
+					role="status"
+					aria-live="polite"
+				>
+					{search ? `No characters found matching "${search}".` : "No characters found."}
 				</div>
 			{:else}
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				{#each filteredCharacters as c}
-					<SidebarListItem
-						id={c.id}
-						onclick={() => handleCharacterClick(c)}
+					<CharacterListItem
+						character={c}
+						onclick={handleCharacterClick}
+						onEdit={handleEditClick}
+						onDelete={handleDeleteClick}
 						contentTitle="Go to character chats"
-						classes={c.isFavorite ? "border border-primary-500" : ""}
-					>
-						{#snippet content()}
-						<Avatar
-									src={c.avatar || ""}
-									size="w-[4em] h-[4em] min-w-[4em] min-h-[4em]"
-									imageClasses="object-cover"
-									name={c.nickname || c.name!}
-								>
-									<Icons.User size={36} />
-								</Avatar>
-							<div class="flex gap-2 relative flex-1 min-w-0">
-								
-								<div class="flex-1 relative min-w-0">
-									<div class="truncate font-semibold text-left">
-										{c.nickname || c.name}
-									</div>
-									{#if c.description}
-										<div
-											class="text-muted-foreground line-clamp-2 text-xs text-left"
-										>
-											{c.description}
-										</div>
-									{/if}
-								</div>
-							</div>
-						{/snippet}
-						{#snippet controls()}
-							<div class="flex flex-col gap-4">
-								<button
-									class="btn btn-sm text-primary-500 p-2"
-									onclick={(e) => {
-										e.stopPropagation()
-										handleEditClick(c.id!)
-									}}
-									title="Edit Character"
-								>
-									<Icons.Edit size={16} />
-								</button>
-								<button
-									class="btn btn-sm text-error-500 p-2"
-									onclick={(e) => {
-										e.stopPropagation()
-										handleDeleteClick(c.id!)
-									}}
-									title="Delete Character"
-								>
-									<Icons.Trash2 size={16} />
-								</button>
-							</div>
-						{/snippet}
-					</SidebarListItem>
+					/>
 				{/each}
 			{/if}
 		</div>
@@ -341,26 +343,33 @@
 	<Modal
 		open={showDeleteModal}
 		onOpenChange={(e) => (showDeleteModal = e.open)}
-		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
 		backdropClasses="backdrop-blur-sm"
+		role="alertdialog"
+		aria-labelledby="delete-modal-title"
+		aria-describedby="delete-modal-description"
 	>
 		{#snippet content()}
 			<div class="p-6">
-				<h2 class="mb-2 text-lg font-bold">Delete Character?</h2>
-				<p class="mb-4">
+				<h2 id="delete-modal-title" class="mb-2 text-lg font-bold">Delete Character?</h2>
+				<p id="delete-modal-description" class="mb-4">
 					Are you sure you want to delete this character? This action
 					cannot be undone.
 				</p>
-				<div class="flex justify-end gap-2">
+				<div class="flex justify-end gap-2" role="group" aria-label="Delete confirmation actions">
 					<button
 						class="btn preset-filled-surface-500"
 						onclick={cancelDelete}
+						type="button"
+						aria-label="Cancel deletion"
 					>
 						Cancel
 					</button>
 					<button
 						class="btn preset-filled-error-500"
 						onclick={confirmDelete}
+						type="button"
+						aria-label="Confirm deletion"
 					>
 						Delete
 					</button>
@@ -412,7 +421,7 @@
 			importingLorebook = null
 			importingLorebookCharacter = null
 		}}
-		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
 		backdropClasses="backdrop-blur-sm"
 	>
 		{#snippet content()}
@@ -458,3 +467,9 @@
 		onCancel={handleCloseModalCancel}
 	/>
 {/if}
+
+<!-- Character Creator Modal -->
+<CharacterCreator
+	bind:open={showCharacterCreator}
+	onOpenChange={(e) => (showCharacterCreator = e.open)}
+/>

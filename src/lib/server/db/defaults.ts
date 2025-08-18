@@ -102,8 +102,11 @@ Story history:
 \`\`\`
 {{/if}}
 
-{{#if wiBefore}}
-{{{wiBefore}}}
+{{#if exampleDialogue}}
+Example dialogue:
+"""
+{{{exampleDialogue}}}
+"""
 {{/if}}
 {{/systemBlock}}
 
@@ -120,9 +123,9 @@ Story history:
 {{/if}}
 {{/each}}
 
-{{#if wiAfter}}
+{{#if postHistoryInstructions}}
 {{#systemBlock}}
-{{{wiAfter}}}
+{{{postHistoryInstructions}}}
 {{/systemBlock}}
 {{/if}}`
 			}
@@ -298,6 +301,21 @@ Story history:
 		await Promise.all(userQueries)
 	} catch (error) {
 		console.error("Error syncing database defaults:", error)
+	}
+
+	try {
+		const res = await db.query.systemSettings.findFirst({
+			where: (s, { eq }) => eq(s.id, 1)
+		})
+		if (!res) {
+			await db.insert(schema.systemSettings).values({
+				id: 1,
+				ollamaManagerEnabled: true,
+				ollamaManagerBaseUrl: "http://localhost:11434/"
+			})
+		}
+	} catch (error) {
+		console.error("Error syncing system settings:", error)
 	}
 
 	const tables = [

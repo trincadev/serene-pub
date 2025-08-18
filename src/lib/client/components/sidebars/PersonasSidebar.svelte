@@ -4,9 +4,9 @@
 	import { Modal } from "@skeletonlabs/skeleton-svelte"
 	import * as Icons from "@lucide/svelte"
 	import PersonaForm from "../personaForms/PersonaForm.svelte"
+	import PersonaCreator from "../modals/PersonaCreatorModal.svelte"
 	import PersonaUnsavedChangesModal from "../modals/PersonaUnsavedChangesModal.svelte"
-	import Avatar from "../Avatar.svelte"
-	import SidebarListItem from "../SidebarListItem.svelte"
+	import PersonaListItem from "../listItems/PersonaListItem.svelte"
 
 	interface Props {
 		onclose?: () => Promise<boolean> | undefined
@@ -16,12 +16,16 @@
 
 	const socket = skio.get()
 	const panelsCtx: PanelsCtx = $state(getContext("panelsCtx"))
+	const systemSettingsCtx: SystemSettingsCtx = $state(
+		getContext("systemSettingsCtx")
+	)
 
 	let personaList: Sockets.PersonaList.Response["personaList"] = $state([])
 	let search = $state("")
 	let personaId: number | undefined = $state()
 	let isCreating = $state(false)
-	let isSafeToClosePersonasForm = $state(true)
+	let showPersonaCreator = $state(false)
+	let personaFormHasChanges = $state(false)
 	let showDeleteModal = $state(false)
 	let personaToDelete: number | undefined = $state(undefined)
 	let showUnsavedChangesModal = $state(false)
@@ -39,20 +43,37 @@
 
 	let filteredPersonas = $derived.by(() => {
 		if (!search) return personaList
-		return personaList.filter(
-			(p) =>
-				p.name!.toLowerCase().includes(search.toLowerCase()) ||
-				(p.description &&
-					p.description.toLowerCase().includes(search.toLowerCase()))
-		)
+		
+		const searchLower = search.toLowerCase()
+		return personaList.filter((p) => {
+			// Search by name
+			if (p.name!.toLowerCase().includes(searchLower)) return true
+			
+			// Search by description
+			if (p.description && p.description.toLowerCase().includes(searchLower)) return true
+			
+			// Search by tags
+			if (p.personaTags) {
+				const tagMatch = p.personaTags.some((pt: any) => 
+					pt.tag && pt.tag.name.toLowerCase().includes(searchLower)
+				)
+				if (tagMatch) return true
+			}
+			
+			return false
+		})
 	})
 
 	$effect(() => {
 		if (panelsCtx.digest.personaId) {
 			// Check if we have unsaved changes
-			if (personaId !== panelsCtx.digest.characterId && !isSafeToClosePersonasForm) {
+			if (
+				personaId !== panelsCtx.digest.characterId &&
+				personaFormHasChanges
+			) {
 				onEditFormCancel?.()
-			} else { // If no unsaved changes, just set the characterId
+			} else {
+				// If no unsaved changes, just set the characterId
 				personaId = panelsCtx.digest.personaId
 			}
 			delete panelsCtx.digest.personaId
@@ -60,7 +81,19 @@
 	})
 
 	function handleCreateClick() {
-		isCreating = true
+		// Clear tutorial flag when user interacts with the highlighted button
+		if (panelsCtx.digest.tutorial) {
+			panelsCtx.digest.tutorial = false
+		}
+
+		// Check if easy persona creation is enabled
+		if (systemSettingsCtx.settings.enableEasyPersonaCreation) {
+			showPersonaCreator = true
+		} else {
+			// Use regular edit form for creation
+			isCreating = true
+			personaId = undefined
+		}
 	}
 
 	function handleEditClick(id: number) {
@@ -70,6 +103,7 @@
 	function closePersonasForm() {
 		isCreating = false
 		personaId = undefined
+		personaFormHasChanges = false
 	}
 
 	function handleDeleteClick(id: number) {
@@ -92,7 +126,7 @@
 	}
 
 	async function handleOnClose() {
-		if (!isSafeToClosePersonasForm) {
+		if (personaFormHasChanges) {
 			showUnsavedChangesModal = true
 			return new Promise<boolean>((resolve) => {
 				confirmCloseSidebarResolve = resolve
@@ -123,21 +157,20 @@
 		persona: Sockets.PersonaList.Response["personaList"][0]
 	) {
 		panelsCtx.digest.chatPersonaId = persona.id
-		panelsCtx.openPanel({key:"chats", toggle: false})
+		panelsCtx.openPanel({ key: "chats", toggle: false })
 	}
-
 </script>
 
 <div class="text-foreground h-full p-4">
 	{#if isCreating}
 		<PersonaForm
-			bind:isSafeToClose={isSafeToClosePersonasForm}
+			bind:isSafeToClose={personaFormHasChanges}
 			closeForm={closePersonasForm}
 			bind:onCancel={onEditFormCancel}
 		/>
 	{:else if personaId}
 		<PersonaForm
-			bind:isSafeToClose={isSafeToClosePersonasForm}
+			bind:isSafeToClose={personaFormHasChanges}
 			{personaId}
 			closeForm={closePersonasForm}
 			bind:onCancel={onEditFormCancel}
@@ -145,7 +178,10 @@
 	{:else}
 		<div class="mb-2 flex gap-2">
 			<button
-				class="btn btn-sm preset-filled-primary-500"
+				class="btn btn-sm preset-filled-primary-500 {panelsCtx.digest
+					.tutorial
+					? 'ring-primary-500/50 animate-pulse ring-4'
+					: ''}"
 				onclick={handleCreateClick}
 				title="Create New Persona"
 			>
@@ -155,7 +191,7 @@
 		<div class="mb-4 flex items-center gap-2">
 			<input
 				type="text"
-				placeholder="Search personas..."
+				placeholder="Search personas, descriptions, tags..."
 				class="input"
 				bind:value={search}
 			/>
@@ -167,61 +203,13 @@
 				</div>
 			{:else}
 				{#each filteredPersonas as p}
-					<SidebarListItem
-						id={p.id}
-						onclick={() => handlePersonaClick(p)}
+					<PersonaListItem
+						persona={p}
+						onclick={handlePersonaClick}
+						onEdit={handleEditClick}
+						onDelete={handleDeleteClick}
 						contentTitle="Go to persona chats"
-					>
-						{#snippet content()}
-						<Avatar
-									src={p.avatar || ""}
-									size="w-[4em] h-[4em] min-w-[4em] min-h-[4em]"
-									imageClasses="object-cover"
-									name={p.name!}
-								>
-									<Icons.User size={36} />
-								</Avatar>
-							<div class="flex gap-2 relative  flex-1">
-								
-								<div class="flex-1 relative">
-									<div class="truncate font-semibold text-left">
-										{p.name}
-									</div>
-									{#if p.description}
-										<div
-											class="text-muted-foreground line-clamp-2 text-xs text-left"
-										>
-											{p.description}
-										</div>
-									{/if}
-								</div>
-							</div>
-						{/snippet}
-						{#snippet controls()}
-							<div class="flex flex-col gap-4">
-								<button
-									class="btn btn-sm text-primary-500 p-2"
-									onclick={(e) => {
-										e.stopPropagation()
-										handleEditClick(p.id!)
-									}}
-									title="Edit Character"
-								>
-									<Icons.Edit size={16} />
-								</button>
-								<button
-									class="btn btn-sm text-error-500 p-2"
-									onclick={(e) => {
-										e.stopPropagation()
-										handleDeleteClick(p.id!)
-									}}
-									title="Delete Character"
-								>
-									<Icons.Trash2 size={16} />
-								</button>
-							</div>
-						{/snippet}
-					</SidebarListItem>
+					/>
 				{/each}
 			{/if}
 		</div>
@@ -231,7 +219,7 @@
 <Modal
 	open={showDeleteModal}
 	onOpenChange={(e) => (showDeleteModal = e.open)}
-	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm"
+	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-dvw-sm border border-surface-300-700"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet content()}
@@ -264,3 +252,5 @@
 	onConfirm={handleCloseModalDiscard}
 	onCancel={handleCloseModalCancel}
 />
+
+<PersonaCreator bind:open={showPersonaCreator} />
