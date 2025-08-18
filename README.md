@@ -44,7 +44,10 @@ Serene Pub is a brand new, open source chat application for immersive AI rolepla
 - **Real-Time Sync:** All chats, settings, and characters update live across devices via WebSockets.
 - **Portable & Private:** Runs locally, no accounts, no cloud lock-in. Your data stays with you.
 - **AI Freedom:** Connect to OpenAI, Ollama, LM Studio, Llama.cpp, and more. Mix and match models, run local or cloud.
+- **Low fuss local AI**: Use Ollama manager to search, download and activate models all within the comfort of Serene Pub.
 - **Roleplay-First:** Built for character-driven, story-rich experiences. Import Silly Tavern cards, manage personas, and more.
+- **Coherence:** Some user's report characters adhere better to their profiles than other apps.
+- **Group Chats:** Chat with as many characters at once as you wish.
 - **Mobile Ready:** Responsive design for desktop and mobile. Pick up your story anywhere.
 - **Open Source:** AGPL-3.0. Hack it, extend it, make it yours!
 
@@ -159,26 +162,26 @@ Linux, MacOS and Windows are supported!
 - **[Installation & Setup](https://github.com/doolijb/serene-pub/wiki/Installation-&-Setup)** - Detailed setup instructions for all platforms
 - **[Connections](https://github.com/doolijb/serene-pub/wiki/Connections)** - How to connect to AI models (OpenAI, Ollama, LM Studio, etc.)
 - **[Characters & Personas](https://github.com/doolijb/serene-pub/wiki/Characters-&-Personas)** - Creating and managing your roleplay characters
-- **[Lorebooks](https://github.com/doolijb/serene-pub/wiki/Lorebooks)** - Advanced worldbuilding and context management
+- **[Lorebooks](https://github.com/doolijb/serene-pub/wiki/Lorebooks)** - Advanced world-building and context management
 - **[Context Templates](https://github.com/doolijb/serene-pub/wiki/Context-Templates)** - Customizing AI prompts with Handlebars
 - **[Troubleshooting](https://github.com/doolijb/serene-pub/wiki/Troubleshooting)** - Common issues and solutions
 
 ### 🗺️ Planned Features
 
-- 🧠 Vectorization
-- 🔌 More API connection types
+- 🧠 Vectorization / embeddings
 - 🤖 Assistant Chat: Ask AI questions about Serene Pub and get suggestions to improve your characters, personas, and lore
+- 🤖 Assistant Chat: In-chat OOC discussions
 - 🖼️ Image generation
+- 📝 Chat summarizing
+- 👥 Multi-user logins & multi-user group chats
+- 👥 Admin user account management
 
 ### 💡 Considered Features
 
-- 👥 Multi-user logins & multi-user group chats
-- 📝 Chat summarizing
 - 🖼️ User/chat backgrounds
 - 📖 Story narration/system instructions
 - 📅 Lorebooks+ features: custom calendars, "eras" historical categories, and more
 - 🕹️ Text adventure & narrator modes
-
 
 ---
 
@@ -198,7 +201,7 @@ AGPL-3.0. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md) for details.
 
 ## 🙏 Special Thanks
 
-Special thanks to **crazyaphro** for Q/A, **M3d4r** for editing the Wiki, and **Nivelle** for early feedback.
+Special thanks to **crazyaphro** and **Nivelle** for Q/A, **M3d4r** for editing the Wiki, and .
 
 ---
 
