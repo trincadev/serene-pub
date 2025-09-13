@@ -25,5 +25,15 @@
 		"skio",
 		"Tekken",
 		"uuidv"
+	],
+	"spellright.language": [
+		"en",
+		"it"
+	],
+	"spellright.documentTypes": [
+		"markdown",
+		"latex",
+		"plaintext",
+		"typescript"
 	]
 }

@@ -274,6 +274,61 @@ Serene Pub supports a variety of AI model connections, both local and cloud-base
 
 ---
 
+## 🧪 Unit Testing
+
+Serene Pub uses [Vitest](https://vitest.dev/) for unit testing.  
+All unit tests are organized in a dedicated folder: `tests/unit` at the project root. This keeps test code separate from production code and makes it easier to manage and scale your test suite.
+
+### Folder Structure
+
+```bash
+serene-pub/
+├── src/
+├── tests/
+│   └── unit/
+│       └── ...your unit test files (.test.ts)...
+├── vitest.config.ts
+└── ...
+```
+
+### Running Tests
+
+To run all unit tests:
+
+```sh
+npm run test
+```
+
+or
+
+```sh
+npx vitest
+```
+
+### Writing Tests
+
+Tests use the Vitest API (`describe`, `it`, `expect`). Example test for a utility function:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { add } from '$lib/utils';
+
+describe('add', () => {
+  it('adds two numbers', () => {
+    expect(add(2, 3)).toBe(5);
+  });
+});
+```
+
+### Test Coverage
+
+- Token counting strategies are thoroughly tested in `tests/unit/lib/server/utils/TokenCounterManager.test.ts`
+- Svelte components and utilities can be tested using [@testing-library/svelte](https://testing-library.com/docs/svelte-testing-library/intro/)
+
+If you add new features or fix bugs, please include or update relevant tests in the `tests/unit` folder!
+
+---
+
 ## 🗺️ Planned Features
 
 - 🏷️ Tags (coming in 0.4.0)
