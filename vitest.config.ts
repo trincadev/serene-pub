@@ -5,7 +5,10 @@ export default defineConfig({
 	test: {
 		environment: "node",
 		reporters: ["dot", "default"],
-		include: ["tests/unit/**/*.test.ts"],
+		include: [
+			"tests/unit/**/*.test.ts",
+			'tests/integration/**/*.test.ts'
+		],
 		alias: [
 			{
 				find: "@",
@@ -19,6 +22,7 @@ export default defineConfig({
 				find: "$lib",
 				replacement: resolve(__dirname, "src/lib")
 			}
-		]
+		],
+  		setupFiles: ['tests/setup.ts']
 	}
 })

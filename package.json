@@ -35,7 +35,11 @@
 		"db:studio": "node scripts/check-db-lock.js drizzle-kit studio --config ./src/lib/server/db/drizzle.config.ts",
 		"bundle": "node scripts/bundle-dist.js",
 		"dist": "npm run build && npm run bundle",
-		"create-executables": "node scripts/create-executables.js"
+		"create-executables": "node scripts/create-executables.js",
+        "test:init": "cp -n ./tests/.env.example ./tests/.env || true",
+        "test:unit": "pnpm vitest tests/unit ",
+        "test:run": "export SERENE_PUB_DATA_DIR=./tests/integration/test-data; rimraf ${SERENE_PUB_DATA_DIR}; pnpm run db:generate; pnpm run db:migrate; pnpm vitest ",
+        "test:integration": "export SERENE_PUB_DATA_DIR=./tests/integration/test-data; rimraf ${SERENE_PUB_DATA_DIR}; pnpm run db:generate; pnpm run db:migrate; pnpm vitest tests/integration "
 	},
 	"devDependencies": {
 		"@enviro/metadata": "^1.5.1",
