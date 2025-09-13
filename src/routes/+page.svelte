@@ -116,6 +116,8 @@
 
 	// Quick setup functions
 	function handleQuickSetup() {
+		if (!socket) return
+		
 		// Auto-set the default configs if not already set
 		if (!userCtx.user?.activeSamplingConfig) {
 			socket.emit("setUserActiveSamplingConfig", { id: 1 }) // Default
@@ -140,18 +142,23 @@
 	}
 
 	function connectToOllamaModel(modelName: string) {
+		if (!socket) return
 		socket.emit("ollamaConnectModel", { modelName: modelName })
 	}
 
 	function checkOllamaConnection() {
+		if (!socket) return
 		socket.emit("ollamaVersion", {})
 	}
 
 	function refreshOllamaModels() {
+		if (!socket) return
 		socket.emit("ollamaModelsList", {})
 	}
 
 	function createSamplePersona() {
+		if (!socket) return
+		
 		const samplePersona = {
 			name: "You",
 			description:
@@ -171,13 +178,29 @@
 		closeWizard()
 	}
 
+	function toggleBanner() {
+		const res: Sockets.UpdateShowHomePageBanner.Call = {
+			enabled: false
+		}
+		socket.emit("updateShowHomePageBanner", res)
+	}
+
 	// Listen for socket events
 	onMount(() => {
+
 		socket.on("characterList", (msg: Sockets.CharacterList.Response) => {
 			characters = msg.characterList || []
+			// If we're in the wizard and just got characters, advance if needed
+			if (showWizard && wizardStep === 2 && characters.length > 0) {
+				nextWizardStep()
+			}
 		})
 		socket.on("personaList", (msg: Sockets.PersonaList.Response) => {
 			personas = msg.personaList || []
+			// If we're in the wizard and just got personas, advance if needed
+			if (showWizard && wizardStep === 3 && personas.length > 0) {
+				nextWizardStep()
+			}
 		})
 		socket.on("chatsList", (msg: Sockets.ChatsList.Response) => {
 			chats = msg.chatsList || []
@@ -203,10 +226,6 @@
 
 		socket.on("ollamaConnectModel", (message: any) => {
 			if (message.success) {
-				toaster.success({
-					title: "Model Connected",
-					description: "Successfully connected to the Ollama model"
-				})
 				nextWizardStep()
 			} else {
 				toaster.error({
@@ -219,14 +238,6 @@
 		// Handle successful connection creation (fallback for manual setup)
 		socket.on("createConnection", (res: any) => {
 			if (res.connection) {
-				// Auto-set as active connection
-				socket.emit("setUserActiveConnection", {
-					id: res.connection.id
-				})
-				toaster.success({
-					title: "Connection Created",
-					description: `Successfully connected to ${res.connection.name}`
-				})
 				nextWizardStep()
 			}
 		})
@@ -236,9 +247,6 @@
 			if (res.character) {
 				// Refresh character list to update hasCharacter
 				socket.emit("characterList", {})
-				if (showWizard) {
-					nextWizardStep()
-				}
 			}
 		})
 
@@ -247,19 +255,12 @@
 			if (res.persona) {
 				// Refresh persona list to update hasPersona
 				socket.emit("personaList", {})
-				if (showWizard) {
-					nextWizardStep()
-				}
 			}
 		})
 
 		// Handle successful chat creation
 		socket.on("createChat", (res: any) => {
 			if (res.chat) {
-				toaster.success({
-					title: "Chat Created!",
-					description: "Your chat is ready. Opening chat panel..."
-				})
 				// Close wizard if it's open
 				if (showWizard) {
 					closeWizard()
@@ -298,13 +299,24 @@
 <div
 	class="flex flex-1 flex-col items-center justify-center gap-4 px-2 md:px-0"
 >
-	<img
-		src={themeCtx.mode === "dark"
-			? "logo-w-text-dark.png"
-			: "logo-w-text.png"}
-		alt="Serene Pub Logo"
-		class="bg-primary-500/25 w-full rounded-xl"
-	/>
+	{#if systemSettingsCtx.settings.showHomePageBanner}
+		<div class="relative w-full">
+			<img
+				src={themeCtx.mode === "dark"
+					? "logo-w-text-dark.png"
+					: "logo-w-text.png"}
+				alt="Serene Pub Logo"
+				class="bg-primary-500/25 w-full rounded-xl"
+			/>
+			<button
+				class="text-primary-800 hover:text-primary-900 dark:text-primary-200 hover:dark:text-primary-100 absolute right-2 top-2 text-xl leading-none font-bold bg-black/20 hover:bg-black/30 rounded-full w-6 h-6 flex items-center justify-center"
+				onclick={toggleBanner}
+				title="Hide banner"
+			>
+				×
+			</button>
+		</div>
+	{/if}
 
 	<!-- Alpha disclaimer card below the logo -->
 	<div
@@ -396,6 +408,15 @@
 							}}
 						>
 							<Icons.User size={16} /> Manage Personas
+						</button>
+						<button
+							class="btn preset-tonal-surface btn-sm"
+							onclick={() => {
+								panelsCtx.digest.tutorial = true
+								openPanel("chats")
+							}}
+						>
+							<Icons.MessageSquare size={16} /> Manage Chats
 						</button>
 					</div>
 				</details>
@@ -762,7 +783,7 @@
 						<button
 							class="btn preset-filled-primary-500"
 							onclick={() => {
-								if (selectedOllamaModel) {
+								if (selectedOllamaModel && socket) {
 									// Manual connection creation
 									const newConnection = {
 										name: `Ollama - ${selectedOllamaModel}`,

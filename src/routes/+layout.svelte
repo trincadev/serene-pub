@@ -27,7 +27,9 @@
 
 {#if socketsInitialized}
 	<Layout>
-		{@render children?.()}
+		{#key page.route}
+			{@render children?.()}
+		{/key}
 	</Layout>
 {/if}
 {#if page.data?.isNewerReleaseAvailable && showUpdateBar}

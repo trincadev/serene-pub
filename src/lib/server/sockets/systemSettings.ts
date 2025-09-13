@@ -143,3 +143,31 @@ export async function updateEasyPersonaCreation(
 		emitToUser("error", res)
 	}
 }
+
+export async function updateShowHomePageBanner(
+	socket: any,
+	message: Sockets.UpdateShowHomePageBanner.Call,
+	emitToUser: (event: string, data: any) => void
+) {
+	try {
+		await db
+			.update(schema.systemSettings)
+			.set({
+				showHomePageBanner: message.enabled
+			})
+			.where(eq(schema.systemSettings.id, 1))
+
+		const res: Sockets.UpdateShowHomePageBanner.Response = {
+			success: true,
+			enabled: message.enabled
+		}
+		emitToUser("updateShowHomePageBanner", res)
+		await systemSettings(socket, {}, emitToUser) // Refresh system settings after update
+	} catch (error: any) {
+		console.error("Update show home page banner error:", error)
+		const res = {
+			error: "Failed to update show home page banner setting"
+		}
+		emitToUser("error", res)
+	}
+}

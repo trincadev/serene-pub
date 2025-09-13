@@ -1,0 +1,1 @@
+ALTER TABLE "system_settings" ADD COLUMN "show_home_page_banner" boolean DEFAULT true;

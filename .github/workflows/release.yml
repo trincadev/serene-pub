@@ -148,7 +148,7 @@ jobs:
                     exit 1
                   fi
                   cat > "$DIST_DIR/.env.example" << 'EOF'
-                  # Serene Pub 0.4.0 - Production Configuration
+                  # Serene Pub 0.4.1 - Production Configuration
                   # Copy this file to .env in the same directory to customize settings
 
                   # ===========================================

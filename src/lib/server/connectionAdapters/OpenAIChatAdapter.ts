@@ -83,7 +83,6 @@ export class OpenAIChatAdapter extends BaseConnectionAdapter {
 			messages = compiledPrompt.messages
 		}
 
-		// Minimal params for debugging
 		const params: ChatCompletionCreateParamsBase = {
 			model,
 			messages,

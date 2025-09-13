@@ -294,6 +294,7 @@
 						checked={openAIFields.stream}
 						onCheckedChange={(e) =>
 							(openAIFields!.stream = e.checked)}
+						aria-labelledby="stream"
 					/>
 				</div>
 				<div class="flex items-center justify-between gap-4">
@@ -305,6 +306,7 @@
 						checked={openAIFields.prerenderPrompt}
 						onCheckedChange={(e) =>
 							(openAIFields!.prerenderPrompt = e.checked)}
+						aria-labelledby="prerenderPrompt"
 					/>
 				</div>
 			</section>

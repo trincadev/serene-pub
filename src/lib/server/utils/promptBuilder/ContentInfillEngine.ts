@@ -163,12 +163,8 @@ export class ContentInfillEngine {
 		// Store for use in template context building
 		this.currentInterpolationContext = interpolationContext
 
-		// Debug timing
-		const debugTimings: any[] = []
-
 		// Main processing loop
 		while (!state.completed) {
-			const iterStart = Date.now()
 			state.iterationCount++
 
 			// Process content for current priority level
@@ -221,14 +217,6 @@ export class ContentInfillEngine {
 					state.completed = true
 				}
 			}
-
-			const iterEnd = Date.now()
-			debugTimings.push({
-				priority: state.priority,
-				chatMessagesCount: state.chatMessages.length,
-				totalTokens: state.totalTokens,
-				iterationMs: iterEnd - iterStart
-			})
 
 			// Safety check to prevent infinite loops
 			if (state.iterationCount > 1000) {

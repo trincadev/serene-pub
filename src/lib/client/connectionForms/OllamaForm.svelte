@@ -271,6 +271,7 @@
 						checked={ollamaFields.useChat}
 						onCheckedChange={(e) =>
 							(ollamaFields!.useChat = e.checked)}
+						aria-labelledby="useChat"
 					/>
 				</div>
 				<div class="flex items-center justify-between gap-4">
@@ -280,6 +281,7 @@
 						checked={ollamaFields.stream}
 						onCheckedChange={(e) =>
 							(ollamaFields!.stream = e.checked)}
+						aria-labelledby="stream"
 					/>
 				</div>
 				<div class="flex items-center justify-between gap-4">
@@ -289,6 +291,7 @@
 						checked={ollamaFields.think}
 						onCheckedChange={(e) =>
 							(ollamaFields!.think = e.checked)}
+						aria-labelledby="think"
 					/>
 				</div>
 			</section>

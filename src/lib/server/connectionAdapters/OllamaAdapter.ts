@@ -377,7 +377,6 @@ async function listModels(
 		if (res && Array.isArray(res.models)) {
 			return { models: res.models }
 		} else {
-			// console.log("Ollama listModels response:", res)
 			return {
 				models: [],
 				error: "Unexpected response format from Ollama API"
@@ -401,7 +400,6 @@ async function testConnection(
 		if (res && Array.isArray(res.models)) {
 			return { ok: true }
 		} else {
-			// console.log("Ollama testConnection response:", res)
 			return {
 				ok: false,
 				error: "Unexpected response format from Ollama API"
