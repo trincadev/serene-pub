@@ -37,10 +37,10 @@
 		"dist": "npm run build && npm run bundle",
 		"create-executables": "node scripts/create-executables.js",
 		"test:init": "cp -n ./tests/.env.example ./tests/.env || true",
-		"test:unit": "pnpm vitest tests/unit ",
-		"test:run": "export SERENE_PUB_DATA_DIR=./tests/integration/test-data; rimraf ${SERENE_PUB_DATA_DIR}; pnpm run db:generate; pnpm run db:migrate; pnpm vitest ",
-		"test:integration": "export SERENE_PUB_DATA_DIR=./tests/integration/test-data; rimraf ${SERENE_PUB_DATA_DIR}; pnpm run db:generate; pnpm run db:migrate; pnpm vitest tests/integration ",
-		"test:e2e": "pnpm playwright test --retries 2 "
+		"test:unit": "npx vitest tests/unit ",
+		"test:run": "export SERENE_PUB_DATA_DIR=./tests/integration/test-data; rimraf ${SERENE_PUB_DATA_DIR}; npm run db:generate; npm run db:migrate; npx vitest tests/unit tests/integration --watch=false; npx playwright test --retries 2 ",
+		"test:integration": "export SERENE_PUB_DATA_DIR=./tests/integration/test-data; rimraf ${SERENE_PUB_DATA_DIR}; npm run db:generate; npm run db:migrate; npx vitest tests/integration ",
+		"test:e2e": "npx playwright test --retries 2 "
 	},
 	"devDependencies": {
 		"@enviro/metadata": "^1.5.1",
@@ -71,6 +71,7 @@
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
 		"prettier-plugin-tailwindcss": "^0.6.11",
+		"rimraf": "^6.0.1",
 		"svelte": "^5.35.4",
 		"svelte-check": "^4.0.0",
 		"sveltekit-sse": "^0.13.19",
